@@ -2282,3 +2282,21 @@ plain grid.
 - Rejected: the cash line (A) and the agenda (C), kept as options if names on
   the grid are missed; an absolute-dollar scale, which would read "Tight" for
   every modest income.
+
+### D-64 — October 10: the Calendar opens a day beside the month; it adds only upcoming payments
+- **Clicking a day opens it beside the month** on a computer (today by
+  default) and as a bottom sheet on a phone, so the month stays in view. A past
+  day lists what was recorded; a future day lists what is expected and the cash
+  left at its end. Adding opens inside that panel with the date filled in,
+  instead of a form at the top of the page that scrolled the month away.
+- **Calendar adds upcoming payments only; Transactions records what
+  happened.** Two places to record a past purchase would count it twice once
+  the bank's copy arrives, and the cash figures here depend on not doing that.
+  So the Calendar's button reads "+ Add upcoming", past days are read-only with
+  "Open in Transactions", and a payment due today is matched when the bank
+  transaction arrives, as before (D-49).
+- **Names on the grid** on a computer (the first payment's icon and name, "+n"
+  for more); dots stay on a phone, where the day sheet names them.
+- **Fewer words:** tiles read In, Out, Lowest and Safe to invest; the cash
+  breakdown and day-to-day rate moved into an ⓘ on Lowest; the invest bar is one
+  line; the legend lost its caption.

@@ -208,7 +208,7 @@ function PaymentRow({
 
 export default function ExpectedPaymentsTab({
   userId, defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [],
-  budgetMonthlySpending = 0, lastMonthSpending, targetMultiple = 25, plan = null, facts, billDue = {}, onMarkDone,
+  budgetMonthlySpending = 0, lastMonthSpending, targetMultiple = 25, plan = null, facts, billDue = {}, onMarkDone, onOpenTransactions,
 }: {
   /** The contribution plan and account facts, for the month's cash balances (D-61). */
   plan?: StoredPlan | null;
@@ -217,6 +217,7 @@ export default function ExpectedPaymentsTab({
    *  paid bill is not taken from cash a second time. */
   billDue?: Record<string, { from: string; due: string | null }>;
   onMarkDone?: (done: { iso: string; amount: number } | null) => void;
+  onOpenTransactions?: () => void;
   /** FIRE target per dollar of a year's spending, as the freedom date uses it (D-35). */
   targetMultiple?: number;
   userId: string;
@@ -234,6 +235,7 @@ export default function ExpectedPaymentsTab({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
   const [view, setView] = useState<"month" | "list">("month");
+  const [selected, setSelected] = useState<string | null>(null);
 
   const [formDesc, setFormDesc] = useState("");
   const [formAmount, setFormAmount] = useState("");
@@ -469,6 +471,14 @@ export default function ExpectedPaymentsTab({
   const ladder = useMemo(() => (facts ? ladderViewFromPlan(plan, { ...facts, expectedItems: calendarItems }) : null),
     [plan, facts, calendarItems]);
   const cash = ladder?.available ?? null;
+  // What was recorded on past days, for the day panel: read-only, since
+  // recording belongs to Transactions (D-64).
+  const recorded = useMemo(() => history.map((t) => ({
+    iso: t.date.slice(0, 10), label: t.description || (t.transaction_type === "income" ? "Income" : "Payment"),
+    amount: Math.abs(toUSD(t.amount, t.currency, displayRates)), income: t.transaction_type === "income", category: t.category,
+  })), [history, displayRates]);
+  const categoryEmoji = (category: string | null | undefined, income: boolean) =>
+    [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES, ...customCats].find((c) => c.key === category)?.emoji ?? (income ? "💵" : "🧾");
   const completed = payments.filter(isDone).sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""));
   const overdue = pending.filter(p => daysUntil(p.due_date) < 0).sort((a, b) => a.due_date.localeCompare(b.due_date));
   const upcoming = pending.filter(p => daysUntil(p.due_date) >= 0).sort((a, b) => a.due_date.localeCompare(b.due_date));
@@ -513,6 +523,84 @@ export default function ExpectedPaymentsTab({
     );
   }
 
+  const inPanel = view === "month";
+  const formNode = (
+        <div style={inPanel ? { display: "flex", flexDirection: "column", gap: 12, borderTop: "1px solid var(--uf-border)", paddingTop: 12 }
+          : { background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className="uf-t-h3" style={{ margin: 0 }}>
+            {editingId ? "Edit upcoming payment" : "Add upcoming payment"}
+          </div>
+
+          <div>
+            <label className="uf-t-small" style={labelStyle}>Description</label>
+            <input type="text" value={formDesc} onChange={e => {
+              setFormDesc(e.target.value);
+              if (!catPicked && formType === "expense") { setFormCategory(guessBillCategory(e.target.value) ?? ""); setFormSubCategory(""); }
+            }} placeholder="e.g. Client invoice, Tax refund, Car repair" style={inputStyle} />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 110px", gap: 12 }}>
+            <div>
+              <label className="uf-t-small" style={labelStyle}>Amount</label>
+              <input type="number" value={formAmount} onChange={e => setFormAmount(e.target.value)} placeholder="0" min="0" step="any" style={inputStyle} />
+            </div>
+            <div>
+              <label className="uf-t-small" style={labelStyle}>Currency</label>
+              <select value={formCurrency} onChange={e => setFormCurrency(e.target.value)} style={selectStyle}>
+                {(preferredCurrencies.length > 0 ? preferredCurrencies : [...SUPPORTED_CURRENCIES]).map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: inPanel ? "minmax(0, 1fr)" : "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
+            <div>
+              <label className="uf-t-small" style={labelStyle}>{formRecurrence === "none" ? "Due date" : "Next due"}</label>
+              <input type="date" value={formDueDate} onChange={e => setFormDueDate(e.target.value)} style={inputStyle} />
+            </div>
+            <div>
+              <label className="uf-t-small" style={labelStyle}>Type</label>
+              <PillTabs label="Type" value={formType} options={[{ key: "income", label: "Income" }, { key: "expense", label: "Expense" }]}
+                onChange={(t) => { setFormType(t); setFormSubCategory(""); setCatPicked(false); setFormCategory(t === "expense" ? guessBillCategory(formDesc) ?? "" : ""); }} />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
+            <div>
+              <label className="uf-t-small" style={labelStyle}>Category</label>
+              <select value={formCategory} onChange={e => { setFormCategory(e.target.value); setFormSubCategory(""); setCatPicked(true); }} style={selectStyle}>
+                <option value="">{formType === "expense" ? "Pick one" : "None"}</option>
+                {catOptions.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="uf-t-small" style={labelStyle}>Sub-category</label>
+              <select value={formSubCategory} onChange={e => setFormSubCategory(e.target.value)} disabled={!subOptions.length} style={selectStyle}>
+                <option value="">Optional</option>
+                {subOptions.map(sc => <option key={sc} value={sc}>{sc}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="uf-t-small" style={labelStyle}>Repeats</label>
+            <select value={formRecurrence} onChange={e => setFormRecurrence(e.target.value as Recurrence)} style={selectStyle}>
+              {(Object.keys(RECURRENCE_LABEL) as Recurrence[]).map(k => (
+                <option key={k} value={k}>{RECURRENCE_LABEL[k]}</option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, justifyContent: inPanel ? "flex-end" : "flex-start" }}>
+            {inPanel && <Button variant="ghost" onClick={closeForm}>Cancel</Button>}
+            <Button variant="primary" onClick={saveForm} disabled={saving || !formDesc.trim() || !formAmount || !formDueDate || needsCategory}>
+              {editingId ? "Save changes" : "Add payment"}
+            </Button>
+          </div>
+        </div>
+  );
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
       {/* The calm headline (D-40): what is still to go out and what is still
@@ -536,7 +624,7 @@ export default function ExpectedPaymentsTab({
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", order: -1 }}>
         <PillTabs label="Calendar view" value={view} options={[{ key: "month", label: "Month" }, { key: "list", label: "List" }]} onChange={setView} />
-        {view === "month" && <Button variant={showForm ? "secondary" : "primary"} size="sm" onClick={showForm ? closeForm : () => openAddForm()}>{showForm ? "Cancel" : "Add payment"}</Button>}
+        {view === "month" && <Button size="sm" onClick={() => { const on = selected && selected >= todayStr() ? selected : todayStr(); setSelected(on); openAddForm(on); }}>+ Add upcoming</Button>}
       </div>
 
       {/* Spotted in transaction history. A guess until accepted — it never
@@ -568,79 +656,8 @@ export default function ExpectedPaymentsTab({
         </div>
       )}
 
-      {/* Add / Edit form */}
-      {showForm && (
-        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-          <div className="uf-t-h3" style={{ margin: 0 }}>
-            {editingId ? "Edit upcoming payment" : "Add upcoming payment"}
-          </div>
-
-          <div>
-            <label className="uf-t-small" style={labelStyle}>Description</label>
-            <input type="text" value={formDesc} onChange={e => {
-              setFormDesc(e.target.value);
-              if (!catPicked && formType === "expense") { setFormCategory(guessBillCategory(e.target.value) ?? ""); setFormSubCategory(""); }
-            }} placeholder="e.g. Client invoice, Tax refund, Car repair" style={inputStyle} />
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 120px", gap: 12 }}>
-            <div>
-              <label className="uf-t-small" style={labelStyle}>Amount</label>
-              <input type="number" value={formAmount} onChange={e => setFormAmount(e.target.value)} placeholder="0" min="0" step="any" style={inputStyle} />
-            </div>
-            <div>
-              <label className="uf-t-small" style={labelStyle}>Currency</label>
-              <select value={formCurrency} onChange={e => setFormCurrency(e.target.value)} style={selectStyle}>
-                {(preferredCurrencies.length > 0 ? preferredCurrencies : [...SUPPORTED_CURRENCIES]).map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div>
-              <label className="uf-t-small" style={labelStyle}>{formRecurrence === "none" ? "Due date" : "Next due"}</label>
-              <input type="date" value={formDueDate} onChange={e => setFormDueDate(e.target.value)} style={inputStyle} />
-            </div>
-            <div>
-              <label className="uf-t-small" style={labelStyle}>Type</label>
-              <PillTabs label="Type" value={formType} options={[{ key: "income", label: "Income" }, { key: "expense", label: "Expense" }]}
-                onChange={(t) => { setFormType(t); setFormSubCategory(""); setCatPicked(false); setFormCategory(t === "expense" ? guessBillCategory(formDesc) ?? "" : ""); }} />
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <div>
-              <label className="uf-t-small" style={labelStyle}>Category</label>
-              <select value={formCategory} onChange={e => { setFormCategory(e.target.value); setFormSubCategory(""); setCatPicked(true); }} style={selectStyle}>
-                <option value="">{formType === "expense" ? "Pick one" : "None"}</option>
-                {catOptions.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="uf-t-small" style={labelStyle}>Sub-category</label>
-              <select value={formSubCategory} onChange={e => setFormSubCategory(e.target.value)} disabled={!subOptions.length} style={selectStyle}>
-                <option value="">Optional</option>
-                {subOptions.map(sc => <option key={sc} value={sc}>{sc}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="uf-t-small" style={labelStyle}>Repeats</label>
-            <select value={formRecurrence} onChange={e => setFormRecurrence(e.target.value as Recurrence)} style={selectStyle}>
-              {(Object.keys(RECURRENCE_LABEL) as Recurrence[]).map(k => (
-                <option key={k} value={k}>{RECURRENCE_LABEL[k]}</option>
-              ))}
-            </select>
-          </div>
-
-          <Button variant="primary" onClick={saveForm} disabled={saving || !formDesc.trim() || !formAmount || !formDueDate || needsCategory}>
-            {editingId ? "Save changes" : "Add payment"}
-          </Button>
-        </div>
-      )}
+      {/* Add / Edit form: here in the list; in the day panel on the month (D-64). */}
+      {showForm && view === "list" && formNode}
 
       {view === "month" && (
         <CalendarMonth items={calendarItems} forecast={cash?.forecast ?? null}
@@ -648,7 +665,9 @@ export default function ExpectedPaymentsTab({
           accounts={[...(cash?.cashAccounts ?? []).map((a) => ({ name: a.label, balance: a.balance, reserve: false })),
             ...(ladder?.efAccounts ?? []).map((a) => ({ name: a.label, balance: a.balance, reserve: true }))]}
           safe={cash?.free ?? 0} done={cash?.done ?? null}
-          onMarkDone={onMarkDone} onAddOn={(iso) => { openAddForm(iso); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+          onMarkDone={onMarkDone} selected={selected} onSelect={(iso) => { if (showForm) closeForm(); setSelected(iso); }}
+          recorded={recorded} addForm={showForm ? formNode : null} onAdd={(iso) => openAddForm(iso)}
+          onOpenTransactions={onOpenTransactions} emojiFor={categoryEmoji}
           fmt={formatAmount} compact={(usd) => formatUSDInCurrency(usd, displayCurrency, displayRates, { compact: true })} />
       )}
 
