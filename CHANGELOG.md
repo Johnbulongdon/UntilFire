@@ -17,6 +17,8 @@ under today's date, creating the heading if it is not there yet.
 - Bills you already paid this month are no longer taken off again.
 - Day-to-day spending now follows your Budget (less listed bills) rather
   than last month's tagged needs, here and in what is safe to invest.
+- A brighter month: each day is shaded from Tight to Plenty by the cash
+  you will have, with payments as dots and your invest day marked.
 
 ## 2026-10-09
 

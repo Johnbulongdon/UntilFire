@@ -2264,3 +2264,21 @@ checking and savings accounts and a paid rent showed cash today $2,528, coming
 in $3,000 for the rest of October, and the paid rent moved to Nov 1.
 **Revisit when:** someone's Budget is far from what they spend (consider showing
 both figures), or users ask to set the day-to-day figure directly.
+
+### D-63 — October 10: the Calendar month tints each day by its cash
+Chosen by the founder from three mocks (cash line over a grid; days tinted by
+cash; an agenda with a mini month) as more vibrant and modern than D-61's
+plain grid.
+- **Each day is tinted by its closing cash** against a month of going out
+  (listed bills plus day-to-day spending): Tight (below zero), Low (under a
+  quarter), OK (under half), Good (under a month), Plenty (a month or more).
+  Relative to the person's own spending, so "Plenty" means the same for any
+  income. Tints mix existing tokens with the card colour, so both themes hold.
+- **Colour never carries meaning alone:** each day shows its balance, its label
+  names the level, and a legend sits above the grid.
+- Payments are dots (green in, ink out) with names in the day's label; today
+  has an ink ring and dot, the invest day a green ring and diamond. Stat tiles
+  gain small icons. Mark as done sits in one bar under the grid.
+- Rejected: the cash line (A) and the agenda (C), kept as options if names on
+  the grid are missed; an absolute-dollar scale, which would read "Tight" for
+  every modest income.
