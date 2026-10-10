@@ -7,6 +7,16 @@ Sources and both vault branch snapshots are recorded in
 
 ## Active decisions
 
+### 2026-10-05 — Mobile-first web, reusable product core, shared motion language
+
+**Status:** Active user-approved direction; production UI integration requires preview approval.
+**Decision:** Improve the mobile website first; keep financial calculations, validation, data models and services independent of rendering. Use Motion for new website UI, with Reanimated if a future native Expo/React Native app is selected.
+**Why:** Make immediate progress without discarding the core when the app arrives.
+**Trade-off:** Native screens and animation components need adaptation. Existing GSAP remains; no wholesale rewrite or promise of automatic code portability.
+**Source:** User's October 5 website/app discussion and request to preserve the decision.
+**Contract and revisit conditions:** [Motion and mobile](design/motion-and-mobile.md).
+
+
 ### D-15 — September 24: flexible tasks, Claude integrates ready handoffs
 
 **Status:** Active workflow direction, as authorized by the user; publication of
