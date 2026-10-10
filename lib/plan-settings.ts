@@ -28,6 +28,26 @@ export type PlanSettings = {
   taxFreeGainsLocked?: boolean;
   /** From Money → Debts, not saved here: each mortgage, its payment a month and rate as a fraction (D-61). */
   mortgages?: { balance: number; monthly: number; rate: number }[];
+  /** A different path, compared on Plan → Compare and never saved as the plan itself (D-66). */
+  change?: LifeChange;
+};
+
+/**
+ * A different path for a while (D-66), in years from now: work a share of
+ * today's hours, or earn a set take-home, and spend differently, from
+ * `startYear` until `endYear` (open-ended when unset). Pay and pension
+ * contributions scale with the share of work. When earnings fall below
+ * spending the gap is withdrawn, never quietly treated as zero saving.
+ */
+export type LifeChange = {
+  startYear: number;
+  endYear?: number;
+  /** Share of today's work, 0–1. 0 is a break from work. */
+  workShare?: number;
+  /** Take-home a year in USD during the change, instead of scaling pay by the share. */
+  annualIncome?: number;
+  /** Spending a year in USD during the change, instead of today's. */
+  annualSpend?: number;
 };
 
 /**
