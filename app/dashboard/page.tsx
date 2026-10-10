@@ -361,7 +361,7 @@ function calcProjection({
   targetMonthlyExpenses,
   taxEnabled = false, retirementTaxRate = 0, rothPct = 0,
   retirementAnnualSpend = 0, payGrowth = 0, employerAnnual = 0, pensionAnnual = 0,
-  currentAge = 0, accessAge = 0, mortgageRate = 0.065, taxFreeAnnual, taxFreeGainsLocked = true, mortgages,
+  currentAge = 0, accessAge = 0, mortgageRate = 0.065, taxFreeAnnual, taxFreeGainsLocked = true, mortgages, change,
 }: {
   annualIncome: number; monthlyExpenses: number; k401: number;
   rothIRA: number; taxable: number; cashSavings?: number; totalDebt: number;
@@ -391,6 +391,15 @@ function calcProjection({
    * single mortgage above; each is paid down at its own rate, and once paid off its payment goes to saving.
    */
   mortgages?: { balance: number; monthly: number; rate: number }[];
+  /**
+   * A different path for a while (D-66): from `startYear` to `endYear` (years from now), work a share of
+   * today's hours (or earn a set take-home) and spend differently. Pay, pension contributions and debt
+   * repayment scale with the share (debt keeps at least its interest paid). A year that earns less than it
+   * spends withdraws the gap: cash, then taxable, then the tax-free account (paid-in only before the access
+   * age where gains wait), then the pension once it opens. What cannot be covered is a shortfall, reported
+   * as `broke`, and that path has no freedom date.
+   */
+  change?: { startYear: number; endYear?: number; workShare?: number; annualIncome?: number; annualSpend?: number };
 }) {
   const loans = mortgages && mortgages.length > 0 ? mortgages.map((m) => ({ ...m })) : null;
   const annualExpenses       = monthlyExpenses * 12;
@@ -420,6 +429,10 @@ function calcProjection({
   let rothBasis = rothIRA; // Roth money paid in can be taken out at any age; its growth waits for the access age.
   let totalContributed = k401 + rothIRA + taxable + cashSavings;
   let firstYearInvested = 0; // savings invested in year one, after debt payments (Plan's tools use it)
+  // The first year a change's spending could not be covered from money within reach (D-66).
+  let broke: { year: number; short: number } | null = null;
+  let withdrawn = 0;
+  const flows: { year: number; saved: number; withdrawn: number }[] = [];
 
   for (let y = 0; y <= years; y++) {
     const investable = cur401k + curRoth + curTaxable + curCash;
@@ -462,22 +475,44 @@ function calcProjection({
     // Debt is paid out of savings first (up to 30% of them), and only what
     // is left is invested. Paying it from savings that were also invested in
     // full spent the same money twice and brought the date forward (D-32).
+    // During a change (D-66), earnings and spending are the change's; outside it, today's, exactly as before.
+    const inChange = !!change && y >= change.startYear && (change.endYear == null || y < change.endYear);
+    const share    = inChange ? Math.min(1, Math.max(0, change!.workShare ?? 1)) : 1;
     let debtPayment = 0;
     if (curDebt > 0) {
       const interest = curDebt * 0.05;
-      debtPayment = Math.min(curDebt + interest, Math.max(annualSavings * 0.3, 0));
+      // Working less repays less, though never below the interest.
+      debtPayment = inChange
+        ? Math.min(curDebt + interest, Math.max(interest, annualSavings * 0.3 * share))
+        : Math.min(curDebt + interest, Math.max(annualSavings * 0.3, 0));
       curDebt = Math.max(0, curDebt + interest - debtPayment);
     }
     const pay            = Math.pow(1 + payGrowth, y);
     const raises         = annualIncome * (pay - 1);
     // A mortgage paid off in an earlier year stops costing anything: its payment is saved instead.
     const freed          = loans ? loans.filter((l) => l.balance <= 0).reduce((s, l) => s + l.monthly * 12, 0) : 0;
-    const toInvest       = Math.max(annualSavings + raises + freed - debtPayment, 0);
+    const changeNet      = inChange
+      ? (change!.annualIncome ?? annualIncome * pay * share) - (change!.annualSpend ?? annualExpenses) - annualMortgage + freed - debtPayment
+      : 0;
+    const toInvest       = inChange ? Math.max(changeNet, 0) : Math.max(annualSavings + raises + freed - debtPayment, 0);
+    let need             = inChange ? Math.max(-changeNet, 0) : 0;
+    if (need > 0) {
+      const take = (v: number) => { const t = Math.min(Math.max(v, 0), need); need -= t; return v - t; };
+      curCash = take(curCash);
+      curTaxable = take(curTaxable);
+      const open = !(currentAge > 0 && accessAge > 0) || currentAge + y >= accessAge;
+      if (open || !taxFreeGainsLocked) { curRoth = take(curRoth); rothBasis = Math.min(rothBasis, curRoth); }
+      else { const t = Math.min(Math.max(Math.min(rothBasis, curRoth), 0), need); curRoth -= t; rothBasis -= t; need -= t; }
+      if (open) cur401k = take(cur401k);
+      withdrawn += Math.max(-changeNet, 0) - need;
+      if (need > 0.5 && !broke) broke = { year: y, short: need };
+    }
     const ownSplit       = taxFreeAnnual != null || pensionAnnual > 0;
     const k401Contrib    = ownSplit ? 0 : Math.min(toInvest * 0.4, 23000);
     const rothContrib    = ownSplit ? Math.min(toInvest, taxFreeAnnual ?? 0) : Math.min(toInvest * 0.2, 7000);
     const taxableContrib = toInvest - k401Contrib - rothContrib;
-    const pension        = pensionAnnual + employerAnnual * pay;
+    const pension        = (pensionAnnual + employerAnnual * pay) * share;
+    flows.push({ year: y, saved: toInvest + pension, withdrawn: inChange ? Math.max(-changeNet, 0) - need : 0 });
     if (y === 0) firstYearInvested = toInvest + pension;
     totalContributed += toInvest + pension;
     rothBasis += rothContrib;
@@ -494,7 +529,9 @@ function calcProjection({
       curMort = Math.max(0, curMort - prin);
     }
   }
-  return { data, fireYear, fireTarget, annualSavings, firstYearInvested, totalYear, bridge };
+  // A path that runs out of reachable money before freedom has no freedom date: the gap was real (D-66).
+  const reached = broke && (fireYear === null || fireYear > broke.year) ? null : fireYear;
+  return { data, fireYear: reached, fireTarget, annualSavings, firstYearInvested, totalYear, bridge, broke, withdrawn, flows };
 }
 
 /**

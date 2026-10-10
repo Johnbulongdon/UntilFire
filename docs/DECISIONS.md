@@ -2320,3 +2320,28 @@ maths against a real Reddit plan, which found every simplification ran early.
 - **Effect:** the Reddit plan moves from 47 (2046) to 49 (October 2047),
   matching the independent check. Every date moves later or stays; none moves
   earlier.
+
+### D-66 — October 10: the engine models a different path for a while, and withdraws a shortfall
+**Status:** Active. Authorised by the founder on 2026-10-10, from a qualitative
+review of r/Fire, r/financialindependence, r/leanfire and r/ExpatFIRE threads
+and a Codex brief ("simple start → accurate life-plan comparison"): the harder
+question is rarely "when can I retire" but "can I change something now and keep
+my options", such as working less or stopping saving.
+- **`calcProjection` takes an optional `change`:** from one year to another
+  (years from now), work a share of today's hours or earn a set take-home, and
+  spend differently. Pay, pension contributions and debt repayment scale with
+  the share; debt keeps at least its interest paid. No change, or a change that
+  changes nothing, gives exactly today's plan.
+- **A year that earns less than it spends withdraws the gap,** never clamps
+  saving to zero: cash, then taxable, then the tax-free account (paid-in only
+  before the access age where gains wait), then the pension once it opens.
+  Withdrawals come at the start of the year, as the bridge does (D-65).
+- **What cannot be covered is a funding gap** (`broke`: the year and the amount
+  short), and that path has no freedom date rather than a fake one.
+- Returns `withdrawn` and yearly `flows` (saved, withdrawn) for explanations.
+- **Used next by:** Explore's freedom badges (D-67, Coast and Barista checks)
+  and Plan → Compare's work-less ladder. No screen uses it in this change, so
+  no live date moves.
+- **Not changed:** today's plan still treats spending above income as zero
+  saving; making it withdraw too would move some live dates and needs its own
+  decision.

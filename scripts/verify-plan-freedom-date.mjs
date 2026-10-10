@@ -159,5 +159,36 @@ assert.ok(freed[3]['Investable'] > calcProjection({ ...oneMerged, years: 4 }).da
 const rateMatters = (r) => calcProjection({ ...person, mortgages: [{ balance: 300000, monthly: 2000, rate: r }] }).data[10]['Debt'];
 assert.ok(rateMatters(0.03) > rateMatters(0.07), 'each mortgage is paid down at its own rate');
 
+// D-66: a different path for a while, on the same engine.
+{
+  const life = { ...person, currentAge: 35, accessAge: 59.5, pensionAnnual: 10000, employerAnnual: 5000, taxFreeAnnual: 7000 };
+  const base = calcProjection(life);
+  const same = calcProjection({ ...life, change: { startYear: 2, endYear: 6, workShare: 1 } });
+  assert.deepEqual(same.data, base.data, 'a change that changes nothing gives the same plan');
+  assert.equal(calcProjection({ ...life, change: undefined }).fireYear, base.fireYear, 'no change is today\'s plan');
+  // Half the hours for five years: pay and pension contributions halve, freedom comes later.
+  const half = calcProjection({ ...life, change: { startYear: 1, endYear: 6, workShare: 0.5 } });
+  assert.ok(half.fireYear > base.fireYear, 'working half as much for a while moves freedom later');
+  assert.ok(half.data[6]['401(k)'] < base.data[6]['401(k)'], 'pension contributions scale with the hours worked');
+  assert.deepEqual(half.flows.slice(7).map((f) => f.saved), base.flows.slice(7).map((f) => f.saved), 'after the change, saving is back to today\'s');
+  // A year off: today's spending is withdrawn, not treated as zero saving.
+  const spend = life.monthlyExpenses * 12;
+  const gap = calcProjection({ ...life, change: { startYear: 1, endYear: 2, workShare: 0 } });
+  assert.ok(Math.abs(gap.withdrawn - spend) < 1, `a year off withdraws a year of spending (${gap.withdrawn} vs ${spend})`);
+  assert.ok(gap.data[2]['Taxable'] < base.data[2]['Taxable'], 'the withdrawal comes from money within reach');
+  // Stopping work at 35 with the money locked in a pension until 59½: it breaks, and has no date.
+  const locked = calcProjection({ ...life, k401: 500000, rothIRA: 0, taxable: 0, cashSavings: 0, change: { startYear: 1, workShare: 0 } });
+  assert.ok(locked.broke && locked.broke.year === 1, 'with nothing within reach, the gap is reported in the first year');
+  assert.equal(locked.fireYear, null, 'a path that cannot be paid for has no freedom date');
+  // Part-time take-home below spending: the difference is withdrawn each year.
+  const part = calcProjection({ ...life, taxable: 400000, change: { startYear: 0, endYear: 3, annualIncome: spend - 12000 } });
+  assert.ok(Math.abs(part.withdrawn - 3 * 12000) < 1, `part-time below spending withdraws the difference (${part.withdrawn})`);
+  // A break with debt pays its interest, not full-time repayments (D-66).
+  const owing = calcProjection({ ...life, totalDebt: 30000, change: { startYear: 1, endYear: 2, workShare: 0 } });
+  assert.ok(Math.abs(owing.flows[1].withdrawn - (spend - owing.data[1]['Debt'] * 0.05)) < 1, `a year off with debt withdraws spending plus interest (${owing.flows[1].withdrawn})`);
+  // Spending differently: more spending, less saved.
+  assert.ok(calcProjection({ ...life, change: { startYear: 0, annualSpend: spend + 12000 } }).fireYear > base.fireYear, 'spending more now delays freedom');
+}
+
 if (process.env.SHOW) for (const g of [0.05, 0.069, 0.081]) console.log(g, at(g).exactDate.toISOString().slice(0, 7));
 console.log('Plan freedom date checks passed.');
