@@ -19,6 +19,9 @@ under today's date, creating the heading if it is not there yet.
   than last month's tagged needs, here and in what is safe to invest.
 - A brighter month: each day is shaded from Tight to Plenty by the cash
   you will have, with payments as dots and your invest day marked.
+- Click a day to see it beside the month: what was recorded on a past day,
+  what is expected on a future one, and add an upcoming payment right there.
+  On a phone it opens as a sheet. Payment names now show on the month.
 
 ## 2026-10-09
 
