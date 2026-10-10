@@ -139,11 +139,14 @@ export type AllowanceBasis =
 export function dayToDayAllowance(
   facts: AccountFacts, items: ExpectedItem[], exclusions: AllowanceExclusion[] = [],
 ): AllowanceBasis | null {
+  // The Budget first (D-62, revising D-11): it is the long-term plan, where
+  // last month can carry a trip or a one-off. Last month's needs stand in
+  // only when no budget is set.
+  const monthly = monthlyAllowance(facts.budgetMonthlySpending ?? 0, items);
+  if (monthly > 0) return { kind: "budget", monthly, perDay: perDay(monthly) };
   const last = facts.lastMonthSpending;
   const fromNeeds = last ? needsAllowance(last.needs, items, last.year, last.monthIndex, exclusions) : null;
-  if (fromNeeds && last) return { kind: "needs", wants: last.wants, untagged: last.untagged, ...fromNeeds };
-  const monthly = monthlyAllowance(facts.budgetMonthlySpending ?? 0, items);
-  return monthly > 0 ? { kind: "budget", monthly, perDay: perDay(monthly) } : null;
+  return fromNeeds && last ? { kind: "needs", wants: last.wants, untagged: last.untagged, ...fromNeeds } : null;
 }
 
 /** What the emergency fund field shows, before any override. */

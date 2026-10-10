@@ -225,7 +225,7 @@ ask to set the allowance directly rather than derive it from the Budget.
 
 ### D-11 — September 24: day-to-day spending from last month's needs
 
-**Status:** Active. Authorised by the founder on 2026-09-24. Supersedes D-10's
+**Status:** Revised by [D-62](#d-62--october-10-day-to-day-spending-from-the-budget-first-calendar-shows-all-cash) on 2026-10-10: the Budget now comes first and these needs are the fallback. Authorised by the founder on 2026-09-24. Supersedes D-10's
 allowance source. *One-off months are handled by per-category exclusions
 (D-14) rather than the multi-month median listed under "Revisit when".*
 **Decision:** The day-to-day line in the contribution forecast and in the Expected
@@ -2231,3 +2231,36 @@ one-page plan → Save as PDF), with or without the UntilFire name.
   profile, applies to that cycle only, and can be undone.
 - The 30-day dot strip on Upcoming was removed: it was unclear on its own,
   and the Month view shows the same thing with amounts.
+
+### D-62 — October 10: day-to-day spending from the Budget first; Calendar shows all cash
+**Status:** Active. Authorised by the founder on 2026-10-10. **Revises
+[D-11](#d-11--september-24-day-to-day-spending-from-last-months-needs):** the
+order of the two sources is reversed.
+- **Budget first.** The day-to-day estimate in the contribution forecast, the
+  Calendar and the month list is the Budget's monthly spending less repeating
+  listed bills, spread per day (D-10's figure). Last month's need-tagged spending
+  is used only when no budget is set. *Why:* the Budget is the long-term plan;
+  last month can carry a trip or a one-off. D-11's figure depended on tagging,
+  and with few needs tagged it fell to about $5 a day, so the Calendar and the
+  safe-to-invest figure understated what goes out. D-11 rejected the Budget
+  because the founder's then-budget held one-offs; the founder now keeps those
+  out of the Budget instead. Per-category exclusions (D-14) still apply to the
+  needs fallback.
+- **Calendar balances are all cash**, savings included, still never
+  investments. D-61 started them from cash outside the emergency fund, which
+  read near $0 for anyone whose money sits in savings. What is safe to invest
+  is unchanged and still keeps the emergency fund aside; when spending money
+  would run out but savings cover it, the lowest-cash card says "uses
+  emergency fund" instead of showing red. A line names today's cash by account.
+- **Calendar totals are the month shown** (from today for this month), not the
+  whole cycle to the day before the next-but-one invest day, which counted two
+  paydays and two months of bills.
+- **Bills already paid are not counted again.** The Calendar uses the same
+  presumed-paid dates as Free to spend and Contributions (D-49): a bill matched
+  to a payment moves to its next date instead of landing on today as overdue.
+**Evidence:** `test:contribution-ladder` covers budget first, the needs
+fallback without a budget, and no estimate with neither. A browser check with
+checking and savings accounts and a paid rent showed cash today $2,528, coming
+in $3,000 for the rest of October, and the paid rent moved to Nov 1.
+**Revisit when:** someone's Budget is far from what they spend (consider showing
+both figures), or users ask to set the day-to-day figure directly.
