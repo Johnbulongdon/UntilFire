@@ -455,7 +455,7 @@ tools get used. Counts and enums only; no amounts, merchants or dates.
 
 - **Where**: `app/explore/ExploreClient.tsx`, one call site each.
 - `funnel_explore_viewed`: on load. `has_plan` (your numbers were already here).
-- `funnel_explore_city_opened`: a card or pin chosen. `mode` (`monthly`, `year`, `age`).
+- `funnel_explore_city_opened`: a card or pin chosen. `mode` (`monthly`, `year`, `age`, `badge` since D-67).
 - `funnel_explore_mode_changed`: the pin switch. `mode`.
 - `funnel_explore_starred`: `starred` (false when unstarred).
 - `funnel_explore_plan_started`: "Plan {city}" into the calculator. No properties.

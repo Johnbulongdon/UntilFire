@@ -2345,3 +2345,34 @@ my options", such as working less or stopping saving.
 - **Not changed:** today's plan still treats spending above income as zero
   saving; making it withdraw too would move some live dates and needs its own
   decision.
+
+### D-67 — October 10: freedom badges in Explore, bronze, silver and gold with stars
+**Status:** Active. Designed with the founder on 2026-10-10. Compare answers
+"what would this change cost me"; badges answer "where do I stand, in every
+city", so they live in Explore.
+- **Metal is the means, each harder than the last,** all judged by the same age
+  for everyone, when the pension opens (59½ by default, the plan's confirmed
+  access age in the app): Bronze keeps working full time; Silver stops saving
+  now and just covers costs (Coast FIRE); Gold works half time from now with
+  savings covering the gap (Barista FIRE). Half time sits above coasting
+  because half pay usually falls short of costs, so savings fund the gap from
+  day one; a check found the first ordering (Barista below Coast) false.
+- **Stars are the life once free,** a share of the city's typical cost, the
+  same for everyone rather than anyone's own goal: ★ frugal 75%, ★★ medium
+  100%, ★★★ wealthy 150% (common calculator spacing; 125% sat too close to the
+  middle to mean "wealthy").
+- **A metal always implies the one below** (Gold ≤ Silver ≤ Bronze, enforced),
+  so the grid never contradicts itself, and age is never a badge variable.
+- **Judged honestly:** at the retire age, every year lived through; half-time
+  years draw only on money within reach (taxable, cash, Roth paid-in), so a
+  total above the target that is locked in a pension does not count. Gold is not
+  judged without take-home pay, and needs real spending (pension saving is not
+  spending). Taxes, healthcare, visas and currency are named as not counted.
+- **Shown without words:** medals and stars on cards and pins; the label is the
+  hover title and screen-reader name, and an opened city spells it out. A "🏅
+  Badges" pin mode (default in the app when the age is known) and a best-badge
+  line. Medal colours are illustration tokens (`--uf-bronze`, `--uf-silver`,
+  `--uf-gold`); drawn medals can replace the discs later.
+- Rejected: one ranked league across metals and stars (the two axes do not
+  order against each other); badges per city collected as achievements (city is
+  a lens); the person's own goal as two stars (not equal for everyone).

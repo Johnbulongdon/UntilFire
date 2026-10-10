@@ -15,7 +15,8 @@ import stateTopology from "@/lib/geo/us-states.json";
 import countryTopology from "@/lib/geo/countries-110m.json";
 import { STATE_NAMES } from "@/lib/state-pages";
 import Flag from "./Flag";
-import { pinText, type ExploreCity, type Freedom, type PinMode } from "@/lib/explore";
+import { pinText, type Badges, type ExploreCity, type Freedom, type Metal, type PinMode } from "@/lib/explore";
+import { MedalRow, METAL_MEANS, METAL_NAME, STAR_LIFE } from "./Medal";
 
 type Named = { name: string };
 const st = stateTopology as unknown as Topology<{ states: GeometryCollection<Named> }>;
@@ -66,15 +67,17 @@ function taxFact(c: ExploreCity) {
   return lo === hi ? `~${lo}% tax` : `${lo}–${hi}% tax`;
 }
 
-export default function ExploreCard({ city, rank, mode, money, freedom, star, onStar, selected, onSelect, actions }: {
+export default function ExploreCard({ city, rank, mode, money, freedom, badges = null, retireAge = "59½", star, onStar, selected, onSelect, actions }: {
   city: ExploreCity; rank: number; mode: PinMode; freedom: Freedom | null; star: boolean;
+  /** Freedom badges for this city (D-67), shown in badge mode. */
+  badges?: Badges | null; retireAge?: string;
   /** A USD amount in your currency, in full. */
   money: (usd: number) => string;
   onStar: () => void; selected: boolean; onSelect: () => void;
   /** Shown inside the card once it is chosen: open its page, plan for it. */
   actions?: React.ReactNode;
 }) {
-  const badge = mode === "monthly" ? money(city.monthlyUSD) : `${mode === "year" ? "🏁" : "🎂"} ${pinText(city, mode, freedom)}`;
+  const badge = mode === "monthly" ? money(city.monthlyUSD) : mode === "badge" ? pinText(city, mode, freedom, undefined, badges) : `${mode === "year" ? "🏁" : "🎂"} ${pinText(city, mode, freedom)}`;
   const other = mode === "monthly" ? (freedom ? `🏁 ${Math.floor(freedom.at)}` : null) : `${money(city.monthlyUSD)}/mo`;
   const fact = taxFact(city);
   // Compact (D-58): name and badge on one line, the facts on the next, so a column shows six or seven places.
@@ -88,7 +91,9 @@ export default function ExploreCard({ city, rank, mode, money, freedom, star, on
         <button type="button" onClick={onStar} aria-label={star ? `Unstar ${city.name}` : `Star ${city.name}`} aria-pressed={star}
           style={{ pointerEvents: "auto", border: 0, background: "transparent", padding: 0, cursor: "pointer", fontSize: 18, lineHeight: 1, color: star ? "var(--uf-sun)" : "#fff" }}>{star ? "★" : "☆"}</button>
         <span style={{ font: "600 20px var(--uf-font-display, Fraunces), Georgia, serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{city.name}</span>
-        <span style={{ marginLeft: "auto", ...mono, fontSize: 15, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: "#087D69", color: "#fff", whiteSpace: "nowrap", textShadow: "none" }}>{badge}{mode === "monthly" && <span style={{ fontSize: 11, opacity: 0.85 }}>/mo</span>}</span>
+        {mode === "badge" && badges
+          ? <span style={{ marginLeft: "auto", pointerEvents: "auto", textShadow: "none" }}><MedalRow badges={badges} size={22} retireAge={retireAge} /></span>
+          : <span style={{ marginLeft: "auto", ...mono, fontSize: 15, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: "#087D69", color: "#fff", whiteSpace: "nowrap", textShadow: "none" }}>{badge}{mode === "monthly" && <span style={{ fontSize: 11, opacity: 0.85 }}>/mo</span>}</span>}
       </div>
       <div style={{ position: "absolute", left: 12, right: 12, bottom: 12, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", fontSize: 12, pointerEvents: "none", textShadow: "0 1px 3px #0008" }}>
         <span style={{ opacity: 0.8, ...mono }}>#{rank}</span>
@@ -97,6 +102,14 @@ export default function ExploreCard({ city, rank, mode, money, freedom, star, on
         {fact && <span style={{ opacity: 0.9 }}>🧾 {fact}</span>}
       </div>
     </div>
+    {/* Opened in badge mode: the medals in words (D-67). */}
+    {selected && mode === "badge" && badges && <div style={{ display: "grid", gap: 6, padding: "0 12px 10px", fontSize: 12.5 }}>
+      {(["bronze", "silver", "gold"] as Metal[]).map((m) => <div key={m} style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+        <b style={{ minWidth: 92, color: `var(--uf-${m})` }}>{METAL_NAME[m]} {"★".repeat(badges[m]) || "—"}</b>
+        <span style={{ opacity: 0.92 }}>{METAL_MEANS[m]}: {m === "gold" && !badges.goldJudged ? "add your take-home to see it" : badges[m] ? `${STAR_LIFE[badges[m]].toLowerCase()} by ${retireAge}` : `not by ${retireAge}`}</span>
+      </div>)}
+      <span style={{ opacity: 0.75, fontSize: 11.5 }}>★ frugal 75% · ★★ medium · ★★★ wealthy 150% of the typical cost. Taxes, healthcare, visas and currency there are not counted.</span>
+    </div>}
     {selected && actions && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "0 12px 12px" }}>{actions}</div>}
   </div>;
 }

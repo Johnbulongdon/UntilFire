@@ -3,7 +3,7 @@
  * room for each other on the map.
  */
 import assert from "node:assert/strict";
-import { freedomIn, pinText, placePins, pinWidth, countryPins } from "../lib/explore-pins.ts";
+import { freedomIn, pinText, placePins, pinWidth, countryPins, freedomBadges, bestBadge } from "../lib/explore-pins.ts";
 import { calcFIRE } from "../lib/fire/strategies/traditional.ts";
 
 let n = 0;
@@ -72,6 +72,46 @@ ok("pills stay inside the frame", () => {
   const w = pinWidth("$2.3k");
   const [edge] = placePins([{ key: "a", x: 3, y: 150, width: w }], { width: 400, height: 300 });
   assert.equal(edge.side, "right");
+});
+
+// D-67: freedom badges, judged by 59½ for everyone.
+const saver = { saved: 190000, monthlySaving: 2125, monthlyIncome: 6434, age: 28, realReturn: 0.05 };
+ok("no age, no badges: there is nothing to judge by", () => {
+  assert.equal(freedomBadges({ annualUSD: 36000 }, { ...saver, age: undefined }), null);
+});
+ok("metals never break their order, for any plan and city", () => {
+  for (const saved of [0, 50000, 190000, 600000]) for (const monthlySaving of [0, 800, 2500]) for (const age of [25, 40, 55]) for (const annualUSD of [12000, 36000, 80000]) {
+    const b = freedomBadges({ annualUSD }, { saved, monthlySaving, monthlyIncome: 6000, age, realReturn: 0.05 })!;
+    assert.ok(b.gold <= b.silver && b.silver <= b.bronze && b.bronze <= 3, JSON.stringify({ saved, monthlySaving, age, annualUSD, b }));
+  }
+});
+ok("a cheaper city never earns fewer stars", () => {
+  const dear = freedomBadges({ annualUSD: 58000 }, saver)!, cheap = freedomBadges({ annualUSD: 18000 }, saver)!;
+  for (const m of ["bronze", "silver", "gold"] as const) assert.ok(cheap[m] >= dear[m], m);
+});
+ok("coasting: what is saved today grows to the target by 59½ with nothing added", () => {
+  const coast = freedomBadges({ annualUSD: 18000 }, saver)!;
+  assert.equal(coast.silver, 3, "190k at 5% for 31.5 years covers 150% of 18k x 25");
+  assert.equal(freedomBadges({ annualUSD: 77500 }, saver)!.silver, 0);
+});
+ok("without take-home, Gold is not judged rather than guessed", () => {
+  const b = freedomBadges({ annualUSD: 16000 }, { ...saver, monthlyIncome: undefined })!;
+  assert.equal(b.goldJudged, false); assert.equal(b.gold, 0);
+});
+ok("half time draws on money within reach: locked until 59½, it cannot", () => {
+  const open = freedomBadges({ annualUSD: 12000 }, { ...saver, saved: 400000 })!;
+  const locked = freedomBadges({ annualUSD: 12000 }, { ...saver, saved: 400000, reachable: 5000 })!;
+  assert.ok(open.gold > 0 && locked.gold === 0, JSON.stringify({ open, locked }));
+});
+ok("half time is judged against spending, not take-home less saving: pension saving is not spending", () => {
+  const withPension = { ...saver, monthlySaving: 5833 }; // includes pension paid before take-home
+  assert.ok(freedomBadges({ annualUSD: 16000 }, withPension)!.gold > 0, "spending guessed as $601 a month");
+  assert.equal(freedomBadges({ annualUSD: 16000 }, { ...withPension, monthlySpend: 4309 })!.gold, 0);
+});
+ok("a pin shows the best metal with its stars", () => {
+  assert.equal(pinText({ monthlyUSD: 1500 }, "badge", null, undefined, { bronze: 3, silver: 2, gold: 0, goldJudged: true }), "🥈★★");
+  assert.equal(pinText({ monthlyUSD: 1500 }, "badge", null, undefined, { bronze: 0, silver: 0, gold: 0, goldJudged: true }), "🔒");
+  assert.deepEqual(bestBadge({ bronze: 3, silver: 1, gold: 1, goldJudged: true }), { metal: "gold", stars: 1 });
 });
 
 console.log(`\nExplore checks passed: ${n}`);

@@ -281,7 +281,7 @@ export interface DataExportedProperties extends BaseFunnelProperties {
 
 /** Explore (D-58). No city names or amounts: what was used, not what was looked at. */
 export interface ExploreViewedProperties extends BaseFunnelProperties { has_plan: boolean }
-export interface ExploreCityOpenedProperties extends BaseFunnelProperties { mode: 'monthly' | 'year' | 'age' }
-export interface ExploreModeChangedProperties extends BaseFunnelProperties { mode: 'monthly' | 'year' | 'age' }
+export interface ExploreCityOpenedProperties extends BaseFunnelProperties { mode: 'monthly' | 'year' | 'age' | 'badge' }
+export interface ExploreModeChangedProperties extends BaseFunnelProperties { mode: 'monthly' | 'year' | 'age' | 'badge' }
 export interface ExploreStarredProperties extends BaseFunnelProperties { starred: boolean }
 export interface FreedomReportExportedProperties extends BaseFunnelProperties { format: 'page' | 'poster' | 'timeline' | 'reddit'; branded: boolean }

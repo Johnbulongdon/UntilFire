@@ -22,7 +22,71 @@ export interface ExplorePlan {
   targetMultiple?: number;
   /** The currency the numbers were entered in, for showing money back (amounts here are USD). */
   currency?: string;
+  /** Take-home a month, USD: half-time pay for the Gold badge (D-67). Unknown, Gold is not judged. */
+  monthlyIncome?: number;
+  /** Spending a month today, USD. Unset, take-home less saving (right only when saving is all from take-home). */
+  monthlySpend?: number;
+  /** Of `saved`, what can be drawn before the pension opens (taxable, cash, Roth paid-in). Unset, all of it. */
+  reachable?: number;
+  /** The age badges are judged by: the pension opens. 59½ unless the plan says otherwise. */
+  retireAge?: number;
+  /** Target per dollar of spending for badges: 1 ÷ withdrawal rate, never scaled by lifestyle (D-67). */
+  withdrawalMultiple?: number;
 }
+
+/**
+ * Freedom badges (D-67): for each city, how you could get there and how
+ * you could live, judged by the same age for everyone (when the pension
+ * opens, 59½ by default). Metal is the means, each harder than the last:
+ * Bronze keeps working full time, Silver stops saving now and just covers
+ * costs (Coast FIRE), Gold works half time from now with savings covering
+ * the gap (Barista FIRE). Stars are the life once free, as a share of the
+ * city's typical cost: 1 frugal (75%), 2 medium (100%), 3 wealthy (150%).
+ * Stars count the levels reached, so a metal always implies the one below.
+ */
+export type Metal = "bronze" | "silver" | "gold";
+export type Badges = Record<Metal, number> & { goldJudged: boolean };
+export const BADGE_LIFE = [0.75, 1, 1.5] as const;
+export const BADGE_RETIRE_AGE = 59.5;
+
+/** Whether the means has the target by the retire age without running out of reachable money on the way. */
+function reaches(plan: ExplorePlan, target: number, means: Metal): boolean {
+  const years = (plan.retireAge ?? BADGE_RETIRE_AGE) - (plan.age ?? 0);
+  if (years < 0) return plan.saved >= target;
+  const r = plan.realReturn ?? REAL_RETURN;
+  // Gold's yearly flow: half the take-home less today's spending (take-home less saving), often negative.
+  const flow = means === "bronze" ? plan.monthlySaving * 12
+    : means === "silver" ? 0
+    : ((plan.monthlyIncome ?? 0) * 0.5 - (plan.monthlySpend ?? (plan.monthlyIncome ?? 0) - plan.monthlySaving)) * 12;
+  let reach = Math.min(plan.saved, plan.reachable ?? plan.saved), locked = plan.saved - reach;
+  // Judged at the retire age, every year lived through: money above the target but
+  // locked in a pension cannot pay for the half-time years before it opens.
+  for (let y = 0; y < years; y++) {
+    if (flow < 0) { reach += flow; if (reach < 0) return false; } // withdrawn at the start of the year (D-65, D-66)
+    reach = reach * (1 + r) + Math.max(flow, 0);
+    locked *= 1 + r;
+  }
+  return reach + locked >= target;
+}
+
+/** A city's badges for a plan, or null without an age to judge by. */
+export function freedomBadges(city: Pick<PinCity, "annualUSD">, plan: ExplorePlan): Badges | null {
+  if (plan.age == null) return null;
+  const multiple = plan.withdrawalMultiple ?? 25;
+  const stars = (m: Metal) => BADGE_LIFE.filter((f) => reaches(plan, city.annualUSD * f * multiple, m)).length;
+  const goldJudged = (plan.monthlyIncome ?? 0) > 0;
+  const bronze = stars("bronze"), silver = Math.min(stars("silver"), bronze);
+  // Gold sits above Silver: half-time pay that out-earns your costs is saving, not Barista FIRE.
+  return { bronze, silver, gold: goldJudged ? Math.min(stars("gold"), silver) : 0, goldJudged };
+}
+
+/** The highest metal with any stars, for a pin. */
+export function bestBadge(b: Badges | null): { metal: Metal; stars: number } | null {
+  if (!b) return null;
+  for (const m of ["gold", "silver", "bronze"] as Metal[]) if (b[m] > 0) return { metal: m, stars: b[m] };
+  return null;
+}
+export const MEDAL: Record<Metal, string> = { bronze: "🥉", silver: "🥈", gold: "🥇" };
 
 export interface Freedom {
   years: number;
@@ -41,12 +105,13 @@ export function freedomIn(city: Pick<PinCity, "annualUSD">, plan: ExplorePlan, n
   return { years, at, age: plan.age != null ? Math.round(plan.age + years) : null }; // rounded, as freedomAgeAt (D-65)
 }
 
-export type PinMode = "monthly" | "year" | "age";
+export type PinMode = "monthly" | "year" | "age" | "badge";
 
 /** What a pin or badge says in each mode. Short: pins are small. */
-export function pinText(city: Pick<PinCity, "monthlyUSD">, mode: PinMode, freedom: Freedom | null, money?: (usd: number) => string): string {
+export function pinText(city: Pick<PinCity, "monthlyUSD">, mode: PinMode, freedom: Freedom | null, money?: (usd: number) => string, badges?: Badges | null): string {
   // Money in your currency when the page passes a formatter; USD otherwise.
   if (mode === "monthly") return money ? money(city.monthlyUSD) : `$${(city.monthlyUSD / 1000).toFixed(1)}k`;
+  if (mode === "badge") { const b = bestBadge(badges ?? null); return b ? `${MEDAL[b.metal]}${"★".repeat(b.stars)}` : "🔒"; }
   if (!freedom) return "—";
   return mode === "year" ? `${Math.floor(freedom.at)}` : freedom.age != null ? `${freedom.age}` : "—";
 }

@@ -10,7 +10,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { readExplorePlan, saveExplorePlan } from "@/lib/explore-store";
-import { EXPLORE_CITIES, freedomIn, type ExplorePlan, type PinMode } from "@/lib/explore";
+import { BADGE_RETIRE_AGE, EXPLORE_CITIES, bestBadge, freedomBadges, freedomIn, MEDAL, type ExplorePlan, type PinMode } from "@/lib/explore";
+import { ageLabel } from "@/lib/plan-settings";
 import { FALLBACK_RATES, getCurrencySymbol } from "@/lib/currency";
 import { formatUSDInCurrency } from "@/lib/money";
 import { trackExploreCityOpened, trackExploreModeChanged, trackExplorePlanStarted, trackExploreStarred, trackExploreViewed } from "@/lib/analytics";
@@ -26,15 +27,15 @@ const chip = (on: boolean): React.CSSProperties => ({ fontSize: 13, fontWeight: 
   background: on ? "var(--uf-ink)" : "var(--uf-card)", color: on ? "var(--uf-card)" : "var(--uf-ink)" });
 
 function PlanFields({ onDone, currency, rate }: { onDone: (p: ExplorePlan) => void; currency: string; rate: number }) {
-  const [saved, setSaved] = useState(""), [monthly, setMonthly] = useState(""), [age, setAge] = useState("");
+  const [saved, setSaved] = useState(""), [monthly, setMonthly] = useState(""), [age, setAge] = useState(""), [income, setIncome] = useState("");
   const num = (s: string) => Number(s.replace(/[^\d.]/g, ""));
   const field = (label: string, value: string, set: (v: string) => void, ph: string) => <label style={{ display: "grid", gap: 4, fontSize: 12, fontWeight: 700, minWidth: 0 }}>{label}
     <input inputMode="decimal" value={value} placeholder={ph} onChange={e => set(e.target.value)} style={{ font: "600 15px var(--uf-font-mono)", padding: "8px 10px", borderRadius: 10, border: "1px solid var(--uf-border-2)", background: "var(--uf-bg)", color: "var(--uf-ink)", width: "100%", boxSizing: "border-box" }} /></label>;
   const sym = getCurrencySymbol(currency);
   // Typed in your currency, kept in USD like every city cost.
-  return <form onSubmit={e => { e.preventDefault(); if (monthly) onDone({ saved: num(saved) / rate, monthlySaving: num(monthly) / rate, age: age ? num(age) : undefined, currency }); }}
-    style={{ display: "grid", gridTemplateColumns: "1fr 1fr 0.6fr auto", gap: 8, alignItems: "end", background: "var(--uf-card)", borderRadius: 14, padding: 12 }}>
-    {field(`Saved (${sym})`, saved, setSaved, "")}{field(`Saving / mo (${sym})`, monthly, setMonthly, "")}{field("Age (optional)", age, setAge, "")}
+  return <form onSubmit={e => { e.preventDefault(); if (monthly) onDone({ saved: num(saved) / rate, monthlySaving: num(monthly) / rate, age: age ? num(age) : undefined, monthlyIncome: income ? num(income) / rate : undefined, currency }); }}
+    style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 8, alignItems: "end", background: "var(--uf-card)", borderRadius: 14, padding: 12 }}>
+    {field(`Saved (${sym})`, saved, setSaved, "")}{field(`Saving / mo (${sym})`, monthly, setMonthly, "")}{field("Age (optional)", age, setAge, "")}{field(`Take-home / mo (${sym}, optional)`, income, setIncome, "")}
     <button type="submit" disabled={!monthly} style={{ ...chip(true), background: "var(--uf-green)", border: 0, opacity: monthly ? 1 : 0.5 }}>Show my year</button>
   </form>;
 }
@@ -95,7 +96,8 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // In the app, your plan's numbers win over anything saved in the browser.
-  useEffect(() => { if (appPlan) { setPlan(appPlan); setMode(m => (m === "monthly" ? "year" : m)); } }, [appPlan]);
+  // In the app with an age, open on the badges (D-67); otherwise on the year.
+  useEffect(() => { if (appPlan) { setPlan(appPlan); setMode(m => (m === "monthly" ? (appPlan.age != null ? "badge" : "year") : m)); } }, [appPlan]);
 
   const currency = displayCurrency ?? plan?.currency ?? "USD";
   const rates = displayRates ?? FALLBACK_RATES;
@@ -103,6 +105,19 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
   const money = useMemo(() => (n: number) => formatUSDInCurrency(n, currency, rates), [currency, rates]);
   const moneyShort = useMemo(() => (n: number) => formatUSDInCurrency(n, currency, rates, { compact: true }), [currency, rates]);
   const freedom = useMemo(() => new Map(EXPLORE_CITIES.map(c => [c.key, plan ? freedomIn(c, plan) : null])), [plan]);
+  // Freedom badges (D-67): judged by the same age for everyone, so they need yours.
+  const badges = useMemo(() => new Map(EXPLORE_CITIES.map(c => [c.key, plan ? freedomBadges(c, plan) : null])), [plan]);
+  const retireAge = ageLabel(plan?.retireAge ?? BADGE_RETIRE_AGE);
+  const best = useMemo(() => {
+    let top: { key: string; rank: number } | null = null;
+    for (const c of EXPLORE_CITIES) { const b = bestBadge(badges.get(c.key) ?? null); if (!b) continue;
+      const rank = ({ bronze: 0, silver: 3, gold: 6 } as const)[b.metal] + b.stars; if (!top || rank > top.rank) top = { key: c.key, rank }; }
+    if (!top) return null;
+    const badge = bestBadge(badges.get(top.key) ?? null)!;
+    // Many cities share the top badge: say how many, and name the cheapest as an example.
+    const same = EXPLORE_CITIES.filter(c => { const b = bestBadge(badges.get(c.key) ?? null); return b && b.metal === badge.metal && b.stars === badge.stars; });
+    return { city: same.sort((a, b) => a.annualUSD - b.annualUSD)[0], badge, count: same.length };
+  }, [badges]);
   const filtered = useMemo(() => EXPLORE_CITIES
     .filter(c => (onlyStarred ? starred.has(c.key) : view === "all" || c.us === (view === "us")) && (!noTax || c.noIncomeTax))
     .sort((a, b) => a.monthlyUSD - b.monthlyUSD), [view, onlyStarred, starred, noTax]);
@@ -140,13 +155,13 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
       ? <button type="button" onClick={() => { onPlanFor(chosen.key); trackExplorePlanStarted(); }} className="uf-explore-action uf-explore-action-main" style={{ cursor: "pointer" }}>Plan for {chosen.name}</button>
       : <Link href={`/?start=onboarding&city=${encodeURIComponent(chosen.key)}&source=explore`} onClick={() => trackExplorePlanStarted()} className="uf-explore-action uf-explore-action-main">Plan {chosen.name} →</Link>}
   </>;
-  const modes: [PinMode, string, boolean][] = [["monthly", `${getCurrencySymbol(currency)} / month`, true], ["year", "🏁 Year", !!plan], ["age", "🎂 Age", plan?.age != null]];
+  const modes: [PinMode, string, boolean][] = [["monthly", `${getCurrencySymbol(currency)} / month`, true], ["year", "🏁 Year", !!plan], ["age", "🎂 Age", plan?.age != null], ["badge", "🏅 Badges", plan?.age != null]];
   return <div className="uf-explore" ref={box} style={boxHeight ? { height: boxHeight } : undefined}>
     <div className="uf-explore-head">
       {!appPlan && <h1 className="uf-t-display" style={{ margin: 0, fontSize: "clamp(26px, 4vw, 34px)" }}>Where could you retire?</h1>}
       <div role="radiogroup" aria-label="Pins show" style={{ display: "inline-flex", gap: 2, padding: 3, borderRadius: 99, background: "var(--uf-card)", justifySelf: "start" }}>
         {modes.map(([m, label, can]) => <button key={m} type="button" role="radio" aria-checked={mode === m} disabled={!can} onClick={() => changeMode(m)}
-          title={can ? undefined : m === "age" ? "Add your age below" : "Add your numbers below"}
+          title={can ? undefined : m === "age" || m === "badge" ? "Add your age below" : "Add your numbers below"}
           style={{ ...chip(mode === m), border: 0, opacity: can ? 1 : 0.45, cursor: can ? "pointer" : "default" }}>{label}</button>)}
       </div>
       {plan && !editing
@@ -157,6 +172,9 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
           ? <PlanFields onDone={savePlan} currency={currency} rate={rate} />
           : <button type="button" onClick={() => setEditing(true)} style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left", border: "1px solid var(--uf-border)", borderRadius: 12, background: "var(--uf-card)", color: "var(--uf-ink)", padding: "10px 12px", font: "inherit", fontSize: 14, cursor: "pointer" }}>
               <span aria-hidden>🏁</span><span style={{ flex: 1 }}>Add your numbers to see the year each city sets you free</span><b style={{ color: "var(--uf-green)" }}>Add →</b></button>}
+      {mode === "badge" && best && <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontSize: 13, background: "var(--uf-card)", borderRadius: 12, padding: "8px 12px" }}>
+        <b>Best badge</b><span>{MEDAL[best.badge.metal]}{"★".repeat(best.badge.stars)}</span><span>{best.count > 1 ? `in ${best.count} cities, like ${best.city.name}` : `in ${best.city.name}`}</span>
+        <span style={{ color: "var(--uf-ink-3)", marginLeft: "auto" }}>by {retireAge} · hover a medal to read it</span></div>}
       <div className="uf-explore-chips">
         <button type="button" style={chip(view === "all" && !onlyStarred)} onClick={() => { setView("all"); setOnlyStarred(false); }}>🌐 All</button>
         <button type="button" style={chip(view === "us" && !onlyStarred)} onClick={() => { setView("us"); setOnlyStarred(false); }}><Flag emoji="🇺🇸" size={12} /> US</button>
@@ -170,12 +188,12 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
           <span>{list.length} {list.length === 1 ? "city" : "cities"} in view</span>
           <button type="button" onClick={() => setAllAnyway(true)} style={{ border: 0, background: "none", color: "var(--uf-green)", fontWeight: 700, cursor: "pointer", font: "inherit" }}>Show all</button></div>}
         {list.length === 0 && <p style={{ color: "var(--uf-ink-2)" }}>{onlyStarred ? "Star a city to keep it here and on the map." : "No cities match."}</p>}
-        {list.slice(0, shown).map((c, i) => <ExploreCard key={c.key} city={c} rank={i + 1} mode={mode} money={money} freedom={freedom.get(c.key) ?? null} star={starred.has(c.key)}
+        {list.slice(0, shown).map((c, i) => <ExploreCard key={c.key} city={c} rank={i + 1} mode={mode} money={money} freedom={freedom.get(c.key) ?? null} badges={badges.get(c.key) ?? null} retireAge={retireAge} star={starred.has(c.key)}
           onStar={() => toggleStar(c.key)} selected={selected === c.key} onSelect={() => choose(c.key, "list")} actions={actions} />)}
         {list.length > shown && <button type="button" onClick={() => setShown(n => n + 48)} style={{ ...chip(false), justifySelf: "center" }}>Show {Math.min(48, list.length - shown)} more of {list.length}</button>}
     </div>
     <div className="uf-explore-mapwrap">
-      <ExploreMap cities={onlyStarred || noTax ? filtered : EXPLORE_CITIES} focus={view} mode={mode} money={moneyShort} freedom={freedom} starred={starred} selected={selected} onSelect={choose} height={mapHeight} flyTo={flyTo} onView={onView} />
+      <ExploreMap cities={onlyStarred || noTax ? filtered : EXPLORE_CITIES} focus={view} mode={mode} money={moneyShort} freedom={freedom} badges={badges} starred={starred} selected={selected} onSelect={choose} height={mapHeight} flyTo={flyTo} onView={onView} />
       <p title="Typical household spending per city. Your year keeps your savings as they are and retires on each city's cost at your way of spending." style={{ fontSize: 12, color: "var(--uf-ink-2)", margin: "8px 2px 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Typical household spending, in {currency}, at your way of spending.</p>
     </div>
   </div>;
