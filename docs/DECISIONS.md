@@ -2376,3 +2376,56 @@ city", so they live in Explore.
 - Rejected: one ranked league across metals and stars (the two axes do not
   order against each other); badges per city collected as achievements (city is
   a lens); the person's own goal as two stars (not equal for everyone).
+
+### D-68 — October 10: Plan → Compare, a freedom ladder of working less
+**Status:** Superseded by D-69 before shipping. Kept for why: fixed shares of
+pay (4 days at 80%) are assumptions people's lives don't fit, and the
+questions people bring (college for the kids, a break, a home) are personal. Designed with the founder on 2026-10-10 from Reddit FIRE
+research: the most-asked question after "when am I free" is "could I work less
+now, and what would it cost".
+- **A ladder, worked out before any tap:** 4 days, 3 days, half time, just cover
+  your costs (Coast), stop working. Each rung shows the earliest age you could
+  switch and still be free by the age the pension opens (the plan's access age,
+  else the country's), with the cost against your own freedom date. Rungs open
+  from now are teal with a ✓; the count ("1/5 open from now") is the reward.
+- **Same engine as the date (D-66):** pay and pension contributions scale by
+  the share, a year short draws on savings, and a rung that runs out of money
+  you can reach before the pension opens says "not by" that age, never a fake
+  date. Stopping work lives on the goal spending, not today's (audit fix).
+- **Costs from exact dates,** one decimal, so rounding ages never hides a
+  change. Lower taxes on lower pay are not counted, named so it leans cautious.
+- **Detail:** your plan against the path, taken from savings, year by year;
+  save up to six, marked when your plan changes since. Spend differently once
+  free sits below; living elsewhere links to Explore badges (D-67), which
+  answer the city question.
+- Rejected: buttons to run each path (results must show before a tap); city
+  inside Compare (Explore owns it); "unlock" for retiring earlier than the
+  pension age (that is a choice, not an unlock).
+- Open: whether the base plan should also draw on savings when spending
+  exceeds pay (it still clamps); changes live dates, so it waits on the founder.
+
+### D-69 — October 10: Plan → Compare, life changes tried on top of your plan
+**Status:** Active. Designed with the founder on 2026-10-10, borrowing the
+interaction from ProjectionLab's "What if" mode without its depth.
+- **A change is the one building block,** in the person's own numbers: work
+  less (their own take-home), a break, kids & college, a home, side income, a
+  one-off cost, a windfall, moving, or custom. Templates only fill a starting
+  value from the person's numbers; none is an assumption the engine relies on.
+- **Engine (D-66, extended):** a list of dated changes. Work shares multiply; a
+  set take-home or spending replaces today's; extra income and costs add on
+  top; one-offs land in their year. A year short draws on savings in order,
+  and running out of money within reach before the pension opens has no date.
+- **Milestones, not only years:** a change can start when you reach Coast or
+  end when you're free. "Until free" moves the date it ends at, so it is solved
+  by repeating until the years stop moving.
+- **A layer over your plan:** your plan dashed, the changed plan solid, the
+  milestones it moved lit. Each change shows its own cost (the plan without it),
+  with a note that costs interact. Discard, save as a what-if, or (next) use as
+  your plan, with a confirm and the old plan kept.
+- Saved what-ifs live with the profile (up to six); analytics records only the
+  action, never amounts, ages, years or names.
+- Not modelled: the value of a home bought; lower taxes on lower pay. Named in
+  the UI where they matter.
+- Rejected: the D-68 ladder (fixed shares); a separate builder detached from
+  the plan; ProjectionLab's breadth (dozens of charts, Monte Carlo) before the
+  basics are fast.

@@ -43,6 +43,7 @@ Money                         actual finances and operational planning
 
 Plan                          long-term projections and scenarios
   ├ Freedom Date
+  ├ Compare                   what if: life changes on your plan (D-69)
   ├ Scenarios
   ├ Goals
   ├ Contributions

@@ -8,6 +8,14 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-10
 
+### What if…
+- New in Plan: Compare. Try life changes on top of your plan, in your own
+  numbers: work less, take a break, pay for college, buy a home, a side income,
+  a windfall or a one-off cost. See your new freedom date against your plan,
+  what each change costs, and what comes out of savings year by year.
+- Changes can start when you reach Coast or end when you're free, and move
+  with your plan. Save the what-ifs you want to come back to.
+
 ### Freedom badges in Explore
 - Turn on 🏅 Badges in Explore to see, for every city, how you could be free
   by 59½: 🥉 keep working full time, 🥈 stop saving now, or 🥇 work half time.

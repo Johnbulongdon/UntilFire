@@ -461,6 +461,13 @@ tools get used. Counts and enums only; no amounts, merchants or dates.
 - `funnel_explore_plan_started`: "Plan {city}" into the calculator. No properties.
 - Never city names, amounts, ages or years: what was used, not what was looked at.
 
+### `funnel_plan_compare` (D-69)
+
+- Plan → Compare, life changes on top of the plan. `action` is `added` (a
+  change added), `saved` (a what-if saved), `used` (made the plan) or
+  `discarded`.
+- Never ages, years, dates, amounts or what a change is called.
+
 ### `funnel_freedom_report_exported` (D-60)
 
 - **Where**: `app/dashboard/FreedomReport.tsx`, on Save as PDF, Download PNG
