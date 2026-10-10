@@ -53,7 +53,9 @@ import { CardInventory, DashSlot, useCardSort } from "./DashboardCustomise";
 import { defaultLayout, normaliseLayout, setCard, type DashboardLayout } from "@/lib/dashboard-layout";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
-import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened, trackFreedomReportExported } from "@/lib/analytics";
+import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened, trackFreedomReportExported, trackPlanCompare } from "@/lib/analytics";
+import WhatIf from "./WhatIf";
+import type { EngineChange, LifeVersion } from "@/lib/life-changes";
 import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
@@ -361,7 +363,7 @@ function calcProjection({
   targetMonthlyExpenses,
   taxEnabled = false, retirementTaxRate = 0, rothPct = 0,
   retirementAnnualSpend = 0, payGrowth = 0, employerAnnual = 0, pensionAnnual = 0,
-  currentAge = 0, accessAge = 0, mortgageRate = 0.065, taxFreeAnnual, taxFreeGainsLocked = true, mortgages, change,
+  currentAge = 0, accessAge = 0, mortgageRate = 0.065, taxFreeAnnual, taxFreeGainsLocked = true, mortgages, change, changes,
 }: {
   annualIncome: number; monthlyExpenses: number; k401: number;
   rothIRA: number; taxable: number; cashSavings?: number; totalDebt: number;
@@ -400,8 +402,17 @@ function calcProjection({
    * as `broke`, and that path has no freedom date.
    */
   change?: { startYear: number; endYear?: number; workShare?: number; annualIncome?: number; annualSpend?: number };
+  /**
+   * Several changes, each in its own years (Compare, D-69), applied together with `change`. Work shares
+   * multiply; a set take-home or spending replaces today's (the later one in the list wins); `addIncome`
+   * and `addSpend` add to whatever the year earns or spends (college, a side job); `once` lands in
+   * `startYear` only, positive for a windfall and negative for a one-off cost.
+   */
+  changes?: { startYear: number; endYear?: number; workShare?: number; annualIncome?: number; annualSpend?: number;
+    addIncome?: number; addSpend?: number; once?: number }[];
 }) {
   const loans = mortgages && mortgages.length > 0 ? mortgages.map((m) => ({ ...m })) : null;
+  const events: NonNullable<typeof changes> = [...(change ? [change] : []), ...(changes ?? [])];
   const annualExpenses       = monthlyExpenses * 12;
   const targetAnnualExpenses = retirementAnnualSpend > 0 ? retirementAnnualSpend
     : targetMonthlyExpenses != null ? targetMonthlyExpenses * 12 : annualExpenses;
@@ -476,8 +487,13 @@ function calcProjection({
     // is left is invested. Paying it from savings that were also invested in
     // full spent the same money twice and brought the date forward (D-32).
     // During a change (D-66), earnings and spending are the change's; outside it, today's, exactly as before.
-    const inChange = !!change && y >= change.startYear && (change.endYear == null || y < change.endYear);
-    const share    = inChange ? Math.min(1, Math.max(0, change!.workShare ?? 1)) : 1;
+    const active   = events.filter((e) => e.once == null && y >= e.startYear && (e.endYear == null || y < e.endYear));
+    const once     = events.reduce((t, e) => t + (e.once != null && e.startYear === y ? e.once : 0), 0);
+    const inChange = active.length > 0 || once !== 0;
+    const share    = active.reduce((m, e) => m * Math.min(1, Math.max(0, e.workShare ?? 1)), 1);
+    const setIncome = active.reduce<number | undefined>((v, e) => e.annualIncome ?? v, undefined);
+    const setSpend  = active.reduce<number | undefined>((v, e) => e.annualSpend ?? v, undefined);
+    const added     = active.reduce((t, e) => t + (e.addIncome ?? 0) - (e.addSpend ?? 0), 0);
     let debtPayment = 0;
     if (curDebt > 0) {
       const interest = curDebt * 0.05;
@@ -492,7 +508,7 @@ function calcProjection({
     // A mortgage paid off in an earlier year stops costing anything: its payment is saved instead.
     const freed          = loans ? loans.filter((l) => l.balance <= 0).reduce((s, l) => s + l.monthly * 12, 0) : 0;
     const changeNet      = inChange
-      ? (change!.annualIncome ?? annualIncome * pay * share) - (change!.annualSpend ?? annualExpenses) - annualMortgage + freed - debtPayment
+      ? (setIncome ?? annualIncome * pay * share) - (setSpend ?? annualExpenses) + added + once - annualMortgage + freed - debtPayment
       : 0;
     const toInvest       = inChange ? Math.max(changeNet, 0) : Math.max(annualSavings + raises + freed - debtPayment, 0);
     let need             = inChange ? Math.max(-changeNet, 0) : 0;
@@ -552,6 +568,8 @@ type FreedomArgs = {
   retirementCityCol: number; lifestyleMultiplier: number; monthlyWorkCosts?: number;
   taxEnabled: boolean; retirementTaxRate: number; rothPct: number;
   plan?: PlanSettings;
+  /** Life changes on top of the plan (Compare, D-69), already as the engine's dated changes. */
+  changes?: { startYear: number; endYear?: number; workShare?: number; annualIncome?: number; annualSpend?: number; addIncome?: number; addSpend?: number; once?: number }[];
 };
 
 /**
@@ -563,7 +581,7 @@ type FreedomArgs = {
 function projectionInputs({
   income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
   growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-  taxEnabled, retirementTaxRate, rothPct, plan,
+  taxEnabled, retirementTaxRate, rothPct, plan, changes,
 }: FreedomArgs) {
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
@@ -582,7 +600,7 @@ function projectionInputs({
     ...(({ otherDebt, mortgage }) => ({ totalDebt: otherDebt, mortgageBalance: mortgage }))(effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts })),
     mortgageMonthly,
     growthRate, withdrawalRate, targetMonthlyExpenses,
-    taxEnabled, retirementTaxRate, rothPct,
+    taxEnabled, retirementTaxRate, rothPct, changes,
   };
 }
 
@@ -4689,9 +4707,11 @@ const MONEY_SECTIONS: { label: string; tab: TabKey }[] = [
 // Plan's destinations. Two of them are sub-tab states of fire-calculator rather
 // than tabs of their own, hence the optional subTab. Feeds the sidebar sub-nav
 // and the mobile section switch — one array, per rule 6.
-type PlanSection = { label: string; tab: TabKey; subTab?: "menu" | "invest-sim" };
+type PlanSection = { label: string; tab: TabKey; subTab?: "menu" | "invest-sim" | "compare" };
 const PLAN_SECTIONS: PlanSection[] = [
   { label: "Freedom Date", tab: "fire-calculator", subTab: "menu"       },
+  // What if: life changes tried on top of your plan (D-69).
+  { label: "Compare",      tab: "fire-calculator", subTab: "compare"    },
   { label: "Scenarios",    tab: "fire-calculator", subTab: "invest-sim" },
   { label: "Goals",        tab: "goals"        },
   { label: "Contributions", tab: "contributions" },
@@ -4710,6 +4730,7 @@ type CashflowSubTab = "cashflow" | "categories" | "expected" | "budgets";
 const SUB_ICONS: Record<string, string> = {
   Transactions: "M4 7h13l-3-3M20 17H7l3 3",
   Calendar: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
+  Compare: "M8 4v16M16 4v16M3 8h5M16 16h5M3 16h5M16 8h5",
   Categories: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
   Budget: "M12 3a9 9 0 1 0 9 9h-9zM15 3.5A9 9 0 0 1 20.5 9H15z",
   Income: "M3 7h18v12H3zM8 7V5h8v2M3 12h18",
@@ -4771,7 +4792,7 @@ export default function Dashboard() {
   const [tab, setTab] = useState<TabKey>("overview");
   const [cashflowSubTab, setCashflowSubTab] = useState<CashflowSubTab>("cashflow");
   const [categoriesKey, setCategoriesKey] = useState(0);
-  const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "invest-sim">("menu");
+  const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "invest-sim" | "compare">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   // Set when a creator referred this account: its trial is 60 days, not 30 (D-27).
   const [referredTrial, setReferredTrial] = useState(false);
@@ -4887,6 +4908,8 @@ export default function Dashboard() {
   // The contribution marked as made on the Calendar (D-61): until the next one,
   // nothing more is safe to invest, so the same money is never invested twice.
   const [contributionDone, setContributionDone] = useState<{ iso: string; amount: number } | null>(null);
+  // Saved what-ifs from Plan → Compare (D-69), kept with the profile; never the plan itself.
+  const [comparisons, setComparisons] = useState<LifeVersion[]>([]);
   const mortgageBalance = useMemo(() => mortgages.reduce((s, m) => s + m.balance, 0), [mortgages]);
   const mortgageMonthly = useMemo(() => mortgages.reduce((s, m) => s + m.monthly, 0), [mortgages]);
   const [growthRate,      setGrowthRate]      = useState(REAL_RETURN);
@@ -5136,6 +5159,14 @@ export default function Dashboard() {
     monthlyWorkCosts: histWorkAvg > 0 ? histWorkAvg : undefined, taxEnabled, retirementTaxRate, rothPct, plan,
   }), [plan, effectiveIncome, effectiveExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, histWorkAvg, taxEnabled, retirementTaxRate, rothPct]);
   const planFreedom = useMemo(() => freedomProjection({ ...planFreedomInputs, growthRate }), [planFreedomInputs, growthRate]);
+  // Plan → Compare (D-69): the plan with a set of life changes, on the same engine as the date (D-66).
+  const compareSpendNow = useMemo(() => Object.entries(effectiveExpenses).filter(([k, v]) => !k.startsWith("_") && typeof v === "number")
+    .reduce((t, [, v]) => t + (v as number), 0), [effectiveExpenses]);
+  const compareRetireAge = planSettings.accessAge || pensionFor(defaultCurrency, usTaxHome).age || 60;
+  const runChanges = useCallback((changes: EngineChange[]) =>
+    freedomProjection({ ...planFreedomInputs, growthRate, changes }), [planFreedomInputs, growthRate]);
+  const compareCtx = useMemo(() => ({ thisYear: new Date().getFullYear(), currentAge: fireAge, takeHomeMonthly: effectiveIncome, spendMonthly: compareSpendNow }),
+    [fireAge, effectiveIncome, compareSpendNow]);
   const planFreedomAtDefault = useMemo(
     () => (growthRate === REAL_RETURN ? planFreedom : freedomProjection({ ...planFreedomInputs, growthRate: REAL_RETURN })),
     [planFreedomInputs, growthRate, planFreedom],
@@ -5648,6 +5679,7 @@ export default function Dashboard() {
           setTotalDebt(fp.totalDebt || 0);
           setMortgages(loadMortgages(fp));
           setMortgageTerms(fp.mortgageTerms && typeof fp.mortgageTerms === "object" ? fp.mortgageTerms : {});
+          setComparisons(Array.isArray(fp.comparisons) ? fp.comparisons.filter((c: LifeVersion) => c && typeof c.id === "string" && Array.isArray(c.changes)) : []);
           setContributionDone(fp.contributionDone && typeof fp.contributionDone.iso === "string" ? { iso: fp.contributionDone.iso, amount: Number(fp.contributionDone.amount) || 0 } : null);
           // 0.07 was the typed default every profile saved before growth could be
           // chosen (D-24), so it means "never chosen": use today's measured default.
@@ -5729,7 +5761,7 @@ export default function Dashboard() {
     saveTimer.current = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, taxEnabled, retirementTaxRate, rothPct, plan: planSettings, mortgages, mortgageTerms, contributionDone };
+      const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, taxEnabled, retirementTaxRate, rothPct, plan: planSettings, mortgages, mortgageTerms, contributionDone, comparisons };
       // Read first so this write can't clobber _custom_cats/_custom_subcats written
       // independently (and asynchronously) by useCustomCategories().
       const { data: existingRow } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
@@ -5768,7 +5800,7 @@ export default function Dashboard() {
         }
       }
     }, 1000);
-  }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, planSettings, mortgages, mortgageTerms, contributionDone]);
+  }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, planSettings, mortgages, mortgageTerms, contributionDone, comparisons]);
 
   async function refreshPlaidAccounts() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -6358,7 +6390,10 @@ export default function Dashboard() {
                       invested={planFacts.invested}
                       target={planFacts.fireTarget}
                     />
-                    {planFreedom.exactDate && <Button variant="secondary" size="sm" onClick={openReport} style={{ justifySelf: "start" }}>Share one-page plan</Button>}
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {planFreedom.exactDate && <Button variant="secondary" size="sm" onClick={openReport}>Share one-page plan</Button>}
+                      <Button variant="ghost" size="sm" onClick={() => setFireCalcSubTab("compare")}>Compare a different path ›</Button>
+                    </div>
                     {planMoves.length > 0 && (
                       <>
                         <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>What moves it most</div>
@@ -6433,6 +6468,15 @@ export default function Dashboard() {
                       onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
                     />
                   </>
+                )}
+                {fireCalcSubTab === "compare" && (
+                  <WhatIf run={runChanges} ctx={compareCtx} growth={growthRate} retireAge={compareRetireAge}
+                    m={{ money: (n) => fmt(n, defaultCurrency, rates, true), local: (n) => convertUSDAmount(n, defaultCurrency, rates),
+                      toUsd: (n) => (defaultCurrency === "USD" ? n : n / (rates[defaultCurrency] || 1)), currency: defaultCurrency }}
+                    saved={comparisons}
+                    onSave={(v) => setComparisons((prev) => [...prev.filter((x) => x.id !== v.id), v].slice(-6))}
+                    onDelete={(id) => setComparisons((prev) => prev.filter((x) => x.id !== id))}
+                    onTrack={(action) => trackPlanCompare({ action })} />
                 )}
                 {fireCalcSubTab === "invest-sim" && (
                   <InvestSimTab onBack={() => setFireCalcSubTab("menu")} />

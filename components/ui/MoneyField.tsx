@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 /** Digits and one decimal point, without leading zeros ("0140000" → "140000", "0" and "0.5" stay). */
 export function cleanAmount(text: string): string {
@@ -20,15 +20,17 @@ const format = (value: string) => {
  * field loses focus. What you type is left alone while you type, so the
  * caret never jumps and a select-all or paste replaces it cleanly.
  */
-export default function MoneyField({ value, onChange, label, placeholder = 'Other amount' }: {
+export default function MoneyField({ value, onChange, label, placeholder = 'Other amount', style }: {
   /** The amount as cleaned text; '' means not answered. */
   value: string; onChange: (value: string) => void; label: string; placeholder?: string;
+  /** Optional look, e.g. `inputStyle(true)` from Field, where no surrounding styles apply. */
+  style?: React.CSSProperties;
 }) {
   const [text, setText] = useState(() => format(value));
   const focused = useRef(false);
   // A tile pick or a converted amount shows up unless you are mid-edit.
   useEffect(() => { if (!focused.current) setText(format(value)); }, [value]);
-  return <input type="text" inputMode="decimal" autoComplete="off" aria-label={label} placeholder={placeholder} value={text}
+  return <input type="text" inputMode="decimal" autoComplete="off" aria-label={label} placeholder={placeholder} value={text} style={style}
     onFocus={() => { focused.current = true; }}
     onBlur={() => { focused.current = false; setText(format(value)); }}
     onChange={e => { const typed = e.target.value.replace(/[^\d.,]/g, ''); setText(typed); onChange(cleanAmount(typed)); }} />;

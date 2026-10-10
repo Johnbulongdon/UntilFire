@@ -190,5 +190,33 @@ assert.ok(rateMatters(0.03) > rateMatters(0.07), 'each mortgage is paid down at 
   assert.ok(calcProjection({ ...life, change: { startYear: 0, annualSpend: spend + 12000 } }).fireYear > base.fireYear, 'spending more now delays freedom');
 }
 
+// D-69: several changes at once, each in its own years.
+{
+  const life = { ...person, currentAge: 35, accessAge: 59.5, pensionAnnual: 10000, employerAnnual: 5000, taxFreeAnnual: 7000, taxable: 300000 };
+  const base = calcProjection(life);
+  const spend = life.monthlyExpenses * 12;
+  // The single change and the same change in the list are the same path.
+  const one = { startYear: 1, endYear: 3, workShare: 0 };
+  assert.deepEqual(calcProjection({ ...life, changes: [one] }).flows, calcProjection({ ...life, change: one }).flows, 'a change in the list matches the single change');
+  // No changes is today's plan exactly.
+  assert.deepEqual(calcProjection({ ...life, changes: [] }).data, base.data, 'an empty list changes nothing');
+  // College: a cost added for four years, on top of today's spending; the shortfall is withdrawn, not ignored.
+  const college = calcProjection({ ...life, changes: [{ startYear: 10, endYear: 14, addSpend: 200000 }] });
+  assert.ok(college.withdrawn > 0 && college.flows[9].withdrawn === 0 && college.flows[14].withdrawn === 0, 'college draws on savings only in its years');
+  assert.ok((college.fireYear ?? 99) >= base.fireYear, 'paying for college never brings freedom sooner');
+  // One-offs land once: a windfall is invested that year, a cost taken that year.
+  const gift = calcProjection({ ...life, changes: [{ startYear: 2, once: 100000 }] });
+  assert.ok(Math.abs(gift.flows[2].saved - base.flows[2].saved - 100000) < 1 && gift.flows[3].saved === base.flows[3].saved, 'a windfall is saved in its year only');
+  const car = calcProjection({ ...life, cashSavings: 0, taxable: 0, rothIRA: 0, changes: [{ startYear: 1, once: -1000000 }] });
+  assert.ok(car.broke && car.broke.year === 1 && car.fireYear === null, 'a one-off nobody can pay for breaks the path');
+  // Two at once: both apply. Four days with a side job earns the side job on top of the shorter week.
+  const both = calcProjection({ ...life, changes: [{ startYear: 0, workShare: 0.8 }, { startYear: 0, addIncome: 12000 }] });
+  const four = calcProjection({ ...life, changes: [{ startYear: 0, workShare: 0.8 }] });
+  assert.ok(both.flows[1].saved - four.flows[1].saved > 11999, 'a side job adds to four days, it does not replace it');
+  // Work shares multiply, and a set take-home or spending overrides today's.
+  const half = calcProjection({ ...life, changes: [{ startYear: 0, endYear: 1, workShare: 0.5 }, { startYear: 0, endYear: 1, workShare: 0.5 }, { startYear: 0, endYear: 1, annualSpend: spend }] });
+  assert.ok(Math.abs(half.flows[0].saved - calcProjection({ ...life, change: { startYear: 0, endYear: 1, workShare: 0.25 } }).flows[0].saved) < 1, 'two halves of the week are a quarter of it');
+}
+
 if (process.env.SHOW) for (const g of [0.05, 0.069, 0.081]) console.log(g, at(g).exactDate.toISOString().slice(0, 7));
 console.log('Plan freedom date checks passed.');

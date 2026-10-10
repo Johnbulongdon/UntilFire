@@ -59,7 +59,7 @@ retention, trust, and acquisition. Keep work bounded to the user's request.
   payments. Cashflow (Transactions, Calendar, Categories, Budget), Income,
   Net Worth, Debts, Insights.
 - **Plan:** long-term projections, assumptions, scenarios, and targets. Freedom
-  Date, Scenarios, Goals, Contributions, Explore, Citizenship, Learn.
+  Date, Compare, Scenarios, Goals, Contributions, Explore, Citizenship, Learn.
 - **Home:** synthesis and next moves, with no independent financial inputs.
   Layout customisation is allowed.
 - **Profile:** account settings, billing, household setup, and FIRE personality/type.

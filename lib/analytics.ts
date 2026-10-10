@@ -43,6 +43,7 @@ import {
   type FreedomReportExportedProperties,
   type ExploreCityOpenedProperties,
   type ExploreModeChangedProperties,
+  type PlanCompareProperties,
   type ExploreStarredProperties,
 } from './analytics-events';
 
@@ -416,6 +417,12 @@ export function trackExploreModeChanged(input: { mode: 'monthly' | 'year' | 'age
 export function trackExploreStarred(input: { starred: boolean }) {
   const props: ExploreStarredProperties = withVersion({ starred: input.starred });
   capture(FunnelEvents.EXPLORE_STARRED, props);
+}
+
+/** Plan → Compare (D-69): a change added, a what-if saved, used as the plan, or discarded. Never the numbers. */
+export function trackPlanCompare(input: { action: PlanCompareProperties['action'] }) {
+  const props: PlanCompareProperties = withVersion({ action: input.action });
+  capture(FunnelEvents.PLAN_COMPARE, props);
 }
 
 export function trackExplorePlanStarted() {
