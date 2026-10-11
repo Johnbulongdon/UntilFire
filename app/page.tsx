@@ -160,6 +160,7 @@ export default function Home() {
             <Link href="/learn/what-is-fire-financial-independence-retire-early" style={{ color: "var(--uf-teal)", fontWeight: 700, textDecoration: "none" }}>What is FIRE? →</Link>
             <Link href="/calculators" style={{ color: "var(--uf-teal)", fontWeight: 700, textDecoration: "none" }}>All calculators →</Link>
             <Link href="/pricing" style={{ color: "var(--uf-teal)", fontWeight: 700, textDecoration: "none" }}>Pricing →</Link>
+            <Link href="/vs" style={{ color: "var(--uf-teal)", fontWeight: 700, textDecoration: "none" }}>Compare UntilFire →</Link>
           </div>
         </div>
       </section>
