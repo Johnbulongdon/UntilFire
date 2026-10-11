@@ -327,7 +327,7 @@ export default function ProfileTab({
         <MoneyRow dot="#e34948" icon="🗑️" name="Delete account" meta="Removes your account, transactions and plan for good" value="Delete…" valueTone="var(--uf-neg-ink)" onClick={() => toggle("delete")}
           after={openRow === "delete" && (
             <div style={{ display: "grid", gap: 8 }}>
-              <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Type <b>{userEmail}</b> to confirm. This can&apos;t be undone.</span>
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>First cancel Pro (if it renews) and disconnect your banks in Money. Then type <b>{userEmail}</b> to confirm. This can&apos;t be undone.</span>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <input aria-label="Confirm your email" type="email" style={{ ...inputStyle, borderColor: deleteConfirm && deleteConfirm !== userEmail ? "var(--uf-neg)" : "var(--uf-border-2)" }}
                   value={deleteConfirm} onChange={(e) => { setDeleteConfirm(e.target.value); setDeleteError(""); }} placeholder={userEmail} />

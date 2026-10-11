@@ -414,6 +414,8 @@ function FooterSection() {
             ["Learn", "/learn"],
             ["Pricing", "#pricing"],
             ["FAQ", "#faq"],
+            ["Privacy", "/privacy"],
+            ["Terms", "/terms"],
           ].map(([label, href]) => (
             <a key={label} href={href} style={{ fontSize: 16, fontWeight: 600, color: "var(--uf-ink-2)", textDecoration: "none" }}>{label}</a>
           ))}

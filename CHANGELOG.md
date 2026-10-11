@@ -8,6 +8,19 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-11
 
+### Privacy policy and terms
+- New: plain-English privacy policy at /privacy and terms of use at /terms,
+  linked from the homepage footer. Both cover the website and the iOS app.
+
+### Deleting your account
+- Before an account can be deleted, a Pro subscription that would renew has
+  to be cancelled and every connected bank disconnected. Profile says so up
+  front, and the request explains what is left if anything is.
+
+### iOS app (in development)
+- A native iOS app in `mobile/`, built with Expo, signed in with the same
+  UntilFire account. Not in the App Store yet.
+
 ### Compare UntilFire
 - New: side-by-side pages for UntilFire vs ProjectionLab & Boldin, FI Calc,
   FIRECalc and Monarch Money, with a hub at /vs linked from the homepage.
