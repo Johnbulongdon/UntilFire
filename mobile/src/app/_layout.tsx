@@ -71,6 +71,7 @@ export default function RootLayout() {
           <Stack.Screen name="name" options={{ presentation: 'modal' }} />
           <Stack.Screen name="currency" options={{ presentation: 'modal' }} />
           <Stack.Screen name="import" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="household" options={{ presentation: 'modal' }} />
         </Stack>
         <AppLock />
         </AccountProvider>

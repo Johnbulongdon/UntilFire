@@ -27,6 +27,7 @@ export interface Transaction {
   transaction_type: 'expense' | 'income' | 'transfer'
   notes: string | null
   tags: string[]
+  source?: string | null
 }
 
 /** What the signed-in account holds, read the same way app/dashboard/page.tsx reads it. */
@@ -158,7 +159,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const [budgetRes, txRes, plaid, billsRes, goalsRes, snapRes, profileRes] = await Promise.all([
       supabase.from('user_budget').select('income, expenses, fire_age, fire_assets').eq('user_id', userId).maybeSingle(),
       fetchAllPages<Transaction>((from, to) => supabase.from('expenses')
-        .select('id, date, amount, refund_amount, currency, description, category, sub_category, transaction_type, notes, tags')
+        .select('id, date, amount, refund_amount, currency, description, category, sub_category, transaction_type, notes, tags, source')
         .eq('user_id', userId)
         .gte('date', since)
         .order('date', { ascending: false })

@@ -89,6 +89,7 @@ export default function Profile() {
           <Label>Account</Label>
           <Row label="Email" value={session.user.email ?? ''} first />
           <Row label="Name" value={data?.displayName || 'Add'} onPress={() => router.push('/name')} />
+          <Row label="Household" value="" onPress={() => router.push('/household')} />
           <Row label="Currency" value={data ? `${CURRENCY_NAMES[data.currency] ?? data.currency}` : '…'} onPress={() => router.push('/currency')} />
           <Row label="Sign out" value="" onPress={() => {
             haptic.warn()

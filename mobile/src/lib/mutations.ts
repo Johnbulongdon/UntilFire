@@ -237,3 +237,17 @@ export async function seedFromOnboarding(userId: string, plan: { monthlyIncome: 
 export async function saveComparisons(userId: string, list: LifeVersion[]): Promise<string | null> {
   return saveFireProfile(userId, { comparisons: list.slice(-6) })
 }
+
+/**
+ * Answer a "Worth a look" flag, as TransactionsTab's resolveFlag does: a card
+ * payment becomes a transfer; any other "no" is remembered on the row as an
+ * ok:<kind> tag so it isn't asked again. A confirmed duplicate is deleted.
+ */
+export async function resolveFlag(tx: { id: string; tags: string[] }, kind: string, confirmed: boolean): Promise<string | null> {
+  if (confirmed && kind === 'duplicate') return deleteTransaction(tx.id)
+  const patch = confirmed && kind === 'card_payment'
+    ? { transaction_type: 'transfer' }
+    : { tags: [...tx.tags.filter(g => g !== `ok:${kind}`), `ok:${kind}`] }
+  const { error } = await supabase.from('expenses').update(patch).eq('id', tx.id)
+  return error ? 'Couldn\'t save that. Please try again.' : null
+}
