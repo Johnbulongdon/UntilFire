@@ -2,6 +2,50 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
 import { getPlaidClient } from "@/lib/plaid";
 import { disconnectAllForUser, listInstitutions } from "@/lib/plaid-remove";
+import { getStripe } from "@/lib/stripe";
+import { blockerMessage, hasBlockers, willRenew, type DeletionBlockers, type StripeSubscriptionState, type SubscriptionRow } from "@/lib/account-deletion";
+
+type Admin = ReturnType<typeof adminClient>;
+
+/** What still stands in the way of deleting this account (lib/account-deletion.ts). */
+async function loadBlockers(admin: Admin, userId: string): Promise<DeletionBlockers | null> {
+  const [subRes, itemsRes] = await Promise.all([
+    admin.from("subscriptions").select("plan, status, stripe_subscription_id").eq("user_id", userId).maybeSingle(),
+    admin.from("plaid_items").select("institution_name").eq("user_id", userId),
+  ]);
+  if (subRes.error || itemsRes.error) return null;
+  const row = subRes.data as SubscriptionRow | null;
+  let live: StripeSubscriptionState | null = null;
+  if (row?.stripe_subscription_id) {
+    try {
+      const sub = await getStripe().subscriptions.retrieve(row.stripe_subscription_id);
+      live = { status: sub.status, cancel_at_period_end: sub.cancel_at_period_end };
+    } catch (err) {
+      console.error("[user/delete] stripe lookup", err);
+    }
+  }
+  return {
+    subscription: willRenew(row, live),
+    banks: (itemsRes.data ?? []).map((i) => (i.institution_name as string | null) ?? "a bank"),
+  };
+}
+
+async function userFrom(req: NextRequest, admin: Admin) {
+  const token = req.headers.get("authorization")?.replace("Bearer ", "");
+  if (!token) return null;
+  const { data: { user }, error } = await admin.auth.getUser(token);
+  return error ? null : user;
+}
+
+/** The checklist the app and website show before the delete button unlocks. */
+export async function GET(req: NextRequest) {
+  const admin = adminClient();
+  const user = await userFrom(req, admin);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const blockers = await loadBlockers(admin, user.id);
+  if (!blockers) return NextResponse.json({ error: "Couldn't check your account. Please try again." }, { status: 500 });
+  return NextResponse.json({ blockers, ready: !hasBlockers(blockers) });
+}
 
 
 export async function DELETE(req: NextRequest) {
@@ -17,7 +61,18 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Disconnect every bank at Plaid first. Deleting the user cascades away
+  // Nothing goes while a subscription would keep charging or a bank is still
+  // connected: the person undoes those first (lib/account-deletion.ts).
+  const blockers = await loadBlockers(admin, user.id);
+  if (!blockers) {
+    return NextResponse.json({ error: "Couldn't check your account, so it hasn't been deleted. Please try again." }, { status: 500 });
+  }
+  if (hasBlockers(blockers)) {
+    return NextResponse.json({ error: blockerMessage(blockers), blockers }, { status: 409 });
+  }
+
+  // A bank connected in the moment since the check above: disconnect it at
+  // Plaid before the rows go. Deleting the user cascades away
   // the access tokens, and a connection Plaid still has keeps being billed
   // and keeps its access to the bank, with nothing left to remove it.
   const { failed, readError } = await disconnectAllForUser(admin, user.id, getPlaidClient);

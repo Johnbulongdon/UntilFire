@@ -2446,3 +2446,31 @@ competitor pages.
   /vs hub linked from the homepage. Skipped for now: cFIREsim (price and login
   unverified), Empower (free, beats us on price).
 - `/vs`, not `/compare`, which is already Plan → Compare in the app.
+
+### D-71 — October 11: a native iOS app in mobile/, sharing lib/ with the website
+**Status:** Active. Founder's call, 2026-10-11.
+- **Native, not a wrapper:** Expo (expo-router, NativeWind) in `mobile/`, so it
+  feels like an Apple app and passes App Store guideline 4.2. Same Supabase
+  account and data as the website; the website's APIs for banks, deletion and
+  feedback.
+- **One copy of the maths:** the app imports pure modules from `lib/` through
+  `mobile/src/engine/index.ts`. CSV parsing moved from the import modal into
+  `lib/csv-import.ts` for this; the modal should switch to it when next touched.
+  The projection, balances and scenarios are still ported copies in the app,
+  to be moved into `lib/` (tracked in the app's road-to-launch list).
+- **Pro in the app is Apple in-app purchase** (guideline 3.1.1); bank linking
+  and widgets wait for the paid Apple developer account.
+- `mobile/` is excluded from the website's tsconfig and ESLint; it has its own.
+
+### D-72 — October 11: account deletion waits for a cancelled Pro and disconnected banks
+**Status:** Active. Founder's call, 2026-10-11.
+- `/api/user/delete` refuses (409) while a Stripe subscription will renew or a
+  bank is connected, and `GET` returns that checklist (`lib/account-deletion.ts`).
+  Stripe is asked directly, so a subscription already set to end does not block.
+- Why: deleting the account never stopped Stripe, which would keep charging;
+  and people should see their bank access end themselves.
+- The app never links to Stripe: it says to cancel Pro on untilfire.com.
+- Privacy policy and terms (/privacy, /terms) name John Ng, an individual in
+  Hong Kong, under Hong Kong law. The privacy policy lists every service that
+  handles data, Stripe included; the terms do not name Stripe.
+

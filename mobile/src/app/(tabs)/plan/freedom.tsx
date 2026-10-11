@@ -1,0 +1,142 @@
+import { router } from 'expo-router'
+import { Pressable, View } from 'react-native'
+
+import { DetailScreen } from '@/components/DetailScreen'
+import { Card, Label, ProgressTrack } from '@/components/Screen'
+import { Text } from '@/components/Text'
+import { compactMoney, money } from '@/lib/format'
+import { haptic } from '@/lib/haptics'
+import { useAccount } from '@/state/account'
+import { useFreedom } from '@/state/freedom'
+
+/**
+ * The freedom date with everything behind it. Signed in, it is the website's
+ * full projection (debts, mortgages, tax, growth, pay growth, pension access);
+ * the assumptions and goal that move it are one tap away.
+ */
+export default function Freedom() {
+  const f = useFreedom()
+  const { data } = useAccount()
+  if (!f) return null
+  const full = f.source === 'account'
+  const p = data?.profile
+  const share = f.target > 0 ? f.invested / f.target : 0
+  const pts = f.series.filter(s => s.year <= Math.max(5, Math.ceil((f.years ?? 30) + 3))).slice(0, 41)
+  const peak = Math.max(...pts.map(s => Math.max(s.invested, s.target)), 1)
+
+  return (
+    <DetailScreen back="Plan" title="Freedom date" subtitle={full ? 'The full projection, from your account' : 'A quick estimate from your onboarding answers'}>
+      <Card>
+        <Label>Work becomes optional</Label>
+        <Text className="font-display text-[44px] font-bold leading-[50px] text-teal">
+          {f.date ? f.date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : f.year ?? '65+ yrs'}
+        </Text>
+        {f.years != null && (
+          <Text className="text-[15px] text-ink-2">In {f.years < 1 ? 'under a year' : `${f.years.toFixed(1)} years`}{f.ageAtFreedom != null ? `, at ${f.ageAtFreedom}` : ''}</Text>
+        )}
+        <View className="mt-4"><ProgressTrack share={share} height={10} /></View>
+        <Text className="mt-1.5 text-[13px] text-ink-2">
+          <Text className="font-mono text-[13px] text-ink">{compactMoney(f.invested)}</Text> of <Text className="font-mono text-[13px]">{compactMoney(f.target)}</Text> FIRE number
+        </Text>
+
+        {pts.length > 1 && (
+          <>
+            <View className="mt-5 h-32 flex-row items-end" style={{ gap: 2 }}>
+              {pts.map(s => (
+                <View key={s.year} className="flex-1 justify-end" style={{ height: '100%' }}>
+                  <View className={`rounded-t ${s.invested >= s.target ? 'bg-teal' : 'bg-teal-soft'}`} style={{ height: `${Math.max(2, (s.invested / peak) * 100)}%` }} />
+                </View>
+              ))}
+            </View>
+            <View className="mt-1 flex-row justify-between">
+              <Text className="text-[11px] text-ink-3">Now</Text>
+              <Text className="text-[11px] text-ink-3">{new Date().getFullYear() + pts[pts.length - 1].year}</Text>
+            </View>
+          </>
+        )}
+        {f.bridge && f.bridge.reachable < f.bridge.needed && (
+          <Text className="mt-3 text-[13px] leading-5 text-warn">
+            You reach the number earlier, but only {compactMoney(f.bridge.reachable)} of the {compactMoney(f.bridge.needed)} needed to last until your pension opens is reachable, so the date waits for that.
+          </Text>
+        )}
+      </Card>
+
+      {full && p && data ? (
+        <>
+          <Card>
+            <View className="flex-row justify-between">
+              <Label>Planning assumptions</Label>
+              <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { haptic.tick(); router.push('/assumptions') }}><Text className="text-[13px] font-bold text-pos-ink">Edit</Text></Pressable>
+            </View>
+            <Row label="Age" value={data.age ? String(data.age) : 'Not set'} first />
+            <Row label="Where you live" value={p.cityName || 'Not set'} />
+            <Row label="Freedom priced at" value={p.retirementCityName ? `${p.retirementCityName.split(',')[0]} · ${p.lifestyleMultiplier < 1 ? 'frugal' : p.lifestyleMultiplier > 1 ? 'comfortable' : 'typical'}` : 'Today\'s spending'} />
+            <Row label="Growth after inflation" value={`${(p.growthRate * 100).toFixed(1)}%`} />
+            <Row label="Withdrawal rate" value={`${(p.withdrawalRate * 100).toFixed(1)}%`} />
+            <Row label="Tax on withdrawals" value={p.taxEnabled ? `${Math.round(p.retirementTaxRate * 100)}%${p.rothPct ? `, ${p.rothPct}% Roth` : ''}` : 'Not counted'} />
+          </Card>
+
+          <Card>
+            <View className="flex-row justify-between">
+              <Label>Your goal</Label>
+              <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { haptic.tick(); router.push('/plan-goal') }}><Text className="text-[13px] font-bold text-pos-ink">Edit</Text></Pressable>
+            </View>
+            <Row label="Spending a year once free" value={p.plan.retirementAnnualSpend ? money(p.plan.retirementAnnualSpend) : p.retirementCityCol ? money(p.retirementCityCol * p.lifestyleMultiplier) : money(f.monthlySpending * 12)} first />
+            <Row label="Pay growth" value={p.plan.payGrowth ? `${(p.plan.payGrowth * 100).toFixed(0)}% a year` : 'Flat'} />
+            <Row label="Pension opens at" value={p.plan.accessAge ? String(p.plan.accessAge) : 'No bridge check'} />
+          </Card>
+
+          <SavingSplit />
+        </>
+      ) : (
+        <Card soft>
+          <Text className="text-[14px] leading-5 text-ink-2">
+            Sign in to use the full projection: your debts, mortgages, tax, growth and pension age, the same as untilfire.com.
+          </Text>
+        </Card>
+      )}
+    </DetailScreen>
+  )
+}
+
+/** Where your saving goes (SavingSplitCard, D-59): pension before tax, employer money, tax-free first, the rest taxable. */
+function SavingSplit() {
+  const { data } = useAccount()
+  const f = useFreedom()
+  if (!data || !f || f.source !== 'account' || !f.inputs) return null
+  const plan = data.profile.plan
+  const takeHomeSaving = Math.max(0, (f.monthlyIncome - f.monthlySpending) * 12)
+  const taxFree = Math.min(takeHomeSaving, plan.taxFreeAnnual ?? 0)
+  const rows = [
+    { label: 'Pension, before tax', value: plan.pensionAnnual ?? 0, color: '#c58a4a' },
+    { label: 'Employer adds', value: plan.employerAnnual ?? 0, color: '#0E9C86' },
+    { label: 'Roth IRA, first', value: taxFree, color: '#6b5bd2' },
+    { label: 'Taxable, the rest', value: Math.max(0, takeHomeSaving - taxFree), color: '#2a78d6' },
+  ].filter(r => r.value > 0)
+  const total = rows.reduce((s, r) => s + r.value, 0)
+  if (total <= 0) return null
+  return (
+    <Card>
+      <Label>Where your saving goes, a year</Label>
+      <Text className="mt-1 font-mono text-[22px] text-ink">{money(total)}</Text>
+      <View className="mt-3 h-2.5 flex-row overflow-hidden rounded-full bg-surface-2" style={{ gap: 2 }}>
+        {rows.map(r => <View key={r.label} style={{ flex: r.value, backgroundColor: r.color }} />)}
+      </View>
+      {rows.map(r => (
+        <View key={r.label} className="mt-2 flex-row items-center justify-between">
+          <View className="flex-row items-center gap-2"><View className="h-2 w-2 rounded-full" style={{ backgroundColor: r.color }} /><Text className="text-[14px] text-ink">{r.label}</Text></View>
+          <Text className="font-mono text-[14px] text-ink">{money(r.value)}</Text>
+        </View>
+      ))}
+    </Card>
+  )
+}
+
+function Row({ label, value, first }: { label: string; value: string; first?: boolean }) {
+  return (
+    <View className={`flex-row justify-between gap-3 py-2.5 ${first ? 'mt-1' : 'border-t border-border'}`}>
+      <Text className="text-[14px] text-ink-2">{label}</Text>
+      <Text numberOfLines={1} className="flex-1 text-right text-[14px] font-semibold text-ink">{value}</Text>
+    </View>
+  )
+}
