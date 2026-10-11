@@ -6,6 +6,7 @@ import { statePages } from '@/lib/state-pages'
 import { rankingPagesList } from '@/lib/ranking-pages'
 import { regionSlugs } from '@/lib/regions'
 import { learnArticles, learnStages } from '@/lib/learn'
+import { VS_PAGES } from '@/lib/vs/pages'
 import { siteUrl } from '@/lib/site'
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -63,6 +64,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: siteUrl('/fire-number/best-states'),
       changeFrequency: 'weekly',
       priority: 0.85,
+    },
+    {
+      url: siteUrl('/vs'),
+      changeFrequency: 'monthly',
+      priority: 0.7,
     },
     {
       url: siteUrl('/learn'),
@@ -138,5 +144,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }))
 
-  return [...baseRoutes, ...articleRoutes, ...stageRoutes, ...curatedCityRoutes, ...usCityRoutes, ...countryRoutes, ...stateRoutes, ...rankingRoutes, ...regionRoutes]
+  const vsRoutes: MetadataRoute.Sitemap = VS_PAGES.map((p) => ({
+    url: siteUrl(`/vs/${p.slug}`),
+    changeFrequency: 'monthly' as const,
+    priority: 0.7,
+  }))
+
+  return [...baseRoutes, ...vsRoutes, ...articleRoutes, ...stageRoutes, ...curatedCityRoutes, ...usCityRoutes, ...countryRoutes, ...stateRoutes, ...rankingRoutes, ...regionRoutes]
 }

@@ -6,6 +6,14 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-11
+
+### Compare UntilFire
+- New: side-by-side pages for UntilFire vs ProjectionLab & Boldin, FI Calc,
+  FIRECalc and Monarch Money, with a hub at /vs linked from the homepage.
+  Each shows what you get, what it costs per year, and where each tool
+  specialises.
+
 ## 2026-10-10
 
 ### What if…

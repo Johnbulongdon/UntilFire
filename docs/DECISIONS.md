@@ -2429,3 +2429,20 @@ interaction from ProjectionLab's "What if" mode without its depth.
 - Rejected: the D-68 ladder (fixed shares); a separate builder detached from
   the plan; ProjectionLab's breadth (dozens of charts, Monte Carlo) before the
   basics are fast.
+
+### D-70 — October 11: comparison pages at /vs, UntilFire first, no outbound links
+**Status:** Active. Founder's call, 2026-10-11, modelled on monday.com's
+competitor pages.
+- **Purpose:** rank for competitor names and build trust. Visitors should see
+  we know the alternatives and stay on UntilFire, so the pages link nowhere off
+  the site. Sources stay in `lib/vs/pages.ts` with a checked date.
+- **Visual first:** a product preview in the hero, a checkmark table, three
+  "why people choose UntilFire" cards, price bars only where a rival charges,
+  a collapsed FAQ.
+- **Honest marks:** UntilFire wins first, ties (both ✓) last. A row where a
+  rival beats UntilFire stays off the table; their real strengths go in a small
+  "Where they specialise" strip, never as a false ✗.
+- Pages: ProjectionLab vs Boldin, FI Calc, FIRECalc, Monarch Money, plus the
+  /vs hub linked from the homepage. Skipped for now: cFIREsim (price and login
+  unverified), Empower (free, beats us on price).
+- `/vs`, not `/compare`, which is already Plan → Compare in the app.
