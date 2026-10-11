@@ -1,15 +1,22 @@
 import { router } from 'expo-router'
-import { useMemo } from 'react'
-import { Pressable, View } from 'react-native'
+import { useMemo, useState } from 'react'
+import { Pressable, TextInput, View } from 'react-native'
 
-import { compareNetWorth, countdownLabel, ladderViewFromPlan, NET_WORTH_BENCHMARKS, NET_WORTH_INFLATION } from '@/engine'
+import { calcPurchaseImpact, compareNetWorth, countdownLabel, formatDelay, REAL_RETURN, ladderViewFromPlan, NET_WORTH_BENCHMARKS, NET_WORTH_INFLATION } from '@/engine'
 import { upcoming } from '@/lib/bills'
 import { contributionFacts, EMPTY_PLAN } from '@/lib/contribution-facts'
+import { currencySymbol, fromInput } from '@/lib/display-currency'
 import { compactMoney, money } from '@/lib/format'
+import { thisMonth } from '@/lib/money-data'
 import { haptic } from '@/lib/haptics'
 import { netWorthOf } from '@/lib/net-worth'
 import type { AccountData } from '@/state/account'
+import { useFreedom } from '@/state/freedom'
+import { useFlags } from './WorthALook'
 
+import { colors } from '@/theme/colors'
+
+import { HouseholdCard } from './HouseholdCard'
 import { Card, Label, ProgressTrack } from './Screen'
 import { Text } from './Text'
 
@@ -35,9 +42,12 @@ export function HomeAccountCards({ data }: { data: AccountData }) {
           note={efMonths == null ? 'Set a budget' : efMonths >= 6 ? 'Healthy' : efMonths >= 1.5 ? 'Building' : 'Fragile'}
           onPress={() => router.push('/money/net-worth')} />
       </View>
+      <WorthCard data={data} />
       <FreeToSpend data={data} />
       <NextContribution data={data} />
+      <HouseholdCard />
       <Peers data={data} netWorth={nw.netWorth} />
+      <BeforeYouBuy />
     </>
   )
 }
@@ -99,6 +109,57 @@ function Peers({ data, netWorth }: { data: AccountData; netWorth: number }) {
       </Text>
       <View className="mt-3"><ProgressTrack share={c.aheadOfPct / 100} height={6} /></View>
       <Text className="mt-1.5 text-[12px] text-ink-3">Federal Reserve Survey of Consumer Finances {c.surveyYear}{c.adjustedThrough ? `, adjusted for inflation through ${c.adjustedThrough}` : ''}.</Text>
+    </Card>
+  )
+}
+
+/** Worth a look (D-31): how many of this month's rows may be making the numbers wrong; opens Transactions to answer. */
+function WorthCard({ data }: { data: AccountData }) {
+  const month = thisMonth()
+  const rows = useMemo(() => data.transactions.filter(t => t.date.startsWith(month)), [data, month])
+  const n = useFlags(rows).size
+  if (n === 0) return null
+  return (
+    <Pressable accessibilityRole="button" onPress={() => { haptic.tick(); router.push('/money/transactions') }}
+      className="flex-row items-center gap-3 rounded-card border border-border bg-warn-bg px-4 py-3 active:opacity-70">
+      <Text className="text-[16px] text-warn">⚑</Text>
+      <Text className="flex-1 text-[15px] text-ink"><Text className="font-bold text-ink">{n} {n === 1 ? 'transaction' : 'transactions'}</Text> worth a look this month</Text>
+      <Text className="text-[16px] text-ink-3">›</Text>
+    </Pressable>
+  )
+}
+
+/**
+ * Before you buy (D-42): a price, then one sentence: what it does to your
+ * freedom date, on the same growth model as the date. The cost is time.
+ */
+function BeforeYouBuy() {
+  const f = useFreedom()
+  const [price, setPrice] = useState('')
+  if (!f) return null
+  const monthly = f.monthlyIncome - f.monthlySpending
+  const growth = f.inputs?.growthRate ?? REAL_RETURN
+  const usd = fromInput(price.replace(/[^d.]/g, ''))
+  const result = usd > 0 ? calcPurchaseImpact(usd, f.invested, Math.max(0, monthly), f.target, growth) : null
+  return (
+    <Card>
+      <Label>Before you buy</Label>
+      <Text className="mt-1 text-[15px] text-ink">Thinking of buying something?</Text>
+      <View className="mt-2 w-44 flex-row items-center rounded-control border border-border-2 bg-ground px-3 py-2">
+        <Text className="font-mono text-[17px] text-ink-3">{currencySymbol().trim()}</Text>
+        <TextInput accessibilityLabel="Purchase price" placeholder="Price" placeholderTextColor={colors.ink3} keyboardType="decimal-pad"
+          value={price} onChangeText={t => setPrice(t.replace(/[^d.,]/g, ''))} className="ml-1 text-[17px] text-ink" style={{ flex: 1, fontFamily: 'DMMono_400Regular' }} />
+      </View>
+      {result && (
+        <Text accessibilityLiveRegion="polite" className="mt-3 text-[15px] leading-6 text-ink">
+          It moves your freedom date <Text className="font-mono font-bold text-warn">{formatDelay(result.delayDays)} later</Text>.
+        </Text>
+      )}
+      <Text className="mt-1.5 text-[12px] leading-4 text-ink-3">
+        {monthly <= 0 || f.target <= 0 ? 'Add income, savings and spending for your own numbers.'
+          : result ? `Invested instead, it would be worth ${money(result.futureValue)} by your freedom date, at ${Math.round(growth * 1000) / 10}% a year after inflation.`
+          : 'Type a price to see what it costs you in time.'}
+      </Text>
     </Card>
   )
 }

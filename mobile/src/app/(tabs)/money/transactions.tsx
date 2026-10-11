@@ -13,6 +13,7 @@ import { byDay, categoryOf, dayLabel, thisMonth } from '@/lib/money-data'
 import { summarise } from '@/lib/spend-summary'
 import { useAccount } from '@/state/account'
 import { colors } from '@/theme/colors'
+import { WorthALook } from '@/components/WorthALook'
 
 const PRESETS: { key: RangePreset; label: string }[] = [
   { key: 1, label: 'Month' },
@@ -58,6 +59,7 @@ export default function Transactions() {
 
   const header = (
     <View>
+      <View className="mt-3"><WorthALook rows={summary.inRange} /></View>
       <View className="mt-3 flex-row items-center justify-between rounded-control bg-surface px-2 py-2">
         <Pressable accessibilityRole="button" accessibilityLabel="Previous period" hitSlop={8} onPress={() => step(-1)} disabled={!canBack} className="px-3">
           <Text className={`text-[20px] ${canBack ? 'text-ink' : 'text-border-2'}`}>‹</Text>

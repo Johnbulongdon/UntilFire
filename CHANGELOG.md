@@ -20,6 +20,8 @@ under today's date, creating the heading if it is not there yet.
 ### iOS app (in development)
 - A native iOS app in `mobile/`, built with Expo, signed in with the same
   UntilFire account. Not in the App Store yet.
+- The app now has Before you buy and Worth a look on Home, and Household in
+  Profile (invite, accept, disconnect, and the shared date on Home).
 
 ### Compare UntilFire
 - New: side-by-side pages for UntilFire vs ProjectionLab & Boldin, FI Calc,
