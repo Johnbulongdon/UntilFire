@@ -1,74 +1,52 @@
-import { haptic } from '@/lib/haptics'
 import { router } from 'expo-router'
 import { useState } from 'react'
-import { Pressable, View } from 'react-native'
-import { Text } from '@/components/Text'
 
-import { AmountInput } from '@/components/AmountInput'
+import { MoneyWheel } from '@/components/MoneyWheel'
 import { QuestionScreen } from '@/components/QuestionScreen'
-import { roundNice } from '@/lib/format'
+import { Text } from '@/components/Text'
+import { fromUSD, toUSDFromDisplay } from '@/lib/display-currency'
+import { money } from '@/lib/format'
+import { answers } from '@/lib/onboarding-answers'
 import { usePlan } from '@/state/plan'
 
-type Mode = 'spend' | 'save'
-
+/**
+ * The month's spending, or its saving, on the same wheel as pay (V2). The wheel
+ * starts from the person's own take-home (founder's call: not a city default
+ * that jumps somewhere else), and a line underneath says what that leaves.
+ */
 export default function Spending() {
   const { draft, setDraft } = usePlan()
   const income = draft.monthlyIncome ?? 0
-  const [mode, setMode] = useState<Mode>('spend')
-  const [value, setValue] = useState<number | null>(draft.monthlySpending ?? null)
-
-  // With a city, spending suggestions follow its living costs; otherwise shares of pay.
-  const cityMonthly = draft.city ? draft.city.col / 12 : null
-  const city = draft.city?.name.split(',')[0]
-  const suggestions = mode === 'spend' && cityMonthly
-    ? [
-        { value: roundNice(cityMonthly * 0.75), sub: 'Lean' },
-        { value: roundNice(cityMonthly), sub: `Typical in ${city}` },
-        { value: roundNice(cityMonthly * 1.25), sub: 'Comfortable' },
-        { value: roundNice(cityMonthly * 1.6), sub: 'Generous' },
-      ]
-    : (mode === 'spend' ? [0.5, 0.6, 0.7, 0.8] : [0.1, 0.2, 0.3, 0.5]).map(share => ({
-        value: roundNice(income * share),
-        sub: mode === 'spend' ? `${Math.round(share * 100)}% of pay` : `Save ${Math.round(share * 100)}%`,
-      }))
-  const spending = value == null ? null : mode === 'spend' ? value : income - value
-  const valid = spending != null && spending > 0 && (mode === 'spend' || value! <= income)
+  const save = answers.know === 'save'
+  // An earlier answer that still fits this pay, else the take-home itself (or nothing saved yet).
+  const prior = draft.monthlySpending != null && draft.monthlySpending <= income ? draft.monthlySpending : null
+  const start = save ? (prior != null ? income - prior : 0) : prior ?? income
+  const [value, setValue] = useState(() => Math.round(fromUSD(start) / 100) * 100)
+  const usd = toUSDFromDisplay(value)
+  const spending = save ? income - usd : usd
+  const tooMuch = save && usd > income
+  const max = Math.ceil(fromUSD(Math.max(income * 2, 5000)) / 1000) * 1000
+  const left = income - spending
+  const share = income > 0 ? Math.round((left / income) * 100) : 0
 
   return (
     <QuestionScreen
-      step={4}
-      steps={6}
-      title={mode === 'spend' ? 'How much do you spend?' : 'How much do you save?'}
-      hint="Use whichever number you know. A rough monthly figure is fine."
+      step={6}
+      steps={8}
+      title={save ? 'How much do you save each month?' : 'How much do you spend each month?'}
+      hint="A rough number is fine."
       cta="Continue"
-      canContinue={valid}
-      onNext={() => { setDraft({ monthlySpending: spending! }); router.push('/onboarding/invested') }}
+      canContinue={spending > 0 && !tooMuch && (save || value > 0)}
+      onNext={() => { setDraft({ monthlySpending: Math.round(spending) }); router.push('/onboarding/invested') }}
     >
-      <View className="mb-6 flex-row rounded-xl bg-green-50 p-1">
-        {(['spend', 'save'] as const).map(m => (
-          <Pressable
-            key={m}
-            accessibilityRole="button"
-            accessibilityState={{ selected: mode === m }}
-            onPress={() => { haptic.select(); setMode(m); setValue(null) }}
-            className={`flex-1 items-center rounded-lg py-2 ${mode === m ? 'bg-card' : ''}`}
-          >
-            <Text className={`text-[14px] font-semibold ${mode === m ? 'text-ink' : 'text-ink-2'}`}>
-              {m === 'spend' ? 'I know my spending' : 'I know my savings'}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-      <AmountInput
-        label={mode === 'spend' ? 'Monthly spending' : 'Monthly savings'}
-        value={value}
-        onChange={setValue}
-        suggestions={suggestions}
-        unit="a month"
-      />
-      {mode === 'save' && value != null && value > income && (
-        <Text className="mt-4 text-[14px] text-ink-2">That's more than you take home each month.</Text>
-      )}
+      <MoneyWheel value={value} onChange={setValue} max={max} unit="a month" label={save ? 'Monthly saving' : 'Monthly spending'} />
+      {/* What the answer means, as it changes. */}
+      <Text accessibilityLiveRegion="polite" className="mt-4 text-center text-[16px] text-ink-2">
+        {tooMuch ? "That's more than you take home each month."
+          : save ? <>So you spend <Text className="font-mono font-bold text-ink">{money(spending)}</Text> a month.</>
+          : left >= 0 ? <>Leaves <Text className="font-mono font-bold text-ink">{money(left)}</Text> a month to save{share > 0 ? ` · ${share}%` : ''}.</>
+          : <>That's <Text className="font-mono font-bold text-ink">{money(-left)}</Text> more than you take home.</>}
+      </Text>
     </QuestionScreen>
   )
 }

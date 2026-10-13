@@ -42,8 +42,10 @@ export default function Insights() {
   const saved = explained.inn - explained.out
   const rate = explained.inn > 0 ? saved / explained.inn : null
   const peak = Math.max(...trend.map(t => Math.max(t.out, t.inn)), 1)
-  const avgOut = trend.reduce((s, t) => s + t.out, 0) / Math.max(1, trend.length)
-  const avgIn = trend.reduce((s, t) => s + t.inn, 0) / Math.max(1, trend.length)
+  // Average over months that have any money in them, so a new account isn't dragged down by empty months.
+  const active = trend.filter(t => t.inn > 0 || t.out > 0)
+  const avgOut = active.reduce((s, t) => s + t.out, 0) / Math.max(1, active.length)
+  const avgIn = active.reduce((s, t) => s + t.inn, 0) / Math.max(1, active.length)
   const monthName = new Date(`${month}-01T00:00:00`).toLocaleDateString('en-US', { month: 'long' })
 
   return (
@@ -114,7 +116,7 @@ export default function Insights() {
         </View>
         {avgIn > 0 && (
           <Text className="mt-2 text-[13px] text-ink-2">
-            Over {period} months you kept <Text className="font-bold text-teal-deep">{Math.round(Math.max(0, (avgIn - avgOut) / avgIn) * 100)}%</Text> of what came in.
+            Over {active.length === trend.length ? `${period} months` : `${active.length} ${active.length === 1 ? 'month' : 'months'}`} you kept <Text className="font-bold text-teal-deep">{Math.round(Math.max(0, (avgIn - avgOut) / avgIn) * 100)}%</Text> of what came in.
           </Text>
         )}
       </Card>

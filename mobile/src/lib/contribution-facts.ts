@@ -44,5 +44,6 @@ export function contributionFacts(data: AccountData): AccountFacts {
     ],
     expectedItems,
     budgetMonthlySpending: Object.values(data.budget).reduce((s, v) => s + v, 0),
+    contributionDone: data.profile.contributionDone ?? null,
   }
 }

@@ -1,4 +1,5 @@
 import { router } from 'expo-router'
+import { Button } from '@/components/Button'
 import { useEffect, useState } from 'react'
 import { Pressable, View } from 'react-native'
 
@@ -44,7 +45,7 @@ export default function NetWorth() {
       <Card>
         <View className="flex-row justify-between">
           <Label>Assets</Label>
-          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { haptic.tick(); router.push('/balances') }}><Text className="text-[13px] font-bold text-pos-ink">Edit balances</Text></Pressable>
+          <Button small kind="quiet" label="Edit balances" onPress={() => { haptic.tick(); router.push('/balances') }} />
         </View>
         {nw.assets.length === 0
           ? <Text className="mt-2 text-[14px] text-ink-2">Nothing added yet. Tap Edit balances to add what you have.</Text>
@@ -54,7 +55,7 @@ export default function NetWorth() {
       <Card>
         <View className="flex-row justify-between">
           <Label>Debts</Label>
-          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { haptic.tick(); router.push('/balances') }}><Text className="text-[13px] font-bold text-pos-ink">Edit other debt</Text></Pressable>
+          <Button small kind="quiet" label="Edit other debt" onPress={() => { haptic.tick(); router.push('/balances') }} />
         </View>
         {nw.owed.length === 0
           ? <Text className="mt-2 text-[14px] text-ink-2">No debts. </Text>
@@ -64,7 +65,7 @@ export default function NetWorth() {
       <Card>
         <View className="flex-row justify-between">
           <Label>Mortgages</Label>
-          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { haptic.tick(); router.push('/mortgage') }}><Text className="text-[13px] font-bold text-pos-ink">+ Add</Text></Pressable>
+          <Button small kind="quiet" label="+ Add" onPress={() => { haptic.tick(); router.push('/mortgage') }} />
         </View>
         {data.typed.mortgages.length === 0 ? (
           <Text className="mt-2 text-[14px] text-ink-2">None added.</Text>

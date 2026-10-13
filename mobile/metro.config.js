@@ -5,6 +5,7 @@ const { getDefaultConfig } = require('expo/metro-config')
 const { withNativeWind } = require('nativewind/metro')
 
 const config = getDefaultConfig(__dirname)
-config.watchFolders = [path.resolve(__dirname, '../lib')]
+// Also the FIRE type quiz's data (app/fire-type/quiz-data.ts), which is pure.
+config.watchFolders = [path.resolve(__dirname, '../lib'), path.resolve(__dirname, '../app/fire-type')]
 
 module.exports = withNativeWind(config, { input: './src/global.css' })

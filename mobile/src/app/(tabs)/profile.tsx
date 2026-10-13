@@ -1,9 +1,11 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { router, useFocusEffect } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import { useCallback, useState } from 'react'
 import { ActivityIndicator, Alert, Linking, Pressable, Switch, View } from 'react-native'
 
-import { Bouncy } from '@/components/Bouncy'
+import { Button } from '@/components/Button'
+import { GuidedTour } from '@/components/GuidedTour'
 import { PersonalityAvatar } from '@/components/PersonalityAvatar'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { Card, Label, Screen } from '@/components/Screen'
@@ -13,12 +15,15 @@ import { exportEverything, exportTransactions } from '@/lib/export-data'
 import { money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { isLockOn, lockAvailable, setLockOn, unlock } from '@/lib/app-lock'
-import { cancelMonthlyCheckIn, isCheckInScheduled, scheduleMonthlyCheckIn } from '@/lib/reminders'
+import { billRemindersOn, setBillReminders } from '@/lib/bill-reminders'
+import { setTodayReminder, todayReminderOn } from '@/lib/today-reminder'
 import { useEditPlan } from '@/lib/useEditPlan'
+import { FIRE_QUIZ_KEY } from '@/lib/fire-quiz'
+import { getTypeMeta } from '@quiz'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { personalityFor, usePlan } from '@/state/plan'
-import { colors } from '@/theme/colors'
+import { colors, TAB_COLOR, tabInk } from '@/theme/colors'
 import { Events, track } from '@/lib/analytics'
 
 const GOAL_LABEL = { 'retire-early': 'Retire early', 'financial-freedom': 'Financial freedom', exploring: 'Just exploring' } as const
@@ -29,28 +34,24 @@ export default function Profile() {
   const { session, signOut } = useAuth()
   const { data } = useAccount()
   const editPlan = useEditPlan()
-  const [reminder, setReminder] = useState(false)
+  const [billsOn, setBillsOn] = useState(false)
+  const [todayOn, setTodayOn] = useState(false)
+  const [tour, setTour] = useState(false)
+  const [quiz, setQuiz] = useState<{ code: string; name: string } | null>(null)
   const [lockOn, setLockState] = useState(false)
   const [lockInfo, setLockInfo] = useState<{ ok: boolean; label: string }>({ ok: false, label: 'Face ID' })
   const [exporting, setExporting] = useState<'csv' | 'json' | null>(null)
 
   useFocusEffect(useCallback(() => {
-    isCheckInScheduled().then(setReminder)
+    billRemindersOn().then(setBillsOn)
+    todayReminderOn().then(setTodayOn)
+    AsyncStorage.getItem(FIRE_QUIZ_KEY).then(r => setQuiz(r ? JSON.parse(r) : null)).catch(() => {})
     isLockOn().then(setLockState)
     lockAvailable().then(setLockInfo).catch(() => {})
   }, []))
   if (!plan) return null
   const type = personalityFor(plan)
 
-  const toggleReminder = async (on: boolean) => {
-    haptic.select()
-    track(Events.REMINDER_TOGGLED, { on })
-    if (on) {
-      const ok = await scheduleMonthlyCheckIn()
-      if (!ok) Alert.alert('Notifications are off', 'Turn on notifications for this app in Settings to get the monthly check-in.')
-      setReminder(ok)
-    } else { await cancelMonthlyCheckIn(); setReminder(false) }
-  }
 
   // Turning the lock on or off asks for Face ID first, so someone holding an unlocked phone can't switch it off.
   const toggleLock = async (on: boolean) => {
@@ -73,16 +74,22 @@ export default function Profile() {
   const open = (url: string) => { WebBrowser.openBrowserAsync(url, { controlsColor: colors.green }).catch(() => {}) }
 
   return (
-    <Screen title="Profile">
-      <Card>
-        <View className="items-center">
-          <PersonalityAvatar profile={type} size={96} />
-          <Text className="mt-3 text-[12px] font-bold uppercase tracking-[2px] text-ink-3">Your FIRE type</Text>
-          <Text className="mt-1 font-display text-[26px] font-bold text-ink">{type.name}</Text>
-          <Text className="mt-0.5 text-[14px] text-ink-2">{type.headline}</Text>
-          <Text className="mt-3 text-center text-[15px] leading-6 text-ink">{type.blurb}</Text>
+    <Screen tab="profile" title="Profile">
+      {/* One type only (V2): the quiz result once taken, else the type from your answers. */}
+      <Pressable accessibilityRole="button" accessibilityLabel={`Your FIRE type: ${quiz ? quiz.name : type.name}. ${quiz ? 'Retake the quiz' : 'Take the quiz'}`} onPress={() => { haptic.tick(); router.push('/fire-quiz') }}
+        className="flex-row items-center gap-4 active:opacity-70">
+        {quiz ? (
+          <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: TAB_COLOR.profile, alignItems: 'center', justifyContent: 'center' }}>
+            <Text className="text-[28px]">{getTypeMeta(quiz.code).emoji}</Text>
+          </View>
+        ) : <PersonalityAvatar profile={type} size={56} />}
+        <View className="flex-1">
+          <Text className="text-[12px] font-bold uppercase tracking-[1.5px] text-ink-3">Your FIRE type</Text>
+          <Text style={{ color: tabInk('profile') }} className="font-display text-[22px] font-bold">{quiz ? quiz.name : type.name}</Text>
+          <Text className="text-[13px] text-ink-2">{quiz ? 'Retake the quiz' : 'Take the 8-question quiz'}</Text>
         </View>
-      </Card>
+        <Text className="text-[18px] text-ink-3">›</Text>
+      </Pressable>
 
       {session ? (
         <Card>
@@ -90,6 +97,7 @@ export default function Profile() {
           <Row label="Email" value={session.user.email ?? ''} first />
           <Row label="Name" value={data?.displayName || 'Add'} onPress={() => router.push('/name')} />
           <Row label="Household" value="" onPress={() => router.push('/household')} />
+          <Row label="Give a month, get a month" value="" onPress={() => router.push('/give-a-month')} />
           <Row label="Currency" value={data ? `${CURRENCY_NAMES[data.currency] ?? data.currency}` : '…'} onPress={() => router.push('/currency')} />
           <Row label="Sign out" value="" onPress={() => {
             haptic.warn()
@@ -113,7 +121,7 @@ export default function Profile() {
         <Card>
           <View className="flex-row justify-between">
             <Label>Your answers</Label>
-            <Bouncy onPress={() => { haptic.tick(); editPlan() }} hitSlop={8}><Text className="text-[13px] font-bold text-pos-ink">Update</Text></Bouncy>
+            <Button small kind="quiet" label="Update" onPress={() => editPlan()} />
           </View>
           <Row label="Goal" value={plan.goal ? GOAL_LABEL[plan.goal] : 'Not set'} first />
           <Row label="City" value={plan.city?.name ?? 'Not set'} />
@@ -126,13 +134,36 @@ export default function Profile() {
 
       <Card>
         <Label>Settings</Label>
-        <View className="flex-row items-center justify-between py-3">
-          <View className="flex-1 pr-3">
-            <Text className="text-[15px] text-ink">Monthly check-in reminder</Text>
-            <Text className="text-[12px] text-ink-3">On the 1st at 9am</Text>
+        {session && (
+          <View className="flex-row items-center justify-between py-3">
+            <View className="flex-1 pr-3">
+              <Text className="text-[15px] text-ink">Today reminder</Text>
+              <Text className="text-[12px] text-ink-3">9pm on days you haven't finished</Text>
+            </View>
+            <Switch accessibilityLabel="Today reminder" value={todayOn} trackColor={{ true: colors.green, false: colors.border2 }}
+              onValueChange={async on => {
+                haptic.select()
+                const ok = await setTodayReminder(on, data?.profile.today.done ?? [])
+                if (on && !ok) Alert.alert('Notifications are off', 'Turn on notifications for this app in Settings to get the reminder.')
+                setTodayOn(ok)
+              }} />
           </View>
-          <Switch accessibilityLabel="Monthly check-in reminder" value={reminder} onValueChange={toggleReminder} trackColor={{ true: colors.green, false: colors.border2 }} />
-        </View>
+        )}
+        {session && (
+          <View className="flex-row items-center justify-between border-t border-border py-3">
+            <View className="flex-1 pr-3">
+              <Text className="text-[15px] text-ink">Bill and payday reminders</Text>
+              <Text className="text-[12px] text-ink-3">The evening before a bill, the morning of payday</Text>
+            </View>
+            <Switch accessibilityLabel="Bill and payday reminders" value={billsOn} trackColor={{ true: colors.green, false: colors.border2 }}
+              onValueChange={async on => {
+                haptic.select()
+                const ok = await setBillReminders(on, data?.bills ?? [])
+                if (on && !ok) Alert.alert('Notifications are off', 'Turn on notifications for this app in Settings to get bill reminders.')
+                setBillsOn(ok)
+              }} />
+          </View>
+        )}
         {lockInfo.ok && (
           <View className="flex-row items-center justify-between border-t border-border py-3">
             <View className="flex-1 pr-3">
@@ -143,6 +174,8 @@ export default function Profile() {
           </View>
         )}
         <Row label="Replay onboarding" value="" onPress={() => editPlan(true)} />
+        <Row label="Show the tour" value="" onPress={() => setTour(true)} />
+        {tour && <GuidedTour force onClose={() => setTour(false)} />}
       </Card>
 
       {session && (
@@ -163,23 +196,15 @@ export default function Profile() {
       </Card>
 
       {session ? (
-        <Pressable accessibilityRole="button" onPress={() => { haptic.warn(); router.push('/delete-account') }} className="items-center py-2">
-          <Text className="text-[15px] font-semibold text-neg-ink">Delete account</Text>
-        </Pressable>
+        <Button kind="danger" label="Delete account" onPress={() => { haptic.warn(); router.push('/delete-account') }} />
       ) : (
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => {
-            haptic.warn()
-            Alert.alert('Start over?', 'This clears your answers from this phone.', [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Start over', style: 'destructive', onPress: async () => { await clearPlan(); router.replace('/onboarding') } },
-            ])
-          }}
-          className="items-center py-2"
-        >
-          <Text className="text-[15px] font-semibold text-neg-ink">Start over</Text>
-        </Pressable>
+        <Button kind="danger" label="Start over" onPress={() => {
+          haptic.warn()
+          Alert.alert('Start over?', 'This clears your answers from this phone.', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Start over', style: 'destructive', onPress: async () => { await clearPlan(); router.replace('/onboarding') } },
+          ])
+        }} />
       )}
     </Screen>
   )

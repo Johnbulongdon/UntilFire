@@ -1,43 +1,43 @@
 import { router } from 'expo-router'
 import { useState } from 'react'
 
-import { AmountInput } from '@/components/AmountInput'
+import { View } from 'react-native'
+
+import { CurrencyButton } from '@/components/CurrencyButton'
+import { MoneyWheel } from '@/components/MoneyWheel'
 import { QuestionScreen } from '@/components/QuestionScreen'
-import { roundNice } from '@/lib/format'
+import { fromUSD, toUSDFromDisplay } from '@/lib/display-currency'
+import { answers, PAY_EVERY } from '@/lib/onboarding-answers'
 import { usePlan } from '@/state/plan'
 
-// Like the website (D-50): suggestions follow the city's living costs when there is one.
-const LEVELS = [
-  { factor: 1.1, sub: 'Tight' },
-  { factor: 1.4, sub: 'Typical here' },
-  { factor: 1.9, sub: 'Comfortable' },
-  { factor: 2.6, sub: 'High' },
-]
 const DEFAULT_MONTHLY_COST = 4000
 
+/**
+ * The take-home on each paycheck (V2): one number on a wheel, in steps of 100.
+ * Take-home only, since that's the number people know; the monthly figure the
+ * plan uses comes from how often they're paid.
+ */
 export default function Income() {
   const { draft, setDraft } = usePlan()
-  const [value, setValue] = useState<number | null>(draft.monthlyIncome ?? null)
+  const every = PAY_EVERY.find(p => p.key === answers.pay)!
   const monthlyCost = draft.city ? draft.city.col / 12 : DEFAULT_MONTHLY_COST
-  const city = draft.city?.name.split(',')[0]
+  // Start the wheel on a typical take-home for the city, per paycheck.
+  const startMonthly = draft.monthlyIncome ?? monthlyCost * 1.4
+  const [check, setCheck] = useState(() => Math.round(fromUSD(startMonthly * 12 / every.perYear) / 100) * 100)
+  const max = Math.ceil(fromUSD(60000 * 12 / every.perYear) / 1000) * 1000
 
   return (
     <QuestionScreen
-      step={3}
-      steps={6}
-      title="What lands in your bank each month?"
-      hint={city ? `Your take-home pay after tax. Suggestions follow living costs in ${city}.` : 'Your take-home pay after tax. An estimate is fine.'}
+      step={4}
+      steps={8}
+      title={every.key === 'month' ? 'How much do you take home each month?' : 'How much is each paycheck?'}
+      hint="After tax, what lands in your bank."
       cta="Continue"
-      canContinue={value != null && value > 0}
-      onNext={() => { setDraft({ monthlyIncome: value! }); router.push('/onboarding/spending') }}
+      canContinue={check > 0}
+      onNext={() => { setDraft({ monthlyIncome: Math.round(toUSDFromDisplay(check) * every.perYear / 12) }); router.push('/onboarding/know') }}
     >
-      <AmountInput
-        label="Monthly take-home pay"
-        value={value}
-        onChange={setValue}
-        suggestions={LEVELS.map(l => ({ value: roundNice(monthlyCost * l.factor), sub: city || l.sub !== 'Typical here' ? l.sub : 'Typical' }))}
-        unit="a month"
-      />
+      <MoneyWheel value={check} onChange={setCheck} max={max} unit={every.unit} label="Take-home pay" />
+      <View className="mt-2"><CurrencyButton currency={draft.currency ?? 'USD'} onPick={c => setDraft({ currency: c })} /></View>
     </QuestionScreen>
   )
 }

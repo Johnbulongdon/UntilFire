@@ -167,8 +167,8 @@ to a label or emoji; charts show the top six categories and fold the rest.
    thing has one name everywhere: the FIRE number (not target or freedom
    number), Upcoming payments (not expected payments), Debts (not
    liabilities). Amounts in copy use the display currency, never a typed "$".
-10. **Counts, not streaks.** Progress over months is a count ("4 of 6 months
-   on plan"), never a run to protect (CLAUDE.md: no streaks).
+10. **Counts, not streaks.** Progress is a count ("4 of 6 months on plan",
+   "18 of 30 days complete"), never a run to protect or lose (D-73).
 
 ## Interaction and verification
 

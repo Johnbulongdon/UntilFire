@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Button } from '@/components/Button'
 import { router } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
 import { Alert, Pressable, View } from 'react-native'
@@ -110,8 +111,8 @@ export default function Bills() {
                 </View>
                 <Text className="text-[12px] text-ink-3">{RECURRENCE_LABEL[toRecurrence(s.frequency) as keyof typeof RECURRENCE_LABEL]} · next around {dayLabel(s.nextDueDate)}</Text>
                 <View className="mt-2 flex-row gap-5">
-                  <Pressable accessibilityRole="button" hitSlop={8} onPress={() => accept(s)}><Text className="text-[14px] font-bold text-pos-ink">Add as {s.transaction_type === 'income' ? 'payday' : 'bill'}</Text></Pressable>
-                  <Pressable accessibilityRole="button" hitSlop={8} onPress={() => dismiss(s.key)}><Text className="text-[14px] font-semibold text-ink-3">Not a bill</Text></Pressable>
+                  <Button small kind="quiet" label="Add as {s.transaction_type === 'income' ? 'payday' : 'bill'}" onPress={() => accept(s)} />
+                  <Button small kind="quiet" label="Not a bill" onPress={() => dismiss(s.key)} />
                 </View>
               </View>
             ))}
@@ -122,7 +123,7 @@ export default function Bills() {
       <View pointerEvents="box-none" style={{ position: 'absolute', right: 20, bottom: 20 }}>
         <Bouncy accessibilityRole="button" accessibilityLabel="Add a bill or payday" onPress={() => { haptic.press(); router.push('/bill') }} scaleTo={0.9}>
           <View className="h-14 w-14 items-center justify-center rounded-full bg-green" style={{ shadowColor: '#78501E', shadowOpacity: 0.2, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } }}>
-            <Text className="text-[30px] leading-[32px] text-card">+</Text>
+            <Text className="text-[30px] leading-[32px] text-white">+</Text>
           </View>
         </Bouncy>
       </View>
@@ -184,7 +185,7 @@ function MonthView({ data }: { data: AccountData }) {
           return (
             <Pressable accessibilityRole="button" key={iso} onPress={() => { haptic.select(); setPicked(iso) }} style={{ width: `${100 / 7}%`, height: 46 }} className="items-center justify-center">
               <View className={`h-10 w-10 items-center justify-center rounded-full ${on ? 'bg-green' : iso === today ? 'bg-green-50' : ''}`}>
-                <Text className={`text-[14px] ${on ? 'font-bold text-card' : iso < today ? 'text-ink-3' : 'text-ink'}`}>{i + 1}</Text>
+                <Text className={`text-[14px] ${on ? 'font-bold text-white' : iso < today ? 'text-ink-3' : 'text-ink'}`}>{i + 1}</Text>
                 {evs.length > 0 && (
                   <View className="mt-0.5 flex-row gap-0.5">
                     {evs.slice(0, 3).map((e, k) => <View key={k} className={`h-1 w-1 rounded-full ${on ? 'bg-card' : e.type === 'income' ? 'bg-green' : 'bg-sun'}`} />)}
@@ -203,9 +204,7 @@ function MonthView({ data }: { data: AccountData }) {
           )}
         </View>
         {dayEvents.length === 0 ? (
-          <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/bill', params: { on: picked } })} className="mt-2">
-            <Text className="text-[14px] font-bold text-pos-ink">+ Add a bill on this day</Text>
-          </Pressable>
+          <View className="mt-2"><Button small kind="quiet" label="Add a bill on this day" onPress={() => router.push({ pathname: '/bill', params: { on: picked } })} /></View>
         ) : dayEvents.map((e, i) => (
           <Pressable accessibilityRole="button" key={i} onPress={() => router.push({ pathname: '/bill', params: { id: e.billId } })} className="mt-2 flex-row justify-between">
             <Text className="text-[15px] text-ink">{e.description}</Text>

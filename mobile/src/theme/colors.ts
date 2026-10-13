@@ -68,12 +68,28 @@ const dark: Palette = {
 /** Theme-independent: the logo's sun and the deep green the welcome and reveal screens sit on. */
 export const brand = { aqua: '#62FAE3', deep: '#06412F', sun: '#F2A65A' } as const
 
+/**
+ * Each tab's bright colour (founder's call, Oct 2026: one colour per place, like
+ * Duolingo's units). Deep enough for white text in both themes. Green stays the
+ * action colour everywhere, so no tab is green.
+ */
+export const TAB_COLOR = { home: '#0A7665', money: '#3866C9', plan: '#B9561D', profile: '#7E4FAA' } as const
+export type TabKey = keyof typeof TAB_COLOR
+
+// The tab colours as text on the warm-dark ground, lighter so they keep their contrast.
+const TAB_INK_DARK: Record<TabKey, string> = { home: '#5FDCC4', money: '#9DB8F5', plan: '#F2A574', profile: '#C9A6EC' }
+
 let current: Palette = light
 
 /** The active theme's colours. Read at render time, so a screen picks up a theme change when it next renders. */
 export const colors = new Proxy({} as Palette & typeof brand, {
   get: (_t, key: string) => (key in brand ? brand[key as keyof typeof brand] : current[key as keyof Palette]),
 })
+
+/** A tab's colour for text and headlines on the page: the solid colour in light, a lighter one in dark. */
+export function tabInk(tab: TabKey): string {
+  return current === dark ? TAB_INK_DARK[tab] : TAB_COLOR[tab]
+}
 
 export function setPalette(scheme: 'light' | 'dark') {
   current = scheme === 'dark' ? dark : light

@@ -6,6 +6,25 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-13
+
+### Dashboard
+- Fix: saving on the dashboard no longer erases profile fields it does not
+  own, such as the app's finished Today days.
+
+### iOS app (in development)
+- New: Today, a short daily list of one-tap items made from your recent money
+  (a category, need or want, a big spend, a bill tomorrow, payday, your number
+  for the day). One item per screen; finishing marks the day, and days are
+  counted, never streaked (D-73). Optional 9pm reminder.
+- New look (D-74): a light top bar of chips on every tab, a colour per tab,
+  chunky buttons everywhere, the Today bar above the tabs, Home as a teal hero
+  card with four round actions, Money as an icon grid, Plan as tiles.
+- New onboarding: sunrise welcome, a globe you spin to pick your city, pay on a
+  wheel, savings on a keypad, five reveals one at a time, and a welcoming join
+  page. The monthly check-in reminder is retired.
+- Adding a transaction asks need or want, so it is filed straight away.
+
 ## 2026-10-11
 
 ### Privacy policy and terms

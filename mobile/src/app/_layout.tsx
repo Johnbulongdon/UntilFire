@@ -15,6 +15,8 @@ import * as SplashScreen from 'expo-splash-screen'
 import { useColorScheme, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
+
+import { cancelMonthlyCheckIn } from '@/lib/reminders'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
 import { AccountProvider } from '@/state/account'
@@ -36,6 +38,8 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync().catch(() => {})
   }, [loaded, error])
+  // The monthly check-in gave way to the daily Today reminder (D-73); stop any still scheduled.
+  useEffect(() => { cancelMonthlyCheckIn().catch(() => {}) }, [])
   // Light or dark follows the phone. The palette is set before anything renders with it.
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light'
   setPalette(scheme)
@@ -72,6 +76,11 @@ export default function RootLayout() {
           <Stack.Screen name="currency" options={{ presentation: 'modal' }} />
           <Stack.Screen name="import" options={{ presentation: 'modal' }} />
           <Stack.Screen name="household" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="home-layout" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="give-a-month" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="review" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="today" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="fire-quiz" options={{ presentation: 'fullScreenModal' }} />
         </Stack>
         <AppLock />
         </AccountProvider>

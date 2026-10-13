@@ -18,7 +18,7 @@ export default function Goal() {
   const [picked, setPicked] = useState<GoalId | undefined>(draft.goal)
 
   return (
-    <QuestionScreen step={1} steps={6} title="What does freedom mean to you?" hint="Pick the one that fits best. You can change it later.">
+    <QuestionScreen step={1} steps={8} title="What does freedom mean to you?" hint="You can change it later.">
       <View className="gap-3">
         {GOALS.map(g => (
           <OptionCard

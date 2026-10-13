@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Button } from './Button'
 import { Alert, Pressable, View } from 'react-native'
 
 import { findFlags, FLAG_ORDER, type FlagKind } from '@/engine'
@@ -10,7 +11,7 @@ import { toUSD, useAccount, type Transaction } from '@/state/account'
 import { Text } from './Text'
 
 // The website's WorthALook copy (app/dashboard/WorthALook.tsx). Bills are asked on the website.
-const COPY: Partial<Record<FlagKind, { label: string; tip: string; yes: string; no: string }>> = {
+export const FLAG_COPY: Partial<Record<FlagKind, { label: string; tip: string; yes: string; no: string }>> = {
   card_payment: { label: 'Card payment', tip: 'Paying a credit card bill moves money; the purchases on the card were the spending. Counting both doubles it.', yes: "It's a card payment", no: "No, it's spending" },
   duplicate: { label: 'Possible duplicate', tip: 'Same merchant and amount within two days of another row. Overlapping imports and re-posted charges do this.', yes: 'Delete this one', no: 'Keep both' },
   large: { label: 'Unusually large', tip: 'Well above what this merchant usually costs, or among your largest expenses.', yes: '', no: 'Looks right' },
@@ -21,7 +22,7 @@ export function useFlags(inView: Transaction[]) {
   const { data } = useAccount()
   return useMemo(() => {
     const all = findFlags(inView, data?.transactions ?? [], toUSD)
-    return new Map([...all].filter(([, k]) => k in COPY))
+    return new Map([...all].filter(([, k]) => k in FLAG_COPY))
   }, [inView, data])
 }
 
@@ -35,7 +36,7 @@ export function WorthALook({ rows }: { rows: Transaction[] }) {
   const flags = useFlags(rows)
   const [open, setOpen] = useState<FlagKind | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
-  const counts = FLAG_ORDER.map(k => ({ k, n: [...flags.values()].filter(v => v === k).length })).filter(c => c.n > 0 && COPY[c.k])
+  const counts = FLAG_ORDER.map(k => ({ k, n: [...flags.values()].filter(v => v === k).length })).filter(c => c.n > 0 && FLAG_COPY[c.k])
   if (!counts.length) return null
   const listed = open ? rows.filter(r => flags.get(r.id) === open) : []
 
@@ -54,14 +55,14 @@ export function WorthALook({ rows }: { rows: Transaction[] }) {
           <Pressable key={k} accessibilityRole="button" accessibilityState={{ expanded: open === k }} onPress={() => { haptic.tick(); setOpen(open === k ? null : k) }}
             className={`flex-row items-center gap-1.5 rounded-full border px-3 py-1.5 ${open === k ? 'border-warn bg-warn-bg' : 'border-border bg-card'}`}>
             <Text className="text-[13px] text-warn">⚑</Text>
-            <Text className="text-[13px] font-semibold text-ink">{COPY[k]!.label}</Text>
+            <Text className="text-[13px] font-semibold text-ink">{FLAG_COPY[k]!.label}</Text>
             <Text className="font-mono text-[13px] font-bold text-ink">{n}</Text>
           </Pressable>
         ))}
       </View>
       {open && (
         <View className="overflow-hidden rounded-2xl border border-border bg-card">
-          <Text className="border-b border-border px-4 py-2.5 text-[12px] leading-4 text-ink-3">{COPY[open]!.tip}</Text>
+          <Text className="border-b border-border px-4 py-2.5 text-[12px] leading-4 text-ink-3">{FLAG_COPY[open]!.tip}</Text>
           {listed.map((r, i) => (
             <View key={r.id} className={`gap-2 px-4 py-3 ${i ? 'border-t border-border' : ''}`}>
               <View className="flex-row items-center justify-between gap-3">
@@ -72,14 +73,10 @@ export function WorthALook({ rows }: { rows: Transaction[] }) {
                 <Text className="font-mono text-[14px] text-ink">{moneyIn(r.amount, r.currency)}</Text>
               </View>
               <View className="flex-row gap-2">
-                {COPY[open]!.yes ? (
-                  <Pressable accessibilityRole="button" disabled={busy === r.id} onPress={() => answer(r, open, true)} className="rounded-full bg-green px-3 py-1.5 active:opacity-80">
-                    <Text className="text-[13px] font-bold text-card">{COPY[open]!.yes}</Text>
-                  </Pressable>
+                {FLAG_COPY[open]!.yes ? (
+                  <Button small label={FLAG_COPY[open]!.yes} disabled={busy === r.id} onPress={() => answer(r, open, true)} />
                 ) : null}
-                <Pressable accessibilityRole="button" disabled={busy === r.id} onPress={() => answer(r, open, false)} className="rounded-full border border-border-2 bg-card px-3 py-1.5 active:opacity-80">
-                  <Text className="text-[13px] font-bold text-ink-2">{COPY[open]!.no}</Text>
-                </Pressable>
+                <Button small kind="quiet" label={FLAG_COPY[open]!.no} disabled={busy === r.id} onPress={() => answer(r, open, false)} />
               </View>
             </View>
           ))}

@@ -1,4 +1,5 @@
 import { router } from 'expo-router'
+import { Button } from '@/components/Button'
 import { View } from 'react-native'
 
 import { BudgetPace } from '@/components/BudgetPace'
@@ -31,13 +32,13 @@ export default function Budget() {
       {budget > 0 ? (
         <Card>
           <BudgetPace spent={total} budget={budget} />
-          <Text onPress={() => router.push('/budget-edit')} className="mt-3 text-[14px] font-bold text-pos-ink">Edit budget</Text>
+          <View className="mt-3"><Button small kind="quiet" label="Edit budget" onPress={() => router.push('/budget-edit')} /></View>
         </Card>
       ) : (
         <Card soft>
           <Text className="text-[15px] font-semibold text-ink">No budget yet</Text>
           <Text className="mt-1 text-[14px] leading-5 text-ink-2">Give each category a monthly amount and see what's left as you spend.</Text>
-          <Text onPress={() => router.push('/budget-edit')} className="mt-3 text-[14px] font-bold text-pos-ink">Set a budget</Text>
+          <View className="mt-3"><Button small kind="quiet" label="Set a budget" onPress={() => router.push('/budget-edit')} /></View>
         </Card>
       )}
 

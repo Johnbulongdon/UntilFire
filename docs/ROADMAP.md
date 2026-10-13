@@ -22,7 +22,7 @@ checklists below are historical planning context, not new approval to execute.
 
 UntilFire starts with your freedom date, then walks with you toward it: what matters, what to do this month, and how each move brings work optionality closer. Free, no login.
 
-**Core differentiator:** UntilFire does it with you. Most finance tools either hand you a number and leave you alone, or hand you a model you have to interpret yourself. UntilFire should be the path in between: a clear next move, tracked progress, and guidance that keeps working with you toward financial freedom. This is about continuity and clarity, not gamification — no streaks, no daily-engagement mechanics.
+**Core differentiator:** UntilFire does it with you. Most finance tools either hand you a number and leave you alone, or hand you a model you have to interpret yourself. UntilFire should be the path in between: a clear next move, tracked progress, and guidance that keeps working with you toward financial freedom. Since D-73 (October 2026) that continuity is daily: a short Today list of one-tap items so people stay on top of their money without opening every page. Completed days are counted, never streaked.
 
 **North star:** Turn financial independence from an abstract calculator result into a clear, emotional, actionable path: *when can work become optional, what should I do next, and how will UntilFire help me keep moving?*
 

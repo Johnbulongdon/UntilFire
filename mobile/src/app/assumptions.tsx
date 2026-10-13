@@ -1,4 +1,5 @@
 import { router } from 'expo-router'
+import { Button } from '@/components/Button'
 import { useMemo, useState } from 'react'
 import { Pressable, Switch, TextInput, View } from 'react-native'
 
@@ -126,7 +127,7 @@ function CityPicker({ value, onChange, placeholder, allowClear }: { value: strin
       {value ? (
         <View className="flex-row items-center justify-between rounded-control border border-border bg-card px-4 py-3">
           <Text className="text-[15px] font-semibold text-ink">{CITIES.find(c => c.name === value)?.flag} {value}</Text>
-          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { haptic.tick(); onChange('') }}><Text className="text-[13px] font-bold text-pos-ink">{allowClear ? 'Clear' : 'Change'}</Text></Pressable>
+          <Button small kind="quiet" label={allowClear ? 'Clear' : 'Change'} onPress={() => { haptic.tick(); onChange('') }} />
         </View>
       ) : (
         <>

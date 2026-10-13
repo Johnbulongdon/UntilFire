@@ -57,6 +57,8 @@ not another tracking surface. Treat that small sample as directional evidence.
 **Rejected:** Calculator-only positioning, early commitment asks, and the older
 Duolingo/streak analogy. The July update explicitly chooses monthly continuity
 without daily gamification.
+**Superseded in part:** D-73 (October 2026) makes the cadence daily, counted
+and never streaked.
 **Trade-off / revisit:** Fewer early lead captures; evaluate post-result
 continuation with current evidence instead of hiding first value.
 **Source:** Vault Decision Log (May), Product Positioning (July 16),
@@ -2474,3 +2476,60 @@ competitor pages.
   Hong Kong, under Hong Kong law. The privacy policy lists every service that
   handles data, Stripe included; the terms do not name Stripe.
 
+### D-73 — October 13: a daily Today list, counted, never streaked
+**Status:** Active. Founder's call, 2026-10-12, for the iOS app first.
+**Decision:** The core loop is daily. Each day UntilFire builds a short Today
+list from yesterday's money: one-tap items such as giving a transaction a
+category, marking need or want, or acknowledging a big expense that put a
+budget over. Finishing the list shows a "day complete" moment (animation and
+sound) and marks the day. Progress is a count of completed days ("18 of 30"),
+never a streak that can break. Payday and bills are highlights inside the
+same list. People see what changed through the list instead of opening every
+page; the pages stay for the bigger picture.
+**Why:** A subscription feels worth paying for when the app is useful every
+day, and a new transaction every day changes the budget, calendar, payday plan,
+goals and freedom date. The list keeps that data accurate and tells people what
+moved.
+**Supersedes:** The July "monthly progress, no daily-engagement mechanics"
+direction in D-02 and CONTEXT.md, and D-02's rejection of the Duolingo analogy for
+daily use. The ban on
+streaks, guilt and loss mechanics stays; design-system rule 10 (counts, not
+streaks) applies.
+**Trade-off:** A daily list needs fresh transactions each morning, so in-app
+bank sync matters more; without it the list asks people to log spending.
+Days with nothing new must still be completable.
+**Built (iOS app):** `mobile/src/lib/today.ts` makes the list; finished days
+and answers are saved as `_fire_profile.today` (`done`, `acks`). Before noon an
+unfinished yesterday can still be finished; items that arrive after a day is
+finished wait for the next list. Free accounts get filing, flags, bills, goals
+and the daily number; Pro adds big-spend and payday items. A 9pm local
+reminder skips finished days and is offered after the first finished day.
+**Revisit:** If completed-day counts or retention show the list feels like a
+chore.
+
+### D-74 — October 13: the iOS app's V2 frame after the onboarding-to-app audit
+**Status:** Active. Founder's calls, 2026-10-12/13, iOS app first; the website follows later.
+- **Frame:** a light top bar of three chips (freedom date, budget left, months
+  of safety) in each tab's colour, and the Today bar pinned above the tabs on
+  every tab. A full-width coloured header band was rejected as too heavy.
+- **Colour per tab:** Home teal, Money blue, Plan orange, Profile purple
+  (`TAB_COLOR`, lighter `tabInk` for text in dark mode). Green stays the only
+  action colour, so no tab is green.
+- **Buttons:** every action is a chunky button (`components/Button.tsx`), never
+  a bare word. Flow screens keep their buttons pinned to the footer and ask one
+  thing per screen; Today shows one item per screen.
+- **Home:** freedom date and chart, then four round actions (Add, Review,
+  Invest, What if). FIRE type and Before you buy left Home (Before you buy is
+  on What if). **Money:** spent this month, an icon tile grid, latest
+  transactions. **Plan:** tiles, not a path, because planning branches.
+  **Profile:** one FIRE type (the quiz result once taken), no monthly
+  check-in.
+- **Onboarding:** sunrise welcome; goal; city on a globe that flies to the
+  pick; pay frequency then take-home per paycheck on a wheel (monthly default,
+  take-home only); spending-or-saving then the amount on a wheel; savings on a
+  big keypad (better than wheels or sliders for large numbers); age on a wheel
+  with Skip as a button. Five reveals, one per screen: the year, life in years,
+  the freedom number, saving rate against others, cities abroad. No FIRE type
+  in onboarding. Then the 9pm Today reminder (iOS permission) and a welcoming
+  join page instead of "Keep your plan".
+- **On hold:** whether sections sit in outlined cards; decided with the frame.

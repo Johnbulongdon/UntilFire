@@ -9,6 +9,8 @@
       "@/lib/fire-personality-art-sheet-*": ["../lib/fire-personality-art-sheet-*"],
       "@/lib/fire/tax": ["../lib/fire/tax/index.ts"],
       "@/lib/fire-data": ["../lib/fire-data.ts"],
+      // The FIRE type quiz (questions, scoring, the 16 types), shared with untilfire.com/fire-type.
+      "@quiz": ["../app/fire-type/quiz-data.ts"],
       "@/*": [
         "./src/*"
       ],

@@ -1,11 +1,15 @@
 import { router } from 'expo-router'
-import { Pressable, View } from 'react-native'
+import { Button } from '@/components/Button'
+import { useState } from 'react'
+import { ActivityIndicator, Alert, Pressable, View } from 'react-native'
 
 import { DetailScreen } from '@/components/DetailScreen'
 import { Card, Label, ProgressTrack } from '@/components/Screen'
 import { Text } from '@/components/Text'
 import { compactMoney, money } from '@/lib/format'
+import { reportHtml, shareReport } from '@/lib/freedom-report'
 import { haptic } from '@/lib/haptics'
+import { colors } from '@/theme/colors'
 import { useAccount } from '@/state/account'
 import { useFreedom } from '@/state/freedom'
 
@@ -17,6 +21,7 @@ import { useFreedom } from '@/state/freedom'
 export default function Freedom() {
   const f = useFreedom()
   const { data } = useAccount()
+  const [sharing, setSharing] = useState(false)
   if (!f) return null
   const full = f.source === 'account'
   const p = data?.profile
@@ -61,12 +66,31 @@ export default function Freedom() {
         )}
       </Card>
 
+      {/* Freedom report (D-60): the one-page plan as a PDF, made on the phone. */}
+      {full && f.inputs && (
+        <Button kind="quiet" disabled={sharing} label={sharing ? 'Making the PDF…' : 'Share your plan as a PDF'}
+          onPress={() => {
+            const go = async (branded: boolean) => {
+              setSharing(true)
+              try {
+                await shareReport(reportHtml(f, f.inputs!, { age: data?.age ?? null, place: p?.cityName ?? '', branded, usTaxHome: !!p?.taxKey || data?.currency === 'USD' }))
+              } catch { Alert.alert("Couldn't make the PDF",'Please try again.') }
+              setSharing(false)
+            }
+            Alert.alert('Share your freedom plan', 'A one-page PDF built only from your numbers.', [
+              { text: 'With UntilFire branding', onPress: () => go(true) },
+              { text: 'Without branding', onPress: () => go(false) },
+              { text: 'Cancel', style: 'cancel' },
+            ])
+          }} />
+      )}
+
       {full && p && data ? (
         <>
           <Card>
             <View className="flex-row justify-between">
               <Label>Planning assumptions</Label>
-              <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { haptic.tick(); router.push('/assumptions') }}><Text className="text-[13px] font-bold text-pos-ink">Edit</Text></Pressable>
+              <Button small kind="quiet" label="Edit" onPress={() => { haptic.tick(); router.push('/assumptions') }} />
             </View>
             <Row label="Age" value={data.age ? String(data.age) : 'Not set'} first />
             <Row label="Where you live" value={p.cityName || 'Not set'} />
@@ -79,7 +103,7 @@ export default function Freedom() {
           <Card>
             <View className="flex-row justify-between">
               <Label>Your goal</Label>
-              <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { haptic.tick(); router.push('/plan-goal') }}><Text className="text-[13px] font-bold text-pos-ink">Edit</Text></Pressable>
+              <Button small kind="quiet" label="Edit" onPress={() => { haptic.tick(); router.push('/plan-goal') }} />
             </View>
             <Row label="Spending a year once free" value={p.plan.retirementAnnualSpend ? money(p.plan.retirementAnnualSpend) : p.retirementCityCol ? money(p.retirementCityCol * p.lifestyleMultiplier) : money(f.monthlySpending * 12)} first />
             <Row label="Pay growth" value={p.plan.payGrowth ? `${(p.plan.payGrowth * 100).toFixed(0)}% a year` : 'Flat'} />

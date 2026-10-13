@@ -4,11 +4,13 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 import { setCustomCategories } from '@/lib/custom-categories'
 import { loadRates, setDisplayCurrency } from '@/lib/display-currency'
-import { addMonths, type CategoryDef, CITIES, FALLBACK_RATES, fetchAllPages, isoDay, loadMortgages, monthOf, netAmount, type Mortgage, type MortgageTerms, type PlanSettings, REAL_RETURN, type StoredPlan, type LifeVersion } from '@/engine'
+import { addMonths, type CategoryDef, CITIES, FALLBACK_RATES, fetchAllPages, isoDay, loadMortgages, monthOf, netAmount, type Mortgage, type MortgageTerms, type PlanSettings, REAL_RETURN, type StoredPlan, type LifeVersion, normaliseLayout, type DashboardLayout } from '@/engine'
 import { effectiveBalances, effectiveDebts, type PlaidAccount } from '@/lib/balances'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/state/auth'
 import { usePlan } from '@/state/plan'
+import { scheduleBillReminders } from '@/lib/bill-reminders'
+import { cancelTodayReminders, scheduleTodayReminders } from '@/lib/today-reminder'
 import { seedFromOnboarding } from '@/lib/mutations'
 
 const SITE = 'https://untilfire.com'
@@ -52,7 +54,11 @@ export interface Goal {
   target_date: string | null
 }
 
+export interface TodayProgress { done: string[]; acks: string[] }
+
 export interface AccountData {
+  /** Pro, on this account or through the household (lib/supabase isPro). */
+  pro: boolean
   /** Monthly take-home from the website's budget. */
   income: number
   /** Monthly budget per expense category, in USD. */
@@ -82,9 +88,13 @@ export interface AccountData {
     mortgageMonthly: number
     mortgageTerms: MortgageTerms
     comparisons: LifeVersion[]
+    contributionDone: { iso: string; amount: number } | null
+    /** The Today list (D-73): days finished and items answered, shared with the website. */
+    today: TodayProgress
   }
   /** From profiles: what to call you and which currency to show money in. */
   displayName: string
+  homeLayout: DashboardLayout
   currency: string
   /** The contribution plan (profiles.contribution_plan), or null when none is saved. */
   contributionPlan: StoredPlan | null
@@ -107,7 +117,13 @@ interface AccountContextValue {
   refresh: () => Promise<void>
 }
 
-const cacheKey = (userId: string) => `account-cache:${userId}`
+/**
+ * The saved copy of the account on this phone. Bump the version whenever
+ * AccountData gains a field, so a copy saved by an older build is ignored
+ * instead of rendering with that field missing.
+ */
+const CACHE_VERSION = 3
+const cacheKey = (userId: string) => `account-cache:v${CACHE_VERSION}:${userId}`
 
 const AccountContext = createContext<AccountContextValue | null>(null)
 
@@ -123,7 +139,7 @@ export const spentUSD = (t: Transaction) => toUSD(netAmount(t), t.currency)
 
 export function AccountProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth()
-  const { plan } = usePlan()
+  const { plan, draft } = usePlan()
   const [data, setData] = useState<AccountData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -139,7 +155,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   }), [])
 
   const refresh = useCallback(async () => {
-    if (!session) { setData(null); shown.current = false; setSavedAt(null); setDisplayCurrency('USD'); return }
+    if (!session) { setData(null); shown.current = false; setSavedAt(null); setDisplayCurrency('USD'); cancelTodayReminders().catch(() => {}); return }
     setLoading(true); setError(null)
     const userId = session.user.id
 
@@ -149,14 +165,17 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       if (cached?.data && !shown.current) {
         setCustomCategories(cached.data.customCategories ?? [])
         setDisplayCurrency(cached.data.currency ?? 'USD')
-        setData(cached.data); setSavedAt(cached.savedAt); shown.current = true
+        // Belt and braces: fill anything an older copy lacks.
+        const d = { ...cached.data, homeLayout: normaliseLayout(cached.data.homeLayout) }
+        d.profile = { ...d.profile, comparisons: d.profile?.comparisons ?? [] }
+        setData(d); setSavedAt(cached.savedAt); shown.current = true
       }
     }
     try {
     const today = isoDay(new Date())
     const since = `${addMonths(monthOf(today), -HISTORY_MONTHS)}-01`
 
-    const [budgetRes, txRes, plaid, billsRes, goalsRes, snapRes, profileRes] = await Promise.all([
+    const [budgetRes, txRes, plaid, billsRes, goalsRes, snapRes, profileRes, pro] = await Promise.all([
       supabase.from('user_budget').select('income, expenses, fire_age, fire_assets').eq('user_id', userId).maybeSingle(),
       fetchAllPages<Transaction>((from, to) => supabase.from('expenses')
         .select('id, date, amount, refund_amount, currency, description, category, sub_category, transaction_type, notes, tags, source')
@@ -183,7 +202,14 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         .eq('user_id', userId)
         .order('captured_at', { ascending: true })
         .limit(120),
-      supabase.from('profiles').select('contribution_plan, display_name, default_currency').eq('user_id', userId).maybeSingle(),
+      supabase.from('profiles').select('contribution_plan, display_name, default_currency, dashboard_layout').eq('user_id', userId).maybeSingle(),
+      // Pro as the website decides it: an active Pro subscription, or a household that has one.
+      (async () => {
+        const { data: sub } = await supabase.from('subscriptions').select('status, plan').eq('user_id', userId).maybeSingle()
+        if (sub?.status === 'active' && sub?.plan === 'pro') return true
+        const { data } = await supabase.rpc('household_has_pro')
+        return data === true
+      })().catch(() => false),
     ])
     // Money shows in the account's currency, at today's rate when it can be fetched.
     const currency = (profileRes.data?.default_currency as string | null) || 'USD'
@@ -210,6 +236,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const mortgageBalance = mortgages.reduce((s, m) => s + m.balance, 0)
 
     const next: AccountData = {
+      pro,
       income: Number(budgetRes.data?.income ?? 0),
       budget,
       age: budgetRes.data?.fire_age ?? null,
@@ -248,10 +275,18 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         mortgageMonthly: Number(fp.mortgageMonthly) || 0,
         mortgageTerms: fp.mortgageTerms && typeof fp.mortgageTerms === 'object' ? fp.mortgageTerms : {},
         // Compare's saved versions, shared with the website (D-69).
+        // This cycle's contribution, once marked as made (shared with the website).
+        contributionDone: fp.contributionDone && typeof fp.contributionDone.iso === 'string' ? { iso: fp.contributionDone.iso as string, amount: Number(fp.contributionDone.amount) || 0 } : null,
+        today: {
+          done: Array.isArray(fp.today?.done) ? fp.today.done.filter((d: unknown) => typeof d === 'string') : [],
+          acks: Array.isArray(fp.today?.acks) ? fp.today.acks.filter((d: unknown) => typeof d === 'string') : [],
+        },
         comparisons: Array.isArray(fp.comparisons) ? fp.comparisons.filter((c: LifeVersion) => c && typeof c.id === 'string' && Array.isArray(c.changes)) : [],
       },
       customCategories,
       displayName: (profileRes.data?.display_name as string | null) ?? '',
+      // Which Home cards show, in what order: the website's layout (lib/dashboard-layout).
+      homeLayout: normaliseLayout(profileRes.data?.dashboard_layout),
       currency,
       contributionPlan: Array.isArray((profileRes.data?.contribution_plan as StoredPlan | null)?.targets) ? (profileRes.data!.contribution_plan as StoredPlan) : null,
       snapshots: (snapRes.data ?? []).map(r => ({ value: Number(r.portfolio_value), at: r.captured_at as string })),
@@ -266,6 +301,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     }
     const stamp = new Date().toISOString()
     setData(next); setSavedAt(stamp); shown.current = true
+    // Bill and payday reminders follow the latest bills (when turned on in Profile).
+    scheduleBillReminders(next.bills).catch(() => {})
+    // The 9pm Today reminder skips days already finished (D-73).
+    scheduleTodayReminders(next.profile.today.done).catch(() => {})
     AsyncStorage.setItem(cacheKey(userId), JSON.stringify({ savedAt: stamp, data: next })).catch(() => {})
     } catch {
       setError(shown.current
@@ -278,6 +317,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   refreshRef.current = refresh
   useEffect(() => { refresh() }, [refresh])
+  // Signed out, amounts show in the currency picked in onboarding.
+  useEffect(() => { if (!session) setDisplayCurrency(draft.currency ?? plan?.currency ?? 'USD') }, [session, plan?.currency, draft.currency])
 
   const value = useMemo(() => ({ data, loading, error, offline, savedAt, refresh }), [data, loading, error, offline, savedAt, refresh])
   return <AccountContext.Provider value={value}>{children}</AccountContext.Provider>
