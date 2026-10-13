@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Bouncy } from '@/components/Bouncy'
 import { Button } from '@/components/Button'
 import { router } from 'expo-router'
 import { useState } from 'react'
@@ -15,9 +16,7 @@ import { haptic } from '@/lib/haptics'
 import { colors } from '@/theme/colors'
 
 
-const SCALE: { value: QuizAnswer; size: number }[] = [
-  { value: 0, size: 40 }, { value: 1, size: 32 }, { value: 2, size: 24 }, { value: 3, size: 32 }, { value: 4, size: 40 },
-]
+const SCALE: { value: QuizAnswer }[] = [{ value: 0 }, { value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }]
 
 /**
  * The FIRE type quiz (untilfire.com/fire-type): eight questions on a
@@ -52,25 +51,23 @@ export default function FireQuiz() {
       </View>
 
       {done ? <Result answers={answers} onRetake={() => setAnswers([])} /> : (
-        <Animated.View key={q.id} entering={FadeInRight.duration(250)} style={{ flex: 1, justifyContent: "space-between", paddingHorizontal: 24, paddingBottom: 32, paddingTop: 40 }}>
-          <View>
-            <Text className="text-[13px] font-bold uppercase tracking-[2px] text-ink-3">Question {i + 1} of {QUIZ_QUESTIONS.length}</Text>
-            <Text className="mt-3 font-display text-[28px] font-bold leading-9 text-ink">{q.prompt}</Text>
-          </View>
-          <View>
-            <View className="flex-row items-center justify-between px-1">
-              {SCALE.map(s => (
-                <Pressable key={s.value} accessibilityRole="button"
-                  accessibilityLabel={s.value === 2 ? 'Neutral' : `${s.value < 2 ? q.leftLabel : q.rightLabel}${s.value === 0 || s.value === 4 ? ', strongly' : ''}`}
-                  hitSlop={8} onPress={() => answer(s.value)}
-                  className={`items-center justify-center rounded-full border-2 ${s.value < 2 ? 'border-green' : s.value > 2 ? 'border-teal' : 'border-border-2'} active:opacity-60`}
-                  style={{ width: s.size, height: s.size }} />
-              ))}
-            </View>
-            <View className="mt-4 flex-row justify-between">
-              <Text className="w-[45%] text-[14px] leading-5 text-ink">{q.leftLabel}</Text>
-              <Text className="w-[45%] text-right text-[14px] leading-5 text-ink">{q.rightLabel}</Text>
-            </View>
+        <Animated.View key={q.id} entering={FadeInRight.duration(220)} style={{ flex: 1, paddingHorizontal: 24, paddingBottom: 24, paddingTop: 28 }}>
+          <Text className="text-[13px] font-bold uppercase tracking-[2px] text-ink-3">Question {i + 1} of {QUIZ_QUESTIONS.length}</Text>
+          <Text className="mt-3 font-display text-[26px] font-bold leading-8 text-ink">{q.prompt}</Text>
+          {/* Five full-width answers in the lower middle, where a thumb reaches. */}
+          <View style={{ flex: 1, justifyContent: 'center', gap: 10, paddingTop: 16 }}>
+            {SCALE.map(s => {
+              const side = s.value < 2 ? q.leftLabel : s.value > 2 ? q.rightLabel : 'Somewhere in between'
+              const how = s.value === 0 || s.value === 4 ? 'Very much' : s.value === 2 ? '' : 'A little'
+              return (
+                <Bouncy key={s.value} accessibilityLabel={how ? `${how}: ${side}` : side} onPress={() => answer(s.value)}>
+                  <View className="rounded-2xl border-2 border-border bg-card px-4 py-3" style={{ borderBottomWidth: 4 }}>
+                    {how ? <Text className="text-[11px] font-bold uppercase tracking-[1.5px] text-ink-3">{how}</Text> : null}
+                    <Text numberOfLines={2} className="text-[15px] font-semibold leading-5 text-ink">{side}</Text>
+                  </View>
+                </Bouncy>
+              )
+            })}
           </View>
         </Animated.View>
       )}
@@ -118,7 +115,7 @@ function Result({ answers, onRetake }: { answers: QuizAnswer[]; onRetake: () => 
 
       <View className="mt-6 gap-3">
         <PrimaryButton label="Done" onPress={() => router.back()} />
-        <Button kind="quiet" label="Share my type" onPress={() => { Share.share({ message: `I'm ${meta.name} (${code}) on the UntilFire FIRE type quiz. Take it: https://untilfire.com/fire-type` }).catch(() => {}) }} />
+        <Button kind="quiet" label="Share my type" onPress={() => { Share.share({ message: `I'm ${meta.name} (${code}) on the UntilFire FIRE type quiz. Take it: https://www.untilfire.com/fire-type` }).catch(() => {}) }} />
         <Button kind="quiet" label="Take it again" onPress={onRetake} />
       </View>
     </ScrollView>

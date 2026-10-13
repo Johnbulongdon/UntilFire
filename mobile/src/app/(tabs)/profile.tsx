@@ -5,12 +5,13 @@ import { useCallback, useState } from 'react'
 import { ActivityIndicator, Alert, Linking, Pressable, Switch, View } from 'react-native'
 
 import { Button } from '@/components/Button'
-import { GuidedTour } from '@/components/GuidedTour'
+import { replayTour } from '@/components/GuidedTour'
 import { PersonalityAvatar } from '@/components/PersonalityAvatar'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { Card, Label, Screen } from '@/components/Screen'
 import { Text } from '@/components/Text'
 import { CURRENCY_NAMES } from '@/engine'
+import { currencyFlag } from '@/lib/display-currency'
 import { exportEverything, exportTransactions } from '@/lib/export-data'
 import { money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
@@ -36,7 +37,6 @@ export default function Profile() {
   const editPlan = useEditPlan()
   const [billsOn, setBillsOn] = useState(false)
   const [todayOn, setTodayOn] = useState(false)
-  const [tour, setTour] = useState(false)
   const [quiz, setQuiz] = useState<{ code: string; name: string } | null>(null)
   const [lockOn, setLockState] = useState(false)
   const [lockInfo, setLockInfo] = useState<{ ok: boolean; label: string }>({ ok: false, label: 'Face ID' })
@@ -95,10 +95,11 @@ export default function Profile() {
         <Card>
           <Label>Account</Label>
           <Row label="Email" value={session.user.email ?? ''} first />
+          <Row label="UntilFire Pro" value={data?.pro ? 'On' : 'See plans'} onPress={() => router.push('/pro')} />
           <Row label="Name" value={data?.displayName || 'Add'} onPress={() => router.push('/name')} />
           <Row label="Household" value="" onPress={() => router.push('/household')} />
           <Row label="Give a month, get a month" value="" onPress={() => router.push('/give-a-month')} />
-          <Row label="Currency" value={data ? `${CURRENCY_NAMES[data.currency] ?? data.currency}` : '…'} onPress={() => router.push('/currency')} />
+          <Row label="Currency" value={data ? `${currencyFlag(data.currency)}  ${CURRENCY_NAMES[data.currency] ?? data.currency}` : '…'} onPress={() => router.push('/currency')} />
           <Row label="Sign out" value="" onPress={() => {
             haptic.warn()
             Alert.alert('Sign out?', 'Your onboarding answers stay on this phone.', [
@@ -174,8 +175,8 @@ export default function Profile() {
           </View>
         )}
         <Row label="Replay onboarding" value="" onPress={() => editPlan(true)} />
-        <Row label="Show the tour" value="" onPress={() => setTour(true)} />
-        {tour && <GuidedTour force onClose={() => setTour(false)} />}
+        <Row label="Show the tour" value="" onPress={async () => { await replayTour(); router.navigate('/') }} />
+        <Row label="Character preview" value="" onPress={() => router.push('/character-lab')} />
       </Card>
 
       {session && (
@@ -191,8 +192,8 @@ export default function Profile() {
         <Label>Help</Label>
         <Row label="Send feedback" value="" onPress={() => router.push('/feedback')} first />
         <Row label="Email support" value="hello@untilfire.com" onPress={() => Linking.openURL('mailto:hello@untilfire.com')} />
-        <Row label="Privacy policy" value="" onPress={() => open('https://untilfire.com/privacy')} />
-        <Row label="Terms of use" value="" onPress={() => open('https://untilfire.com/terms')} />
+        <Row label="Privacy policy" value="" onPress={() => open('https://www.untilfire.com/privacy')} />
+        <Row label="Terms of use" value="" onPress={() => open('https://www.untilfire.com/terms')} />
       </Card>
 
       {session ? (

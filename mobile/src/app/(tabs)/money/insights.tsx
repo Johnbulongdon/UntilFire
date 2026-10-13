@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native'
 import { LoadingState } from '@/components/LoadingState'
 import { DetailScreen } from '@/components/DetailScreen'
 import { Card, Label } from '@/components/Screen'
+import { CategoryGlyph } from '@/components/Icon'
 import { Text } from '@/components/Text'
 import { addMonths, isoDay, monthOf, rangeFor } from '@/engine'
 import { compactMoney, money } from '@/lib/format'
@@ -64,7 +65,7 @@ export default function Insights() {
             <Text className="mb-1 text-[13px] text-ink-3">What moved</Text>
             {explained.moved.map(m => (
               <View key={m.key} className="flex-row justify-between py-0.5">
-                <Text className="text-[14px] text-ink">{categoryOf(m.key).emoji}  {categoryOf(m.key).label}</Text>
+                <View className="flex-row items-center gap-2"><CategoryGlyph cat={categoryOf(m.key)} size={16} /><Text className="text-[14px] text-ink">{categoryOf(m.key).label}</Text></View>
                 <Text className={`font-mono text-[14px] ${m.diff > 0 ? 'text-warn' : 'text-pos-ink'}`}>{m.diff > 0 ? '+' : '−'}{money(Math.abs(m.diff))}</Text>
               </View>
             ))}

@@ -36,9 +36,9 @@ export function stageFor(invested: number, target: number, years: number | null,
 }
 
 export const CATEGORY_LOOK: Record<string, { icon: string; color: string }> = {
-  'FIRE Basics': { icon: '🌱', color: '#1baf7a' },
-  Investing: { icon: '📈', color: '#6b5bd2' },
-  Planning: { icon: '🧭', color: '#2a78d6' },
-  'Risk & Strategy': { icon: '🛡️', color: '#eda100' },
-  'Tax & Accounts': { icon: '🧾', color: '#e34948' },
+  'FIRE Basics': { icon: 'leaf.fill', color: '#1baf7a' },
+  Investing: { icon: 'chart.line.uptrend.xyaxis', color: '#6b5bd2' },
+  Planning: { icon: 'safari.fill', color: '#2a78d6' },
+  'Risk & Strategy': { icon: 'shield.lefthalf.filled', color: '#eda100' },
+  'Tax & Accounts': { icon: 'doc.text.fill', color: '#e34948' },
 }

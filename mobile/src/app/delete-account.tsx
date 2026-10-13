@@ -1,7 +1,7 @@
 import { router, useFocusEffect } from 'expo-router'
 import { Button } from '@/components/Button'
 import { useCallback, useState } from 'react'
-import { ActivityIndicator, Alert, Pressable, TextInput, View } from 'react-native'
+import { ActivityIndicator, Alert, Pressable, TextInput, View, Linking } from 'react-native'
 
 import { SheetFrame } from '@/components/SheetFrame'
 import { Text } from '@/components/Text'
@@ -13,10 +13,10 @@ import { useAuth } from '@/state/auth'
 import { usePlan } from '@/state/plan'
 import { colors } from '@/theme/colors'
 
-const SITE = 'https://untilfire.com'
+const SITE = 'https://www.untilfire.com'
 
 interface Bank { id: string; institution_name: string | null }
-interface Checklist { subscription: boolean; banks: Bank[] }
+interface Checklist { subscription: boolean; banks: Bank[]; apple?: boolean }
 
 /**
  * Delete the account from inside the app (App Store guideline 5.1.1(v)),
@@ -51,15 +51,18 @@ export default function DeleteAccount() {
       if (!itemsRes.ok) throw new Error('items')
       const banks = ((await itemsRes.json()).items ?? []) as Bank[]
       let subscription: boolean
+      let apple = false
       if (statusRes.ok) {
         // The server asks Stripe, so a subscription already set to end doesn't block.
-        subscription = !!(await statusRes.json()).blockers?.subscription
+        const b = (await statusRes.json()).blockers
+        subscription = !!b?.subscription
+        apple = !!b?.appleSubscription
       } else {
         // Before the website has the check: any Pro subscription row counts.
         const { data } = await supabase.from('subscriptions').select('plan, stripe_subscription_id').eq('user_id', session.user.id).maybeSingle()
         subscription = !!data?.stripe_subscription_id && data.plan === 'pro'
       }
-      setChecklist({ subscription, banks })
+      setChecklist({ subscription, banks, apple })
     } catch {
       setCheckFailed(true)
     }
@@ -95,7 +98,7 @@ export default function DeleteAccount() {
     ])
   }
 
-  const ready = !!checklist && !checklist.subscription && checklist.banks.length === 0
+  const ready = !!checklist && !checklist.subscription && !checklist.apple && checklist.banks.length === 0
 
   const remove = async () => {
     if (!session || !matches || !ready) return
@@ -140,6 +143,11 @@ export default function DeleteAccount() {
             <Step done={!checklist.subscription} first
               label={checklist.subscription ? 'Cancel Pro in Profile on untilfire.com, on a computer or in your phone\'s browser' : 'No subscription will charge you again'}
               action={checklist.subscription ? { label: 'Check again', onPress: () => { haptic.tick(); setChecklist(null); check() }, busy: false } : undefined} />
+            {checklist.apple && (
+              // Pro bought in the app is billed by Apple; only the person can turn it off (D-75).
+              <Step done={false} label="Turn off Pro in your iPhone's Settings: your name, then Subscriptions"
+                action={{ label: 'Open', onPress: () => { haptic.tick(); Linking.openURL('https://apps.apple.com/account/subscriptions').catch(() => {}) }, busy: false }} />
+            )}
             {checklist.banks.length === 0
               ? <Step done label="No banks connected" />
               : checklist.banks.map(b => (

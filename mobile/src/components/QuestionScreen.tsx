@@ -44,12 +44,13 @@ export function QuestionScreen(props: {
           <ProgressBar step={props.step} steps={props.steps} />
         </View>
 
-        <ScrollView className="flex-1" contentContainerClassName="px-6 pt-8 pb-6" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" scrollEnabled={!props.noScroll}>
-          <Animated.View entering={FadeInDown.duration(420).springify().damping(18)}>
+        <ScrollView className="flex-1" contentContainerClassName="px-6 pt-8 pb-6" contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" scrollEnabled={!props.noScroll}>
+          <Animated.View entering={FadeInDown.duration(320)}>
             <Text className="font-display text-[30px] font-bold leading-9 tracking-tight text-ink">{props.title}</Text>
             {!!props.hint && <Text className="mt-3 text-base leading-6 text-ink-2">{props.hint}</Text>}
           </Animated.View>
-          <Animated.View entering={FadeInDown.delay(110).duration(420).springify().damping(18)} style={{ marginTop: 32 }}>
+          {/* Answers sit mid-screen, in reach of a thumb holding the phone one-handed (a globe screen fills the space itself). */}
+          <Animated.View entering={FadeInDown.delay(90).duration(320)} style={props.noScroll ? { marginTop: 20 } : { flex: 1, justifyContent: 'center', paddingVertical: 24 }}>
             {props.children}
           </Animated.View>
         </ScrollView>

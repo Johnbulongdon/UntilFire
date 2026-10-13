@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { Bouncy } from '@/components/Bouncy'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { CategoryGlyph } from '@/components/Icon'
 import { Text } from '@/components/Text'
 import { INCOME_CATEGORIES, isoDay, SUB_CATEGORIES } from '@/engine'
 import { currencySymbol, displayCurrency } from '@/lib/display-currency'
@@ -152,7 +153,7 @@ export default function TransactionSheet() {
                   return (
                     <Bouncy key={c.key} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => { haptic.select(); if (category !== c.key) { setSubCategory(null); if (!existing) setNeed(null) } setCategory(c.key) }}>
                       <View className={`flex-row items-center gap-1.5 rounded-full border px-3 py-2 ${on ? 'border-green bg-green-50' : 'border-border bg-card'}`}>
-                        <Text className="text-[15px]">{c.emoji}</Text>
+                        <CategoryGlyph cat={c} size={17} />
                         <Text className={`text-[14px] font-semibold ${on ? 'text-green-700' : 'text-ink-2'}`}>{c.label}</Text>
                       </View>
                     </Bouncy>

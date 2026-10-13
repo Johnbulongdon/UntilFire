@@ -11,7 +11,7 @@ import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { colors } from '@/theme/colors'
 
-const SITE = 'https://untilfire.com'
+const SITE = 'https://www.untilfire.com'
 
 interface Member { userId: string; email: string | null; displayName: string | null; role: 'owner' | 'member'; isYou: boolean }
 interface HouseholdView {

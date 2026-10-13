@@ -141,7 +141,7 @@ export default function BillSheet() {
           <Text className="mb-2 mt-5 text-[13px] text-ink-3">Category{type === 'expense' ? '' : ' (optional)'}</Text>
           <View className="flex-row flex-wrap" style={{ gap: 8 }}>
             {(type === 'income' ? INCOME_CATEGORIES : expenseCategories()).map(c => (
-              <Chip key={c.key} label={`${c.emoji} ${c.label}`} active={category === c.key} onPress={() => setCategory(c.key)} />
+              <Chip key={c.key} label={c.label} active={category === c.key} onPress={() => setCategory(c.key)} />
             ))}
           </View>
 

@@ -2533,3 +2533,59 @@ chore.
   in onboarding. Then the 9pm Today reminder (iOS permission) and a welcoming
   join page instead of "Keep your plan".
 - **On hold:** whether sections sit in outlined cards; decided with the frame.
+
+### D-75 — October 13: Pro in the iOS app through Apple, checked by our own server
+**Status:** Active. Founder's calls, 2026-10-11 (Pro via Apple in-app purchase)
+and 2026-10-13 (no RevenueCat; Apple and Stripe subscribers both in the admin page;
+build everything before buying the developer program).
+- The app sells Pro with Apple's in-app purchase (expo-iap, StoreKit 2). The
+  website verifies each signed transaction with Apple's library and root
+  certificates (`lib/apple-store.ts`, `/api/apple/verify`) and follows Apple's
+  renewal notices (`/api/apple/notifications`).
+- One `subscriptions` table for both: `source` is `stripe` or `apple`, so every
+  existing Pro check keeps working (migration 0050). One Apple purchase belongs
+  to one account; someone already Pro through Stripe keeps their Stripe row.
+- Apple-billed Pro can only be changed in iPhone Settings: the website's billing
+  portal says so, and account deletion waits until it won't renew (as D-72 does
+  for Stripe).
+- **Why not RevenueCat:** a third service and fee for what one route and one
+  notice handler do here, and the founder wants both kinds of subscriber in his
+  own admin page.
+- **Temporary:** until the app's own build exists, "Connect a bank" opens
+  untilfire.com from the app, an accepted exception to native-only (13 Oct).
+**Revisit:** if Android ships (Google Play billing), or if handling Apple's
+notices becomes a burden.
+
+### D-76 — October 13: Sunny, a drawn icon set, and the consumer-grade pass
+**Status:** Active. Founder's calls, 2026-10-13 (after the consumer-grade gap
+report: character direction A, then "continue down the order of work").
+- **Sunny** is UntilFire's character: the logo's sun with a face
+  (`mobile/src/components/Sunny.tsx`). Moods: hello, think, done, quiet, win,
+  rise. It appears where a moment matters: the welcome sunrise, the year
+  reveal (thinks while the year rolls, cheers as it lands), "All caught up",
+  a goal reached, empty and error screens (`EmptyState`), and the one-time
+  "your date moved" note on Home. FIRE types stay who you are; Sunny cheers.
+- **Animated in code, not Rive, for now.** Each part is its own SVG layer and
+  only View transforms and opacity animate (Reanimated, UI thread), so it runs
+  in Expo Go and stays smooth; animating SVG props directly crashed on iPhone.
+  Rive (what Duolingo uses) needs the app's own build and a motion designer;
+  it is an upgrade later, not a requirement.
+- **One drawn icon set** (`components/icon-set.tsx`): chunky, rounded,
+  two-tone, keyed by the SF Symbol names screens already used, so `Icon` draws
+  ours first on every platform. Built-in categories use it; categories people
+  make keep the emoji they picked. The system tab bar keeps SF Symbols.
+- **Sound kit:** day complete, reveal and goal-reached chimes, generated bell
+  tones in `mobile/assets/sounds/`.
+- **Logic gaps closed with it:** Undo for five seconds after each Today
+  answer (including the one that finished the day); a daily "Anything to add?"
+  for accounts without a bank; one-time first steps (connect a bank, name a
+  goal); free accounts see "More banks with Pro" before a second bank.
+- **Home tour:** on first visit Sunny points at the real parts of Home (the
+  date, the four actions, the Today bar, the tabs) with the rest dimmed;
+  Profile's "Show the tour" replays it there.
+**Why:** the gap report scored illustration, character, icons, motion and
+celebration at 1–2 of 5 against Duolingo, Copilot and Monarch. The founder
+picked the sun over a flame (B reads as streaks or burning money) and over
+plain shapes (C, less personality).
+**Revisit:** a Rive Sunny with a motion designer after the app's own build;
+whether the website adopts Sunny too.

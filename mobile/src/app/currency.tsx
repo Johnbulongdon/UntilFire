@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { Text } from '@/components/Text'
 import { CURRENCY_NAMES, SUPPORTED_CURRENCIES } from '@/engine'
-import { currencySymbol } from '@/lib/display-currency'
+import { currencyFlag, currencySymbol } from '@/lib/display-currency'
 import { haptic } from '@/lib/haptics'
 import { saveCurrency } from '@/lib/mutations'
 import { useAccount } from '@/state/account'
@@ -39,10 +39,10 @@ export default function CurrencySheet() {
         <View className="rounded-card border border-border bg-card px-4">
           {SUPPORTED_CURRENCIES.map((c, i) => (
             <Pressable accessibilityRole="button" key={c} onPress={() => pick(c)} className={`flex-row items-center gap-3 py-3 ${i > 0 ? 'border-t border-border' : ''}`}>
-              <Text className="w-10 font-mono text-[15px] text-ink-2">{currencySymbol(c).trim()}</Text>
+              <Text className="w-10 text-center text-[26px]">{currencyFlag(c)}</Text>
               <View className="flex-1">
                 <Text className="text-[15px] font-semibold text-ink">{CURRENCY_NAMES[c] ?? c}</Text>
-                <Text className="text-[12px] text-ink-3">{c}</Text>
+                <Text className="text-[12px] text-ink-3">{c} · {currencySymbol(c).trim()}</Text>
               </View>
               {busy === c ? <ActivityIndicator color={colors.green} /> : current === c ? <Text className="text-[16px] text-pos-ink">✓</Text> : null}
             </Pressable>

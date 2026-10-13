@@ -7,6 +7,7 @@ import { ActivityIndicator, Pressable, ScrollView, Switch, View } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { Icon } from '@/components/Icon'
 import { Text } from '@/components/Text'
 import { autoDetectColumns, buildTransactions, inferImportCurrency, isLikelyDuplicate, parseCSV, type ColumnMap } from '@/engine'
 import { displayCurrency } from '@/lib/display-currency'
@@ -117,7 +118,7 @@ export default function ImportCsv() {
       <ScrollView contentContainerClassName="gap-4 px-5 pb-10 pt-5">
         {!file ? (
           <View className="rounded-card border border-border bg-card p-5">
-            <Text className="text-[32px]">📄</Text>
+            <Icon name="doc.text.fill" size={40} color={colors.tealDeep} />
             <Text className="mt-2 text-[17px] font-semibold text-ink">Bring in a bank export</Text>
             <Text className="mt-1 text-[14px] leading-5 text-ink-2">
               Download your transactions from your bank as a CSV file, then choose it here. UntilFire finds the date, description and amount columns, and skips anything already imported.

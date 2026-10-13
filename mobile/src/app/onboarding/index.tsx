@@ -5,13 +5,11 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { Button } from '@/components/Button'
-import { LogoReveal } from '@/components/LogoReveal'
-import { Sunrise } from '@/components/Sunrise'
+import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
 import { haptic } from '@/lib/haptics'
-import { brand } from '@/theme/colors'
 
-/** Welcome (V2): the wordmark, a sun coming up, one punchline, one button. */
+/** Welcome (V2): the wordmark (without the logo's own sun, so there is one sun), Sunny coming up, one punchline, one button. */
 export default function Welcome() {
   // A soft tap as the sun rises.
   useEffect(() => {
@@ -23,11 +21,11 @@ export default function Welcome() {
     <SafeAreaView className="flex-1 bg-brand">
       <View className="flex-1 justify-between px-6 pb-4 pt-6">
         <Animated.View entering={FadeIn.duration(300)} style={{ alignItems: 'center', marginTop: 24 }}>
-          <LogoReveal width={220} />
+          <Text className="font-display text-[30px] font-bold tracking-tight text-white">UntilFire</Text>
         </Animated.View>
 
         <Animated.View entering={FadeIn.delay(600).duration(900)}>
-          <Sunrise share={1} height={170} sun={brand.sun} horizon={brand.aqua} sky={brand.aqua} />
+          <View style={{ alignItems: 'center' }}><Sunny mood="rise" size={190} /></View>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(1300).duration(700)}>

@@ -13,7 +13,7 @@ import { scheduleBillReminders } from '@/lib/bill-reminders'
 import { cancelTodayReminders, scheduleTodayReminders } from '@/lib/today-reminder'
 import { seedFromOnboarding } from '@/lib/mutations'
 
-const SITE = 'https://untilfire.com'
+const SITE = 'https://www.untilfire.com'
 /** Months of transactions the app reads: this one and twelve before it, for ranges up to a year and "usual". */
 const HISTORY_MONTHS = 12
 

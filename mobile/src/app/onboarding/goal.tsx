@@ -6,11 +6,12 @@ import { OptionCard } from '@/components/OptionCard'
 import { QuestionScreen } from '@/components/QuestionScreen'
 import { haptic } from '@/lib/haptics'
 import { usePlan, type Goal as GoalId } from '@/state/plan'
+import { TAB_COLOR } from '@/theme/colors'
 
-const GOALS: { id: GoalId; emoji: string; title: string; detail: string }[] = [
-  { id: 'retire-early', emoji: '🏝️', title: 'Retire early', detail: 'Stop working years before everyone else.' },
-  { id: 'financial-freedom', emoji: '🕊️', title: 'Financial freedom', detail: 'Work because you want to, not because you have to.' },
-  { id: 'exploring', emoji: '🧭', title: 'Just exploring', detail: 'See where my money is heading.' },
+const GOALS: { id: GoalId; icon: { name: 'sun.max.fill'; tint: string }; title: string; detail: string }[] = [
+  { id: 'retire-early', icon: { name: 'beach.umbrella.fill' as 'sun.max.fill', tint: TAB_COLOR.plan }, title: 'Retire early', detail: 'Stop working years before everyone else.' },
+  { id: 'financial-freedom', icon: { name: 'sun.max.fill', tint: TAB_COLOR.home }, title: 'Financial freedom', detail: 'Work because you want to, not because you have to.' },
+  { id: 'exploring', icon: { name: 'safari.fill' as 'sun.max.fill', tint: TAB_COLOR.money }, title: 'Just exploring', detail: 'See where my money is heading.' },
 ]
 
 export default function Goal() {
@@ -23,7 +24,7 @@ export default function Goal() {
         {GOALS.map(g => (
           <OptionCard
             key={g.id}
-            emoji={g.emoji}
+            icon={g.icon}
             title={g.title}
             detail={g.detail}
             selected={picked === g.id}

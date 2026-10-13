@@ -4,6 +4,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { CategoryGlyph, Icon } from '@/components/Icon'
 import { Text } from '@/components/Text'
 import { money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
@@ -71,7 +72,7 @@ export default function BudgetEdit() {
         <ScrollView contentContainerClassName="px-5 pb-6" keyboardShouldPersistTaps="handled">
           {months > 0 && (
             <Pressable accessibilityRole="button" onPress={useAverages} className="mb-3 flex-row items-center gap-3 rounded-card bg-surface px-4 py-3 active:opacity-70">
-              <Text className="text-[20px]">✨</Text>
+              <Icon name="sparkles" size={24} color={colors.tealDeep} />
               <View className="flex-1">
                 <Text className="text-[15px] font-semibold text-ink">Fill from what you usually spend</Text>
                 <Text className="text-[12px] text-ink-3">Your average over the last {months === 1 ? 'month' : `${months} months`}, per category. Change any before saving.</Text>
@@ -81,7 +82,7 @@ export default function BudgetEdit() {
           <View className="rounded-card border border-border bg-card px-4">
             {expenseCategories().map((c, i) => (
               <View key={c.key} className={`flex-row items-center gap-3 py-2.5 ${i > 0 ? 'border-t border-border' : ''}`}>
-                <Text className="text-[18px]">{c.emoji}</Text>
+                <CategoryGlyph cat={c} size={22} />
                 <View className="flex-1">
                   <Text className="text-[15px] font-semibold text-ink">{c.label}</Text>
                   {spent.get(c.key) || averages.get(c.key) ? (

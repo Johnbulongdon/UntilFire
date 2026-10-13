@@ -70,6 +70,15 @@ draw an object, so they stay the same in both themes, and a medal never carries
 meaning by colour alone: it has its stars, and its label on hover or once a city
 is opened. Placeholder art; a drawn medal can replace the disc later.
 
+### Sunny and the drawn icons (app)
+
+The iOS app has a character, **Sunny** (the logo sun with a face, D-76), and its
+own two-tone icon set. Sunny is drawn in its fixed warm palette in both themes,
+like the medals: it is an object, not a status colour, and never the only
+carrier of meaning (every Sunny moment has its words). Use `EmptyState` for any
+empty or error screen, and `Icon` names from `components/icon-set.tsx` before an
+SF Symbol or emoji. Emoji stay only where a person picked them.
+
 ### Contrast
 
 Badge text is 11px and needs 4.5:1 contrast. Use the `--uf-*-ink` variants

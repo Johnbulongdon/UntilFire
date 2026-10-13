@@ -13,7 +13,7 @@ import { spentUSD, toUSD, type AccountData, type Goal, type TodayProgress, type 
  * is answered (filed, or a flag resolved); the rest are answered with an ack
  * saved in the FIRE profile beside the finished days.
  */
-export type TodayKind = 'big' | 'flag' | 'category' | 'need' | 'backlog' | 'bill' | 'payday' | 'goal' | 'number'
+export type TodayKind = 'big' | 'flag' | 'category' | 'need' | 'backlog' | 'bill' | 'payday' | 'goal' | 'manual' | 'setup' | 'number'
 
 export interface Filing { category: string; sub_category: string | null; need: 'need' | 'want' }
 
@@ -32,6 +32,8 @@ export interface TodayItem {
   /** Payday: what's safe to invest; number: what's safe to spend today; backlog: how many more. */
   amount?: number
   count?: number
+  /** Setup: the one first-week step this item asks for. */
+  setup?: 'bank' | 'goal'
 }
 
 /** The items a free account gets; Pro adds the money-smart ones (D-73, question 5). */
@@ -147,6 +149,13 @@ export function todayItems(data: AccountData, progress: TodayProgress, now = new
   for (const g of data.goals) {
     if (g.target_amount > 0 && g.current_saved >= g.target_amount && !acked.has(`goal:${g.id}`)) out.push({ key: `goal:${g.id}`, kind: 'goal', goal: g })
   }
+
+  // Without a bank, nothing arrives by itself, so ask once a day (the gap report, Oct 2026).
+  if (data.plaidAccounts.length === 0 && !acked.has(`manual:${day}`)) out.push({ key: `manual:${day}`, kind: 'manual' })
+
+  // A new account's first steps, each asked only once.
+  if (data.plaidAccounts.length === 0 && !acked.has('setup:bank')) out.push({ key: 'setup:bank', kind: 'setup', setup: 'bank' })
+  if (data.goals.length === 0 && !acked.has('setup:goal')) out.push({ key: 'setup:goal', kind: 'setup', setup: 'goal' })
 
   // Always last, and the only item on a quiet day, so every day can be finished (question 3).
   if (!acked.has(`day:${day}`)) out.push({ key: `day:${day}`, kind: 'number', amount: safeToSpendToday(data, now) ?? undefined })

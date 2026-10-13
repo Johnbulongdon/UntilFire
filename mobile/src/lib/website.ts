@@ -7,7 +7,7 @@ import { colors } from '@/theme/colors'
  * doesn't have yet. The website keeps its own sign-in, so the first visit may ask for it.
  */
 export function openWebsite(path: string) {
-  WebBrowser.openBrowserAsync(`https://untilfire.com${path}`, {
+  WebBrowser.openBrowserAsync(`https://www.untilfire.com${path}`, {
     controlsColor: colors.green,
     presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
   }).catch(() => {})

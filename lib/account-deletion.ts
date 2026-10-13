@@ -17,6 +17,8 @@ export interface DeletionBlockers {
   subscription: boolean
   /** Names of banks still connected through Plaid. */
   banks: string[]
+  /** Pro billed by Apple that will renew; only the person can turn it off, in iPhone Settings (D-75). */
+  appleSubscription?: boolean
 }
 
 export interface SubscriptionRow {
@@ -45,13 +47,14 @@ export function willRenew(row: SubscriptionRow | null, live: StripeSubscriptionS
 }
 
 export function hasBlockers(b: DeletionBlockers): boolean {
-  return b.subscription || b.banks.length > 0
+  return b.subscription || !!b.appleSubscription || b.banks.length > 0
 }
 
 /** One sentence for the person, naming every step still to do. */
 export function blockerMessage(b: DeletionBlockers): string {
   const steps: string[] = []
   if (b.subscription) steps.push("cancel your Pro subscription")
+  if (b.appleSubscription) steps.push("turn off Pro in your iPhone's Settings (your name, then Subscriptions)")
   if (b.banks.length === 1) steps.push(`disconnect ${b.banks[0]}`)
   else if (b.banks.length > 1) steps.push(`disconnect your ${b.banks.length} connected banks`)
   if (steps.length === 0) return ""

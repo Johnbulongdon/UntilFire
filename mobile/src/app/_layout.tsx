@@ -80,7 +80,9 @@ export default function RootLayout() {
           <Stack.Screen name="give-a-month" options={{ presentation: 'modal' }} />
           <Stack.Screen name="review" options={{ presentation: 'modal' }} />
           <Stack.Screen name="today" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="pro" options={{ presentation: 'modal' }} />
           <Stack.Screen name="fire-quiz" options={{ presentation: 'fullScreenModal' }} />
+          <Stack.Screen name="character-lab" options={{ presentation: 'modal' }} />
         </Stack>
         <AppLock />
         </AccountProvider>

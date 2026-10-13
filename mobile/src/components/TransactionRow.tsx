@@ -7,6 +7,7 @@ import { haptic } from '@/lib/haptics'
 import { categoryOf } from '@/lib/money-data'
 import { toUSD, type Transaction } from '@/state/account'
 
+import { CategoryGlyph } from './Icon'
 import { Text } from './Text'
 
 /**
@@ -46,7 +47,7 @@ export function TransactionRow({ t, first, selecting, selected, onToggle, onLong
         </View>
       )}
       <View className="h-10 w-10 items-center justify-center rounded-control" style={{ backgroundColor: `${cat.color}22` }}>
-        <Text className="text-[18px]">{cat.emoji}</Text>
+        <CategoryGlyph cat={cat} size={22} />
       </View>
       <View className="flex-1">
         <Text numberOfLines={1} className="text-[15px] font-semibold text-ink">{t.description || cat.label}</Text>

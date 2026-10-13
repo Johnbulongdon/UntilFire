@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
       const sub = await stripe.subscriptions.retrieve(subscriptionId);
 
       await supabaseAdmin.from("subscriptions").upsert({
+        source: "stripe",
         user_id: userId,
         stripe_customer_id: customerId,
         stripe_subscription_id: subscriptionId,
@@ -83,6 +84,7 @@ export async function POST(req: NextRequest) {
 
       const isActive = ["active", "trialing"].includes(sub.status);
       await supabaseAdmin.from("subscriptions").upsert({
+        source: "stripe",
         user_id: existing.user_id,
         stripe_customer_id: customerId,
         stripe_subscription_id: sub.id,

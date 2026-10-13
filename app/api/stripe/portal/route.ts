@@ -18,9 +18,14 @@ export async function POST(req: NextRequest) {
 
   const { data: sub } = await supabaseAdmin
     .from("subscriptions")
-    .select("stripe_customer_id")
+    .select("*")
     .eq("user_id", user.id)
     .single();
+
+  // Pro bought in the iOS app is billed by Apple, and only Apple can change it (D-75).
+  if (sub?.source === "apple") {
+    return NextResponse.json({ error: "Your Pro is billed by Apple. Change or cancel it in your iPhone's Settings, under your name, then Subscriptions." }, { status: 409 });
+  }
 
   if (!sub?.stripe_customer_id) {
     return NextResponse.json({ error: "No subscription found" }, { status: 404 });

@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { CategoryGlyph } from '@/components/Icon'
 import { Text } from '@/components/Text'
 import { buildMerchantMemory, INCOME_CATEGORIES, suggestFromHistory } from '@/engine'
 import { moneyIn } from '@/lib/format'
@@ -98,7 +99,7 @@ export default function Review() {
               <View className="mt-3 flex-row flex-wrap items-center gap-2">
                 <Pressable accessibilityRole="button" accessibilityState={{ expanded: open }} onPress={() => { haptic.tick(); setPicking(open ? null : t.id) }}
                   className={`flex-row items-center gap-1.5 rounded-full border px-3 py-1.5 ${f.category === 'other' ? 'border-warn bg-warn-bg' : 'border-border bg-surface'}`}>
-                  <Text className="text-[13px]">{cat.emoji}</Text>
+                  <CategoryGlyph cat={cat} size={15} />
                   <Text className="text-[13px] font-semibold text-ink">{f.category === 'other' ? 'Pick a category' : cat.label}{f.sub_category ? ` › ${f.sub_category}` : ''}</Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" accessibilityLabel={`${f.need}, tap to switch`} onPress={() => { haptic.select(); set(t.id, { need: f.need === 'need' ? 'want' : 'need' }) }}
@@ -112,7 +113,7 @@ export default function Review() {
                   {[...expenseCategories(), ...(t.transaction_type === 'income' ? INCOME_CATEGORIES : [])].map(c => (
                     <Pressable key={c.key} accessibilityRole="button" onPress={() => { haptic.select(); set(t.id, { category: c.key, sub_category: null, need: defaultNeed(c.key) }); setPicking(null) }}
                       className={`rounded-full border px-2.5 py-1 ${f.category === c.key ? 'border-green bg-green-50' : 'border-border bg-card'}`}>
-                      <Text className="text-[12px] text-ink">{(c as { emoji?: string }).emoji ?? ''} {c.label}</Text>
+                      <Text className="text-[12px] text-ink">{c.label}</Text>
                     </Pressable>
                   ))}
                 </View>

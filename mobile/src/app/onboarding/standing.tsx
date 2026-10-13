@@ -23,7 +23,7 @@ export default function Standing() {
   const share = async () => {
     haptic.tick()
     const when = result.year != null ? `work becomes optional in ${result.year}` : 'I have a plan for when work becomes optional'
-    await Share.share({ message: `With UntilFire, ${when}. Find your year: https://untilfire.com` }).catch(() => {})
+    await Share.share({ message: `With UntilFire, ${when}. Find your year: https://www.untilfire.com` }).catch(() => {})
   }
 
   return (
