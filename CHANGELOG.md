@@ -47,6 +47,9 @@ under today's date, creating the heading if it is not there yet.
 - New (D-77): Home's actions are Add, Budget, Invest and What if; Review is
   redesigned (grouped by day, category sheet, swipe to skip); the Invest
   ladder is drawn to scale; the globe no longer cuts a line across the land.
+- Fix (D-77): a bigger city globe that zooms further, a faster Review with
+  subcategories (tap, or hold and drag), the freedom ring filling from empty,
+  and no globe flashing.
 
 ## 2026-10-11
 

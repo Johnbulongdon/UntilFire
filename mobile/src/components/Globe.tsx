@@ -34,7 +34,8 @@ export type { GlobeCity, LngLat } from './GlobeSvg'
  * idle spin and the fly-to all run on the UI thread. The web preview uses
  * Globe.web.tsx (the SVG globe), since Skia on the web needs its own loader.
  */
-type Props = Parameters<typeof GlobeSvg>[0]
+// `frame` widens the canvas past the globe, so a zoomed globe fills it rather than a square (Oct 2026 QA).
+type Props = Parameters<typeof GlobeSvg>[0] & { frame?: { w: number; h: number } }
 
 export function Globe(props: Props) {
   return <GlobeSkia {...props} />
@@ -75,9 +76,10 @@ const GRID_LINES: number[][] = (() => {
   return lines
 })()
 
-function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: Props) {
+function GlobeSkia({ size, frame, focus, pins = [], cities, onCenter, onTap, colors }: Props) {
   const R0 = size / 2 - 2
-  const c = size / 2
+  const W = frame?.w ?? size, H = frame?.h ?? size
+  const cx = W / 2, cy = H / 2
   // Pinch to zoom (Oct 2026 QA: close cities were hard to tap); the canvas crops the rest.
   const zoom = useSharedValue(1)
   const pinchFrom = useSharedValue(1)
@@ -123,7 +125,7 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
     const land = Skia.Path.Make()
     const grid = Skia.Path.Make()
     const dots = Skia.Path.Make()
-    const rim = Skia.XYWHRect(c - R, c - R, 2 * R, 2 * R)
+    const rim = Skia.XYWHRect(cx - R, cy - R, 2 * R, 2 * R)
     // Point i of a ring as [depth, across, up]; depth > 0 is the near side.
     const at = (pts: number[], i: number) => {
       const X = pts[i] * cl - pts[i + 1] * sl
@@ -139,32 +141,54 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
       for (let i = 0; i < pts.length; i += 3) {
         const [x, Y, z] = at(pts, i)
         if (x <= 0) { started = false; continue }
-        if (!started) { out.moveTo(c + R * Y, c - R * z); started = true } else out.lineTo(c + R * Y, c - R * z)
+        if (!started) { out.moveTo(cx + R * Y, cy - R * z); started = true } else out.lineTo(cx + R * Y, cy - R * z)
       }
     }
     // A closed ring (first point repeated last), started from a visible point.
-    // Leaving the near side, it goes to the exact crossing; while hidden, it
-    // adds up which way round the rim it travels; coming back, it draws that arc.
+    // Leaving the near side it goes to the exact crossing; the hidden stretch
+    // becomes an arc along the rim. Pass 1 measures each stretch's sweep and how
+    // often the ring winds round the view axis: winding the counter-clockwise way
+    // means it circles the far pole, not the middle, so one full turn comes off
+    // its widest stretch (Oct 2026 QA: Eurasia filled the whole disc for a frame
+    // whenever the far side of the globe sat inside it).
+    const sweeps: number[] = []
     const area = (pts: number[], out: typeof land) => {
       const m = pts.length / 3 - 1
       let k = -1
       for (let j = 0; j < m; j++) if (at(pts, j * 3)[0] > 0) { k = j; break }
       if (k < 0) return false
+      sweeps.length = 0
       let [px, pY, pz] = at(pts, k * 3)
-      out.moveTo(c + R * pY, c - R * pz)
-      let from = 0, last = 0, sweep = 0
+      let pa = angle(pY, pz), total = 0, sweep = 0
+      for (let j = 1; j <= m; j++) {
+        const [x, Y, z] = at(pts, ((k + j) % m) * 3)
+        const a = angle(Y, z)
+        total += turn(a - pa)
+        if (x > 0 !== px > 0) {
+          const t = px / (px - x)
+          const cut = angle(pY + t * (Y - pY), pz + t * (z - pz))
+          if (px > 0) sweep = turn(a - cut); else sweeps.push(sweep + turn(cut - pa))
+        } else if (x <= 0) sweep += turn(a - pa)
+        px = x; pY = Y; pz = z; pa = a
+      }
+      const W = Math.round(total / 360)
+      if (W < 0 && sweeps.length > 0) {
+        let b = 0
+        for (let i = 1; i < sweeps.length; i++) if (Math.abs(sweeps[i]) > Math.abs(sweeps[b])) b = i
+        sweeps[b] -= 360 * W
+      }
+      // Pass 2: draw it.
+      ;[px, pY, pz] = at(pts, k * 3)
+      out.moveTo(cx + R * pY, cy - R * pz)
+      let from = 0, n = 0
       for (let j = 1; j <= m; j++) {
         const [x, Y, z] = at(pts, ((k + j) % m) * 3)
         if (x > 0 !== px > 0) {
           const t = px / (px - x)
-          const a = angle(pY + t * (Y - pY), pz + t * (z - pz))
-          if (px > 0) { out.arcToOval(rim, a, 0, false); from = a; last = a; sweep = 0 }
-          else { sweep += turn(a - last); out.arcToOval(rim, from, sweep, false) }
+          const cut = angle(pY + t * (Y - pY), pz + t * (z - pz))
+          if (px > 0) { out.arcToOval(rim, cut, 0, false); from = cut } else out.arcToOval(rim, from, sweeps[n++], false)
         }
-        if (x > 0) out.lineTo(c + R * Y, c - R * z)
-        // Hidden points near the far pole have no stable rim angle; skipping them
-        // stops the fill flipping across the globe for a frame (Oct 2026 QA).
-        else if (Y * Y + z * z > 0.01) { const a = angle(Y, z); sweep += turn(a - last); last = a }
+        if (x > 0) out.lineTo(cx + R * Y, cy - R * z)
         px = x; pY = Y; pz = z
       }
       out.close()
@@ -182,7 +206,7 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
       const x = X * cp - Z * sp
       // Hidden near the rim too, where dots would bunch into a line.
       if (x < 0.2) continue
-      dots.addCircle(c + R * Y, c - R * (Z * cp + X * sp), 2.6)
+      dots.addCircle(cx + R * Y, cy - R * (Z * cp + X * sp), 2.6 + Math.min(3, (zoom.value - 1) * 0.25))
     }
     return { land, grid, dots }
   })
@@ -216,7 +240,7 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
     const X = cityVecs[i * 3] * cl - cityVecs[i * 3 + 1] * sl
     const Y = cityVecs[i * 3 + 1] * cl + cityVecs[i * 3] * sl
     const Z = cityVecs[i * 3 + 2]
-    return { x: c + R * Y, y: c - R * (Z * cp + X * sp) }
+    return { x: cx + R * Y, y: cy - R * (Z * cp + X * sp) }
   })
   const nearX = useDerivedValue(() => nearXY.value.x)
   const nearY = useDerivedValue(() => nearXY.value.y)
@@ -242,7 +266,7 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
     })
   const pinch = Gesture.Pinch()
     .onBegin(() => { pinchFrom.value = zoom.value; touched.value = true })
-    .onUpdate(e => { zoom.value = Math.max(1, Math.min(4, pinchFrom.value * e.scale)) })
+    .onUpdate(e => { zoom.value = Math.max(1, Math.min(16, pinchFrom.value * e.scale)) })
   const tap = Gesture.Tap().onEnd(e => {
     if (!onTap || cityVecs.length === 0) return
     const R = R0 * zoom.value
@@ -254,7 +278,7 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
       const Y = cityVecs[i + 1] * cl + cityVecs[i] * sl
       const Z = cityVecs[i + 2]
       if (X * cp - Z * sp < 0.2) continue
-      const dd = Math.hypot(c + R * Y - e.x, c - R * (Z * cp + X * sp) - e.y)
+      const dd = Math.hypot(cx + R * Y - e.x, cy - R * (Z * cp + X * sp) - e.y)
       if (dd < d) { d = dd; best = i / 3 }
     }
     if (best >= 0) runOnJS(pickAt)(cityKeys[best])
@@ -264,14 +288,14 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
   return (
     <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       <GestureDetector gesture={gesture}>
-        <Canvas style={{ width: size, height: size }}>
-          <Circle cx={c} cy={c} r={rz} color={colors.sea} />
+        <Canvas style={{ width: W, height: H }}>
+          <Circle cx={cx} cy={cy} r={rz} color={colors.sea} />
           <Path path={grid} color={colors.line} style="stroke" strokeWidth={0.6} />
           <Path path={land} color={colors.land} />
-          <Circle cx={c} cy={c} r={rz} color={colors.edge} style="stroke" strokeWidth={1.5} />
+          <Circle cx={cx} cy={cy} r={rz} color={colors.edge} style="stroke" strokeWidth={1.5} />
           <Path path={dots} color={colors.dot ?? '#FFFFFF'} opacity={0.85} />
           <Circle cx={nearX} cy={nearY} r={5} color={colors.pin} />
-          {pinList.map((p, i) => <Pin key={i} v={p.v} color={p.color} r={p.r} lam={lam} phi={phi} c={c} R0={R0} zoom={zoom} />)}
+          {pinList.map((p, i) => <Pin key={i} v={p.v} color={p.color} r={p.r} lam={lam} phi={phi} cx={cx} cy={cy} R0={R0} zoom={zoom} />)}
         </Canvas>
       </GestureDetector>
     </View>
@@ -279,9 +303,9 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
 }
 
 /** A pin that follows the globe and hides on the far side. */
-function Pin({ v, color, r, lam, phi, c, R0, zoom }: {
+function Pin({ v, color, r, lam, phi, cx, cy, R0, zoom }: {
   v: [number, number, number]; color: string; r: number
-  lam: { value: number }; phi: { value: number }; c: number; R0: number; zoom: { value: number }
+  lam: { value: number }; phi: { value: number }; cx: number; cy: number; R0: number; zoom: { value: number }
 }) {
   const at = useDerivedValue(() => {
     const R = R0 * zoom.value
@@ -290,16 +314,16 @@ function Pin({ v, color, r, lam, phi, c, R0, zoom }: {
     const X = v[0] * cl - v[1] * sl
     const Y = v[1] * cl + v[0] * sl
     const x = X * cp - v[2] * sp
-    return { x: c + R * Y, y: c - R * (v[2] * cp + X * sp), shown: x > 0.02 ? 1 : 0 }
+    return { x: cx + R * Y, y: cy - R * (v[2] * cp + X * sp), shown: x > 0.02 ? 1 : 0 }
   })
-  const cx = useDerivedValue(() => at.value.x)
-  const cy = useDerivedValue(() => at.value.y)
+  const px = useDerivedValue(() => at.value.x)
+  const py = useDerivedValue(() => at.value.y)
   const op = useDerivedValue(() => at.value.shown)
   return (
     <Group opacity={op}>
-      <Circle cx={cx} cy={cy} r={r + 5} color={color} opacity={0.25} />
-      <Circle cx={cx} cy={cy} r={r + 2} color="#FFFFFF" />
-      <Circle cx={cx} cy={cy} r={r} color={color} />
+      <Circle cx={px} cy={py} r={r + 5} color={color} opacity={0.25} />
+      <Circle cx={px} cy={py} r={r + 2} color="#FFFFFF" />
+      <Circle cx={px} cy={py} r={r} color={color} />
     </Group>
   )
 }

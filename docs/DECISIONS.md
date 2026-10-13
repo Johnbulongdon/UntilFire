@@ -2609,6 +2609,14 @@ screen in the old style; the ladder hid the order of magnitude.
   of the screen, like Robinhood's; "How you stack up" bars grow upward; the
   Invest page (renamed from Contributions) keeps only the amount, the date,
   one button and the picture, with the working one tap away.
+- **Third pass:** the city globe fills the space under the search edge to
+  edge and zooms to 16×, with no hint line; Review draws only the rows on
+  screen (108 rows lagged) and its sheet offers subcategories; the freedom
+  ring fills from empty after the screen arrives; Invest shows where money
+  goes on its first card, savings rungs included, and the order even at $0;
+  the abroad globe no longer fills the disc when its far side sits inside a
+  continent. Holding a Review row's category and dragging opens a grid;
+  resting on a category opens its kinds, and letting go picks.
 **Revisit:** if Home feels busy, Budget is reachable three ways there (chip,
 "This month" bar, button); the bar is the one to trim.
 The "How you stack up" average is the US saving rate for everyone; per-country

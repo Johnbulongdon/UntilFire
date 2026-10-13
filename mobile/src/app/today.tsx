@@ -32,7 +32,7 @@ type Card = { eyebrow: string; title: string; amount?: string; sub?: string; cho
 type Undo = { key: string; label: string; acked: boolean; revert: () => Promise<string | null> }
 const UNDO_MS = 5000
 /** How long the tick shows on the tapped answer before the next item slides in. */
-const TICK_MS = 220
+const TICK_MS = 150
 
 /**
  * Today (D-73, V2): one decision per screen, like a lesson. A progress bar on

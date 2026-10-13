@@ -18,7 +18,7 @@ export default function FreedomNumber() {
   return (
     <RevealFrame eyebrow="Your freedom number" next="Continue" onNext={() => router.push('/onboarding/standing')}>
       <View className="items-center">
-        <Ring share={share} size={260} color="#62FAE3" track="rgba(255,255,255,0.15)">
+        <Ring share={share} size={260} delay={450} duration={1400} color="#62FAE3" track="rgba(255,255,255,0.15)">
           <Text className="font-display text-[48px] font-bold text-white">{compactMoney(result.target)}</Text>
           <Text className="text-[14px] text-mint">in today's money</Text>
         </Ring>

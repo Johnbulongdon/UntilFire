@@ -1,15 +1,17 @@
 import { router, useLocalSearchParams } from 'expo-router'
-import { useMemo, useState } from 'react'
+import { memo, useCallback, useMemo, useRef, useState } from 'react'
 import { Alert, Modal, Pressable, ScrollView, View } from 'react-native'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
-import Animated, { FadeOut, LinearTransition, SlideOutLeft } from 'react-native-reanimated'
+import Animated, { FadeOut, LinearTransition, runOnJS, SlideOutLeft } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { Button } from '@/components/Button'
+import { DragCategoryPicker, type DragPickerHandle } from '@/components/DragCategoryPicker'
 import { EmptyState } from '@/components/EmptyState'
 import { CategoryGlyph, Icon } from '@/components/Icon'
 import { Text } from '@/components/Text'
-import { buildMerchantMemory, isoDay, suggestFromHistory } from '@/engine'
+import { buildMerchantMemory, isoDay, SUB_CATEGORIES, suggestFromHistory } from '@/engine'
 import { moneyIn } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { categoryOf, expenseCategories } from '@/lib/money-data'
@@ -20,7 +22,7 @@ import { useAccount, type Transaction } from '@/state/account'
 import { colors } from '@/theme/colors'
 
 type Filing = { category: string; sub_category: string | null; need: 'need' | 'want'; fromHistory: number }
-const TICK_MS = 220
+const TICK_MS = 150
 
 const dayLabel = (iso: string) => {
   const today = isoDay(new Date())
@@ -44,6 +46,8 @@ export default function Review() {
   const [gone, setGone] = useState<Set<string>>(new Set())
   const [ticked, setTicked] = useState<Set<string>>(new Set())
   const [picking, setPicking] = useState<Transaction | null>(null)
+  const [dragging, setDragging] = useState(false)
+  const picker = useRef<DragPickerHandle>(null)
   const inMonths = (t: Transaction) => !months || months.split(',').some(m => t.date.startsWith(m))
 
   const { pending, suggest } = useMemo(() => {
@@ -60,8 +64,15 @@ export default function Review() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, months])
 
-  const shown = pending.filter(t => !gone.has(t.id))
-  const filingOf = (t: Transaction): Filing => ({ ...suggest(t), ...overrides[t.id] }) as Filing
+  // One suggestion per row, worked out once; overrides only touch the rows edited.
+  const base = useMemo(() => new Map(pending.map(t => [t.id, suggest(t)])), [pending, suggest])
+  const filings = useMemo(() => {
+    const m = new Map(base)
+    for (const [id, o] of Object.entries(overrides)) { const b = m.get(id); if (b) m.set(id, { ...b, ...o } as Filing) }
+    return m
+  }, [base, overrides])
+  const shown = useMemo(() => pending.filter(t => !gone.has(t.id)), [pending, gone])
+  const filingOf = (t: Transaction): Filing => filings.get(t.id) ?? suggest(t)
   const set = (id: string, patch: Partial<Filing>) => setOverrides(o => ({ ...o, [id]: { ...o[id], ...patch } }))
   const ready = shown.filter(t => filingOf(t).category !== 'other')
   const hide = (ids: string[], on: boolean) => setGone(g => { const n = new Set(g); ids.forEach(id => (on ? n.add(id) : n.delete(id))); return n })
@@ -87,12 +98,28 @@ export default function Review() {
     setTimeout(() => approve([t]), TICK_MS)
   }
 
-  // Newest day first, each day's rows under its own header.
-  const days: { day: string; rows: Transaction[] }[] = []
-  for (const t of shown) {
-    const last = days[days.length - 1]
-    if (last?.day === t.date) last.rows.push(t); else days.push({ day: t.date, rows: [t] })
-  }
+  // Rows only render on screen, and stable handlers let unchanged rows skip re-rendering.
+  const latest = useRef({ approveOne, setPicking, set, hide })
+  latest.current = { approveOne, setPicking, set, hide }
+  const onCategory = useCallback((t: Transaction) => { haptic.tick(); latest.current.setPicking(t) }, [])
+  const onNeed = useCallback((t: Transaction, need: 'need' | 'want') => { haptic.select(); latest.current.set(t.id, { need }) }, [])
+  const onApprove = useCallback((t: Transaction) => latest.current.approveOne(t), [])
+  const onSkip = useCallback((t: Transaction) => { haptic.tick(); latest.current.hide([t.id], true) }, [])
+  // Hold the category pill and drag to pick; letting go off the grid changes nothing.
+  const onDrag = useCallback((t: Transaction, phase: DragPhase, x: number, y: number) => {
+    if (phase === 'start') { haptic.select(); setDragging(true) }
+    if (phase !== 'end') { picker.current?.move(x, y); return }
+    const r = picker.current?.end()
+    setDragging(false)
+    if (r) { haptic.success(); latest.current.set(t.id, { category: r.category, sub_category: r.sub, need: defaultNeed(r.category) }) }
+  }, [])
+
+  // Newest day first, each day's header followed by its rows.
+  const items = useMemo(() => {
+    const out: Item[] = []
+    shown.forEach((t, i) => { if (t.date !== shown[i - 1]?.date) out.push({ key: `d${t.date}`, day: t.date }); out.push({ key: t.id, t }) })
+    return out
+  }, [shown])
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.ground }}>
@@ -110,24 +137,12 @@ export default function Review() {
           <EmptyState mood="done" size={150} title="All caught up" body="Everything is filed. Your budget and freedom date are up to date." />
         </View>
       ) : (
-        <ScrollView contentContainerClassName="gap-1.5 px-4 pb-6 pt-1">
-          {days.map(d => (
-            <View key={d.day} className="gap-1.5">
-              <Text className="mx-1 mb-0.5 mt-3 text-[11px] font-extrabold uppercase tracking-[1.5px] text-ink-3">{dayLabel(d.day)}</Text>
-              {d.rows.map(t => (
-                <Animated.View key={t.id} exiting={SlideOutLeft.duration(220)} layout={LinearTransition.duration(200)}>
-                  <ReanimatedSwipeable friction={2} rightThreshold={60} onSwipeableOpen={() => { haptic.tick(); hide([t.id], true) }}
-                    renderRightActions={() => <View className="flex-1 items-end justify-center pr-5"><Text className="text-[14px] font-bold text-ink-3">Skip</Text></View>}>
-                    <Row t={t} f={filingOf(t)} edited={!!overrides[t.id]?.category} ticked={ticked.has(t.id)}
-                      onCategory={() => { haptic.tick(); setPicking(t) }}
-                      onNeed={need => { haptic.select(); set(t.id, { need }) }}
-                      onApprove={() => approveOne(t)} />
-                  </ReanimatedSwipeable>
-                </Animated.View>
-              ))}
-            </View>
-          ))}
-        </ScrollView>
+        <Animated.FlatList data={items} keyExtractor={i => i.key} itemLayoutAnimation={LinearTransition.duration(200)}
+          scrollEnabled={!dragging} initialNumToRender={10} maxToRenderPerBatch={10} windowSize={7} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 24, paddingTop: 4 }}
+          renderItem={({ item }) => item.t
+            ? <SwipeRow t={item.t} f={filingOf(item.t)} edited={!!overrides[item.t.id]?.category} ticked={ticked.has(item.t.id)}
+              onCategory={onCategory} onNeed={onNeed} onApprove={onApprove} onSkip={onSkip} onDrag={onDrag} />
+            : <Text className="mx-1 mb-1 mt-3 text-[11px] font-extrabold uppercase tracking-[1.5px] text-ink-3">{dayLabel(item.day!)}</Text>} />
       )}
 
       <View className="gap-1.5 px-4 pb-3 pt-2">
@@ -139,18 +154,45 @@ export default function Review() {
           </>}
       </View>
 
+      <DragCategoryPicker ref={picker} open={dragging} />
       <CategorySheet t={picking} current={picking ? filingOf(picking).category : null} onClose={() => setPicking(null)}
-        onSave={key => { if (picking) set(picking.id, { category: key, sub_category: null, need: defaultNeed(key) }); setPicking(null) }} />
+        onSave={(key, sub) => { if (picking) set(picking.id, { category: key, sub_category: sub, need: defaultNeed(key) }); setPicking(null) }} />
     </SafeAreaView>
   )
 }
 
-function Row({ t, f, edited, ticked, onCategory, onNeed, onApprove }: {
+type Item = { key: string; day?: string; t?: Transaction }
+type DragPhase = 'start' | 'move' | 'end'
+type RowProps = {
   t: Transaction; f: Filing; edited: boolean; ticked: boolean
-  onCategory: () => void; onNeed: (n: 'need' | 'want') => void; onApprove: () => void
-}) {
+  onCategory: (t: Transaction) => void; onNeed: (t: Transaction, n: 'need' | 'want') => void
+  onApprove: (t: Transaction) => void; onSkip: (t: Transaction) => void
+  onDrag: (t: Transaction, phase: DragPhase, x: number, y: number) => void
+}
+
+const skipAction = () => <View className="flex-1 items-end justify-center pr-5"><Text className="text-[14px] font-bold text-ink-3">Skip</Text></View>
+
+const SwipeRow = memo(function SwipeRow(p: RowProps) {
+  return (
+    <Animated.View exiting={SlideOutLeft.duration(220)} className="pb-1.5">
+      <ReanimatedSwipeable friction={2} rightThreshold={60} onSwipeableOpen={() => p.onSkip(p.t)} renderRightActions={skipAction}>
+        <Row {...p} />
+      </ReanimatedSwipeable>
+    </Animated.View>
+  )
+})
+
+function Row({ t, f, edited, ticked, onCategory, onNeed, onApprove, onDrag }: RowProps) {
   const cat = categoryOf(f.category)
   const unpicked = f.category === 'other'
+  // A tap opens the sheet; holding then dragging opens the drag picker.
+  const pill = useMemo(() => Gesture.Exclusive(
+    Gesture.Pan().activateAfterLongPress(300)
+      .onStart(e => runOnJS(onDrag)(t, 'start', e.absoluteX, e.absoluteY))
+      .onUpdate(e => runOnJS(onDrag)(t, 'move', e.absoluteX, e.absoluteY))
+      .onFinalize((e, ok) => { if (ok) runOnJS(onDrag)(t, 'end', e.absoluteX, e.absoluteY) }),
+    Gesture.Tap().onEnd((_e, ok) => { if (ok) runOnJS(onCategory)(t) }),
+  ), [t, onDrag, onCategory])
   return (
     <View className="gap-2.5 rounded-[18px] border border-border bg-card px-3 py-3">
       <View className="flex-row items-center gap-2.5">
@@ -162,20 +204,22 @@ function Row({ t, f, edited, ticked, onCategory, onNeed, onApprove }: {
         <Text className="font-mono text-[17px] text-ink">{moneyIn(t.amount, t.currency)}</Text>
       </View>
       <View className="flex-row items-center gap-2">
-        <Pressable accessibilityRole="button" accessibilityLabel={unpicked ? 'Pick a category' : `${cat.label}, change category`} onPress={onCategory}
+        <GestureDetector gesture={pill}>
+        <View accessible accessibilityRole="button" accessibilityLabel={unpicked ? 'Pick a category' : `${cat.label}, change category`} accessibilityHint="Hold and drag for a quick pick" onAccessibilityTap={() => onCategory(t)}
           className={`flex-row items-center gap-1.5 rounded-xl border-[1.5px] border-b-[3px] px-2.5 py-1 ${unpicked ? 'border-warn bg-warn-bg' : 'border-border-2 bg-surface'}`}>
           {!unpicked && <CategoryGlyph cat={cat} size={15} />}
-          <Text className={`text-[13px] font-bold ${unpicked ? 'text-warn' : 'text-ink'}`}>{unpicked ? 'Pick a category' : cat.label}</Text>
-        </Pressable>
+          <Text numberOfLines={1} className={`max-w-[150px] text-[13px] font-bold ${unpicked ? 'text-warn' : 'text-ink'}`}>{unpicked ? 'Pick a category' : f.sub_category ? `${cat.label} · ${f.sub_category}` : cat.label}</Text>
+        </View>
+        </GestureDetector>
         <View accessibilityRole="radiogroup" className="flex-row rounded-xl bg-surface-2 p-[3px]">
           {(['need', 'want'] as const).map(n => (
-            <Pressable key={n} accessibilityRole="radio" accessibilityState={{ selected: f.need === n }} onPress={() => onNeed(n)}
+            <Pressable key={n} accessibilityRole="radio" accessibilityState={{ selected: f.need === n }} onPress={() => onNeed(t, n)}
               className={`rounded-[9px] px-2.5 py-1 ${f.need === n ? 'bg-card' : ''}`}>
               <Text className={`text-[12px] font-extrabold ${f.need === n ? 'text-ink' : 'text-ink-3'}`}>{n === 'need' ? 'Need' : 'Want'}</Text>
             </Pressable>
           ))}
         </View>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Approve ${t.description}`} onPress={onApprove} disabled={ticked} style={{ marginLeft: 'auto' }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Approve ${t.description}`} onPress={() => onApprove(t)} disabled={ticked} style={{ marginLeft: 'auto' }}>
           {({ pressed }) => (
             <View className="h-10 w-10 items-center justify-center rounded-full border-[1.5px]"
               style={{ backgroundColor: ticked ? colors.green : colors.card, borderColor: ticked ? 'rgba(0,0,0,0.28)' : colors.border2, borderBottomWidth: pressed ? 1.5 : 4, marginTop: pressed ? 2.5 : 0 }}>
@@ -188,11 +232,13 @@ function Row({ t, f, edited, ticked, onCategory, onNeed, onApprove }: {
   )
 }
 
-/** Half-height category picker, like every other edit: an icon grid and one Save. */
-function CategorySheet({ t, current, onClose, onSave }: { t: Transaction | null; current: string | null; onClose: () => void; onSave: (key: string) => void }) {
+/** Half-height category picker, like every other edit: an icon grid, its kinds once one is picked, and one Save. */
+function CategorySheet({ t, current, onClose, onSave }: { t: Transaction | null; current: string | null; onClose: () => void; onSave: (key: string, sub: string | null) => void }) {
   const [choice, setChoice] = useState<string | null>(null)
+  const [sub, setSub] = useState<string | null>(null)
   const picked = choice ?? (current !== 'other' ? current : null)
-  const close = () => { setChoice(null); onClose() }
+  const subs = picked ? SUB_CATEGORIES[picked] : undefined
+  const close = () => { setChoice(null); setSub(null); onClose() }
   return (
     <Modal visible={!!t} transparent animationType="slide" onRequestClose={close}>
       <Pressable accessibilityLabel="Close" onPress={close} style={{ flex: 1, backgroundColor: 'rgba(20,14,8,0.45)' }} />
@@ -204,7 +250,7 @@ function CategorySheet({ t, current, onClose, onSave }: { t: Transaction | null;
         </View>
         <ScrollView contentContainerClassName="flex-row flex-wrap px-3 pt-3">
           {expenseCategories().map(c => (
-            <Pressable key={c.key} accessibilityRole="radio" accessibilityState={{ selected: picked === c.key }} onPress={() => { haptic.select(); setChoice(c.key) }}
+            <Pressable key={c.key} accessibilityRole="radio" accessibilityState={{ selected: picked === c.key }} onPress={() => { haptic.select(); setChoice(c.key); setSub(null) }}
               style={{ width: '25%' }} className="p-1">
               <View className={`items-center gap-1 rounded-2xl px-0.5 py-2 ${picked === c.key ? 'border-2 border-green bg-green-50' : 'border-2 border-transparent'}`}>
                 <View className="h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: `${c.color ?? colors.ink3}1F` }}><CategoryGlyph cat={c} size={22} /></View>
@@ -213,8 +259,18 @@ function CategorySheet({ t, current, onClose, onSave }: { t: Transaction | null;
             </Pressable>
           ))}
         </ScrollView>
+        {subs && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2 px-5 pt-2">
+            {subs.map(sc => (
+              <Pressable key={sc} accessibilityRole="radio" accessibilityState={{ selected: sub === sc }} onPress={() => { haptic.select(); setSub(sub === sc ? null : sc) }}
+                className={`rounded-full border px-3 py-1.5 ${sub === sc ? 'border-green bg-green-50' : 'border-border bg-surface'}`}>
+                <Text className="text-[13px] font-bold text-ink">{sc}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
         <View className="px-5 pb-3 pt-2">
-          <Button label="Save" disabled={!picked} onPress={() => { if (picked) { haptic.select(); onSave(picked); setChoice(null) } }} />
+          <Button label="Save" disabled={!picked} onPress={() => { if (picked) { haptic.select(); onSave(picked, sub); setChoice(null); setSub(null) } }} />
         </View>
       </SafeAreaView>
     </Modal>

@@ -66,10 +66,11 @@ export default function Contributions() {
               haptic.success(); refresh()
             }} />
         )}
-        {!view.budgetIsCustom && !a.done && !showHow && (
+        {!view.budgetIsCustom && !a.done && !showHow && view.budget > 0 && (
           <Button small kind="quiet" style={{ marginTop: 10 }} label="How it's worked out" onPress={() => { haptic.tick(); setShowHow(true) }} />
         )}
-        {!view.budgetIsCustom && !a.done && showHow && (
+        {/* At $0 the working is the answer, so it shows without a tap. */}
+        {!view.budgetIsCustom && !a.done && (showHow || view.budget <= 0) && (
           <View className="mt-3 gap-1 border-t border-border pt-3">
             <Line label="Cash outside your emergency fund" value={money(a.cash)} />
             {a.income > 0 && <Line label="Coming in before then" value={`+${money(a.income)}`} tone="pos" />}
@@ -77,10 +78,7 @@ export default function Contributions() {
             {!a.hasExpectedData && <Text className="mt-1 text-[12px] text-ink-3">Add bills and paydays in Money → Calendar so this counts what's already spoken for.</Text>}
           </View>
         )}
-      </Card>
-
-      <Card>
-        <View className="flex-row justify-between">
+        <View className="mt-4 flex-row items-center justify-between border-t border-border pt-3">
           <Label>Where it goes</Label>
           <Button small kind="quiet" label="Edit" onPress={() => { haptic.tick(); router.push('/contribution-edit') }} />
         </View>
@@ -97,7 +95,7 @@ export default function Contributions() {
       </Card>
 
       <Card>
-        <Label>Your mix</Label>
+        <Label>Your investing mix</Label>
         {!mix ? (
           <Text className="mt-2 text-[14px] leading-5 text-ink-2">
             {plan.targets.length === 0 ? 'Set a mix, like 80% VTI and 20% BND.' : 'Nothing reaches investing this time.'}
@@ -139,8 +137,21 @@ function Ladder({ fills, next }: { fills: Fill[]; next?: string }) {
   const total = funded.reduce((t, f) => t + f.amount, 0)
   // Plan's colour, lighter for each later rung's bar; badges stay solid so their numbers stay readable.
   const shade = (i: number) => ({ backgroundColor: `${TAB_COLOR.plan}${Math.round(Math.max(0.4, 1 - i * 0.2) * 255).toString(16).padStart(2, '0')}` })
+  // With nothing free yet, still show the order money will go in, saving first (Oct 2026 QA: "invest" includes saving).
   if (funded.length === 0) {
-    return <Text className="mt-2 text-[14px] leading-5 text-ink-2">Nothing to put in this time. Each rung fills in order once there is.</Text>
+    return (
+      <View className="mt-2 gap-2.5">
+        <Text className="text-[13px] leading-5 text-ink-3">When money's free, it fills these in order:</Text>
+        {later.slice(0, 4).map((f, i) => (
+          <View key={f.kind} className="flex-row items-center gap-2.5">
+            <View className="h-6 w-6 items-center justify-center rounded-full border-[1.5px]" style={{ borderColor: TAB_COLOR.plan }}>
+              <Text className="text-[12px] font-bold" style={{ color: TAB_COLOR.plan }}>{i + 1}</Text>
+            </View>
+            <Text className="flex-1 text-[15px] font-semibold text-ink">{f.label}</Text>
+          </View>
+        ))}
+      </View>
+    )
   }
   return (
     <View className="mt-3 gap-4">
