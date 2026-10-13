@@ -2616,7 +2616,10 @@ screen in the old style; the ladder hid the order of magnitude.
   goes on its first card, savings rungs included, and the order even at $0;
   the abroad globe no longer fills the disc when its far side sits inside a
   continent. Holding a Review row's category and dragging opens a grid;
-  resting on a category opens its kinds, and letting go picks.
+  resting on a category opens its kinds, and letting go picks. Fourth pass:
+  the grid sits on a solid backdrop and the kinds open in a popover against
+  the cell, like the iOS keyboard's accent picker, so the finger moves one
+  row; Calendar's suggestion buttons showed raw code and repeated merchants.
 **Revisit:** if Home feels busy, Budget is reachable three ways there (chip,
 "This month" bar, button); the bar is the one to trim.
 The "How you stack up" average is the US saving rate for everyone; per-country

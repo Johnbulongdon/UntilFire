@@ -49,6 +49,7 @@ export default function Bills() {
     const found = detectRecurring(raw, FALLBACK_RATES)
     return [...found.expenses, ...found.income]
       .filter(s => !dismissed.includes(s.key) && !data.bills.some(b => sameMerchant(b.description, s.description)))
+      .filter((s, i, all) => all.findIndex(o => sameMerchant(o.description, s.description)) === i)
       .slice(0, 5)
   }, [data, dismissed])
 
@@ -112,8 +113,8 @@ export default function Bills() {
                 </View>
                 <Text className="text-[12px] text-ink-3">{RECURRENCE_LABEL[toRecurrence(s.frequency) as keyof typeof RECURRENCE_LABEL]} · next around {dayLabel(s.nextDueDate)}</Text>
                 <View className="mt-2 flex-row gap-5">
-                  <Button small kind="quiet" label="Add as {s.transaction_type === 'income' ? 'payday' : 'bill'}" onPress={() => accept(s)} />
-                  <Button small kind="quiet" label="Not a bill" onPress={() => dismiss(s.key)} />
+                  <Button small kind="quiet" label={`Add as ${s.transaction_type === 'income' ? 'payday' : 'bill'}`} onPress={() => accept(s)} />
+                  <Button small kind="quiet" label={s.transaction_type === 'income' ? 'Not a payday' : 'Not a bill'} onPress={() => dismiss(s.key)} />
                 </View>
               </View>
             ))}
