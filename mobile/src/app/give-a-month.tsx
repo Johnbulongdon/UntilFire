@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, Share, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { Icon } from '@/components/Icon'
 import { Text } from '@/components/Text'
 import { haptic } from '@/lib/haptics'
 import { useAuth } from '@/state/auth'
@@ -21,7 +22,7 @@ export default function GiveAMonth() {
 
   useEffect(() => {
     if (!session) return
-    fetch('https://untilfire.com/api/referrals/friend', { headers: { Authorization: `Bearer ${session.access_token}` } })
+    fetch('https://www.untilfire.com/api/referrals/friend', { headers: { Authorization: `Bearer ${session.access_token}` } })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then(d => setLink({ url: `https://www.untilfire.com/r/${d.code}`, monthsEarned: d.monthsEarned ?? 0 }))
       .catch(() => setFailed(true))
@@ -41,7 +42,7 @@ export default function GiveAMonth() {
         <View style={{ width: 52 }} />
       </View>
       <View className="flex-1 px-6 pt-10">
-        <Text className="text-[48px]">🎁</Text>
+        <Icon name="gift.fill" size={64} color={colors.tealDeep} />
         <Text className="mt-3 font-display text-[28px] font-bold leading-9 text-ink">Give a month, get a month</Text>
         <Text className="mt-2 text-[16px] leading-6 text-ink-2">Friends who join through your link get a longer free trial. When one of them subscribes, you get a month free.</Text>
         <View className="mt-6 rounded-card border border-border bg-card p-4">

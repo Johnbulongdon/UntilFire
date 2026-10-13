@@ -3,10 +3,12 @@ import { Button } from '@/components/Button'
 import { useEffect, useState } from 'react'
 import { Pressable, View } from 'react-native'
 
+import { BankBridge } from '@/components/BankBridge'
 import { LoadingState } from '@/components/LoadingState'
 import { DetailScreen } from '@/components/DetailScreen'
 import { Card, Label } from '@/components/Screen'
 import { Text } from '@/components/Text'
+import { EmptyState } from '@/components/EmptyState'
 import { DEFAULT_MORTGAGE_RATE_PCT, payoffYear } from '@/engine'
 import { isMortgageAccount } from '@/lib/balances'
 import { compactMoney, money } from '@/lib/format'
@@ -48,7 +50,7 @@ export default function NetWorth() {
           <Button small kind="quiet" label="Edit balances" onPress={() => { haptic.tick(); router.push('/balances') }} />
         </View>
         {nw.assets.length === 0
-          ? <Text className="mt-2 text-[14px] text-ink-2">Nothing added yet. Tap Edit balances to add what you have.</Text>
+          ? <EmptyState size={88} title="Nothing added yet" body="Add what you have in cash, savings and investments." />
           : nw.assets.map((a, i) => <Row key={a.label} label={a.label} value={compactMoney(a.value)} first={i === 0} />)}
       </Card>
 
@@ -150,7 +152,7 @@ function Accounts({ data }: { data: AccountData }) {
 
   useEffect(() => {
     if (!session || !hasInvestments) return
-    fetch('https://untilfire.com/api/plaid/holdings', { headers: { Authorization: `Bearer ${session.access_token}` } })
+    fetch('https://www.untilfire.com/api/plaid/holdings', { headers: { Authorization: `Bearer ${session.access_token}` } })
       .then(r => (r.ok ? r.json() : null))
       .then(d => { if (d) setHoldings({ list: d.holdings ?? [], names: d.securities ?? {} }) })
       .catch(() => {})
@@ -161,8 +163,9 @@ function Accounts({ data }: { data: AccountData }) {
       <Card soft>
         <Label>Connected accounts</Label>
         <Text className="mt-2 text-[14px] leading-5 text-ink-2">
-          No banks connected; the totals above come from the balances you typed. Connecting a bank in the app arrives with the first test build.
+          No banks connected; the totals above come from the balances you typed.
         </Text>
+        <View className="mt-3"><BankBridge /></View>
       </Card>
     )
   }
@@ -189,6 +192,7 @@ function Accounts({ data }: { data: AccountData }) {
           </View>
         )
       })}
+      <View className="mt-3"><BankBridge another compact /></View>
     </Card>
   )
 }

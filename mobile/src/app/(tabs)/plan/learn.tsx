@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native'
 import { DetailScreen } from '@/components/DetailScreen'
 import { Card, Label, ProgressTrack } from '@/components/Screen'
 import { Text } from '@/components/Text'
+import { Icon } from '@/components/Icon'
 import { getStageArticles, learnStages, type LearnArticle } from '@/engine'
 import { haptic } from '@/lib/haptics'
 import { CATEGORY_LOOK, stageFor, useReadArticles } from '@/lib/learn-progress'
@@ -56,12 +57,12 @@ export default function Learn() {
 }
 
 function ArticleRow({ a, read, first }: { a: LearnArticle; read: boolean; first: boolean }) {
-  const look = CATEGORY_LOOK[a.category] ?? { icon: '📄', color: '#8a7c68' }
+  const look = CATEGORY_LOOK[a.category] ?? { icon: 'doc.fill', color: '#8a7c68' }
   return (
     <Pressable accessibilityRole="button" onPress={() => { haptic.tick(); router.push({ pathname: '/plan/article', params: { slug: a.slug } }) }}
       className={`flex-row items-center gap-3 py-2.5 active:opacity-60 ${first ? '' : 'border-t border-border'}`}>
       <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: `${look.color}22` }}>
-        <Text className="text-[16px]">{look.icon}</Text>
+        <Icon name={look.icon as 'doc.fill'} size={20} color={look.color} />
       </View>
       <View className="flex-1">
         <Text numberOfLines={2} className={`text-[14px] font-semibold ${read ? 'text-ink-3' : 'text-ink'}`}>{a.title}</Text>

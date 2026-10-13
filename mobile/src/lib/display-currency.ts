@@ -43,3 +43,8 @@ export async function loadRates(): Promise<Record<string, number> | null> {
 export const toInput = (usd?: number | null) => (usd ? String(Math.round(fromUSD(usd) * 100) / 100) : '')
 /** An input's text, typed in the display currency, back to USD. */
 export const fromInput = (text: string) => toUSDFromDisplay(Number(text) || 0)
+
+/** The flag of a currency's country (its code's first two letters), e.g. USD → 🇺🇸, EUR → 🇪🇺. */
+export function currencyFlag(code: string): string {
+  return [...code.slice(0, 2).toUpperCase()].map(ch => String.fromCodePoint(0x1f1e6 + ch.charCodeAt(0) - 65)).join('')
+}

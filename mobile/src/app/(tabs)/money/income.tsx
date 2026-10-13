@@ -5,10 +5,14 @@ import { LoadingState } from '@/components/LoadingState'
 import { DetailScreen } from '@/components/DetailScreen'
 import { Card, Label } from '@/components/Screen'
 import { Text } from '@/components/Text'
+import { Icon } from '@/components/Icon'
 import { paycheck, pensionFor, STATE_TAX } from '@/engine'
 import { money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { useAccount } from '@/state/account'
+import { colors } from '@/theme/colors'
+
+type SymbolName = Parameters<typeof Icon>[0]['name']
 
 /**
  * Money → Income (the website's IncomeTab, D-59): salary to take-home, the
@@ -38,25 +42,25 @@ export default function Income() {
       </Card>
 
       <Card>
-        <Line icon="💼" name="Salary" meta="Before tax, a year" value={gross > 0 ? money(gross) : 'Add'} onPress={edit} first />
-        <Line icon="🔒" name={`${pensionName}, before tax`} meta="Taken from pay before tax, so it is saving" value={pension > 0 ? `−${money(pension)}` : 'Add'} onPress={edit} />
-        {pay && !pay.unknown && <Line icon="🏛️" name="Income tax" meta={taxLabel} value={`−${money(pay.incomeTax)}`} />}
-        {pay && pay.us && <Line icon="🧾" name="Social Security and Medicare" meta="On the full salary" value={`−${money(pay.socialSecurity)}`} />}
-        <Line icon="💵" name="Take-home" strong
+        <Line icon="briefcase.fill" name="Salary" meta="Before tax, a year" value={gross > 0 ? money(gross) : 'Add'} onPress={edit} first />
+        <Line icon="lock.fill" name={`${pensionName}, before tax`} meta="Taken from pay before tax, so it is saving" value={pension > 0 ? `−${money(pension)}` : 'Add'} onPress={edit} />
+        {pay && !pay.unknown && <Line icon="building.columns.fill" name="Income tax" meta={taxLabel} value={`−${money(pay.incomeTax)}`} />}
+        {pay && pay.us && <Line icon="doc.text.fill" name="Social Security and Medicare" meta="On the full salary" value={`−${money(pay.socialSecurity)}`} />}
+        <Line icon="banknote.fill" name="Take-home" strong
           meta={pay ? (pay.unknown ? 'Set where you live to work out tax' : 'Worked out from your salary') : 'After tax, a month. Add a salary to work it out'}
           value={pay ? money(yearTakeHome) : `${money(data.income)}/mo`} onPress={pay ? undefined : edit} />
-        <Line icon="🏢" name="Employer adds" meta="Into your pension, on top of your pay" value={employer > 0 ? `+${money(employer)}` : 'Add'} onPress={edit} positive={employer > 0} />
+        <Line icon="gift.fill" name="Employer adds" meta="Into your pension, on top of your pay" value={employer > 0 ? `+${money(employer)}` : 'Add'} onPress={edit} positive={employer > 0} />
       </Card>
     </DetailScreen>
   )
 }
 
 function Line({ icon, name, meta, value, onPress, first, strong, positive }: {
-  icon: string; name: string; meta: string; value: string; onPress?: () => void; first?: boolean; strong?: boolean; positive?: boolean
+  icon: SymbolName; name: string; meta: string; value: string; onPress?: () => void; first?: boolean; strong?: boolean; positive?: boolean
 }) {
   const content = (
     <View className={`flex-row items-center gap-3 py-3 ${first ? '' : 'border-t border-border'}`}>
-      <Text className="text-[18px]">{icon}</Text>
+      <Icon name={icon} size={22} color={colors.tealDeep} />
       <View className="flex-1">
         <Text className={`text-[15px] ${strong ? 'font-bold' : 'font-semibold'} text-ink`}>{name}</Text>
         <Text className="text-[12px] text-ink-3">{meta}</Text>

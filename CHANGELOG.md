@@ -24,6 +24,24 @@ under today's date, creating the heading if it is not there yet.
   wheel, savings on a keypad, five reveals one at a time, and a welcoming join
   page. The monthly check-in reminder is retired.
 - Adding a transaction asks need or want, so it is filed straight away.
+- Fix: the app called untilfire.com, which redirects to www and drops the
+  sign-in on the way, so banks, net worth and household came back empty. It
+  now calls www.untilfire.com directly.
+- New (D-76): Sunny, the logo's sun with a face, on the welcome sunrise, the
+  year reveal (with a chime and confetti), "All caught up", a goal reached, and
+  empty and error screens. A first-visit Home tour where Sunny points at each
+  part. One drawn two-tone icon set in place of system symbols and emoji.
+- Today: Undo for five seconds after each answer; "Anything to add?" daily
+  without a bank; one-time steps to connect a bank and name a goal. Home says
+  once why the date moved after sign-in. Free accounts see Pro before a second
+  bank.
+- The globe is drawn with Skia on the UI thread, with momentum, and fits the
+  screen. Onboarding answers sit mid-screen; the FIRE type quiz has five big
+  answer rows; currency pickers show flags; calmer bounces.
+- Pro through Apple in-app purchase (D-75), Sign in with Apple and native
+  Plaid, built and switched on in the app's own build; until then "Connect a
+  bank" opens untilfire.com. The admin Users page shows Apple and Stripe
+  subscribers.
 
 ## 2026-10-11
 

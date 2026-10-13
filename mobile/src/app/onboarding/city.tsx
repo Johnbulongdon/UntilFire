@@ -19,7 +19,9 @@ import { colors, TAB_COLOR } from '@/theme/colors'
  */
 export default function City() {
   const { draft, setDraft } = usePlan()
-  const { width } = useWindowDimensions()
+  const { width, height } = useWindowDimensions()
+  // The globe fills what the header, search, city line and footer buttons leave, so nothing overlaps.
+  const globe = Math.max(200, Math.min(width - 48, 340, height - 590))
   const [query, setQuery] = useState('')
   const [picked, setPicked] = useState<CityRow | undefined>(() => CITIES.find(c => c.name === draft.city?.name))
   const q = query.trim().toLowerCase()
@@ -74,11 +76,11 @@ export default function City() {
         </View>
       ) : (
         <View className="mt-4 items-center">
-          <Globe size={Math.min(width - 48, 340)} focus={focus} cities={dots}
+          <Globe size={globe} focus={focus} cities={dots}
             onCenter={setCentered} onTap={key => { const c = CITIES.find(x => x.key === key); if (c) pick(c) }}
             colors={{ sea: colors.surface, land: TAB_COLOR.home, line: colors.border, edge: colors.border2, pin: brandPin, dot: '#FFFFFF' }} />
           {offer ? (
-            <View className="mt-4 items-center gap-2">
+            <View className="mt-3 items-center gap-2">
               <Text className="text-[20px] font-bold text-ink">{offer.flag} {offer.name}</Text>
               <Button small label="Choose this city" onPress={() => pick(offer)} />
             </View>

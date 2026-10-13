@@ -6,6 +6,7 @@ import { DetailScreen } from '@/components/DetailScreen'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { Card, ProgressTrack } from '@/components/Screen'
 import { Text } from '@/components/Text'
+import { EmptyState } from '@/components/EmptyState'
 import { money } from '@/lib/format'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
@@ -24,11 +25,7 @@ export default function Goals() {
           <View className="mt-4"><PrimaryButton label="Sign in" onPress={() => router.push('/sign-in')} /></View>
         </Card>
       ) : goals.length === 0 ? (
-        <Card soft>
-          <Text className="text-[15px] font-semibold text-ink">No goals yet</Text>
-          <Text className="mt-1 text-[14px] leading-5 text-ink-2">A house deposit, a sabbatical, an emergency cushion: name what you're saving for along the way.</Text>
-          <View className="mt-3"><Button small kind="quiet" label="+ Add a goal" onPress={() => router.push('/goal')} /></View>
-        </Card>
+        <EmptyState mood="hello" title="No goals yet" body="A house deposit, a sabbatical, an emergency cushion: name what you're saving for along the way." action={{ label: 'Add a goal', onPress: () => router.push('/goal') }} />
       ) : goals.map(g => {
         const share = g.current_saved / Math.max(g.target_amount, 1)
         return (

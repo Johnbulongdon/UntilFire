@@ -1,12 +1,17 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Redirect, router } from 'expo-router'
+import { useEffect, useState } from 'react'
 import { Appearance, Pressable, StyleSheet, View } from 'react-native'
 import Svg, { Defs, LinearGradient as SvgGradient, Rect, Stop } from 'react-native-svg'
 
+import { Button } from '@/components/Button'
 import { FreedomLineChart } from '@/components/FreedomLineChart'
 import { GuidedTour } from '@/components/GuidedTour'
+import { useTourAnchor } from '@/components/tour-anchors'
 import { HouseholdCard } from '@/components/HouseholdCard'
 import { Icon } from '@/components/Icon'
 import { ProgressTrack, Screen } from '@/components/Screen'
+import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
 import { money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
@@ -15,6 +20,8 @@ import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { useFreedom, type Freedom } from '@/state/freedom'
 import { useLivePlan } from '@/state/live-plan'
+import { quickFreedom } from '@/engine'
+import { usePlan } from '@/state/plan'
 import { colors, TAB_COLOR } from '@/theme/colors'
 
 /**
@@ -33,6 +40,7 @@ export default function Home() {
   return (
     <Screen tab="home" flat hideTitle title="Home" refreshing={loading && !!data} onRefresh={data ? refresh : undefined}>
       <Hero result={result} />
+      <DateMoved result={result} />
       <Actions signedIn={!!session} />
       {data && <ThisMonth data={data} />}
       {data && <NextGoal data={data} />}
@@ -52,7 +60,7 @@ function Hero({ result }: { result: Freedom }) {
   const date = result.year == null ? '65+ years' : result.date ? result.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : String(result.year)
   const sub = [yearsAway != null ? (yearsAway === 0 ? 'Now' : `${yearsAway} years away`) : null, result.ageAtFreedom != null ? `age ${result.ageAtFreedom}` : null].filter(Boolean).join(' · ')
   return (
-    <View style={{ borderRadius: 28, overflow: 'hidden', backgroundColor: TAB_COLOR.home }}>
+    <View {...useTourAnchor('hero')} style={{ borderRadius: 28, overflow: 'hidden', backgroundColor: TAB_COLOR.home }}>
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100">
         <Defs>
           <SvgGradient id="hero" x1="0" y1="0" x2="0.4" y2="1">
@@ -69,6 +77,34 @@ function Hero({ result }: { result: Freedom }) {
           {!!sub && <Text style={{ color: 'rgba(255,255,255,0.85)' }} className="text-[15px]">{sub}</Text>}
         </Pressable>
         <View className="mt-4"><FreedomLineChart f={result} onDark /></View>
+      </View>
+    </View>
+  )
+}
+
+/**
+ * Once, when signing in moves the date: onboarding's quick estimate becomes the
+ * full plan (real balances, tax, city), so say why rather than let it jump.
+ */
+function DateMoved({ result }: { result: Freedom }) {
+  const { plan: answers } = usePlan()
+  const from = result.source === 'account' && answers ? quickFreedom(answers).year : null
+  const to = result.year
+  const key = 'date-moved-seen'
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    if (from == null || to == null || from === to) { setShow(false); return }
+    AsyncStorage.getItem(key).then(v => setShow(v !== '1')).catch(() => {})
+  }, [from, to, key])
+  if (!show) return null
+  return (
+    <View className="flex-row items-center gap-3 rounded-3xl p-4" style={{ backgroundColor: panel() }}>
+      <Sunny mood="think" size={56} />
+      <View className="flex-1 gap-2">
+        <Text className="text-[15px] leading-5 text-ink">
+          Your date moved from {from} to {to}. It now uses your accounts, tax and city, not just your first answers.
+        </Text>
+        <Button small kind="quiet" style={{ alignSelf: 'flex-start' }} label="Got it" onPress={() => { AsyncStorage.setItem(key, '1').catch(() => {}); setShow(false) }} />
       </View>
     </View>
   )
@@ -133,7 +169,7 @@ function Actions({ signedIn }: { signedIn: boolean }) {
     { label: 'What if', icon: 'wand.and.stars', fallback: '?', onPress: go('/plan/what-if') },
   ]
   return (
-    <View className="flex-row justify-between px-1">
+    <View {...useTourAnchor('actions')} className="flex-row justify-between px-1">
       {items.map(a => (
         <Pressable key={a.label} accessibilityRole="button" accessibilityLabel={a.label} onPress={a.onPress} className="items-center gap-2" style={{ width: 72 }}>
           {({ pressed }) => (

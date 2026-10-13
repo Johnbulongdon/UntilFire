@@ -1,9 +1,12 @@
 import { router } from 'expo-router'
-import { useEffect, useMemo } from 'react'
+import { useAudioPlayer } from 'expo-audio'
+import { useEffect, useMemo, useState } from 'react'
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 
+import { ConfettiBurst } from '@/components/ConfettiBurst'
 import { CountUp } from '@/components/CountUp'
 import { RevealFrame } from '@/components/RevealFrame'
+import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
 import { haptic } from '@/lib/haptics'
 import { freedomFor, planFromDraft, usePlan } from '@/state/plan'
@@ -18,6 +21,9 @@ export default function Reveal() {
   const result = useMemo(() => freedomFor(plan), [plan])
   const thisYear = new Date().getFullYear()
   const reached = result.year != null
+  // Sunny thinks while the year rolls, then cheers as it lands, with a rising chime.
+  const [landed, setLanded] = useState(false)
+  const player = useAudioPlayer(require('../../../assets/sounds/reveal.wav'))
 
   useEffect(() => {
     track(Events.ONBOARDING_REVEALED, { years_bucket: yearsBucket(result.year == null ? null : result.year - thisYear) })
@@ -29,12 +35,17 @@ export default function Reveal() {
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = []
     if (reached) for (let i = 1; i <= 5; i++) timers.push(setTimeout(haptic.tick, (COUNT_MS / 6) * i))
-    timers.push(setTimeout(haptic.success, reached ? COUNT_MS : 300))
+    timers.push(setTimeout(() => {
+      haptic.success(); setLanded(true)
+      if (reached) try { player.seekTo(0); player.play() } catch { /* sound is a nicety */ }
+    }, reached ? COUNT_MS : 300))
     return () => timers.forEach(clearTimeout)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reached])
 
   return (
     <RevealFrame next="Continue" onNext={() => router.push('/onboarding/life')} second={{ label: 'Change my answers', onPress: () => router.back() }}>
+      <Sunny mood={landed ? (reached ? 'win' : 'quiet') : 'think'} size={112} />
       <Animated.View entering={FadeIn.duration(400)}>
         <Text className="text-[18px] font-semibold text-aqua">
           {reached ? (result.years === 0 ? 'Work is already optional' : 'Work becomes optional in') : 'At this pace'}
@@ -50,6 +61,7 @@ export default function Reveal() {
           <Text className="mt-1 text-[22px] text-mint">You'll be {result.ageAtFreedom}.</Text>
         </Animated.View>
       )}
+      <ConfettiBurst play={landed && reached} />
       {!reached && <Text className="mt-3 text-[17px] leading-6 text-mint">Spending less or saving more moves this a lot.</Text>}
     </RevealFrame>
   )

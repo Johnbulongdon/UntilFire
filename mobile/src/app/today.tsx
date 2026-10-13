@@ -3,11 +3,12 @@ import { useAudioPlayer } from 'expo-audio'
 import { router } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Pressable, View } from 'react-native'
-import Animated, { FadeIn, SlideInRight, SlideOutLeft, ZoomIn } from 'react-native-reanimated'
+import Animated, { FadeIn, SlideInRight, SlideOutLeft } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { Button, type ButtonKind } from '@/components/Button'
 import { Icon } from '@/components/Icon'
+import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
 import { FLAG_COPY } from '@/components/WorthALook'
 import { isoDay } from '@/engine'
@@ -27,6 +28,9 @@ const dayName = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString(
 
 type Choice = { label: string; kind?: ButtonKind; onPress: () => void }
 type Card = { eyebrow: string; title: string; amount?: string; sub?: string; choices: Choice[] }
+/** The last answer, undoable for a few seconds: what it did and how to put it back. */
+type Undo = { key: string; label: string; acked: boolean; revert: () => Promise<string | null> }
+const UNDO_MS = 5000
 
 /**
  * Today (D-73, V2): one decision per screen, like a lesson. A progress bar on
@@ -50,6 +54,12 @@ export default function Today() {
   const [stage, setStage] = useState<'done' | 'reminder'>('done')
   const [askReminder, setAskReminder] = useState(false)
   const total = useRef(0)
+  const [undo, setUndo] = useState<Undo | null>(null)
+  useEffect(() => {
+    if (!undo) return
+    const t = setTimeout(() => setUndo(null), UNDO_MS)
+    return () => clearTimeout(t)
+  }, [undo])
 
   const { day, items } = useMemo(() => (data ? todayItems(data, progress, new Date(), finished ?? undefined) : { day: '', items: [] as TodayItem[] }), [data, progress, finished])
   const open = items.filter(i => !cleared.has(i.key))
@@ -72,23 +82,44 @@ export default function Today() {
   const clear = (key: string) => setCleared(c => new Set(c).add(key))
   const ack = async (item: TodayItem) => {
     haptic.select(); clear(item.key)
+    setUndo({ key: item.key, label: 'Answered', acked: true, revert: async () => null })
     const next = { ...progress, acks: [...progress.acks, item.key] }
     setLocal(l => ({ ...l, acks: [...l.acks, item.key] }))
     const problem = await saveTodayProgress(session.user.id, next)
     if (problem) { haptic.warn(); Alert.alert(problem) }
   }
-  const run = async (item: TodayItem, work: () => Promise<string | null>) => {
+  const run = async (item: TodayItem, work: () => Promise<string | null>, undoable?: Omit<Undo, 'key' | 'acked'>) => {
     haptic.select(); setBusy(true)
     const problem = await work()
     setBusy(false)
     if (problem) { haptic.warn(); Alert.alert(problem); return }
     clear(item.key); refresh()
+    if (undoable) setUndo({ key: item.key, acked: false, ...undoable })
+  }
+  // Puts the last answer back: the transaction as it was, the item back in the
+  // list, and the day open again if that answer had finished it.
+  const doUndo = async () => {
+    if (!undo) return
+    const u = undo
+    setUndo(null); haptic.tick(); setBusy(true)
+    const problem = await u.revert()
+    if (problem) { setBusy(false); haptic.warn(); Alert.alert(problem); return }
+    const reopen = progress.done.includes(day)
+    const next = { done: progress.done.filter(d => d !== day), acks: progress.acks.filter(a => a !== u.key) }
+    setLocal(l => ({ done: l.done.filter(d => d !== day), acks: l.acks.filter(a => a !== u.key) }))
+    setCleared(c => { const n = new Set(c); n.delete(u.key); return n })
+    if (reopen) { setFinished(null); setStage('done') }
+    if (reopen || u.acked) await saveTodayProgress(session.user.id, next)
+    setBusy(false); refresh()
   }
   const file = (item: TodayItem, t: Transaction, category: string, need?: 'need' | 'want') => run(item, () => {
     const s = item.suggestion!
     const sameAsSuggested = category === s.category
     const tag = need ?? (sameAsSuggested ? s.need : defaultNeed(category))
     return fileTransactions([{ id: t.id, category, sub_category: sameAsSuggested ? s.sub_category : null, tags: [...t.tags.filter(g => g !== 'need' && g !== 'want'), tag] }])
+  }, {
+    label: need ? `${need === 'need' ? 'Need' : 'Want'}` : `Filed as ${categoryOf(category).label}`,
+    revert: () => fileTransactions([{ id: t.id, category: t.category, sub_category: t.sub_category, tags: t.tags }]),
   })
 
   const count = monthCount(progress.done)
@@ -119,11 +150,9 @@ export default function Today() {
       ? { label: 'Start today', onPress: () => { setFinished(null); setCleared(new Set()); total.current = 0 } }
       : askReminder ? { label: 'Continue', onPress: () => setStage('reminder') } : { label: 'Done', onPress: () => router.back() }
     return (
-      <Frame footer={[next]}>
+      <Frame footer={[next]} undo={undo} onUndo={doUndo}>
         <View className="flex-1 items-center justify-center gap-4 px-8">
-          <Animated.View entering={ZoomIn.springify().damping(12)} style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: TAB_COLOR.home, alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name="checkmark" fallback="✓" size={60} color="#FFFFFF" />
-          </Animated.View>
+          <Sunny mood="done" size={170} />
           <Animated.View entering={FadeIn.delay(250)} style={{ alignItems: 'center', gap: 6 }}>
             <Text className="font-display text-[34px] font-bold text-ink">All caught up</Text>
             <Text className="text-center text-[16px] text-ink-2">{wasYesterday ? `${dayName(finished!)} counts. ` : ''}Your budget and freedom date are up to date.</Text>
@@ -132,7 +161,7 @@ export default function Today() {
             <Text className="font-mono text-[17px] text-ink">{count.done} of {count.of} days this month</Text>
             <MonthDots done={progress.done} />
           </Animated.View>
-          {!data.pro && <Text className="mt-2 text-center text-[13px] text-ink-3">Pro adds payday and big-spend checks.</Text>}
+          {!data.pro && <View className="mt-2 items-center gap-2"><Text className="text-center text-[13px] text-ink-3">Pro adds payday and big-spend checks.</Text><Button small kind="quiet" label="See Pro" onPress={() => router.push('/pro')} /></View>}
         </View>
       </Frame>
     )
@@ -155,9 +184,11 @@ export default function Today() {
         </View>
       }
       footer={card ? card.choices.map(c => ({ ...c, disabled: busy })) : []}
+      undo={undo}
+      onUndo={doUndo}
     >
       {card && (
-        <Animated.View key={item.key} entering={SlideInRight.springify().damping(18)} exiting={SlideOutLeft.duration(180)} style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 28, gap: 10 }}>
+        <Animated.View key={item.key} entering={SlideInRight.duration(260)} exiting={SlideOutLeft.duration(180)} style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 28, gap: 10 }}>
           <Text className="text-[13px] font-bold uppercase tracking-[2px] text-ink-3">{card.eyebrow}</Text>
           <Text className="font-display text-[32px] font-bold leading-[38px] text-ink">{card.title}</Text>
           {card.amount && <Text className="font-mono text-[34px] text-ink">{card.amount}</Text>}
@@ -169,12 +200,20 @@ export default function Today() {
 }
 
 /** A full-height screen: optional header, the middle, and the answers pinned to the footer. */
-function Frame({ header, footer, children }: { header?: React.ReactNode; footer: (Choice & { disabled?: boolean })[]; children: React.ReactNode }) {
+function Frame({ header, footer, children, undo, onUndo }: {
+  header?: React.ReactNode; footer: (Choice & { disabled?: boolean })[]; children: React.ReactNode; undo?: Undo | null; onUndo?: () => void
+}) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.ground }}>
       {header}
       <View style={{ flex: 1 }}>{children}</View>
       <View className="gap-3 px-5 pb-3 pt-2">
+        {undo && onUndo && (
+          <Animated.View key={undo.key} entering={FadeIn.duration(150)} className="flex-row items-center justify-between rounded-2xl bg-surface px-4 py-2">
+            <Text className="text-[14px] font-semibold text-ink-2">{undo.label}</Text>
+            <Button small kind="quiet" label="Undo" onPress={onUndo} />
+          </Animated.View>
+        )}
         {footer.map(c => <Button key={c.label} label={c.label} kind={c.kind} disabled={'disabled' in c ? c.disabled : false} onPress={c.onPress} />)}
       </View>
     </SafeAreaView>
@@ -230,6 +269,15 @@ function cardFor(item: TodayItem, h: {
     case 'goal':
       return { eyebrow: 'Goal reached', title: `${item.goal!.name}!`, amount: money(item.goal!.target_amount), sub: 'saved. Nicely done.',
         choices: [{ label: 'Nice!', onPress: () => h.ack(item) }] }
+    case 'manual':
+      return { eyebrow: 'Your money', title: 'Anything to add?', sub: 'Without a bank connected, what you add keeps your budget and date honest.',
+        choices: [{ label: 'Add a spend', onPress: () => { h.ack(item); router.push('/transaction') } }, { label: 'Nothing to add', kind: 'quiet', onPress: () => h.ack(item) }] }
+    case 'setup':
+      return item.setup === 'bank'
+        ? { eyebrow: 'One-time setup', title: 'Connect your bank', sub: 'Then spending arrives by itself and Today does the sorting with you.',
+          choices: [{ label: 'Connect a bank', onPress: () => { h.ack(item); router.back(); router.push('/money') } }, { label: 'Not now', kind: 'quiet', onPress: () => h.ack(item) }] }
+        : { eyebrow: 'One-time setup', title: 'Name a goal', sub: 'A trip, a cushion, a deposit: something to save for on the way to freedom.',
+          choices: [{ label: 'Add a goal', onPress: () => { h.ack(item); router.push('/goal') } }, { label: 'Not now', kind: 'quiet', onPress: () => h.ack(item) }] }
     case 'number':
       return item.amount != null
         ? { eyebrow: 'Your number today', title: 'Safe to spend', amount: money(item.amount), sub: 'today, and still stay on budget.', choices: [{ label: 'Got it', onPress: () => h.ack(item) }] }

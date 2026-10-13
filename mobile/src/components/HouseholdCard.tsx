@@ -28,7 +28,7 @@ export function HouseholdCard() {
   useFocusEffect(useCallback(() => {
     if (!session) return
     let live = true
-    fetch('https://untilfire.com/api/household/summary', { headers: { Authorization: `Bearer ${session.access_token}` } })
+    fetch('https://www.untilfire.com/api/household/summary', { headers: { Authorization: `Bearer ${session.access_token}` } })
       .then(r => (r.ok ? r.json() : null))
       .then(j => { if (live) setH((j?.household as Household | null) ?? null) })
       .catch(() => {})

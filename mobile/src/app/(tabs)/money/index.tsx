@@ -1,6 +1,7 @@
 import { router } from 'expo-router'
 import { Pressable, View } from 'react-native'
 
+import { BankBridge } from '@/components/BankBridge'
 import { Button } from '@/components/Button'
 import { Icon } from '@/components/Icon'
 import { TransactionRow } from '@/components/TransactionRow'
@@ -35,6 +36,7 @@ export default function Money() {
         <>
           <Headline data={data} />
           <Tiles />
+          {data.plaidAccounts.length === 0 && <BankBridge />}
           <Latest data={data} />
         </>
       )}

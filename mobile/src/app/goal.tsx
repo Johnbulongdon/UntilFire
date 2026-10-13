@@ -1,8 +1,11 @@
+import { useAudioPlayer } from 'expo-audio'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native'
 
+import { Button } from '@/components/Button'
 import { MoneyRow, SheetFrame } from '@/components/SheetFrame'
+import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
 import { isoDay } from '@/engine'
 import { haptic } from '@/lib/haptics'
@@ -28,6 +31,9 @@ export default function GoalSheet() {
   const [date, setDate] = useState<string | null>(existing?.target_date ?? null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  // Reaching a goal is a big win: Sunny cheers before the sheet closes.
+  const [reached, setReached] = useState(false)
+  const cheer = useAudioPlayer(require('../../assets/sounds/cheer.wav'))
 
   const shiftMonths = (n: number) => {
     const d = date ? new Date(`${date}T00:00:00`) : new Date()
@@ -43,7 +49,15 @@ export default function GoalSheet() {
       id: existing?.id, name, emoji, target_amount: fromInput(target), current_saved: fromInput(saved), target_date: date,
     }, data?.goals.length ?? 0)
     if (problem) { setBusy(false); haptic.warn(); setError(problem); return }
-    haptic.success(); await refresh(); router.back()
+    haptic.success(); await refresh()
+    const nowReached = fromInput(saved) >= fromInput(target) && fromInput(target) > 0
+    const wasReached = !!existing && existing.current_saved >= existing.target_amount
+    if (nowReached && !wasReached) {
+      setBusy(false); setReached(true)
+      try { cheer.seekTo(0); cheer.play() } catch { /* sound is a nicety */ }
+      return
+    }
+    router.back()
   }
   const remove = () => {
     if (!existing) return
@@ -57,6 +71,17 @@ export default function GoalSheet() {
         await refresh(); router.back()
       } },
     ])
+  }
+
+  if (reached) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.ground, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 12 }}>
+        <Sunny mood="win" size={180} />
+        <Text className="text-center font-display text-[32px] font-bold leading-10 text-ink">{name.trim()} reached</Text>
+        <Text className="text-center text-[16px] leading-6 text-ink-2">That's one goal done on the way to freedom.</Text>
+        <Button style={{ alignSelf: 'stretch', marginTop: 24 }} label="Done" onPress={() => router.back()} />
+      </View>
+    )
   }
 
   return (

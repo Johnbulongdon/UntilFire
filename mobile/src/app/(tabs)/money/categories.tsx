@@ -5,6 +5,7 @@ import { Alert, Pressable, View } from 'react-native'
 import { LoadingState } from '@/components/LoadingState'
 import { DetailScreen } from '@/components/DetailScreen'
 import { Card, Label } from '@/components/Screen'
+import { CategoryGlyph } from '@/components/Icon'
 import { Text } from '@/components/Text'
 import { EXPENSE_CATEGORIES } from '@/engine'
 import { money } from '@/lib/format'
@@ -47,7 +48,7 @@ export default function Categories() {
           <Text className="mt-2 text-[14px] text-ink-2">Add a category for anything the standard ones don't fit, like Kids or Side business.</Text>
         ) : data.customCategories.map((c, i) => (
           <View key={c.key} className={`flex-row items-center gap-3 py-2.5 ${i > 0 ? 'border-t border-border' : ''}`}>
-            <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: `${c.color}22` }}><Text className="text-[17px]">{c.emoji}</Text></View>
+            <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: `${c.color}22` }}><CategoryGlyph cat={c} size={20} /></View>
             <Text className="flex-1 text-[15px] font-semibold text-ink">{c.label}</Text>
             <Text className="font-mono text-[14px] text-ink-2">{money(spent.get(c.key) ?? 0)}</Text>
             <Button small kind="quiet" label="Remove" onPress={() => remove(c.key, c.label)} />
@@ -59,7 +60,7 @@ export default function Categories() {
         <Label>Standard</Label>
         {EXPENSE_CATEGORIES.map((c, i) => (
           <View key={c.key} className={`flex-row items-center gap-3 py-2.5 ${i > 0 ? 'border-t border-border' : ''}`}>
-            <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: `${c.color}22` }}><Text className="text-[17px]">{c.emoji}</Text></View>
+            <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: `${c.color}22` }}><CategoryGlyph cat={c} size={20} /></View>
             <Text className="flex-1 text-[15px] text-ink">{c.label}</Text>
             <Text className="font-mono text-[14px] text-ink-2">{money(spent.get(c.key) ?? 0)}</Text>
           </View>

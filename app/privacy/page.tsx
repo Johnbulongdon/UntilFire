@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 /**
  * Written from what the code does: Supabase for accounts and data, Plaid for
- * banks, Stripe for Pro, PostHog for analytics, Resend for email, OpenRouter
+ * banks, Stripe and Apple for Pro, PostHog for analytics, Resend for email, OpenRouter
  * for categorising, Vercel for hosting. Change this page with any new service
  * or new kind of data, and keep the App Store privacy answers in step.
  */
@@ -25,7 +25,7 @@ const sections: LegalSection[] = [
       "Account: your email address, and a display name if you add one. If you sign in with Google or Apple, we receive the email address they share with us.",
       "What you enter: income, spending, budgets, transactions, balances, goals, your plan and its assumptions, and your answers to the onboarding questions.",
       "Connected banks: if you connect a bank, Plaid sends us account names, balances, holdings and transactions for the accounts you choose. We never see or store your bank username or password.",
-      "Payments: if you subscribe to Pro on the website, Stripe handles your card. We store whether you subscribe and your Stripe customer reference, never your card number.",
+      "Payments: if you subscribe to Pro on the website, Stripe handles your card. We store whether you subscribe and your Stripe customer reference, never your card number. If you subscribe in the iOS app, Apple handles the payment; we store whether you subscribe, when it renews and Apple's reference for the purchase.",
       "Usage: which pages and features are used, device and browser type, and errors, so we can fix problems and improve the product. We don't send your amounts, names or email address in these events.",
     ],
   },
@@ -39,7 +39,7 @@ const sections: LegalSection[] = [
   {
     title: "Who helps us run UntilFire",
     body: [
-      "Supabase stores accounts and data. Vercel hosts the website. Plaid connects banks. Stripe takes payments. PostHog records usage and errors. Resend sends email. OpenRouter runs the model that suggests a category for a transaction, given its description and amount only.",
+      "Supabase stores accounts and data. Vercel hosts the website. Plaid connects banks. Stripe takes payments on the website and Apple in the iOS app. PostHog records usage and errors. Resend sends email. OpenRouter runs the model that suggests a category for a transaction, given its description and amount only.",
       "Each receives only what it needs for that job, under its own privacy terms.",
     ],
   },

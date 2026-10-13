@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { appleWillRenew } from "@/lib/apple-store";
 import { adminClient } from "@/lib/supabase-admin";
 import { getPlaidClient } from "@/lib/plaid";
 import { disconnectAllForUser, listInstitutions } from "@/lib/plaid-remove";
@@ -10,7 +11,7 @@ type Admin = ReturnType<typeof adminClient>;
 /** What still stands in the way of deleting this account (lib/account-deletion.ts). */
 async function loadBlockers(admin: Admin, userId: string): Promise<DeletionBlockers | null> {
   const [subRes, itemsRes] = await Promise.all([
-    admin.from("subscriptions").select("plan, status, stripe_subscription_id").eq("user_id", userId).maybeSingle(),
+    admin.from("subscriptions").select("*").eq("user_id", userId).maybeSingle(),
     admin.from("plaid_items").select("institution_name").eq("user_id", userId),
   ]);
   if (subRes.error || itemsRes.error) return null;
@@ -26,6 +27,7 @@ async function loadBlockers(admin: Admin, userId: string): Promise<DeletionBlock
   }
   return {
     subscription: willRenew(row, live),
+    appleSubscription: appleWillRenew(subRes.data as { source?: string; status?: string; auto_renew?: boolean | null } | null),
     banks: (itemsRes.data ?? []).map((i) => (i.institution_name as string | null) ?? "a bank"),
   };
 }

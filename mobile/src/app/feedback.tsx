@@ -21,7 +21,7 @@ export default function Feedback() {
   const send = async () => {
     if (!session || !message.trim()) return
     setBusy(true); setError('')
-    const res = await fetch('https://untilfire.com/api/feedback', {
+    const res = await fetch('https://www.untilfire.com/api/feedback', {
       method: 'POST',
       headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ type, message: `[iOS app] ${message.trim()}` }),

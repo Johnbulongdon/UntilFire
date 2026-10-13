@@ -5,6 +5,7 @@ import { View } from 'react-native'
 
 import { Bouncy } from '@/components/Bouncy'
 import { DetailScreen } from '@/components/DetailScreen'
+import { Icon } from '@/components/Icon'
 import { BeforeYouBuy } from '@/components/HomeAccountCards'
 import { Card, Label } from '@/components/Screen'
 import { Text } from '@/components/Text'
@@ -13,6 +14,7 @@ import { haptic } from '@/lib/haptics'
 import { useLivePlan } from '@/state/live-plan'
 import { project, useFreedom } from '@/state/freedom'
 import { freedomFor, type Plan as PlanData } from '@/state/plan'
+import { TAB_COLOR } from '@/theme/colors'
 import { colors } from '@/theme/colors'
 
 /** "3 years sooner", "Same as today" — the freedom-date delta, in teal when it's good news. */
@@ -45,9 +47,9 @@ export default function WhatIf() {
 
   // The website's next moves (app/dashboard/page.tsx), each one tap to try.
   const moves = [
-    { emoji: '💰', label: `Save ${money(500)} more a month`, apply: () => { setSpending(Math.max(0, plan.monthlySpending - 500)); setIncome(plan.monthlyIncome) } },
-    { emoji: '✂️', label: 'Spend 10% less', apply: () => { setSpending(roundNice(plan.monthlySpending * 0.9)); setIncome(plan.monthlyIncome) } },
-    { emoji: '📈', label: 'Earn 10% more', note: 'if the raise is saved', apply: () => { setIncome(roundNice(plan.monthlyIncome * 1.1)); setSpending(plan.monthlySpending) } },
+    { icon: 'banknote.fill' as const, label: `Save ${money(500)} more a month`, apply: () => { setSpending(Math.max(0, plan.monthlySpending - 500)); setIncome(plan.monthlyIncome) } },
+    { icon: 'scissors' as const, label: 'Spend 10% less', apply: () => { setSpending(roundNice(plan.monthlySpending * 0.9)); setIncome(plan.monthlyIncome) } },
+    { icon: 'chart.line.uptrend.xyaxis' as const, label: 'Earn 10% more', note: 'if the raise is saved', apply: () => { setIncome(roundNice(plan.monthlyIncome * 1.1)); setSpending(plan.monthlySpending) } },
   ]
 
   const onSlide = (next: PlanData) => {
@@ -81,7 +83,7 @@ export default function WhatIf() {
           return (
             <Bouncy key={m.label} accessibilityRole="button" onPress={() => { haptic.select(); m.apply() }}>
               <View className="flex-row items-center gap-3 rounded-card border border-border bg-card px-4 py-3.5">
-                <Text className="text-[22px]">{m.emoji}</Text>
+                <Icon name={m.icon} size={26} color={TAB_COLOR.plan} />
                 <View className="flex-1">
                   <Text className="text-[15px] font-semibold text-ink">{m.label}</Text>
                   {m.note ? <Text className="text-[12px] text-ink-3">{m.note}</Text> : null}

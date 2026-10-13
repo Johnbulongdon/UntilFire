@@ -1,6 +1,8 @@
 import { router } from 'expo-router'
+import * as AppleAuthentication from 'expo-apple-authentication'
+import { nativeBuild } from '@/lib/native-build'
 import { useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, TextInput, View } from 'react-native'
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, TextInput, useColorScheme, View } from 'react-native'
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -18,7 +20,11 @@ const RESEND_AFTER_S = 60
 
 /** Sign in with an emailed 6-digit code: the same account and the same flow as untilfire.com/login. */
 export default function SignIn() {
-  const { session, sendCode, verifyCode, signInWithGoogle } = useAuth()
+  const { session, sendCode, verifyCode, signInWithGoogle, signInWithApple } = useAuth()
+  const scheme = useColorScheme()
+  // Sign in with Apple needs the app's own build (our bundle ID), so it never shows in Expo Go.
+  const [appleReady, setAppleReady] = useState(false)
+  useEffect(() => { if (nativeBuild) AppleAuthentication.isAvailableAsync().then(setAppleReady).catch(() => {}) }, [])
   const [stage, setStage] = useState<'email' | 'code'>('email')
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -138,6 +144,22 @@ export default function SignIn() {
           ) : stage === 'email' ? (
             <View style={{ gap: 12 }}>
               <PrimaryButton label="Email me a sign-in code" onPress={send} disabled={!email.trim()} />
+              {appleReady && (
+                // Apple's own button, as its guidelines require. Only in the app's own build.
+                <AppleAuthentication.AppleAuthenticationButton
+                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                  buttonStyle={scheme === 'dark' ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                  cornerRadius={18}
+                  style={{ height: 56 }}
+                  onPress={async () => {
+                    haptic.press(); setError(''); setBusy(true)
+                    track(Events.SIGNUP_STARTED, { method: 'apple' })
+                    const problem = await signInWithApple()
+                    setBusy(false)
+                    if (problem) { haptic.warn(); setError(problem) }
+                  }}
+                />
+              )}
               <Bouncy
                 accessibilityRole="button"
                 onPress={async () => {

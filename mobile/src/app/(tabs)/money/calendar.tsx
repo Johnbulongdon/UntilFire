@@ -8,6 +8,7 @@ import { Bouncy } from '@/components/Bouncy'
 import { DetailScreen } from '@/components/DetailScreen'
 import { Card, Label } from '@/components/Screen'
 import { Text } from '@/components/Text'
+import { EmptyState } from '@/components/EmptyState'
 import { addMonths, detectRecurring, FALLBACK_RATES, isoDay, RECURRENCE_LABEL, sameMerchant, toRecurrence, type DetectedItem } from '@/engine'
 import { upcoming, type BillEvent } from '@/lib/bills'
 import { compactMoney, money } from '@/lib/format'
@@ -224,7 +225,7 @@ function ListView({ events, tickable, busyId, onTick }: { events: BillEvent[]; t
     else groups.push({ iso: e.iso, items: [e] })
   }
   if (groups.length === 0) {
-    return <Card soft><Text className="text-[15px] leading-6 text-ink-2">Nothing due in the next 30 days. Tap + to add a bill or payday.</Text></Card>
+    return <EmptyState title="A clear month ahead" body="Nothing due in the next 30 days." action={{ label: 'Add a bill or payday', onPress: () => router.push('/bill') }} />
   }
   return (
     <>

@@ -7,6 +7,7 @@ import { SetAside } from '@/components/SetAside'
 import { LoadingState } from '@/components/LoadingState'
 import { DetailScreen } from '@/components/DetailScreen'
 import { Card, Label } from '@/components/Screen'
+import { CategoryGlyph } from '@/components/Icon'
 import { Text } from '@/components/Text'
 import { money } from '@/lib/format'
 import { categoryOf, monthSpend, thisMonth } from '@/lib/money-data'
@@ -55,7 +56,7 @@ export default function Budget() {
               return (
                 <View key={r.key}>
                   <View className="flex-row items-center justify-between">
-                    <Text className="text-[15px] text-ink">{cat.emoji}  {cat.label}</Text>
+                    <View className="flex-row items-center gap-2"><CategoryGlyph cat={cat} size={18} /><Text className="text-[15px] text-ink">{cat.label}</Text></View>
                     <Text className="text-[13px] text-ink-2">
                       <Text className={`font-mono text-[13px] ${over ? 'text-neg-ink' : 'text-ink'}`}>{money(r.spent)}</Text> / <Text className="font-mono text-[13px]">{money(r.amount)}</Text>
                     </Text>
@@ -76,7 +77,7 @@ export default function Budget() {
           <Label>Spent outside your budget</Label>
           {unbudgeted.map(c => (
             <View key={c.key} className="mt-2 flex-row justify-between">
-              <Text className="text-[14px] text-ink">{categoryOf(c.key).emoji}  {categoryOf(c.key).label}</Text>
+              <View className="flex-row items-center gap-2"><CategoryGlyph cat={categoryOf(c.key)} size={16} /><Text className="text-[14px] text-ink">{categoryOf(c.key).label}</Text></View>
               <Text className="font-mono text-[14px] text-ink">{money(c.usd)}</Text>
             </View>
           ))}

@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import { Button } from './Button'
 import { Pressable, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated'
 
@@ -7,6 +6,7 @@ import { haptic } from '@/lib/haptics'
 import { useAccount } from '@/state/account'
 
 import { Text } from './Text'
+import { EmptyState } from './EmptyState'
 
 /**
  * What an account page shows before its numbers arrive: soft placeholder cards
@@ -21,13 +21,12 @@ export function LoadingState({ cards = 3 }: { cards?: number }) {
 
   if ((error || offline) && !loading) {
     return (
-      <View accessibilityRole="alert" className="items-center rounded-card bg-surface px-6 py-8">
-        <Text className="text-[32px]">{offline ? '📡' : '🔌'}</Text>
-        <Text className="mt-2 text-center text-[16px] font-semibold text-ink">{offline ? "You're offline" : "Couldn't load your account"}</Text>
-        <Text className="mt-1 text-center text-[14px] leading-5 text-ink-2">
-          {offline ? 'Your numbers will appear when you reconnect.' : 'Check your connection and try again.'}
-        </Text>
-        <Button small style={{ marginTop: 16, alignSelf: 'center' }} label="Try again" onPress={() => refresh()} />
+      <View accessibilityRole="alert">
+        <EmptyState
+          title={offline ? "You're offline" : "Couldn't load your account"}
+          body={offline ? 'Your numbers will appear when you reconnect.' : 'Check your connection and try again.'}
+          action={{ label: 'Try again', onPress: () => refresh() }}
+        />
       </View>
     )
   }

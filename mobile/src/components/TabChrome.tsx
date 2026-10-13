@@ -10,6 +10,7 @@ import { useAccount, type AccountData } from '@/state/account'
 import { useFreedom } from '@/state/freedom'
 import { TAB_COLOR, type TabKey } from '@/theme/colors'
 
+import { useTourAnchor } from './tour-anchors'
 import { Icon } from './Icon'
 import { Text } from './Text'
 
@@ -69,6 +70,7 @@ export const TODAY_BAR_SPACE = 84
 export function TodayBar() {
   const { data } = useAccount()
   const insets = useSafeAreaInsets()
+  const anchor = useTourAnchor('today')
   if (!data) return null
   const { day, items } = todayItems(data, data.profile.today)
   // All caught up: the bar steps aside until something new arrives (founder's call).
@@ -80,7 +82,7 @@ export function TodayBar() {
   const bottom = Platform.OS === 'ios' ? insets.bottom + 62 : 12
   const label = left === 0 ? 'All caught up' : finished ? `${left} new since you finished` : `Today · ${left} to do`
   return (
-    <View pointerEvents="box-none" style={{ position: 'absolute', left: 12, right: 12, bottom }}>
+    <View {...anchor} pointerEvents="box-none" style={{ position: 'absolute', left: 12, right: 12, bottom }}>
       <Pressable accessibilityRole="button" accessibilityLabel={`${label}. ${count.done} of ${count.of} days this month`} onPress={() => { haptic.press(); router.push('/today') }}
         style={{ backgroundColor: TAB_COLOR.home, borderRadius: 20, paddingLeft: 16, paddingRight: 8, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 10,
           shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } }}>

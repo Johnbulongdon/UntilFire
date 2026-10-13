@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { Session } from '@supabase/supabase-js'
 import { makeRedirectUri } from 'expo-auth-session'
+import * as AppleAuthentication from 'expo-apple-authentication'
+import * as Crypto from 'expo-crypto'
 import * as WebBrowser from 'expo-web-browser'
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
@@ -8,7 +10,7 @@ import { isFirstSignIn } from '@/engine'
 import { supabase } from '@/lib/supabase'
 import { Events, identify, track } from '@/lib/analytics'
 
-const SITE = 'https://untilfire.com'
+const SITE = 'https://www.untilfire.com'
 
 WebBrowser.maybeCompleteAuthSession()
 
@@ -22,6 +24,11 @@ interface AuthContextValue {
   verifyCode: (email: string, code: string) => Promise<string | null>
   /** Google in a secure in-app browser; returns an error message, or null when signed in or cancelled. */
   signInWithGoogle: () => Promise<string | null>
+  /**
+   * Sign in with Apple, native sheet. Only offered in the app's own build (not Expo Go),
+   * and Supabase's Apple provider must list the bundle ID com.untilfire.app.
+   */
+  signInWithApple: () => Promise<string | null>
   signOut: () => Promise<void>
 }
 
@@ -68,6 +75,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (exchanged.error) return friendly(exchanged.error.message)
       if (exchanged.data.session) welcomeIfNew(exchanged.data.session)
       return null
+    },
+    signInWithApple: async () => {
+      try {
+        // A one-time nonce: Apple signs its hash, Supabase checks the original.
+        const raw = Crypto.randomUUID()
+        const hashed = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, raw)
+        const cred = await AppleAuthentication.signInAsync({
+          requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME, AppleAuthentication.AppleAuthenticationScope.EMAIL],
+          nonce: hashed,
+        })
+        if (!cred.identityToken) return "Apple sign-in didn't finish. Please try again."
+        const { data, error } = await supabase.auth.signInWithIdToken({ provider: 'apple', token: cred.identityToken, nonce: raw })
+        if (error) return friendly(error.message)
+        if (data.session) welcomeIfNew(data.session)
+        return null
+      } catch (e) {
+        // Closing Apple's sheet is not an error.
+        if ((e as { code?: string }).code === 'ERR_REQUEST_CANCELED') return null
+        return "Apple sign-in didn't finish. Please try again."
+      }
     },
     signOut: async () => {
       // The saved copy of the account leaves the phone with the sign-in.

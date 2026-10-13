@@ -28,4 +28,8 @@ ok("message names each step", () => {
   assert.equal(blockerMessage({ subscription: false, banks: ["Chase"] }), "Before deleting your account, disconnect Chase.");
   assert.equal(blockerMessage({ subscription: true, banks: ["Chase", "Ally"] }), "Before deleting your account, cancel your Pro subscription and disconnect your 2 connected banks.");
 });
+ok("an Apple subscription that will renew blocks, with its own step", () => {
+  assert.equal(hasBlockers({ subscription: false, banks: [], appleSubscription: true }), true);
+  assert.equal(blockerMessage({ subscription: false, banks: [], appleSubscription: true }), "Before deleting your account, turn off Pro in your iPhone's Settings (your name, then Subscriptions).");
+});
 console.log(`\n${n} checks passed`);

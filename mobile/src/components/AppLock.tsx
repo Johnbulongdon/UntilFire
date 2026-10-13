@@ -6,6 +6,7 @@ import { isLockOn, unlock } from '@/lib/app-lock'
 import { haptic } from '@/lib/haptics'
 import { colors } from '@/theme/colors'
 
+import { Icon } from './Icon'
 import { PrimaryButton } from './PrimaryButton'
 import { Text } from './Text'
 
@@ -46,7 +47,7 @@ export function AppLock() {
   return (
     <Animated.View exiting={FadeOut.duration(200)} style={[StyleSheet.absoluteFill, { backgroundColor: colors.ground, zIndex: 100 }]}>
       <View className="flex-1 items-center justify-center px-8">
-        <Text className="text-[44px]">🔒</Text>
+        <Icon name="lock.fill" size={56} color={colors.tealDeep} />
         <Text className="mt-3 font-display text-[26px] font-bold text-ink">UntilFire is locked</Text>
         <View className="mt-8 w-full"><PrimaryButton label="Unlock" onPress={ask} /></View>
       </View>

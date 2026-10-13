@@ -5,7 +5,9 @@ import { Alert, Modal, Pressable, RefreshControl, ScrollView, SectionList, TextI
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AddButton } from '@/components/AddButton'
+import { CategoryGlyph } from '@/components/Icon'
 import { Text } from '@/components/Text'
+import { EmptyState } from '@/components/EmptyState'
 import { TransactionRow } from '@/components/TransactionRow'
 import { addMonths, INCOME_CATEGORIES, isoDay, merchantKey, rangeFor, stepRange, type RangePreset } from '@/engine'
 import { compactMoney, money } from '@/lib/format'
@@ -110,7 +112,7 @@ export default function Transactions() {
           <View className="mt-3 border-t border-border pt-3">
             {summary.moved.map(m => (
               <View key={m.key} className="flex-row justify-between py-0.5">
-                <Text className="text-[13px] text-ink">{categoryOf(m.key).emoji}  {categoryOf(m.key).label}</Text>
+                <View className="flex-row items-center gap-2"><CategoryGlyph cat={categoryOf(m.key)} size={16} /><Text className="text-[13px] text-ink">{categoryOf(m.key).label}</Text></View>
                 <Text className={`font-mono text-[13px] ${m.diff > 0 ? 'text-warn' : 'text-pos-ink'}`}>{m.diff > 0 ? '+' : '−'}{money(Math.abs(m.diff))} vs usual</Text>
               </View>
             ))}
@@ -133,7 +135,7 @@ export default function Transactions() {
         <Chip label="All" active={!category} onPress={() => setCategory(null)} />
         {categories.map(key => {
           const cat = categoryOf(key)
-          return <Chip key={key} label={`${cat.emoji} ${cat.label}`} active={category === key} onPress={() => setCategory(category === key ? null : key)} />
+          return <Chip key={key} label={cat.label} active={category === key} onPress={() => setCategory(category === key ? null : key)} />
         })}
       </ScrollView>
     </View>
@@ -198,9 +200,8 @@ export default function Transactions() {
           </View>
         )}
         ListEmptyComponent={
-          <Text className="mt-10 text-center text-[15px] text-ink-2">
-            {!data ? 'Loading…' : q ? `Nothing matches "${query.trim()}".` : 'Nothing in this range.'}
-          </Text>
+          !data ? <Text className="mt-10 text-center text-[15px] text-ink-2">Loading…</Text>
+            : <View className="mt-6"><EmptyState mood={q ? 'think' : 'quiet'} title={q ? 'No matches' : 'Nothing here yet'} body={q ? `Nothing matches "${query.trim()}".` : 'No spending or income in this range.'} /></View>
         }
       />
       {!selecting && <AddButton />}
@@ -227,7 +228,7 @@ export default function Transactions() {
                         haptic.success(); stopSelect(); refresh()
                       }}
                       className="w-[31%] items-center rounded-2xl border border-border bg-card px-2 py-3 active:opacity-70">
-                      <Text className="text-[22px]">{(c as { emoji?: string }).emoji ?? '📦'}</Text>
+                      <CategoryGlyph cat={c} size={26} />
                       <Text numberOfLines={1} className="mt-1 text-[12px] font-semibold text-ink">{c.label}</Text>
                     </Pressable>
                   ))}
