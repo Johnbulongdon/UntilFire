@@ -8,6 +8,7 @@ import { DetailScreen } from '@/components/DetailScreen'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { Card, Label, ProgressTrack } from '@/components/Screen'
 import { Text } from '@/components/Text'
+import { TAB_COLOR } from '@/theme/colors'
 import { countdownLabel, ladderViewFromPlan, planContribution } from '@/engine'
 import { contributionFacts, EMPTY_PLAN } from '@/lib/contribution-facts'
 import { money } from '@/lib/format'
@@ -77,26 +78,10 @@ export default function Contributions() {
 
       <Card>
         <View className="flex-row justify-between">
-          <Label>The ladder</Label>
+          <Label>Where it goes</Label>
           <Button small kind="quiet" label="Edit" onPress={() => { haptic.tick(); router.push('/contribution-edit') }} />
         </View>
-        {view.waterfall.fills.map((f, i) => {
-          const isNext = view.next?.kind === f.kind
-          return (
-            <View key={f.kind} className={`flex-row gap-3 py-3 ${i > 0 ? 'border-t border-border' : ''}`} style={{ opacity: f.enabled ? 1 : 0.4 }}>
-              <View className={`h-6 w-6 items-center justify-center rounded-full ${f.amount > 0 ? 'bg-green' : 'bg-surface-2'}`}>
-                <Text className={`text-[12px] font-bold ${f.amount > 0 ? 'text-white' : 'text-ink-3'}`}>{i + 1}</Text>
-              </View>
-              <View className="flex-1">
-                <View className="flex-row justify-between gap-2">
-                  <Text className={`flex-1 text-[15px] ${isNext ? 'font-bold' : 'font-semibold'} text-ink`}>{f.label}</Text>
-                  <Text className={`font-mono text-[15px] ${f.amount > 0 ? 'text-ink' : 'text-ink-3'}`}>{f.amount > 0 ? money(f.amount) : '—'}</Text>
-                </View>
-                <Text className="mt-0.5 text-[12px] leading-4 text-ink-3">{f.enabled ? f.why : 'Switched off'}</Text>
-              </View>
-            </View>
-          )
-        })}
+        <Ladder fills={view.waterfall.fills} next={view.next?.kind} />
       </Card>
 
       <Card>
@@ -136,6 +121,53 @@ function Line({ label, value, tone }: { label: string; value: string; tone?: 'po
     <View className="flex-row justify-between">
       <Text className="text-[13px] text-ink-2">{label}</Text>
       <Text className={`font-mono text-[13px] ${tone === "pos" ? "text-pos-ink" : "text-ink"}`}>{value}</Text>
+    </View>
+  )
+}
+
+type Fill = { kind: string; label: string; why: string; amount: number; enabled: boolean }
+
+/**
+ * The ladder as a picture (Oct 2026 QA: the rows of text hid the order of
+ * magnitude): one bar split by rung, each funded rung's own bar sized against
+ * the whole, the reason shown only for the rung up next, and the rest named in
+ * one line. Rungs are numbered, so the shades are never the only cue.
+ */
+function Ladder({ fills, next }: { fills: Fill[]; next?: string }) {
+  const funded = fills.filter(f => f.enabled && f.amount > 0)
+  const later = fills.filter(f => f.enabled && f.amount <= 0)
+  const off = fills.length - funded.length - later.length
+  const total = funded.reduce((t, f) => t + f.amount, 0)
+  // Plan's colour, lighter for each later rung's bar; badges stay solid so their numbers stay readable.
+  const shade = (i: number) => ({ backgroundColor: `${TAB_COLOR.plan}${Math.round(Math.max(0.4, 1 - i * 0.2) * 255).toString(16).padStart(2, '0')}` })
+  if (funded.length === 0) {
+    return <Text className="mt-2 text-[14px] leading-5 text-ink-2">Nothing to put in this time. Each rung fills in order once there is.</Text>
+  }
+  return (
+    <View className="mt-3 gap-4">
+      <View accessibilityLabel={funded.map(f => `${f.label} ${money(f.amount)}`).join(', ')} className="h-4 flex-row gap-0.5 overflow-hidden rounded-full">
+        {funded.map((f, i) => <View key={f.kind} style={[{ flex: f.amount }, shade(i)]} />)}
+      </View>
+      {funded.map((f, i) => (
+        <View key={f.kind} className="gap-1.5">
+          <View className="flex-row items-center gap-2.5">
+            <View className="h-6 w-6 items-center justify-center rounded-full" style={{ backgroundColor: TAB_COLOR.plan }}>
+              <Text className="text-[12px] font-bold text-white">{i + 1}</Text>
+            </View>
+            <Text className={`flex-1 text-[15px] ${f.kind === next ? 'font-bold' : 'font-semibold'} text-ink`}>{f.label}</Text>
+            <Text className="font-mono text-[15px] text-ink">{money(f.amount)}</Text>
+          </View>
+          <View className="ml-[34px] h-2 overflow-hidden rounded-full bg-surface-2">
+            <View className="h-full rounded-full" style={[{ width: `${Math.max(3, (f.amount / total) * 100)}%` }, shade(i)]} />
+          </View>
+          {f.kind === next && <Text className="ml-[34px] text-[12px] leading-4 text-ink-3">{f.why}</Text>}
+        </View>
+      ))}
+      {(later.length > 0 || off > 0) && (
+        <Text className="text-[12px] leading-4 text-ink-3">
+          {later.length > 0 ? `After that: ${later.map(f => f.label).join(', ')}.` : ''}{later.length > 0 && off > 0 ? ' ' : ''}{off > 0 ? `${off} switched off.` : ''}
+        </Text>
+      )}
     </View>
   )
 }

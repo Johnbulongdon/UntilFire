@@ -28,8 +28,9 @@ export type { GlobeCity, LngLat } from './GlobeSvg'
  * The globe, drawn by Skia on the UI thread (Oct 2026: the SVG version
  * recomputed and re-rendered the whole map in JavaScript on every touch and
  * lagged on iPhone). Each point is kept as a unit vector; every frame a worklet
- * turns it, keeps the near side and pins the far side to the horizon, which is
- * the classic cheap orthographic globe. Dragging, the flick's momentum, the
+ * turns it and keeps the near side. Land is clipped where it crosses the
+ * horizon and the hidden stretch follows the rim as an arc (Oct 2026: joining
+ * far points with straight lines cut chords across the globe). Dragging, the flick's momentum, the
  * idle spin and the fly-to all run on the UI thread. The web preview uses
  * Globe.web.tsx (the SVG globe), since Skia on the web needs its own loader.
  */
@@ -110,43 +111,70 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
     lam.value += (info.timeSincePreviousFrame ?? 16) * 0.008
   }, true)
 
-  // One worklet turns a ring of unit vectors into screen points; the far side sits on the horizon.
+  // One worklet turns rings of unit vectors into screen points, clipped at the horizon.
   const draw = useDerivedValue(() => {
     const cl = Math.cos(lam.value * RAD), sl = Math.sin(lam.value * RAD)
     const cp = Math.cos(phi.value * RAD), sp = Math.sin(phi.value * RAD)
     const land = Skia.Path.Make()
     const grid = Skia.Path.Make()
     const dots = Skia.Path.Make()
-    const ring = (pts: number[], closed: boolean, out: typeof land) => {
-      let shown = 0
+    const rim = Skia.XYWHRect(c - R, c - R, 2 * R, 2 * R)
+    // Point i of a ring as [depth, across, up]; depth > 0 is the near side.
+    const at = (pts: number[], i: number) => {
+      const X = pts[i] * cl - pts[i + 1] * sl
+      const Y = pts[i + 1] * cl + pts[i] * sl
+      const Z = pts[i + 2]
+      return [X * cp - Z * sp, Y, Z * cp + X * sp]
+    }
+    // Screen angle (Skia degrees, clockwise from +x) of a direction on the rim.
+    const angle = (Y: number, z: number) => Math.atan2(-z, Y) / RAD
+    const turn = (d: number) => ((d + 540) % 360) - 180
+    const line = (pts: number[], out: typeof land) => {
       let started = false
       for (let i = 0; i < pts.length; i += 3) {
-        const X = pts[i] * cl - pts[i + 1] * sl
-        const Y = pts[i + 1] * cl + pts[i] * sl
-        const Z = pts[i + 2]
-        const x = X * cp - Z * sp
-        const z = Z * cp + X * sp
-        let sx = c + R * Y, sy = c - R * z
-        if (x > 0) shown++
-        else if (closed) {
-          const n = Math.sqrt(Y * Y + z * z) || 1
-          sx = c + (R * Y) / n; sy = c - (R * z) / n
-        } else { started = false; continue }
-        if (!started) { out.moveTo(sx, sy); started = true } else out.lineTo(sx, sy)
+        const [x, Y, z] = at(pts, i)
+        if (x <= 0) { started = false; continue }
+        if (!started) { out.moveTo(c + R * Y, c - R * z); started = true } else out.lineTo(c + R * Y, c - R * z)
       }
-      return shown
+    }
+    // A closed ring (first point repeated last), started from a visible point.
+    // Leaving the near side, it goes to the exact crossing; while hidden, it
+    // adds up which way round the rim it travels; coming back, it draws that arc.
+    const area = (pts: number[], out: typeof land) => {
+      const m = pts.length / 3 - 1
+      let k = -1
+      for (let j = 0; j < m; j++) if (at(pts, j * 3)[0] > 0) { k = j; break }
+      if (k < 0) return false
+      let [px, pY, pz] = at(pts, k * 3)
+      out.moveTo(c + R * pY, c - R * pz)
+      let from = 0, last = 0, sweep = 0
+      for (let j = 1; j <= m; j++) {
+        const [x, Y, z] = at(pts, ((k + j) % m) * 3)
+        if (x > 0 !== px > 0) {
+          const t = px / (px - x)
+          const a = angle(pY + t * (Y - pY), pz + t * (z - pz))
+          if (px > 0) { out.arcToOval(rim, a, 0, false); from = a; last = a; sweep = 0 }
+          else { sweep += turn(a - last); out.arcToOval(rim, from, sweep, false) }
+        }
+        if (x > 0) out.lineTo(c + R * Y, c - R * z)
+        else { const a = angle(Y, z); sweep += turn(a - last); last = a }
+        px = x; pY = Y; pz = z
+      }
+      out.close()
+      return true
     }
     for (const r of LAND_RINGS) {
       const sub = Skia.Path.Make()
-      if (ring(r, true, sub) > 0) { sub.close(); land.addPath(sub) }
+      if (area(r, sub)) land.addPath(sub)
     }
-    for (const g of GRID_LINES) ring(g, false, grid)
+    for (const g of GRID_LINES) line(g, grid)
     for (let i = 0; i < cityVecs.length; i += 3) {
       const X = cityVecs[i] * cl - cityVecs[i + 1] * sl
       const Y = cityVecs[i + 1] * cl + cityVecs[i] * sl
       const Z = cityVecs[i + 2]
       const x = X * cp - Z * sp
-      if (x < 0.05) continue
+      // Hidden near the rim too, where dots would bunch into a line.
+      if (x < 0.2) continue
       dots.addCircle(c + R * Y, c - R * (Z * cp + X * sp), 2.6)
     }
     return { land, grid, dots }
@@ -213,7 +241,7 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
       const X = cityVecs[i] * cl - cityVecs[i + 1] * sl
       const Y = cityVecs[i + 1] * cl + cityVecs[i] * sl
       const Z = cityVecs[i + 2]
-      if (X * cp - Z * sp < 0.05) continue
+      if (X * cp - Z * sp < 0.2) continue
       const dd = Math.hypot(c + R * Y - e.x, c - R * (Z * cp + X * sp) - e.y)
       if (dd < d) { d = dd; best = i / 3 }
     }

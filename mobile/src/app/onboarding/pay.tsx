@@ -17,7 +17,7 @@ export default function Pay() {
           <OptionCard key={p.key} title={p.label} selected={picked === p.key}
             onPress={() => {
               haptic.select(); setPicked(p.key); answers.pay = p.key
-              setTimeout(() => router.push('/onboarding/income'), 280)
+              setTimeout(() => router.push('/onboarding/income'), 180)
             }} />
         ))}
       </View>

@@ -164,7 +164,8 @@ function Actions({ signedIn }: { signedIn: boolean }) {
   const go = (to: Parameters<typeof router.push>[0]) => () => { haptic.press(); router.push(to) }
   const items: { label: string; icon: SymbolName; fallback: string; onPress: () => void }[] = [
     { label: 'Add', icon: 'plus', fallback: '+', onPress: signedIn ? go('/transaction') : go('/sign-in') },
-    { label: 'Review', icon: 'checklist', fallback: '✓', onPress: signedIn ? go('/review') : go('/sign-in') },
+    // Budget replaced Review (Oct 2026): Today already does the reviewing every day.
+    { label: 'Budget', icon: 'chart.pie.fill', fallback: '◔', onPress: signedIn ? go('/money/budget') : go('/sign-in') },
     { label: 'Invest', icon: 'arrow.up.right', fallback: '↗', onPress: go('/plan/contributions') },
     { label: 'What if', icon: 'wand.and.stars', fallback: '?', onPress: go('/plan/what-if') },
   ]

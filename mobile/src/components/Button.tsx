@@ -3,6 +3,7 @@ import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native'
 import { haptic } from '@/lib/haptics'
 import { colors } from '@/theme/colors'
 
+import { Icon } from './Icon'
 import { Text } from './Text'
 
 export type ButtonKind = 'primary' | 'quiet' | 'onDark' | 'onDarkQuiet' | 'danger'
@@ -11,14 +12,16 @@ export type ButtonKind = 'primary' | 'quiet' | 'onDark' | 'onDarkQuiet' | 'dange
  * The one button (V2, Duolingo-style): a solid face on a darker lip that
  * presses down under the finger. Every tappable action looks like this, never
  * a bare word. Green acts; quiet is the neutral second choice; onDark sits on
- * the deep-green and coloured screens.
+ * the deep-green and coloured screens. `done` swaps the label for a tick, so
+ * an answer shows it landed before the next screen arrives.
  */
-export function Button({ label, onPress, kind = 'primary', small, disabled, style, accessibilityLabel }: {
+export function Button({ label, onPress, kind = 'primary', small, disabled, done, style, accessibilityLabel }: {
   label: string
   onPress: () => void
   kind?: ButtonKind
   small?: boolean
   disabled?: boolean
+  done?: boolean
   style?: StyleProp<ViewStyle>
   accessibilityLabel?: string
 }) {
@@ -56,7 +59,9 @@ export function Button({ label, onPress, kind = 'primary', small, disabled, styl
           justifyContent: 'center',
           opacity: disabled ? 0.4 : 1,
         }}>
-          <Text style={{ color: ink }} className={`${small ? 'text-[15px]' : 'text-[17px]'} font-extrabold`}>{label}</Text>
+          {done
+            ? <Icon name="checkmark" fallback="✓" size={small ? 18 : 24} color={ink} weight="heavy" />
+            : <Text style={{ color: ink }} className={`${small ? 'text-[15px]' : 'text-[17px]'} font-extrabold`}>{label}</Text>}
         </View>
       )}
     </Pressable>

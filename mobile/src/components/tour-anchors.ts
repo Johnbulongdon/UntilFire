@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useRef, useSyncExternalStore } from 'react'
 import { Dimensions, type View } from 'react-native'
 
 /**
@@ -11,6 +11,19 @@ export type TourAnchor = 'hero' | 'actions' | 'today'
 export type Rect = { x: number; y: number; width: number; height: number }
 
 const views = new Map<TourAnchor, Set<View>>()
+
+// Whether the tour is on screen, so a part that is sometimes hidden (the Today
+// bar when all caught up) can show itself for its stop.
+let showing = false
+const listeners = new Set<() => void>()
+export function setTourShowing(on: boolean) {
+  if (on === showing) return
+  showing = on
+  listeners.forEach(l => l())
+}
+export function useTourShowing() {
+  return useSyncExternalStore(l => { listeners.add(l); return () => { listeners.delete(l) } }, () => showing)
+}
 
 /** Spread on the View the tour should point at: `<View {...useTourAnchor('hero')}>`. */
 export function useTourAnchor(name: TourAnchor) {

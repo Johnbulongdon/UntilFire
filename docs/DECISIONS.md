@@ -2589,3 +2589,20 @@ picked the sun over a flame (B reads as streaks or burning money) and over
 plain shapes (C, less personality).
 **Revisit:** a Rive Sunny with a motion designer after the app's own build;
 whether the website adopts Sunny too.
+
+### D-77 — October 13: phone QA fixes, Budget on Home, Review polished
+**Decision:** from the founder's first iPhone QA pass:
+- **Answers never wait on the network.** A tapped Today answer turns into a
+  tick and the next item slides in; the save runs behind it and a failure puts
+  the item back. Review works the same way. Onboarding taps move on in 180ms.
+- **Home's four actions are Add, Budget, Invest, What if.** Budget replaced
+  Review, since Today already does the reviewing every day.
+- **Review** is grouped by day, picks categories in a half-height sheet,
+  approves a row with one check (swipe to skip), and ends on Sunny.
+- **Invest page:** the ladder is drawn to scale (one split bar, a bar per
+  rung) instead of seven rows of text.
+- The globe clips land at the horizon; the welcome sunrise has no horizon line.
+**Why:** taps felt laggy because each waited for a save; Review was the last
+screen in the old style; the ladder hid the order of magnitude.
+**Revisit:** if Home feels busy, Budget is reachable three ways there (chip,
+"This month" bar, button); the bar is the one to trim.

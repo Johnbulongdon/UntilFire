@@ -33,7 +33,7 @@ export default function Goal() {
               setPicked(g.id)
               setDraft({ goal: g.id })
               // A beat to see the choice land, then move on, like Duolingo.
-              setTimeout(() => router.push('/onboarding/city'), 320)
+              setTimeout(() => router.push('/onboarding/city'), 180)
             }}
           />
         ))}

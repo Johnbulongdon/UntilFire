@@ -31,11 +31,14 @@ type Card = { eyebrow: string; title: string; amount?: string; sub?: string; cho
 /** The last answer, undoable for a few seconds: what it did and how to put it back. */
 type Undo = { key: string; label: string; acked: boolean; revert: () => Promise<string | null> }
 const UNDO_MS = 5000
+/** How long the tick shows on the tapped answer before the next item slides in. */
+const TICK_MS = 220
 
 /**
  * Today (D-73, V2): one decision per screen, like a lesson. A progress bar on
- * top, the question in the middle, its answers pinned to the footer. Each
- * answer saves straight away and the next item slides in; the last one
+ * top, the question in the middle, its answers pinned to the footer. A tapped
+ * answer turns into a tick and the next item slides in at once; the save runs
+ * behind it and puts the item back if it fails. The last one
  * finishes the day with a chime and its mark. Days are counted, never streaked.
  */
 export default function Today() {
@@ -55,6 +58,9 @@ export default function Today() {
   const [askReminder, setAskReminder] = useState(false)
   const total = useRef(0)
   const [undo, setUndo] = useState<Undo | null>(null)
+  const [picked, setPicked] = useState<string | null>(null)
+  // Saves still running, so Undo waits for the answer it is undoing.
+  const pending = useRef<Promise<unknown>>(Promise.resolve())
   useEffect(() => {
     if (!undo) return
     const t = setTimeout(() => setUndo(null), UNDO_MS)
@@ -88,13 +94,24 @@ export default function Today() {
     const problem = await saveTodayProgress(session.user.id, next)
     if (problem) { haptic.warn(); Alert.alert(problem) }
   }
-  const run = async (item: TodayItem, work: () => Promise<string | null>, undoable?: Omit<Undo, 'key' | 'acked'>) => {
-    haptic.select(); setBusy(true)
-    const problem = await work()
-    setBusy(false)
-    if (problem) { haptic.warn(); Alert.alert(problem); return }
-    clear(item.key); refresh()
+  // Moves on straight away; if the save fails, the item comes back with the reason.
+  const run = (item: TodayItem, work: () => Promise<string | null>, undoable?: Omit<Undo, 'key' | 'acked'>) => {
+    haptic.select(); clear(item.key)
     if (undoable) setUndo({ key: item.key, acked: false, ...undoable })
+    const job = work().then(problem => {
+      if (!problem) { refresh(); return }
+      haptic.warn(); Alert.alert(problem)
+      setCleared(c => { const n = new Set(c); n.delete(item.key); return n })
+      setUndo(u => (u?.key === item.key ? null : u))
+      setFinished(null)
+    })
+    pending.current = pending.current.then(() => job)
+  }
+  // The tapped answer shows a tick, then the answer goes ahead.
+  const answer = (c: Choice) => {
+    if (picked || busy) return
+    setPicked(c.label)
+    setTimeout(() => { setPicked(null); c.onPress() }, TICK_MS)
   }
   // Puts the last answer back: the transaction as it was, the item back in the
   // list, and the day open again if that answer had finished it.
@@ -102,6 +119,7 @@ export default function Today() {
     if (!undo) return
     const u = undo
     setUndo(null); haptic.tick(); setBusy(true)
+    await pending.current
     const problem = await u.revert()
     if (problem) { setBusy(false); haptic.warn(); Alert.alert(problem); return }
     const reopen = progress.done.includes(day)
@@ -183,7 +201,7 @@ export default function Today() {
           <Text className="font-mono text-[13px] text-ink-3">{doneCount}/{total.current}</Text>
         </View>
       }
-      footer={card ? card.choices.map(c => ({ ...c, disabled: busy })) : []}
+      footer={card ? card.choices.map(c => ({ ...c, onPress: () => answer(c), done: picked === c.label, disabled: busy || (!!picked && picked !== c.label) })) : []}
       undo={undo}
       onUndo={doUndo}
     >
@@ -201,7 +219,7 @@ export default function Today() {
 
 /** A full-height screen: optional header, the middle, and the answers pinned to the footer. */
 function Frame({ header, footer, children, undo, onUndo }: {
-  header?: React.ReactNode; footer: (Choice & { disabled?: boolean })[]; children: React.ReactNode; undo?: Undo | null; onUndo?: () => void
+  header?: React.ReactNode; footer: (Choice & { disabled?: boolean; done?: boolean })[]; children: React.ReactNode; undo?: Undo | null; onUndo?: () => void
 }) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.ground }}>
@@ -214,7 +232,7 @@ function Frame({ header, footer, children, undo, onUndo }: {
             <Button small kind="quiet" label="Undo" onPress={onUndo} />
           </Animated.View>
         )}
-        {footer.map(c => <Button key={c.label} label={c.label} kind={c.kind} disabled={'disabled' in c ? c.disabled : false} onPress={c.onPress} />)}
+        {footer.map(c => <Button key={c.label} label={c.label} kind={c.kind} done={c.done} disabled={c.disabled} onPress={c.onPress} />)}
       </View>
     </SafeAreaView>
   )

@@ -10,7 +10,7 @@ import { useAccount, type AccountData } from '@/state/account'
 import { useFreedom } from '@/state/freedom'
 import { TAB_COLOR, type TabKey } from '@/theme/colors'
 
-import { useTourAnchor } from './tour-anchors'
+import { useTourAnchor, useTourShowing } from './tour-anchors'
 import { Icon } from './Icon'
 import { Text } from './Text'
 
@@ -71,10 +71,12 @@ export function TodayBar() {
   const { data } = useAccount()
   const insets = useSafeAreaInsets()
   const anchor = useTourAnchor('today')
+  const touring = useTourShowing()
   if (!data) return null
   const { day, items } = todayItems(data, data.profile.today)
-  // All caught up: the bar steps aside until something new arrives (founder's call).
-  if (items.length === 0) return null
+  // All caught up: the bar steps aside until something new arrives (founder's call),
+  // except during the Home tour, so its Today stop has something to point at.
+  if (items.length === 0 && !touring) return null
   const finished = data.profile.today.done.includes(day)
   const count = monthCount(data.profile.today.done)
   const left = items.length
