@@ -48,7 +48,8 @@ retention, trust, and acquisition. Keep work bounded to the user's request.
   flow in Profile, not required onboarding or a projection input.
 - Lead with freedom and the guided path; city/tax detail supports trust.
   Prefer deterministic calculations and actual user data before AI recommendations.
-  No streaks or daily-engagement mechanics.
+  The core loop is daily: a short "Today" list of one-tap items from yesterday's
+  money (D-73). Count completed days; never streaks, guilt or loss mechanics.
 
 ## Current navigation and design
 

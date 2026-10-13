@@ -1,5 +1,6 @@
 import { router } from 'expo-router'
-import { useMemo } from 'react'
+import { Button } from '@/components/Button'
+import { useMemo, useState } from 'react'
 import { Pressable, View } from 'react-native'
 
 import { LoadingState } from '@/components/LoadingState'
@@ -11,6 +12,7 @@ import { countdownLabel, ladderViewFromPlan, planContribution } from '@/engine'
 import { contributionFacts, EMPTY_PLAN } from '@/lib/contribution-facts'
 import { money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
+import { saveFireProfile } from '@/lib/mutations'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
 
@@ -23,6 +25,7 @@ import { useAuth } from '@/state/auth'
 export default function Contributions() {
   const { session } = useAuth()
   const { data, loading, refresh } = useAccount()
+  const [marking, setMarking] = useState(false)
   const plan = data?.contributionPlan ?? EMPTY_PLAN
   const view = useMemo(() => (data ? ladderViewFromPlan(plan, contributionFacts(data)) : null), [data, plan])
 
@@ -52,6 +55,16 @@ export default function Contributions() {
         <Text className="text-[13px] text-ink-3">
           {a.done ? `Already made: ${money(a.done.amount)}` : view.budgetIsCustom ? 'The amount you set' : 'Safe to put in, after bills before then'}
         </Text>
+        {session && (a.done || view.budget > 0) && (
+          <Button style={{ marginTop: 12 }} kind={a.done ? 'quiet' : 'primary'} disabled={marking} label={a.done ? 'Undo' : `Mark ${money(view.budget)} as made`}
+            onPress={async () => {
+              setMarking(true)
+              const problem = await saveFireProfile(session.user.id, { contributionDone: a.done ? null : { iso: a.forecast.contributionIso, amount: Math.round(view.budget) } })
+              setMarking(false)
+              if (problem) { haptic.warn(); return }
+              haptic.success(); refresh()
+            }} />
+        )}
         {!view.budgetIsCustom && !a.done && (
           <View className="mt-3 gap-1 border-t border-border pt-3">
             <Line label="Cash outside your emergency fund" value={money(a.cash)} />
@@ -65,14 +78,14 @@ export default function Contributions() {
       <Card>
         <View className="flex-row justify-between">
           <Label>The ladder</Label>
-          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { haptic.tick(); router.push('/contribution-edit') }}><Text className="text-[13px] font-bold text-pos-ink">Edit</Text></Pressable>
+          <Button small kind="quiet" label="Edit" onPress={() => { haptic.tick(); router.push('/contribution-edit') }} />
         </View>
         {view.waterfall.fills.map((f, i) => {
           const isNext = view.next?.kind === f.kind
           return (
             <View key={f.kind} className={`flex-row gap-3 py-3 ${i > 0 ? 'border-t border-border' : ''}`} style={{ opacity: f.enabled ? 1 : 0.4 }}>
               <View className={`h-6 w-6 items-center justify-center rounded-full ${f.amount > 0 ? 'bg-green' : 'bg-surface-2'}`}>
-                <Text className={`text-[12px] font-bold ${f.amount > 0 ? 'text-card' : 'text-ink-3'}`}>{i + 1}</Text>
+                <Text className={`text-[12px] font-bold ${f.amount > 0 ? 'text-white' : 'text-ink-3'}`}>{i + 1}</Text>
               </View>
               <View className="flex-1">
                 <View className="flex-row justify-between gap-2">
@@ -112,7 +125,7 @@ export default function Contributions() {
             </Text>
           </View>
         ))}
-        <Pressable accessibilityRole="button" onPress={() => { haptic.tick(); router.push('/contribution-edit') }} className="mt-2"><Text className="text-[14px] font-bold text-pos-ink">{plan.targets.length ? 'Change your mix' : 'Set a mix'}</Text></Pressable>
+        <View className="mt-2"><Button small kind="quiet" label={plan.targets.length ? 'Change your mix' : 'Set a mix'} onPress={() => router.push('/contribution-edit')} /></View>
       </Card>
     </DetailScreen>
   )

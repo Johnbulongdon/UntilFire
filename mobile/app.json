@@ -55,7 +55,8 @@
         {
           "faceIDPermission": "UntilFire uses Face ID to keep your finances private."
         }
-      ]
+      ],
+      "expo-audio"
     ],
     "experiments": {
       "typedRoutes": true

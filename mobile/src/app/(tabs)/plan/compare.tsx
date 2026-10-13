@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
+import { Button } from '@/components/Button'
 import { Alert, Pressable, ScrollView, Switch, TextInput, View } from 'react-native'
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated'
 
@@ -202,9 +203,7 @@ export default function Compare() {
       )}
 
       {changed && session && (
-        <Pressable accessibilityRole="button" onPress={saveVersion} className="items-center py-2">
-          <Text className="text-[15px] font-bold text-pos-ink">{loaded ? 'Save changes to this version' : 'Save this version'}</Text>
-        </Pressable>
+        <Button kind="quiet" label={loaded ? 'Save changes to this version' : 'Save this version'} onPress={saveVersion} />
       )}
       {changed && (
         <Pressable accessibilityRole="button" onPress={() => { haptic.tick(); setItems([]); setLoaded(null); setOpen(null) }} className="items-center pb-2">

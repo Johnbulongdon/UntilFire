@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Button } from './Button'
 import { Pressable, View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated'
 
@@ -26,9 +27,7 @@ export function LoadingState({ cards = 3 }: { cards?: number }) {
         <Text className="mt-1 text-center text-[14px] leading-5 text-ink-2">
           {offline ? 'Your numbers will appear when you reconnect.' : 'Check your connection and try again.'}
         </Text>
-        <Pressable accessibilityRole="button" onPress={() => { haptic.tick(); refresh() }} className="mt-4 rounded-full bg-green px-5 py-2.5 active:opacity-80">
-          <Text className="text-[15px] font-bold text-card">Try again</Text>
-        </Pressable>
+        <Button small style={{ marginTop: 16, alignSelf: 'center' }} label="Try again" onPress={() => refresh()} />
       </View>
     )
   }

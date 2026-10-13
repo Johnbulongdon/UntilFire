@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { haptic } from '@/lib/haptics'
 
+import { Button } from './Button'
 import { PrimaryButton } from './PrimaryButton'
 import { ProgressBar } from './ProgressBar'
 import { Events, track } from '@/lib/analytics'
@@ -16,7 +17,7 @@ export function QuestionScreen(props: {
   step: number
   steps: number
   title: string
-  hint: string
+  hint?: string
   children: ReactNode
   /** Omit for screens that move on as soon as an option is tapped. */
   cta?: string
@@ -24,6 +25,8 @@ export function QuestionScreen(props: {
   canContinue?: boolean
   skipLabel?: string
   onSkip?: () => void
+  /** For screens with their own drag (the globe): the page itself doesn't scroll. */
+  noScroll?: boolean
 }) {
   useEffect(() => { track(Events.ONBOARDING_STEP_VIEWED, { step: props.step, steps: props.steps }) }, [props.step, props.steps])
   return (
@@ -41,10 +44,10 @@ export function QuestionScreen(props: {
           <ProgressBar step={props.step} steps={props.steps} />
         </View>
 
-        <ScrollView className="flex-1" contentContainerClassName="px-6 pt-8 pb-6" keyboardShouldPersistTaps="handled">
+        <ScrollView className="flex-1" contentContainerClassName="px-6 pt-8 pb-6" keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" scrollEnabled={!props.noScroll}>
           <Animated.View entering={FadeInDown.duration(420).springify().damping(18)}>
             <Text className="font-display text-[30px] font-bold leading-9 tracking-tight text-ink">{props.title}</Text>
-            <Text className="mt-3 text-base leading-6 text-ink-2">{props.hint}</Text>
+            {!!props.hint && <Text className="mt-3 text-base leading-6 text-ink-2">{props.hint}</Text>}
           </Animated.View>
           <Animated.View entering={FadeInDown.delay(110).duration(420).springify().damping(18)} style={{ marginTop: 32 }}>
             {props.children}
@@ -56,11 +59,7 @@ export function QuestionScreen(props: {
             {props.cta && props.onNext && (
               <PrimaryButton label={props.cta} onPress={props.onNext} disabled={!props.canContinue} />
             )}
-            {props.onSkip && (
-              <Pressable accessibilityRole="button" onPress={() => { haptic.tick(); props.onSkip!() }} className="items-center py-2">
-                <Text className="text-[15px] text-ink-2">{props.skipLabel}</Text>
-              </Pressable>
-            )}
+            {props.onSkip && <Button kind="quiet" label={props.skipLabel ?? 'Skip'} onPress={props.onSkip} />}
           </View>
         )}
       </KeyboardAvoidingView>

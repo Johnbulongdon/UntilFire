@@ -5772,7 +5772,8 @@ export default function Dashboard() {
       const { error: saveError } = await supabase.from("user_budget").upsert({
         user_id:     session.user.id,
         income,
-        expenses:    { ...expenses, ...preserved, _fire_profile: fireProfile },
+        // Keep fields the dashboard does not own (the app's Today progress, D-73) by layering this save over what is stored.
+        expenses:    { ...expenses, ...preserved, _fire_profile: { ...((existingExpenses._fire_profile as Record<string, unknown>) ?? {}), ...fireProfile } },
         fire_age:    fireAge,
         fire_assets: k401, // keep backwards-compatible
         updated_at:  new Date().toISOString(),

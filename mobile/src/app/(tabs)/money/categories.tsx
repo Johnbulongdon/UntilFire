@@ -1,4 +1,5 @@
 import { router } from 'expo-router'
+import { Button } from '@/components/Button'
 import { Alert, Pressable, View } from 'react-native'
 
 import { LoadingState } from '@/components/LoadingState'
@@ -40,7 +41,7 @@ export default function Categories() {
       <Card>
         <View className="flex-row justify-between">
           <Label>Your own</Label>
-          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { haptic.tick(); router.push('/category') }}><Text className="text-[13px] font-bold text-pos-ink">+ Add</Text></Pressable>
+          <Button small kind="quiet" label="+ Add" onPress={() => { haptic.tick(); router.push('/category') }} />
         </View>
         {data.customCategories.length === 0 ? (
           <Text className="mt-2 text-[14px] text-ink-2">Add a category for anything the standard ones don't fit, like Kids or Side business.</Text>
@@ -49,7 +50,7 @@ export default function Categories() {
             <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: `${c.color}22` }}><Text className="text-[17px]">{c.emoji}</Text></View>
             <Text className="flex-1 text-[15px] font-semibold text-ink">{c.label}</Text>
             <Text className="font-mono text-[14px] text-ink-2">{money(spent.get(c.key) ?? 0)}</Text>
-            <Pressable accessibilityRole="button" hitSlop={8} onPress={() => remove(c.key, c.label)}><Text className="text-[13px] font-semibold text-neg-ink">Remove</Text></Pressable>
+            <Button small kind="quiet" label="Remove" onPress={() => remove(c.key, c.label)} />
           </View>
         ))}
       </Card>

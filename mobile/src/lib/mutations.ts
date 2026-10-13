@@ -19,6 +19,10 @@ export interface TransactionDraft {
   /** What came back; never more than the amount. */
   refund_amount: number
   transaction_type: 'expense' | 'income'
+  /** need or want for an expense, so a transaction you add yourself is already filed (D-73). */
+  need?: 'need' | 'want' | null
+  /** The tags already on an edited row, kept apart from need/want. */
+  tags?: string[]
 }
 
 /** Add or edit a transaction, as TransactionsTab's save does (app/dashboard/TransactionsTab.tsx). */
@@ -34,10 +38,11 @@ export async function saveTransaction(userId: string, draft: TransactionDraft): 
     category: draft.category || (draft.transaction_type === 'income' ? 'other_income' : 'other'),
     sub_category: draft.sub_category || null,
     transaction_type: draft.transaction_type,
+    tags: [...(draft.tags ?? []).filter(g => g !== 'need' && g !== 'want'), ...(draft.transaction_type === 'expense' && draft.need ? [draft.need] : [])],
   }
   const { error } = draft.id
     ? await supabase.from('expenses').update(payload).eq('id', draft.id)
-    : await supabase.from('expenses').insert({ ...payload, tags: [] })
+    : await supabase.from('expenses').insert(payload)
   return error ? (draft.id ? 'Couldn\'t save your changes. Please try again.' : 'Couldn\'t add the transaction. Please try again.') : null
 }
 
@@ -211,7 +216,7 @@ export async function saveCurrency(userId: string, currency: string): Promise<st
  * "other", invested money as cash savings, age and city. Only fills what is
  * empty, so it never overwrites an account that already has numbers.
  */
-export async function seedFromOnboarding(userId: string, plan: { monthlyIncome: number; monthlySpending: number; invested: number; age?: number; city?: { name: string } }): Promise<boolean> {
+export async function seedFromOnboarding(userId: string, plan: { monthlyIncome: number; monthlySpending: number; invested: number; age?: number; city?: { name: string }; currency?: string }): Promise<boolean> {
   const { data: row } = await supabase.from('user_budget').select('income, expenses, fire_age').eq('user_id', userId).maybeSingle()
   if (row && Number(row.income) > 0) return false
   const expenses = (row?.expenses as Record<string, unknown>) ?? {}
@@ -230,6 +235,8 @@ export async function seedFromOnboarding(userId: string, plan: { monthlyIncome: 
   const { error } = row
     ? await supabase.from('user_budget').update(next).eq('user_id', userId)
     : await supabase.from('user_budget').insert({ user_id: userId, ...next })
+  // The currency onboarding was answered in becomes the account's.
+  if (!error && plan.currency && plan.currency !== 'USD') await saveCurrency(userId, plan.currency)
   return !error
 }
 
@@ -250,4 +257,28 @@ export async function resolveFlag(tx: { id: string; tags: string[] }, kind: stri
     : { tags: [...tx.tags.filter(g => g !== `ok:${kind}`), `ok:${kind}`] }
   const { error } = await supabase.from('expenses').update(patch).eq('id', tx.id)
   return error ? 'Couldn\'t save that. Please try again.' : null
+}
+
+/** Put several transactions in one category at once (sub-category cleared, as a new category has its own). */
+export async function setCategoryFor(ids: string[], category: string): Promise<string | null> {
+  for (let i = 0; i < ids.length; i += 200) {
+    const { error } = await supabase.from('expenses').update({ category, sub_category: null }).in('id', ids.slice(i, i + 200))
+    if (error) return 'Couldn\'t change them all. Please try again.'
+  }
+  return null
+}
+
+/** Save which Home cards show and in what order (profiles.dashboard_layout), shared with the website's Home. */
+export async function saveHomeLayout(userId: string, layout: unknown): Promise<string | null> {
+  const { error } = await supabase.from('profiles').update({ dashboard_layout: layout }).eq('user_id', userId)
+  return error ? 'Couldn\'t save. Please try again.' : null
+}
+
+/** File reviewed transactions: category, sub-category and the need/want tag, as the website's review does. */
+export async function fileTransactions(rows: { id: string; category: string; sub_category: string | null; tags: string[] }[]): Promise<string | null> {
+  for (const r of rows) {
+    const { error } = await supabase.from('expenses').update({ category: r.category, sub_category: r.sub_category, tags: r.tags }).eq('id', r.id)
+    if (error) return 'Couldn\'t save them all. Please try again.'
+  }
+  return null
 }

@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router'
+import { Button } from '@/components/Button'
 import { useState } from 'react'
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -12,6 +13,7 @@ import { haptic } from '@/lib/haptics'
 import { moneyIn } from '@/lib/format'
 import { dayLabel, expenseCategories } from '@/lib/money-data'
 import { deleteTransaction, saveTransaction } from '@/lib/mutations'
+import { defaultNeed } from '@/lib/review'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { colors } from '@/theme/colors'
@@ -30,6 +32,8 @@ export default function TransactionSheet() {
   const [category, setCategory] = useState(existing?.category ?? '')
   const [date, setDate] = useState(existing?.date ?? isoDay(new Date()))
   const [subCategory, setSubCategory] = useState<string | null>(existing?.sub_category ?? null)
+  // Need or want, set from the category's usual answer and easy to flip, so Today doesn't ask again.
+  const [need, setNeed] = useState<'need' | 'want' | null>(existing?.tags.includes('need') ? 'need' : existing?.tags.includes('want') ? 'want' : null)
   const [notes, setNotes] = useState(existing?.notes ?? '')
   const [refund, setRefund] = useState(existing?.refund_amount ? String(existing.refund_amount) : '')
   const [showMore, setShowMore] = useState(!!(existing?.notes || existing?.refund_amount))
@@ -55,6 +59,7 @@ export default function TransactionSheet() {
     const problem = await saveTransaction(session.user.id, {
       id: existing?.id, date, amount: value, currency, description, category,
       sub_category: subCategory, notes, refund_amount: Number(refund) || 0, transaction_type: type,
+      need: type === 'expense' && category ? (need ?? defaultNeed(category)) : null, tags: existing?.tags,
     })
     if (problem) { setBusy(false); haptic.warn(); setError(problem); return }
     haptic.success()
@@ -145,7 +150,7 @@ export default function TransactionSheet() {
                 {categories.map(c => {
                   const on = category === c.key
                   return (
-                    <Bouncy key={c.key} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => { haptic.select(); if (category !== c.key) setSubCategory(null); setCategory(c.key) }}>
+                    <Bouncy key={c.key} accessibilityRole="button" accessibilityState={{ selected: on }} onPress={() => { haptic.select(); if (category !== c.key) { setSubCategory(null); if (!existing) setNeed(null) } setCategory(c.key) }}>
                       <View className={`flex-row items-center gap-1.5 rounded-full border px-3 py-2 ${on ? 'border-green bg-green-50' : 'border-border bg-card'}`}>
                         <Text className="text-[15px]">{c.emoji}</Text>
                         <Text className={`text-[14px] font-semibold ${on ? 'text-green-700' : 'text-ink-2'}`}>{c.label}</Text>
@@ -154,10 +159,18 @@ export default function TransactionSheet() {
                   )
                 })}
               </View>
+              {type === 'expense' && !!category && (
+                <View className="mt-5 flex-row gap-2">
+                  {(['need', 'want'] as const).map(n => {
+                    const on = (need ?? defaultNeed(category)) === n
+                    return <Button key={n} small kind={on ? 'primary' : 'quiet'} label={n === 'need' ? 'Need' : 'Want'} onPress={() => setNeed(n)} />
+                  })}
+                </View>
+              )}
             </>
           )}
 
-          {!transfer && category && SUB_CATEGORIES[category] && (
+          {!transfer && !!category && !!SUB_CATEGORIES[category] && (
             <>
               <Text className="mb-2 mt-5 text-[13px] text-ink-3">Kind of {category.replace(/_/g, ' ')}</Text>
               <View className="flex-row flex-wrap" style={{ gap: 8 }}>
@@ -175,9 +188,7 @@ export default function TransactionSheet() {
           )}
 
           {!showMore ? (
-            <Pressable accessibilityRole="button" onPress={() => { haptic.tick(); setShowMore(true) }} className="mt-5 py-1">
-              <Text className="text-[14px] font-bold text-pos-ink">Add a note{type === 'expense' ? ' or refund' : ''}</Text>
-            </Pressable>
+            <View className="mt-5"><Button small kind="quiet" label={`Add a note${type === 'expense' ? ' or refund' : ''}`} onPress={() => setShowMore(true)} /></View>
           ) : (
             <View className="mt-5 gap-3">
               <TextInput

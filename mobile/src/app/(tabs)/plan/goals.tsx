@@ -1,4 +1,5 @@
 import { router } from 'expo-router'
+import { Button } from '@/components/Button'
 import { Pressable, View } from 'react-native'
 
 import { DetailScreen } from '@/components/DetailScreen'
@@ -26,7 +27,7 @@ export default function Goals() {
         <Card soft>
           <Text className="text-[15px] font-semibold text-ink">No goals yet</Text>
           <Text className="mt-1 text-[14px] leading-5 text-ink-2">A house deposit, a sabbatical, an emergency cushion: name what you're saving for along the way.</Text>
-          <Text onPress={() => router.push('/goal')} className="mt-3 text-[14px] font-bold text-pos-ink">+ Add a goal</Text>
+          <View className="mt-3"><Button small kind="quiet" label="+ Add a goal" onPress={() => router.push('/goal')} /></View>
         </Card>
       ) : goals.map(g => {
         const share = g.current_saved / Math.max(g.target_amount, 1)
@@ -52,7 +53,7 @@ export default function Goals() {
         )
       })}
       {session && goals.length > 0 && (
-        <Pressable accessibilityRole="button" onPress={() => router.push('/goal')} className="items-center py-2"><Text className="text-[15px] font-bold text-pos-ink">+ Add a goal</Text></Pressable>
+        <Button kind="quiet" label="Add a goal" onPress={() => router.push('/goal')} />
       )}
     </DetailScreen>
   )

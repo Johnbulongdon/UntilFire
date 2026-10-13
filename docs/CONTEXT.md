@@ -18,8 +18,9 @@ and conversion after value; feature breadth alone is not the goal.
   not proof of a market or willingness to pay.
 - Guidance should use deterministic calculations and actual user data before an
   AI recommendation layer. Earlier AI guidance was reported as too generic.
-- The cadence is monthly progress, not streaks or daily-engagement mechanics.
-  The July positioning update superseded earlier gamification analogies.
+- The cadence is daily (D-73, October 2026): a short Today list of one-tap items
+  built from yesterday's money, with payday as the highlight. Completed days are
+  counted, never streaked. This superseded the July monthly-cadence direction.
 - Bank connection, payment, feedback and signup must not obstruct first value.
   Feedback is optional and user-initiated; use calm, non-judgmental language.
 - Record reasoning when changing a choice so future agents can understand why

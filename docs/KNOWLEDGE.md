@@ -43,7 +43,7 @@ Older sprint plans, audits, market research, personas, launch copy and module
 snapshots preserve context. Their original checkboxes, prices, feature lists,
 and approval labels are not current requirements or permission to execute.
 Use the owners above when they conflict. Historical design proposals are marked
-at their entry points; do not restore Monte Carlo, daily streaks, old palettes,
+at their entry points; do not restore Monte Carlo, streaks (D-73 counts days instead), old palettes,
 or old navigation from them.
 
 The app repository is public. Keep raw feedback, respondent portfolios, contact

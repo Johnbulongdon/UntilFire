@@ -14,6 +14,8 @@ export interface Plan {
   monthlySpending: number
   invested: number
   age?: number
+  /** The currency onboarding's amounts were typed in. Amounts here are still USD. */
+  currency?: string
 }
 
 const STORAGE_KEY = 'untilfire.plan.v1'
@@ -74,6 +76,7 @@ export function planFromDraft(draft: Partial<Plan>): Plan {
     monthlySpending: draft.monthlySpending ?? 0,
     invested: draft.invested ?? 0,
     age: draft.age,
+    currency: draft.currency,
   }
 }
 

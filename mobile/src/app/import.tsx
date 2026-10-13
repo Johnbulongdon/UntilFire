@@ -1,4 +1,5 @@
 import * as DocumentPicker from 'expo-document-picker'
+import { Button } from '@/components/Button'
 import { File } from 'expo-file-system'
 import { router } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
@@ -130,7 +131,7 @@ export default function ImportCsv() {
                 <Text numberOfLines={1} className="text-[15px] font-semibold text-ink">{file.name}</Text>
                 <Text className="text-[12px] text-ink-3">{file.rows.length} rows · amounts in {importCurrency}</Text>
               </View>
-              <Pressable accessibilityRole="button" onPress={pick} hitSlop={8}><Text className="text-[14px] font-bold text-pos-ink">Change</Text></Pressable>
+              <Button small kind="quiet" label="Change" onPress={pick} />
             </View>
 
             <View className="rounded-card border border-border bg-card px-4">

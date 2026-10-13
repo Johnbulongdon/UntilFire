@@ -17,54 +17,44 @@ import { useFlags } from './WorthALook'
 import { colors } from '@/theme/colors'
 
 import { HouseholdCard } from './HouseholdCard'
-import { Card, Label, ProgressTrack } from './Screen'
+import { Icon } from './Icon'
+import { Ring } from './Ring'
+import { Card, Label, ProgressTrack, useFlat } from './Screen'
 import { Text } from './Text'
 
 const NEED_KEYS = ['housing', 'food', 'transport', 'healthcare']
 
-/**
- * Home's account cards, as on the website's Home: the glance row (net worth,
- * emergency fund), free to spend until payday, this month's contribution, and
- * how your net worth compares with US households your age. Home only reads;
- * every card opens the page where its numbers are changed.
- */
-export function HomeAccountCards({ data }: { data: AccountData }) {
+/** The glance row (net worth, emergency fund), each opening its page. Home only reads. */
+export function GlanceRow({ data }: { data: AccountData }) {
   const nw = netWorthOf(data)
   const needsBudget = NEED_KEYS.reduce((s, k) => s + (data.budget[k] ?? 0), 0)
   const needs = needsBudget > 0 ? needsBudget : Object.values(data.budget).reduce((s, v) => s + v, 0) * 0.6
   const efMonths = needs > 0 ? data.balances.cashSavings / needs : null
-
   return (
-    <>
-      <View className="flex-row gap-3">
-        <Tile label="Net worth" value={compactMoney(nw.netWorth)} negative={nw.netWorth < 0} onPress={() => router.push('/money/net-worth')} />
-        <Tile label="Emergency fund" value={efMonths == null ? '—' : `${efMonths.toFixed(1)} mo`}
-          note={efMonths == null ? 'Set a budget' : efMonths >= 6 ? 'Healthy' : efMonths >= 1.5 ? 'Building' : 'Fragile'}
-          onPress={() => router.push('/money/net-worth')} />
-      </View>
-      <WorthCard data={data} />
-      <FreeToSpend data={data} />
-      <NextContribution data={data} />
-      <HouseholdCard />
-      <Peers data={data} netWorth={nw.netWorth} />
-      <BeforeYouBuy />
-    </>
+    <View className="flex-row gap-3">
+      <Tile icon="building.columns.fill" fallback="🏛️" tint={colors.teal} label="Net worth" value={compactMoney(nw.netWorth)} negative={nw.netWorth < 0} onPress={() => router.push('/money/net-worth')} />
+      <Tile icon="shield.lefthalf.filled" fallback="🛡️" tint={efMonths != null && efMonths >= 6 ? colors.green : colors.warn} label="Safety"
+        value={efMonths == null ? '—' : `${efMonths.toFixed(1)} mo`} onPress={() => router.push('/money/net-worth')} />
+    </View>
   )
 }
 
-function Tile({ label, value, note, negative, onPress }: { label: string; value: string; note?: string; negative?: boolean; onPress: () => void }) {
+type SymbolName = Parameters<typeof Icon>[0]['name']
+
+function Tile({ icon, fallback, tint, label, value, negative, onPress }: { icon: SymbolName; fallback: string; tint: string; label: string; value: string; negative?: boolean; onPress: () => void }) {
+  const flat = useFlat()
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`${label}: ${value}`} onPress={() => { haptic.tick(); onPress() }}
-      className="flex-1 rounded-card border border-border bg-card p-4 active:opacity-70">
-      <Label>{label}</Label>
-      <Text className={`mt-1 font-mono text-[20px] ${negative ? 'text-neg-ink' : 'text-ink'}`}>{value}</Text>
-      {note ? <Text className="text-[12px] text-ink-3">{note}</Text> : null}
+      className={`flex-1 active:opacity-70 ${flat ? '' : 'rounded-card border border-border bg-card p-4'}`}>
+      <Icon name={icon} fallback={fallback} size={22} color={tint} />
+      <Text className={`mt-2 font-mono text-[22px] ${negative ? 'text-neg-ink' : 'text-ink'}`}>{value}</Text>
+      <Text className="text-[12px] text-ink-3">{label}</Text>
     </Pressable>
   )
 }
 
 /** FreeToSpendHome (D-29): one sentence, the cash free until payday once bills before it are set aside. */
-function FreeToSpend({ data }: { data: AccountData }) {
+export function FreeToSpend({ data }: { data: AccountData }) {
   const events = upcoming(data.bills, 45)
   const payday = events.find(e => e.type === 'income' && e.counted)
   if (!payday) return null
@@ -73,48 +63,61 @@ function FreeToSpend({ data }: { data: AccountData }) {
   return (
     <Pressable accessibilityRole="button" onPress={() => { haptic.tick(); router.push('/money/budget') }}>
       <Card>
-        <Label>Free to spend until payday</Label>
-        <Text className={`mt-1 font-mono text-[26px] ${free < 0 ? 'text-neg-ink' : 'text-ink'}`}>{money(free)}</Text>
-        <Text className="text-[13px] text-ink-3">after {money(before)} of bills before {payday.description}</Text>
+        <View className="flex-row items-center gap-3">
+          <Icon name="creditcard.fill" fallback="💳" size={22} color={free < 0 ? colors.neg : colors.green} />
+          <View className="flex-1">
+            <Text className={`font-mono text-[24px] ${free < 0 ? 'text-neg-ink' : 'text-ink'}`}>{money(free)}</Text>
+            <Text className="text-[12px] text-ink-3">free until {new Date(`${payday.iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
+          </View>
+        </View>
       </Card>
     </Pressable>
   )
 }
 
 /** NextContributionCard: this month's contribution, from the same ladder as Plan → Contributions. */
-function NextContribution({ data }: { data: AccountData }) {
+export function NextContribution({ data }: { data: AccountData }) {
   const view = useMemo(() => ladderViewFromPlan(data.contributionPlan ?? EMPTY_PLAN, contributionFacts(data)), [data])
   if (!view || view.budget <= 0) return null
   const next = view.next
   return (
     <Pressable accessibilityRole="button" onPress={() => { haptic.tick(); router.push('/plan/contributions') }}>
       <Card>
-        <Label>Next contribution · {countdownLabel(view.available.daysUntil)}</Label>
-        <Text className="mt-1 font-mono text-[26px] text-ink">{money(view.budget)}</Text>
-        {next && <Text className="text-[13px] text-ink-2">First to: <Text className="font-semibold text-ink">{next.label}</Text></Text>}
+        <View className="flex-row items-center gap-3">
+          <Icon name="arrow.up.forward.circle.fill" fallback="📥" size={24} color={colors.green} />
+          <View className="flex-1">
+            <Text className="font-mono text-[24px] text-ink">{money(view.budget)}</Text>
+            <Text numberOfLines={1} className="text-[12px] text-ink-3">{next ? `to ${next.label}` : 'to invest'}</Text>
+          </View>
+          <View className="rounded-full bg-surface px-3 py-1"><Text className="text-[12px] font-semibold text-ink-2">{countdownLabel(view.available.daysUntil)}</Text></View>
+        </View>
       </Card>
     </Pressable>
   )
 }
 
 /** CompareCard: net worth against US households of the same age (Federal Reserve survey, inflation-adjusted). */
-function Peers({ data, netWorth }: { data: AccountData; netWorth: number }) {
+export function Peers({ data }: { data: AccountData }) {
+  const netWorth = netWorthOf(data).netWorth
   const c = compareNetWorth({ netWorthUsd: netWorth, age: data.age, ageAssumed: !(data.age && data.age > 0), currency: data.currency }, NET_WORTH_BENCHMARKS, NET_WORTH_INFLATION)
   if (!c) return null
   return (
     <Card>
-      <Label>How you compare</Label>
-      <Text className="mt-1 text-[16px] leading-6 text-ink">
-        {c.aboveTop ? 'Above the top 1%' : <>Ahead of <Text className="font-bold text-teal-deep">{c.aheadOfPct}%</Text></>} of US households {c.bandLabel}.
-      </Text>
-      <View className="mt-3"><ProgressTrack share={c.aheadOfPct / 100} height={6} /></View>
-      <Text className="mt-1.5 text-[12px] text-ink-3">Federal Reserve Survey of Consumer Finances {c.surveyYear}{c.adjustedThrough ? `, adjusted for inflation through ${c.adjustedThrough}` : ''}.</Text>
+      <View className="flex-row items-center gap-5">
+        <Ring share={c.aheadOfPct / 100} size={84} stroke={10} color={colors.teal} track={colors.surface2}>
+          <Text className="font-mono text-[17px] font-bold text-ink">{c.aboveTop ? '99+' : c.aheadOfPct}%</Text>
+        </Ring>
+        <View className="flex-1">
+          <Text className="text-[15px] font-semibold text-ink">Ahead of US households</Text>
+          <Text className="text-[12px] text-ink-3">{c.bandLabel} · Fed survey {c.surveyYear}</Text>
+        </View>
+      </View>
     </Card>
   )
 }
 
 /** Worth a look (D-31): how many of this month's rows may be making the numbers wrong; opens Transactions to answer. */
-function WorthCard({ data }: { data: AccountData }) {
+export function WorthCard({ data }: { data: AccountData }) {
   const month = thisMonth()
   const rows = useMemo(() => data.transactions.filter(t => t.date.startsWith(month)), [data, month])
   const n = useFlags(rows).size
@@ -133,7 +136,7 @@ function WorthCard({ data }: { data: AccountData }) {
  * Before you buy (D-42): a price, then one sentence: what it does to your
  * freedom date, on the same growth model as the date. The cost is time.
  */
-function BeforeYouBuy() {
+export function BeforeYouBuy() {
   const f = useFreedom()
   const [price, setPrice] = useState('')
   if (!f) return null
@@ -161,5 +164,26 @@ function BeforeYouBuy() {
           : 'Type a price to see what it costs you in time.'}
       </Text>
     </Card>
+  )
+}
+
+/** Your goals (the website's "goals" Home card): each target and how far along it is. */
+export function GoalsCard({ data }: { data: AccountData }) {
+  if (data.goals.length === 0) return null
+  return (
+    <Pressable accessibilityRole="button" onPress={() => { haptic.tick(); router.push('/plan/goals') }}>
+      <Card>
+        <Label>Your goals</Label>
+        {data.goals.slice(0, 4).map(g => (
+          <View key={g.id} className="mt-2.5">
+            <View className="flex-row justify-between">
+              <Text className="text-[15px] text-ink">{g.emoji ?? '🎯'}  {g.name}</Text>
+              <Text className="font-mono text-[13px] text-ink-2">{Math.round((g.current_saved / Math.max(g.target_amount, 1)) * 100)}%</Text>
+            </View>
+            <View className="mt-1"><ProgressTrack share={g.current_saved / Math.max(g.target_amount, 1)} height={6} /></View>
+          </View>
+        ))}
+      </Card>
+    </Pressable>
   )
 }

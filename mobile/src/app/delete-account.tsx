@@ -1,4 +1,5 @@
 import { router, useFocusEffect } from 'expo-router'
+import { Button } from '@/components/Button'
 import { useCallback, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, TextInput, View } from 'react-native'
 
@@ -175,7 +176,7 @@ function Step({ done, label, action, first }: { done: boolean; label: string; fi
       <Text className={`flex-1 text-[15px] ${done ? 'text-ink-2' : 'text-ink'}`}>{label}</Text>
       {action && (action.busy
         ? <ActivityIndicator color={colors.green} />
-        : <Pressable accessibilityRole="button" hitSlop={8} onPress={action.onPress}><Text className="text-[14px] font-bold text-pos-ink">{action.label}</Text></Pressable>)}
+        : <Button small kind="quiet" label={action.label} onPress={action.onPress} />)}
     </View>
   )
 }

@@ -1,9 +1,11 @@
 import Slider from '@react-native-community/slider'
+import { Button } from '@/components/Button'
 import { useRef, useState } from 'react'
 import { View } from 'react-native'
 
 import { Bouncy } from '@/components/Bouncy'
 import { DetailScreen } from '@/components/DetailScreen'
+import { BeforeYouBuy } from '@/components/HomeAccountCards'
 import { Card, Label } from '@/components/Screen'
 import { Text } from '@/components/Text'
 import { money, roundNice } from '@/lib/format'
@@ -63,6 +65,9 @@ export default function WhatIf() {
         </Text>
       </Card>
 
+      {/* Moved here from Home (V2): what a purchase costs in time is a what-if. */}
+      <BeforeYouBuy />
+
       <View className="gap-2.5">
         <Label>Next moves</Label>
         {moves.map(m => {
@@ -103,9 +108,7 @@ export default function WhatIf() {
           onChange={v => { setIncome(v); onSlide({ ...tried, monthlyIncome: v }) }}
         />
         {changed && (
-          <Bouncy onPress={() => { haptic.tick(); setSpending(plan.monthlySpending); setIncome(plan.monthlyIncome) }} style={{ marginTop: 16, alignSelf: 'flex-start' }}>
-            <Text className="text-[14px] font-bold text-pos-ink">Reset to my plan</Text>
-          </Bouncy>
+          <Button small kind="quiet" style={{ marginTop: 16 }} label="Reset to my plan" onPress={() => { setSpending(plan.monthlySpending); setIncome(plan.monthlyIncome) }} />
         )}
       </Card>
     </DetailScreen>

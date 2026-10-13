@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Button } from '@/components/Button'
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
 
@@ -54,7 +55,7 @@ export default function Citizenship() {
           <>
             <View className="flex-row items-center justify-between">
               <Label>Your passport</Label>
-              <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { haptic.tick(); setPicking(true) }}><Text className="text-[13px] font-bold text-pos-ink">Change</Text></Pressable>
+              <Button small kind="quiet" label="Change" onPress={() => { haptic.tick(); setPicking(true) }} />
             </View>
             <CountryDetail c={mineC} mine={mineC} />
           </>

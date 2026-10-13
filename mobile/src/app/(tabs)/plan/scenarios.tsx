@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Button } from '@/components/Button'
 import { useEffect, useState } from 'react'
 import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native'
 
@@ -103,7 +104,7 @@ export default function Scenarios() {
       <Card>
         <View className="flex-row items-center justify-between">
           <Label>{sel.name}</Label>
-          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { haptic.tick(); setEditing(e => !e) }}><Text className="text-[13px] font-bold text-pos-ink">{editing ? 'Done' : 'Edit holdings'}</Text></Pressable>
+          <Button small kind="quiet" label={editing ? 'Done' : 'Edit holdings'} onPress={() => { haptic.tick(); setEditing(e => !e) }} />
         </View>
         {editing ? (
           <HoldingsEditor scenario={sel} onChange={next => save(scenarios.map((s, i) => (i === selected ? next : s)))} />
@@ -189,7 +190,7 @@ function HoldingsEditor({ scenario, onChange }: { scenario: SimScenario; onChang
           onChangeText={setTicker}
           onSubmitEditing={() => add(ticker)}
         />
-        <Pressable accessibilityRole="button" onPress={() => add(ticker)} className="justify-center rounded-control bg-green px-4"><Text className="text-[14px] font-bold text-card">Add</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => add(ticker)} className="justify-center rounded-control bg-green px-4"><Text className="text-[14px] font-bold text-white">Add</Text></Pressable>
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingTop: 8 }}>
         {Object.keys(SIM_TICKER_LIBRARY).filter(t => !scenario.holdings.some(h => h.ticker === t)).map(t => (

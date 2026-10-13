@@ -1,19 +1,23 @@
 import { router } from 'expo-router'
+import { Button } from '@/components/Button'
 import { useMemo, useState } from 'react'
-import { Pressable, RefreshControl, ScrollView, SectionList, TextInput, View } from 'react-native'
+import { Alert, Modal, Pressable, RefreshControl, ScrollView, SectionList, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AddButton } from '@/components/AddButton'
 import { Text } from '@/components/Text'
 import { TransactionRow } from '@/components/TransactionRow'
-import { addMonths, isoDay, rangeFor, stepRange, type RangePreset } from '@/engine'
+import { addMonths, INCOME_CATEGORIES, isoDay, merchantKey, rangeFor, stepRange, type RangePreset } from '@/engine'
 import { compactMoney, money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
-import { byDay, categoryOf, dayLabel, thisMonth } from '@/lib/money-data'
+import { byDay, categoryOf, dayLabel, expenseCategories, thisMonth } from '@/lib/money-data'
+import { setCategoryFor } from '@/lib/mutations'
 import { summarise } from '@/lib/spend-summary'
 import { useAccount } from '@/state/account'
 import { colors } from '@/theme/colors'
 import { WorthALook } from '@/components/WorthALook'
+import { ReviewBar } from '@/components/ReviewBar'
+import { ThemeScope } from '@/components/ThemeScope'
 
 const PRESETS: { key: RangePreset; label: string }[] = [
   { key: 1, label: 'Month' },
@@ -35,6 +39,14 @@ export default function Transactions() {
   const [endMonth, setEndMonth] = useState(thisMonth())
   const [category, setCategory] = useState<string | null>(null)
   const [query, setQuery] = useState('')
+  // Select mode: tick rows, then put them all in one category.
+  const [selecting, setSelecting] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [picking, setPicking] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const toggle = (id: string) => setSelected(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  const startSelect = (id?: string) => { setSelecting(true); setSelected(new Set(id ? [id] : [])) }
+  const stopSelect = () => { setSelecting(false); setSelected(new Set()); setPicking(false) }
   const oldest = addMonths(thisMonth(), -12)
 
   const range = useMemo(() => rangeFor(preset, endMonth), [preset, endMonth])
@@ -59,6 +71,7 @@ export default function Transactions() {
 
   const header = (
     <View>
+      <ReviewBar rows={summary.inRange} months={range.months} />
       <View className="mt-3"><WorthALook rows={summary.inRange} /></View>
       <View className="mt-3 flex-row items-center justify-between rounded-control bg-surface px-2 py-2">
         <Pressable accessibilityRole="button" accessibilityLabel="Previous period" hitSlop={8} onPress={() => step(-1)} disabled={!canBack} className="px-3">
@@ -128,15 +141,36 @@ export default function Transactions() {
 
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-ground">
-      <View className="px-5 pt-2">
+      <View className="px-5 pt-2" style={{ zIndex: 10 }}>
         <Pressable accessibilityRole="button" accessibilityLabel="Back" hitSlop={12} onPress={() => { haptic.tick(); router.back() }}>
           <Text className="text-[16px] font-semibold text-pos-ink">‹ Money</Text>
         </Pressable>
         <View className="mt-2 flex-row items-center justify-between">
           <Text className="font-display text-[30px] font-bold tracking-tight text-ink">Transactions</Text>
-          {data && <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { haptic.tick(); router.push('/import') }}><Text className="text-[15px] font-bold text-pos-ink">Import CSV</Text></Pressable>}
+          {data && (selecting
+            ? <Button small kind="quiet" label="Cancel" onPress={() => { haptic.tick(); stopSelect() }} />
+            : <View className="flex-row gap-4">
+                <Button small kind="quiet" label="Select" onPress={() => { haptic.tick(); startSelect() }} />
+                <Button small kind="quiet" label="Import" onPress={() => { haptic.tick(); router.push('/import') }} />
+              </View>)}
         </View>
-      </View>
+        {selecting && (
+          <SelectBar
+            count={selected.size}
+            sameMerchant={(() => {
+              // One ticked: offer every other transaction from the same merchant.
+              if (selected.size !== 1 || !data) return null
+              const one = data.transactions.find(t => selected.has(t.id))
+              const key = one ? merchantKey(one.description) || one.description.toLowerCase() : ''
+              const ids = key ? data.transactions.filter(t => (merchantKey(t.description) || t.description.toLowerCase()) === key).map(t => t.id) : []
+              return ids.length > 1 ? { n: ids.length, select: () => { haptic.select(); setSelected(new Set(ids)) } } : null
+            })()}
+            allShown={() => { haptic.select(); setSelected(new Set(shown.map(t => t.id))) }}
+            onPick={() => { haptic.tick(); setPicking(true) }}
+            onCancel={() => { haptic.tick(); stopSelect() }}
+          />
+        )}
+        </View>
 
       <SectionList
         sections={sections}
@@ -159,7 +193,8 @@ export default function Transactions() {
               borderBottomLeftRadius: index === section.data.length - 1 ? 16 : 0, borderBottomRightRadius: index === section.data.length - 1 ? 16 : 0,
             }}
           >
-            <TransactionRow t={item} first={index === 0} />
+            <TransactionRow t={item} first={index === 0} selecting={selecting} selected={selected.has(item.id)}
+              onToggle={() => toggle(item.id)} onLongPress={() => (selecting ? toggle(item.id) : startSelect(item.id))} />
           </View>
         )}
         ListEmptyComponent={
@@ -168,7 +203,41 @@ export default function Transactions() {
           </Text>
         }
       />
-      <AddButton />
+      {!selecting && <AddButton />}
+      <Modal visible={picking} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setPicking(false)}>
+        <ThemeScope>
+        <View className="flex-1 bg-ground">
+          <View className="flex-row items-center justify-between px-5 pt-4">
+            <Pressable accessibilityRole="button" hitSlop={12} onPress={() => setPicking(false)}><Text className="text-[16px] font-semibold text-ink-2">Cancel</Text></Pressable>
+            <Text className="text-[16px] font-bold text-ink">Move {selected.size} to…</Text>
+            <View style={{ width: 52 }} />
+          </View>
+          <ScrollView contentContainerClassName="px-5 pb-10 pt-5">
+            {[{ title: 'Spending', cats: expenseCategories() }, { title: 'Income', cats: INCOME_CATEGORIES }].map(group => (
+              <View key={group.title} className="mb-5">
+                <Text className="mb-2 text-[13px] text-ink-3">{group.title}</Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {group.cats.map(c => (
+                    <Pressable key={c.key} accessibilityRole="button" disabled={saving}
+                      onPress={async () => {
+                        haptic.select(); setSaving(true)
+                        const problem = await setCategoryFor([...selected], c.key)
+                        setSaving(false)
+                        if (problem) { haptic.warn(); Alert.alert(problem); return }
+                        haptic.success(); stopSelect(); refresh()
+                      }}
+                      className="w-[31%] items-center rounded-2xl border border-border bg-card px-2 py-3 active:opacity-70">
+                      <Text className="text-[22px]">{(c as { emoji?: string }).emoji ?? '📦'}</Text>
+                      <Text numberOfLines={1} className="mt-1 text-[12px] font-semibold text-ink">{c.label}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+        </ThemeScope>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -183,5 +252,29 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
     >
       <Text className={`text-[13px] font-semibold ${active ? 'text-green-700' : 'text-ink-2'}`}>{label}</Text>
     </Pressable>
+  )
+}
+
+/** The bar along the bottom in select mode: how many are ticked, quick picks, and the one action. */
+function SelectBar({ count, sameMerchant, allShown, onPick, onCancel }: {
+  count: number; sameMerchant: { n: number; select: () => void } | null; allShown: () => void; onPick: () => void; onCancel: () => void
+}) {
+  return (
+    <View className="absolute left-0 right-0 top-0 border-b border-border bg-ground px-5 pb-3 pt-2"
+      style={{ shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 }}>
+      <View className="flex-row items-center justify-between">
+        <Pressable accessibilityRole="button" hitSlop={10} onPress={onCancel}><Text className="text-[16px] font-semibold text-pos-ink">Cancel</Text></Pressable>
+        <Text accessibilityLiveRegion="polite" className="text-[16px] font-bold text-ink">{count === 0 ? 'Select transactions' : `${count} selected`}</Text>
+        <Pressable accessibilityRole="button" hitSlop={10} onPress={allShown}><Text className="text-[16px] font-semibold text-pos-ink">All</Text></Pressable>
+      </View>
+      <View className="mt-3 flex-row items-center gap-3">
+        {sameMerchant && (
+          <Pressable accessibilityRole="button" hitSlop={6} onPress={sameMerchant.select} className="rounded-full border border-border-2 px-3 py-2 active:opacity-70">
+            <Text className="text-[13px] font-semibold text-ink">All {sameMerchant.n} from merchant</Text>
+          </Pressable>
+        )}
+        <Button style={{ flex: 1 }} small label="Change category" disabled={count === 0} onPress={onPick} />
+      </View>
+    </View>
   )
 }
