@@ -14,6 +14,7 @@ import { Card, Label, Screen } from '@/components/Screen'
 import { Text } from '@/components/Text'
 import { money } from '@/lib/format'
 import { monthSpend, thisMonth } from '@/lib/money-data'
+import { reviewCounts } from '@/lib/review'
 import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { freedomFor, usePlan } from '@/state/plan'
@@ -59,7 +60,8 @@ function Headline({ data }: { data: AccountData }) {
 
 type SymbolName = Parameters<typeof Icon>[0]['name']
 const TILES: { label: string; icon: SymbolName; fallback: string; to: string }[] = [
-  { label: 'Add', icon: 'plus', fallback: '+', to: '/transaction' },
+  // Review took Add's place (Oct 2026): Home and Activity both add, and Review left Home's actions.
+  { label: 'Review', icon: 'checklist', fallback: '✓', to: '/review' },
   { label: 'Activity', icon: 'list.bullet', fallback: '≡', to: '/money/transactions' },
   { label: 'Budget', icon: 'chart.pie.fill', fallback: '◔', to: '/money/budget' },
   { label: 'Calendar', icon: 'calendar', fallback: '▦', to: '/money/calendar' },
@@ -71,6 +73,8 @@ const TILES: { label: string; icon: SymbolName; fallback: string; to: string }[]
 
 /** Every Money page as a chunky icon tile, four to a row. */
 function Tiles() {
+  const { data } = useAccount()
+  const toReview = data ? reviewCounts(data.transactions).need : 0
   return (
     <View className="flex-row flex-wrap" style={{ rowGap: 18 }}>
       {TILES.map(t => (
@@ -80,6 +84,11 @@ function Tiles() {
               <View style={{ width: 62, height: 62, borderRadius: 20, backgroundColor: TAB_COLOR.money, alignItems: 'center', justifyContent: 'center',
                 borderBottomWidth: pressed ? 0 : 4, borderBottomColor: 'rgba(0,0,0,0.28)', marginTop: pressed ? 4 : 0 }}>
                 <Icon name={t.icon} fallback={t.fallback} size={26} color="#FFFFFF" />
+                {t.to === '/review' && toReview > 0 && (
+                  <View accessibilityLabel={`${toReview} to review`} style={{ position: 'absolute', top: -6, right: -6, minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: TAB_COLOR.money }} className="font-mono text-[12px] font-bold">{toReview > 99 ? '99+' : toReview}</Text>
+                  </View>
+                )}
               </View>
               <Text className="text-[13px] font-bold text-ink">{t.label}</Text>
             </>

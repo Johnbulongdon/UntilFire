@@ -76,8 +76,12 @@ const GRID_LINES: number[][] = (() => {
 })()
 
 function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: Props) {
-  const R = size / 2 - 2
+  const R0 = size / 2 - 2
   const c = size / 2
+  // Pinch to zoom (Oct 2026 QA: close cities were hard to tap); the canvas crops the rest.
+  const zoom = useSharedValue(1)
+  const pinchFrom = useSharedValue(1)
+  const rz = useDerivedValue(() => R0 * zoom.value)
   // Rotation in degrees, as d3's rotate([λ, φ]): the globe faces longitude -λ, latitude -φ.
   const lam = useSharedValue(-20)
   const phi = useSharedValue(TILT)
@@ -113,6 +117,7 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
 
   // One worklet turns rings of unit vectors into screen points, clipped at the horizon.
   const draw = useDerivedValue(() => {
+    const R = R0 * zoom.value
     const cl = Math.cos(lam.value * RAD), sl = Math.sin(lam.value * RAD)
     const cp = Math.cos(phi.value * RAD), sp = Math.sin(phi.value * RAD)
     const land = Skia.Path.Make()
@@ -157,7 +162,9 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
           else { sweep += turn(a - last); out.arcToOval(rim, from, sweep, false) }
         }
         if (x > 0) out.lineTo(c + R * Y, c - R * z)
-        else { const a = angle(Y, z); sweep += turn(a - last); last = a }
+        // Hidden points near the far pole have no stable rim angle; skipping them
+        // stops the fill flipping across the globe for a frame (Oct 2026 QA).
+        else if (Y * Y + z * z > 0.01) { const a = angle(Y, z); sweep += turn(a - last); last = a }
         px = x; pY = Y; pz = z
       }
       out.close()
@@ -203,6 +210,7 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
   const nearXY = useDerivedValue(() => {
     const i = nearest.value
     if (i < 0) return { x: -99, y: -99 }
+    const R = R0 * zoom.value
     const cl = Math.cos(lam.value * RAD), sl = Math.sin(lam.value * RAD)
     const cp = Math.cos(phi.value * RAD), sp = Math.sin(phi.value * RAD)
     const X = cityVecs[i * 3] * cl - cityVecs[i * 3 + 1] * sl
@@ -215,7 +223,7 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
 
   // Drag to spin, flick to keep it turning; a tap picks the nearest dot.
   const start = useSharedValue({ l: 0, p: 0 })
-  const k = 180 / size
+  const k = 180 / size // degrees per point at 1×; divided by the zoom while dragging
   const pickAt = (key: string) => onTap?.(key)
   const pan = Gesture.Pan()
     .minDistance(4)
@@ -225,15 +233,19 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
       start.value = { l: lam.value, p: phi.value }
     })
     .onUpdate(e => {
-      lam.value = start.value.l + e.translationX * k
-      phi.value = Math.max(-70, Math.min(70, start.value.p - e.translationY * k))
+      lam.value = start.value.l + e.translationX * k / zoom.value
+      phi.value = Math.max(-70, Math.min(70, start.value.p - e.translationY * k / zoom.value))
     })
     .onEnd(e => {
-      lam.value = withDecay({ velocity: e.velocityX * k, deceleration: 0.994 })
-      phi.value = withDecay({ velocity: -e.velocityY * k, deceleration: 0.99, clamp: [-70, 70] })
+      lam.value = withDecay({ velocity: e.velocityX * k / zoom.value, deceleration: 0.994 })
+      phi.value = withDecay({ velocity: -e.velocityY * k / zoom.value, deceleration: 0.99, clamp: [-70, 70] })
     })
+  const pinch = Gesture.Pinch()
+    .onBegin(() => { pinchFrom.value = zoom.value; touched.value = true })
+    .onUpdate(e => { zoom.value = Math.max(1, Math.min(4, pinchFrom.value * e.scale)) })
   const tap = Gesture.Tap().onEnd(e => {
     if (!onTap || cityVecs.length === 0) return
+    const R = R0 * zoom.value
     const cl = Math.cos(lam.value * RAD), sl = Math.sin(lam.value * RAD)
     const cp = Math.cos(phi.value * RAD), sp = Math.sin(phi.value * RAD)
     let best = -1, d = 26
@@ -247,19 +259,19 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
     }
     if (best >= 0) runOnJS(pickAt)(cityKeys[best])
   })
-  const gesture = cities ? Gesture.Race(pan, tap) : Gesture.Tap().enabled(false)
+  const gesture = cities ? Gesture.Simultaneous(pinch, Gesture.Race(pan, tap)) : Gesture.Tap().enabled(false)
 
   return (
     <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       <GestureDetector gesture={gesture}>
         <Canvas style={{ width: size, height: size }}>
-          <Circle cx={c} cy={c} r={R} color={colors.sea} />
+          <Circle cx={c} cy={c} r={rz} color={colors.sea} />
           <Path path={grid} color={colors.line} style="stroke" strokeWidth={0.6} />
           <Path path={land} color={colors.land} />
-          <Circle cx={c} cy={c} r={R} color={colors.edge} style="stroke" strokeWidth={1.5} />
+          <Circle cx={c} cy={c} r={rz} color={colors.edge} style="stroke" strokeWidth={1.5} />
           <Path path={dots} color={colors.dot ?? '#FFFFFF'} opacity={0.85} />
           <Circle cx={nearX} cy={nearY} r={5} color={colors.pin} />
-          {pinList.map((p, i) => <Pin key={i} v={p.v} color={p.color} r={p.r} lam={lam} phi={phi} c={c} R={R} />)}
+          {pinList.map((p, i) => <Pin key={i} v={p.v} color={p.color} r={p.r} lam={lam} phi={phi} c={c} R0={R0} zoom={zoom} />)}
         </Canvas>
       </GestureDetector>
     </View>
@@ -267,11 +279,12 @@ function GlobeSkia({ size, focus, pins = [], cities, onCenter, onTap, colors }: 
 }
 
 /** A pin that follows the globe and hides on the far side. */
-function Pin({ v, color, r, lam, phi, c, R }: {
+function Pin({ v, color, r, lam, phi, c, R0, zoom }: {
   v: [number, number, number]; color: string; r: number
-  lam: { value: number }; phi: { value: number }; c: number; R: number
+  lam: { value: number }; phi: { value: number }; c: number; R0: number; zoom: { value: number }
 }) {
   const at = useDerivedValue(() => {
+    const R = R0 * zoom.value
     const cl = Math.cos(lam.value * RAD), sl = Math.sin(lam.value * RAD)
     const cp = Math.cos(phi.value * RAD), sp = Math.sin(phi.value * RAD)
     const X = v[0] * cl - v[1] * sl

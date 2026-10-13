@@ -27,6 +27,7 @@ export default function Contributions() {
   const { session } = useAuth()
   const { data, loading, refresh } = useAccount()
   const [marking, setMarking] = useState(false)
+  const [showHow, setShowHow] = useState(false)
   const plan = data?.contributionPlan ?? EMPTY_PLAN
   const view = useMemo(() => (data ? ladderViewFromPlan(plan, contributionFacts(data)) : null), [data, plan])
 
@@ -49,13 +50,12 @@ export default function Contributions() {
   const efShare = view.efTarget > 0 ? view.efBalance / view.efTarget : 0
 
   return (
-    <DetailScreen back="Plan" title="Contributions" subtitle="Where each month's saving goes, in order" refreshing={loading} onRefresh={refresh}>
+    <DetailScreen back="Plan" title="Invest" refreshing={loading} onRefresh={refresh}>
+      {/* Simplified Oct 2026 QA: the amount, when, one button; the working is one tap away. */}
       <Card>
-        <Label>Next contribution · {a.nextDate.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })} ({countdownLabel(a.daysUntil)})</Label>
-        <Text className="mt-1 font-mono text-[32px] text-ink">{money(view.budget)}</Text>
-        <Text className="text-[13px] text-ink-3">
-          {a.done ? `Already made: ${money(a.done.amount)}` : view.budgetIsCustom ? 'The amount you set' : 'Safe to put in, after bills before then'}
-        </Text>
+        <Label>{a.done ? 'Made this time' : `Put in by ${a.nextDate.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}`}</Label>
+        <Text className="mt-1 font-mono text-[34px] text-ink">{money(a.done ? a.done.amount : view.budget)}</Text>
+        {!a.done && <Text className="text-[13px] text-ink-3">{view.budgetIsCustom ? 'Your amount' : `Safe after bills · ${countdownLabel(a.daysUntil)}`}</Text>}
         {session && (a.done || view.budget > 0) && (
           <Button style={{ marginTop: 12 }} kind={a.done ? 'quiet' : 'primary'} disabled={marking} label={a.done ? 'Undo' : `Mark ${money(view.budget)} as made`}
             onPress={async () => {
@@ -66,7 +66,10 @@ export default function Contributions() {
               haptic.success(); refresh()
             }} />
         )}
-        {!view.budgetIsCustom && !a.done && (
+        {!view.budgetIsCustom && !a.done && !showHow && (
+          <Button small kind="quiet" style={{ marginTop: 10 }} label="How it's worked out" onPress={() => { haptic.tick(); setShowHow(true) }} />
+        )}
+        {!view.budgetIsCustom && !a.done && showHow && (
           <View className="mt-3 gap-1 border-t border-border pt-3">
             <Line label="Cash outside your emergency fund" value={money(a.cash)} />
             {a.income > 0 && <Line label="Coming in before then" value={`+${money(a.income)}`} tone="pos" />}
@@ -85,29 +88,27 @@ export default function Contributions() {
       </Card>
 
       <Card>
-        <Label>Emergency fund</Label>
+        <View className="flex-row items-baseline justify-between">
+          <Label>Emergency fund</Label>
+          <Text className="font-mono text-[13px] text-ink-3">of {money(view.efTarget)}</Text>
+        </View>
         <Text className="mt-1 font-mono text-[22px] text-ink">{money(view.efBalance)}</Text>
         <View className="mt-2"><ProgressTrack share={efShare} /></View>
-        <Text className="mt-1.5 text-[12px] text-ink-3">
-          Floor {money(view.efFloor)} · target {money(view.efTarget)} ({money(view.expenses)}/mo of needs{view.expensesAreCustom ? ', set by you' : ''})
-        </Text>
       </Card>
 
       <Card>
-        <Label>Your investment mix</Label>
+        <Label>Your mix</Label>
         {!mix ? (
           <Text className="mt-2 text-[14px] leading-5 text-ink-2">
-            {plan.targets.length === 0 ? 'Set a target mix (for example 80% VTI, 20% BND) and each contribution is split to keep you on it.' : 'Nothing reaches investing this time; the rungs above take it first.'}
+            {plan.targets.length === 0 ? 'Set a mix, like 80% VTI and 20% BND.' : 'Nothing reaches investing this time.'}
           </Text>
         ) : mix.assets.map((s, i) => (
-          <View key={s.symbol} className={`py-2.5 ${i > 0 ? 'border-t border-border' : ''}`}>
+          <View key={s.symbol} className={`gap-1.5 py-2.5 ${i > 0 ? 'border-t border-border' : ''}`}>
             <View className="flex-row justify-between">
-              <Text className="text-[15px] font-semibold text-ink">{s.symbol}</Text>
+              <Text className="text-[15px] font-semibold text-ink">{s.symbol} <Text className="font-mono text-[12px] text-ink-3">{Math.round(s.currentPct * 100)}→{Math.round(s.targetPct * 100)}%</Text></Text>
               <Text className="font-mono text-[15px] text-ink">{money(s.adjusted)}</Text>
             </View>
-            <Text className={`text-[12px] ${s.status === 'on-track' ? 'text-ink-3' : 'text-warn'}`}>
-              {Math.round(s.currentPct * 100)}% now · target {Math.round(s.targetPct * 100)}%{s.status === 'under' ? ' · under, topped up' : s.status === 'over' ? ' · over, held back' : ''}
-            </Text>
+            <ProgressTrack share={s.targetPct ? s.currentPct / s.targetPct : 0} height={6} />
           </View>
         ))}
         <View className="mt-2"><Button small kind="quiet" label={plan.targets.length ? 'Change your mix' : 'Set a mix'} onPress={() => router.push('/contribution-edit')} /></View>
@@ -130,13 +131,11 @@ type Fill = { kind: string; label: string; why: string; amount: number; enabled:
 /**
  * The ladder as a picture (Oct 2026 QA: the rows of text hid the order of
  * magnitude): one bar split by rung, each funded rung's own bar sized against
- * the whole, the reason shown only for the rung up next, and the rest named in
- * one line. Rungs are numbered, so the shades are never the only cue.
+ * the whole, and the rest named in one line. Rungs are numbered, so the shades are never the only cue.
  */
 function Ladder({ fills, next }: { fills: Fill[]; next?: string }) {
   const funded = fills.filter(f => f.enabled && f.amount > 0)
   const later = fills.filter(f => f.enabled && f.amount <= 0)
-  const off = fills.length - funded.length - later.length
   const total = funded.reduce((t, f) => t + f.amount, 0)
   // Plan's colour, lighter for each later rung's bar; badges stay solid so their numbers stay readable.
   const shade = (i: number) => ({ backgroundColor: `${TAB_COLOR.plan}${Math.round(Math.max(0.4, 1 - i * 0.2) * 255).toString(16).padStart(2, '0')}` })
@@ -160,14 +159,9 @@ function Ladder({ fills, next }: { fills: Fill[]; next?: string }) {
           <View className="ml-[34px] h-2 overflow-hidden rounded-full bg-surface-2">
             <View className="h-full rounded-full" style={[{ width: `${Math.max(3, (f.amount / total) * 100)}%` }, shade(i)]} />
           </View>
-          {f.kind === next && <Text className="ml-[34px] text-[12px] leading-4 text-ink-3">{f.why}</Text>}
         </View>
       ))}
-      {(later.length > 0 || off > 0) && (
-        <Text className="text-[12px] leading-4 text-ink-3">
-          {later.length > 0 ? `After that: ${later.map(f => f.label).join(', ')}.` : ''}{later.length > 0 && off > 0 ? ' ' : ''}{off > 0 ? `${off} switched off.` : ''}
-        </Text>
-      )}
+      {later.length > 0 && <Text className="text-[12px] leading-4 text-ink-3">Then: {later.map(f => f.label).join(', ')}</Text>}
     </View>
   )
 }

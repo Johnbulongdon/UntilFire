@@ -2604,5 +2604,12 @@ whether the website adopts Sunny too.
 - The globe clips land at the horizon; the welcome sunrise has no horizon line.
 **Why:** taps felt laggy because each waited for a save; Review was the last
 screen in the old style; the ladder hid the order of magnitude.
+- **Second pass:** the city globe pinches to zoom (1–4×); Review is a Money
+  tile with a count (in Add's place); the reveal confetti rains from the top
+  of the screen, like Robinhood's; "How you stack up" bars grow upward; the
+  Invest page (renamed from Contributions) keeps only the amount, the date,
+  one button and the picture, with the working one tap away.
 **Revisit:** if Home feels busy, Budget is reachable three ways there (chip,
 "This month" bar, button); the bar is the one to trim.
+The "How you stack up" average is the US saving rate for everyone; per-country
+benchmarks are deferred until there is data.

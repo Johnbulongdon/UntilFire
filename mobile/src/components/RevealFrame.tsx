@@ -10,8 +10,10 @@ import { Text } from './Text'
  * itself in the middle, and one button pinned to the footer (V2: one thing per
  * screen). An optional second, quieter button sits under it.
  */
-export function RevealFrame({ eyebrow, children, next, onNext, second }: {
+export function RevealFrame({ eyebrow, children, next, onNext, second, overlay }: {
   eyebrow?: string
+  /** Drawn over the whole screen, edge to edge (the reveal's confetti). */
+  overlay?: ReactNode
   children: ReactNode
   next: string
   onNext: () => void
@@ -27,6 +29,7 @@ export function RevealFrame({ eyebrow, children, next, onNext, second }: {
         <Button kind="onDark" label={next} onPress={onNext} />
         {second && <Button kind="onDarkQuiet" label={second.label} onPress={second.onPress} />}
       </View>
+      {overlay}
     </SafeAreaView>
   )
 }
