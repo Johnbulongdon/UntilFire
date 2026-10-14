@@ -2624,3 +2624,27 @@ screen in the old style; the ladder hid the order of magnitude.
 "This month" bar, button); the bar is the one to trim.
 The "How you stack up" average is the US saving rate for everyone; per-country
 benchmarks are deferred until there is data.
+
+### D-78 — October 14: idle free banks are disconnected; merchant rules file automatically
+
+**Decision (founder, on a decision card):** Plaid bills every bank connection
+monthly while it exists, so a connection should only live while it earns money
+or is being used. Pro, own or household, keeps every bank. A free account keeps
+one bank while active; after 30 days without opening the app or the dashboard,
+its bank is disconnected at Plaid. After Pro ends, extra banks go after a 7-day
+grace and the first connected stays. Synced transactions are always kept.
+Rejected: banks for Pro only (weakens the daily Today hook for free users) and
+keeping one free bank forever (pays for dead accounts).
+**How:** `profiles.last_active_at` (migration 0051) is stamped once a day on
+open; `lib/bank-cleanup` plans and `/api/cron/bank-cleanup` acts at 08:00 UTC,
+before the sync. It only reports until `BANK_CLEANUP=on`, and does nothing when
+activity can't be read.
+**Also:** "Always file this merchant like this" in the app's Review saves a rule
+in `_fire_profile.merchantRules`; Review files covered rows itself and bank sync
+applies rules as rows arrive. A row typed by hand and a bank row with the same
+amount within three days are now a possible duplicate even under different
+names; confirming keeps the bank's copy.
+**Rollout:** apply 0051 before setting `BANK_CLEANUP=on`; check one dry run's
+`wouldRemove` count first.
+**Revisit:** the email warning before an idle disconnect, and whether active
+free users' one bank pays for itself once Plaid bills arrive.

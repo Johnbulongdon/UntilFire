@@ -42,3 +42,4 @@ export { calcPurchaseImpact, formatDelay, formatFV } from '@engine/purchase-impa
 export { merchantKey } from '@engine/merchant-memory.ts'
 export { CARDS as HOME_CARDS, normaliseLayout, setCard, type DashboardLayout } from '@engine/dashboard-layout.ts'
 export { buildMerchantMemory, suggestFromHistory } from '@engine/merchant-memory.ts'
+export { stampActive } from '@engine/last-active.ts'

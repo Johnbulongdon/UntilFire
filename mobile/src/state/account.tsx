@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 import { setCustomCategories } from '@/lib/custom-categories'
 import { loadRates, setDisplayCurrency } from '@/lib/display-currency'
-import { addMonths, type CategoryDef, CITIES, FALLBACK_RATES, fetchAllPages, isoDay, loadMortgages, monthOf, netAmount, type Mortgage, type MortgageTerms, type PlanSettings, REAL_RETURN, type StoredPlan, type LifeVersion, normaliseLayout, type DashboardLayout } from '@/engine'
+import { addMonths, type CategoryDef, CITIES, FALLBACK_RATES, fetchAllPages, isoDay, loadMortgages, monthOf, netAmount, type Mortgage, type MortgageTerms, type PlanSettings, REAL_RETURN, type StoredPlan, type LifeVersion, normaliseLayout, type DashboardLayout, stampActive } from '@/engine'
 import { effectiveBalances, effectiveDebts, type PlaidAccount } from '@/lib/balances'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/state/auth'
@@ -176,6 +176,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         setData(d); setSavedAt(cached.savedAt); shown.current = true
       }
     }
+    // Keeps a used bank connected (lib/bank-cleanup drops idle free ones).
+    stampActive(supabase as never, userId)
     try {
     const today = isoDay(new Date())
     const since = `${addMonths(monthOf(today), -HISTORY_MONTHS)}-01`
