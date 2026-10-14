@@ -259,6 +259,12 @@ export async function resolveFlag(tx: { id: string; tags: string[] }, kind: stri
   return error ? 'Couldn\'t save that. Please try again.' : null
 }
 
+/** A move between your own accounts, as the website files one: no longer spending, so out of budgets and Review. */
+export async function markTransfer(id: string): Promise<string | null> {
+  const { error } = await supabase.from('expenses').update({ transaction_type: 'transfer', category: 'transfer', sub_category: null }).eq('id', id)
+  return error ? 'Couldn\'t save that. Please try again.' : null
+}
+
 /** Put several transactions in one category at once (sub-category cleared, as a new category has its own). */
 export async function setCategoryFor(ids: string[], category: string): Promise<string | null> {
   for (let i = 0; i < ids.length; i += 200) {

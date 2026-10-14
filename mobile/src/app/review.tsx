@@ -16,7 +16,7 @@ import { buildMerchantMemory, isoDay, SUB_CATEGORIES, suggestFromHistory } from 
 import { moneyIn } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { categoryOf, expenseCategories } from '@/lib/money-data'
-import { fileTransactions } from '@/lib/mutations'
+import { fileTransactions, markTransfer } from '@/lib/mutations'
 import { defaultNeed, isFiled } from '@/lib/review'
 import { addDays } from '@/lib/today'
 import { useAccount, type Transaction } from '@/state/account'
@@ -158,7 +158,17 @@ export default function Review() {
 
       <DragCategoryPicker ref={picker} open={dragging} />
       <CategorySheet t={picking} current={picking && filingOf(picking).chosen ? filingOf(picking).category : null} onClose={() => setPicking(null)}
-        onSave={(key, sub) => { if (picking) set(picking.id, { category: key, sub_category: sub, need: defaultNeed(key), chosen: true }); setPicking(null) }} />
+        onSave={(key, sub) => { if (picking) set(picking.id, { category: key, sub_category: sub, need: defaultNeed(key), chosen: true }); setPicking(null) }}
+        onTransfer={() => {
+          const t = picking
+          setPicking(null)
+          if (!t) return
+          hide([t.id], true)
+          markTransfer(t.id).then(problem => {
+            if (problem) { hide([t.id], false); haptic.warn(); Alert.alert(problem); return }
+            haptic.success(); refresh()
+          })
+        }} />
     </SafeAreaView>
   )
 }
@@ -235,7 +245,7 @@ function Row({ t, f, edited, ticked, onCategory, onNeed, onApprove, onDrag }: Ro
 }
 
 /** Half-height category picker, like every other edit: an icon grid, its kinds once one is picked, and one Save. */
-function CategorySheet({ t, current, onClose, onSave }: { t: Transaction | null; current: string | null; onClose: () => void; onSave: (key: string, sub: string | null) => void }) {
+function CategorySheet({ t, current, onClose, onSave, onTransfer }: { t: Transaction | null; current: string | null; onClose: () => void; onSave: (key: string, sub: string | null) => void; onTransfer: () => void }) {
   const [choice, setChoice] = useState<string | null>(null)
   const [sub, setSub] = useState<string | null>(null)
   const picked = choice ?? current
@@ -272,7 +282,10 @@ function CategorySheet({ t, current, onClose, onSave }: { t: Transaction | null;
           </ScrollView>
         )}
         <View className="gap-2 px-5 pb-3 pt-2">
-          {picked !== 'other' && <Button small kind="quiet" label="Don't remember? File as Other" onPress={() => { haptic.select(); onSave('other', null); setChoice(null); setSub(null) }} />}
+          <View className="flex-row gap-2">
+            {picked !== 'other' && <Button small kind="quiet" label="Don't remember? Other" style={{ flex: 1 }} onPress={() => { haptic.select(); onSave('other', null); setChoice(null); setSub(null) }} />}
+            <Button small kind="quiet" label="It's a transfer" style={{ flex: 1 }} onPress={() => { haptic.select(); setChoice(null); setSub(null); onTransfer() }} />
+          </View>
           <Button label="Save" disabled={!picked} onPress={() => { if (picked) { haptic.select(); onSave(picked, sub); setChoice(null); setSub(null) } }} />
         </View>
       </SafeAreaView>
