@@ -6,7 +6,7 @@ Baseline: `5c820933bcec94bc6ed2993df667d57da12abcdf`.
 ## Priority order
 
 1. **High priority, simple:** make homepage metadata describe the free FIRE
-   calculator; remove the second how-it-works block already covered in the
+   estimate (never call UntilFire a calculator); remove the second how-it-works block already covered in the
    landing page; explain the 25× estimate without implying guaranteed lifetime
    funding. Preserve the freedom-led hero, no-login path and all calculator/city
    destinations. This batch implements those content changes.

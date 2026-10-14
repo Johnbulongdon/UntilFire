@@ -5,11 +5,11 @@ import HomeClient from "./HomeClient";
 export const metadata = {
   title: 'UntilFire — FIRE Calculator & Financial Freedom Planner',
   description:
-    'Use UntilFire’s free FIRE calculator to estimate your FIRE number and freedom date from your income, spending and savings. No login required.',
+    'Estimate your FIRE number and freedom date free with UntilFire, from your income, spending and savings. No login required.',
   alternates: { canonical: 'https://www.untilfire.com/' },
   openGraph: {
     title: 'UntilFire — FIRE Calculator & Financial Freedom Planner',
-    description: 'Use UntilFire’s free FIRE calculator to estimate your FIRE number and freedom date. Explore when work could become optional, no login required.',
+    description: 'Estimate your FIRE number and freedom date free with UntilFire. Explore when work could become optional, no login required.',
     siteName: 'UntilFire',
     url: 'https://www.untilfire.com/',
     type: 'website',
@@ -17,7 +17,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'UntilFire — FIRE Calculator & Financial Freedom Planner',
-    description: 'Use UntilFire’s free FIRE calculator to estimate your FIRE number and freedom date. Explore when work could become optional, no login required.',
+    description: 'Estimate your FIRE number and freedom date free with UntilFire. Explore when work could become optional, no login required.',
     images: ['https://www.untilfire.com/opengraph-image'],
   },
 }
@@ -86,7 +86,7 @@ export default function Home() {
           <p style={{ fontSize: 18, lineHeight: 1.8, color: "var(--uf-ink-2)", margin: "0 0 16px", maxWidth: 720 }}>
             Your <strong style={{ color: "var(--uf-teal)" }}>FIRE number</strong> estimates the investments needed
             to cover your spending. Your <strong style={{ color: "var(--uf-teal)" }}>freedom date</strong> estimates
-            when you could reach it. Use the free calculator above to explore your own numbers, without an account.
+            when you could reach it. Try your own numbers above, free and without an account.
           </p>
           <p style={{ fontSize: 16, lineHeight: 1.8, color: "var(--uf-ink-2)", margin: "0 0 32px", maxWidth: 720 }}>
             The 25× rule is a starting point: $50,000 in annual spending gives a $1.25 million target at a 4%
