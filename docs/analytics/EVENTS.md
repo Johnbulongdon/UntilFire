@@ -249,6 +249,19 @@ querying history.
   - `source` - short label for where the paywall rendered (e.g. `profile`,
     `plaid_limit`, `dashboard_upgrade_modal`).
 
+### In the iOS app (D-75)
+
+`app/pro.tsx` fires `funnel_paywall_viewed` when the Pro screen opens and
+`funnel_checkout_started` when Apple's purchase sheet is asked for, with
+`store: apple`, `billing` (`monthly` or `yearly`) and `source` (`today`,
+`profile`, `bank_limit`, or `direct`). Every event in the app also carries
+`surface: ios_app`. Apple has no webhook here, so the app adds:
+
+- `app_purchase_result` - after the sheet closes. `outcome` is `succeeded`,
+  `pending`, `cancelled` or `failed`, plus `billing` and `source`.
+- `app_reward_month_granted` - the quiz's free month was given (D-79),
+  `source: fire_quiz`.
+
 ### `funnel_checkout_started`
 
 - **Where**: `app/dashboard/UpgradeModal.tsx`, after `POST /api/stripe/checkout`

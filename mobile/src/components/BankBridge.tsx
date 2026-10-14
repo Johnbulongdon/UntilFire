@@ -34,7 +34,7 @@ export function BankBridge({ another, compact }: { another?: boolean; compact?: 
   const needsPro = !!another && !!data && !data.pro
 
   const open = async () => {
-    if (needsPro) { haptic.tick(); router.push('/pro'); return }
+    if (needsPro) { haptic.tick(); router.push({ pathname: '/pro', params: { from: 'bank_limit' } }); return }
     if (native && session) {
       setBusy(true)
       const result = await connectBankNative(session.access_token)

@@ -97,7 +97,7 @@ export default function Profile() {
         <Card>
           <Label>Account</Label>
           <Row icon="envelope.fill" fallback="@" label="Email" value={session.user.email ?? ''} first />
-          <Row icon="star.fill" fallback="★" label="UntilFire Pro" value={data?.pro ? 'On' : 'See plans'} onPress={() => router.push('/pro')} />
+          <Row icon="star.fill" fallback="★" label="UntilFire Pro" value={data?.pro ? 'On' : 'See plans'} onPress={() => router.push({ pathname: '/pro', params: { from: 'profile' } })} />
           <Row icon="person.fill" fallback="☺" label="Name" value={data?.displayName || 'Add'} onPress={() => router.push('/name')} />
           <Row icon="house.fill" fallback="⌂" label="Household" value="" onPress={() => router.push('/household')} />
           {/* Its reward is a longer web trial, which App Review reads as paying outside Apple (3.1.1); hidden in the App Store build. */}

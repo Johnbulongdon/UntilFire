@@ -13,6 +13,7 @@ import { Text } from '@/components/Text'
 import { AXIS_STRENGTHS, AXIS_WATCH_OUTS, computeAxisLeans, FIRE_AXES, getTypeMeta, QUIZ_QUESTIONS, scoreQuiz, type AxisLetter, type QuizAnswer } from '@quiz'
 import { FIRE_QUIZ_KEY } from '@/lib/fire-quiz'
 import { haptic } from '@/lib/haptics'
+import { Events, track } from '@/lib/analytics'
 import { useAuth } from '@/state/auth'
 import { useAccount } from '@/state/account'
 import { colors } from '@/theme/colors'
@@ -44,7 +45,7 @@ export default function FireQuiz() {
       AsyncStorage.setItem(FIRE_QUIZ_KEY, JSON.stringify({ code, name: getTypeMeta(code).name, answers: next })).catch(() => {})
       // A free month of Pro for finishing, once per account (D-79). The site decides who qualifies.
       if (session) fetch('https://www.untilfire.com/api/rewards/quiz-month', { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` } })
-        .then(r => r.json()).then((j: { granted?: boolean; until?: string }) => { if (j.granted && j.until) { setRewardUntil(j.until); refresh() } }).catch(() => {})
+        .then(r => r.json()).then((j: { granted?: boolean; until?: string }) => { if (j.granted && j.until) { setRewardUntil(j.until); track(Events.REWARD_MONTH_GRANTED, { source: 'fire_quiz' }); refresh() } }).catch(() => {})
     }
   }
 

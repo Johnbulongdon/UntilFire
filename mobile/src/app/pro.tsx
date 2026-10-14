@@ -1,4 +1,4 @@
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import { useEffect, useState } from 'react'
 import { Alert, Linking, Pressable, ScrollView, View } from 'react-native'
@@ -9,6 +9,7 @@ import { Icon } from '@/components/Icon'
 import { Text } from '@/components/Text'
 import { buyPro, iapAvailable, PENDING, loadProPrices, restorePro, type ProPlan, type ProPrice } from '@/lib/apple-iap'
 import { haptic } from '@/lib/haptics'
+import { Events, track } from '@/lib/analytics'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { colors, TAB_COLOR } from '@/theme/colors'
@@ -36,6 +37,9 @@ export default function Pro() {
   const [busy, setBusy] = useState(false)
 
   const [failed, setFailed] = useState(false)
+  // Where the paywall was opened from (today, profile, bank_limit), as on the website's funnel.
+  const source = String(useLocalSearchParams<{ from?: string }>().from ?? 'direct')
+  useEffect(() => { track(Events.PAYWALL_VIEWED, { plan: 'pro', source, store: 'apple' }) }, [source])
   const load = () => { setFailed(false); loadProPrices().then(setPrices).catch(() => setFailed(true)) }
   useEffect(load, [])
   const price = (p: ProPlan) => prices.find(x => x.plan === p)?.price ?? FALLBACK[p]
@@ -46,8 +50,10 @@ export default function Pro() {
     if (!session) { router.push('/sign-in'); return }
     if (!iapAvailable()) { Alert.alert('Coming with the App Store version', 'Buying Pro works in the App Store version of UntilFire.'); return }
     setBusy(true)
+    track(Events.CHECKOUT_STARTED, { plan: 'pro', billing: plan, source, store: 'apple' })
     const result = await buyPro(plan, session.access_token)
     setBusy(false)
+    track(Events.PURCHASE_RESULT, { billing: plan, source, outcome: result === null ? 'succeeded' : result === PENDING ? 'pending' : result === 'cancelled' ? 'cancelled' : 'failed' })
     if (result === null) { haptic.success(); await refresh(); router.back() }
     else if (result === PENDING) Alert.alert(result)
     else if (result !== 'cancelled') { haptic.warn(); Alert.alert(result) }
