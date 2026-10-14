@@ -2648,3 +2648,19 @@ names; confirming keeps the bank's copy.
 `wouldRemove` count first.
 **Revisit:** the email warning before an idle disconnect, and whether active
 free users' one bank pays for itself once Plaid bills arrive.
+
+### D-79 — October 14: finishing the FIRE type quiz gives a free month of Pro
+
+**Decision (founder):** finishing the FIRE type quiz while signed in gives 30
+days of Pro, with no card, once per account, and only for an account that has
+never had Pro or a trial (Stripe or Apple). It ends by itself; nothing renews
+and nothing charges. Rejected: asking for a card (that is the website's 30-day
+trial, D-26, which stays the paid path), and repeat grants.
+**How:** `/api/rewards/quiz-month` checks `lib/reward-month`, stamps
+`profiles.reward_month_at` (migration 0052) to claim it once, and writes the
+subscriptions row with `source='reward'`, so every Pro check works unchanged.
+`/api/cron/reward-expiry` (07:00 UTC) turns expired reward rows back to free.
+Apple verify now only defers to an active Stripe row, so buying in the app
+during the month replaces the reward row.
+**Rollout:** apply 0052 before merging; until then the endpoint grants nothing.
+**Revisit:** whether quiz-month users later take the card trial and convert.

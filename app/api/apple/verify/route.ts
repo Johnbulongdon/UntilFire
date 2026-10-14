@@ -35,7 +35,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   const { data: current } = await admin.from("subscriptions").select("*").eq("user_id", user.id).maybeSingle();
-  if (current && current.source !== "apple" && current.status === "active") {
+  if (current && current.source === "stripe" && current.status === "active") {
     return NextResponse.json({ pro: true, source: "stripe" });
   }
 
