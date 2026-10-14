@@ -13,11 +13,13 @@ import { Icon } from '@/components/Icon'
 import { ProgressTrack, Screen } from '@/components/Screen'
 import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
+import { isBrokerageAccount, isRetirementAccount } from '@/lib/balances'
 import { money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { monthSpend, thisMonth } from '@/lib/money-data'
 import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
+import { saveFireProfile } from '@/lib/mutations'
 import { useFreedom, type Freedom } from '@/state/freedom'
 import { useLivePlan } from '@/state/live-plan'
 import { quickFreedom } from '@/engine'
@@ -41,6 +43,7 @@ export default function Home() {
     <Screen tab="home" flat hideTitle title="Home" refreshing={loading && !!data} onRefresh={data ? refresh : undefined}>
       <Hero result={result} />
       <DateMoved result={result} />
+      {data && <SavingsGap data={data} />}
       <Actions signedIn={!!session} />
       {data && <ThisMonth data={data} />}
       {data && <NextGoal data={data} />}
@@ -105,6 +108,36 @@ function DateMoved({ result }: { result: Freedom }) {
           Your date moved from {from} to {to}. It now uses your accounts, tax and city, not just your first answers.
         </Text>
         <Button small kind="quiet" style={{ alignSelf: 'flex-start' }} label="Got it" onPress={() => { AsyncStorage.setItem(key, '1').catch(() => {}); setShow(false) }} />
+      </View>
+    </View>
+  )
+}
+
+/**
+ * Onboarding's one savings answer is seeded as cash, so a first connected bank
+ * replaces all of it with that bank's cash and the date jumps. When it falls
+ * short, say why and where the rest goes. Home only explains; Balances is
+ * where it's typed. Gone once something is placed there, or on "That was all".
+ */
+function SavingsGap({ data }: { data: AccountData }) {
+  const { session } = useAuth()
+  const { refresh } = useAccount()
+  const told = data.profile.onboardingSavings
+  const cash = data.plaidAccounts.filter(a => a.type === 'depository').reduce((s, a) => s + (a.balance_current ?? 0), 0)
+  const placed = data.typed.k401 + data.typed.rothIRA + data.typed.taxable > 0 || data.plaidAccounts.some(a => isRetirementAccount(a) || isBrokerageAccount(a))
+  if (!told || !session || cash <= 0 || placed || cash >= told * 0.9) return null
+  const done = () => { haptic.tick(); saveFireProfile(session.user.id, { onboardingSavings: null }).then(() => refresh()).catch(() => {}) }
+  return (
+    <View className="flex-row items-center gap-3 rounded-3xl p-4" style={{ backgroundColor: panel() }}>
+      <Sunny mood="think" size={56} />
+      <View className="flex-1 gap-2">
+        <Text className="text-[15px] leading-5 text-ink">
+          You told us {money(told)} saved, and your bank shows {money(cash)} in cash. If the other {money(told - cash)} is in retirement or investments, add it so your date counts it.
+        </Text>
+        <View className="flex-row flex-wrap gap-2">
+          <Button small label="Add it" onPress={() => { haptic.tick(); router.push('/balances') }} />
+          <Button small kind="quiet" label="That was all of it" onPress={done} />
+        </View>
       </View>
     </View>
   )

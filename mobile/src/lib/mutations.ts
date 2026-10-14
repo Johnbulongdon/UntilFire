@@ -227,7 +227,7 @@ export async function seedFromOnboarding(userId: string, plan: { monthlyIncome: 
     expenses: {
       ...expenses,
       ...(hasBudget ? {} : { other: plan.monthlySpending }),
-      _fire_profile: { ...fp, cashSavings: Number(fp.cashSavings) || plan.invested, ...(plan.city && !fp.cityName ? { cityName: plan.city.name } : {}) },
+      _fire_profile: { ...fp, cashSavings: Number(fp.cashSavings) || plan.invested, ...(!Number(fp.cashSavings) && plan.invested > 0 ? { onboardingSavings: plan.invested } : {}), ...(plan.city && !fp.cityName ? { cityName: plan.city.name } : {}) },
     },
     ...(plan.age ? { fire_age: plan.age } : {}),
     updated_at: new Date().toISOString(),

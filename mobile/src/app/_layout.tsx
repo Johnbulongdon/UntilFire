@@ -25,6 +25,7 @@ import { PlanProvider } from '@/state/plan'
 import { colors, setPalette, themeVars } from '@/theme/colors'
 import { Events, track } from '@/lib/analytics'
 import { AppLock } from '@/components/AppLock'
+import { NotificationTaps } from '@/components/NotificationTaps'
 import { EmptyState } from '@/components/EmptyState'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
@@ -64,6 +65,7 @@ export default function RootLayout() {
         <AccountProvider>
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <ScreenViews />
+        <NotificationTaps />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ground } }}>
           <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
           <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />

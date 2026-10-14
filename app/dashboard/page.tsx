@@ -618,6 +618,9 @@ function exactFreedomDateFrom(data: Record<string, number>[], fireYear: number |
   const prevVal = prevPoint["Investable"] ?? 0;
   const curVal = curPoint["Investable"] ?? 0;
   const msPerYearExact = 365.25 * 24 * 60 * 60 * 1000;
+  // Past the target today: work is already optional, as the first result said. Year 0 is never the
+  // freedom year (it guards the zero-input moment), so without this it read as a year from now.
+  if (fireYear === 1 && prevVal >= fireTarget) return new Date();
   // Already past the target the year before: freedom waited for the bridge (D-59), so it is this year exactly.
   if (prevVal >= fireTarget) return new Date(Date.now() + fireYear * msPerYearExact);
   const span = curVal - prevVal;

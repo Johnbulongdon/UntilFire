@@ -2664,3 +2664,17 @@ Apple verify now only defers to an active Stripe row, so buying in the app
 during the month replaces the reward row.
 **Rollout:** apply 0052 before merging; until then the endpoint grants nothing.
 **Revisit:** whether quiz-month users later take the card trial and convert.
+
+### D-80 — October 14: the date no longer jumps after sign-up or a first bank
+
+**Finding:** a freshly seeded account gives the same year as onboarding (checked
+on six typical answers); launch-gaps item 8's cause was wrong. Two real jumps
+remained. Someone already past their target was told "work is already optional"
+and then shown next year, because year 0 is never the freedom year; both
+engines (dashboard and app) now return today in that case. And onboarding's one
+savings answer is seeded as cash, so the first connected bank replaced it with
+that bank's cash alone. The seed now records `onboardingSavings`, and Home
+explains the gap once and sends the person to Balances to place the rest; it
+goes when something is placed there or on "That was all of it".
+**Rejected:** seeding the answer as investments (double counts the cash part
+once a bank connects, and shows zero months of safety before one does).

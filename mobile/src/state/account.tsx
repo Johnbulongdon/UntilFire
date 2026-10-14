@@ -91,6 +91,8 @@ export interface AccountData {
     mortgageMonthly: number
     mortgageTerms: MortgageTerms
     comparisons: LifeVersion[]
+    /** The savings total onboarding seeded as cash, until the person places the rest (SavingsGap on Home). */
+    onboardingSavings: number
     contributionDone: { iso: string; amount: number } | null
     /** The Today list (D-73): days finished and items answered, shared with the website. */
     today: TodayProgress
@@ -289,6 +291,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
           acks: Array.isArray(fp.today?.acks) ? fp.today.acks.filter((d: unknown) => typeof d === 'string') : [],
         },
         merchantRules: fp.merchantRules && typeof fp.merchantRules === 'object' && !Array.isArray(fp.merchantRules) ? fp.merchantRules as Record<string, MerchantRule> : {},
+        onboardingSavings: Number(fp.onboardingSavings) || 0,
         comparisons: Array.isArray(fp.comparisons) ? fp.comparisons.filter((c: LifeVersion) => c && typeof c.id === 'string' && Array.isArray(c.changes)) : [],
       },
       customCategories,

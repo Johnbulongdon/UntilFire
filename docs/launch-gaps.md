@@ -77,8 +77,12 @@ one.
    different year from the onboarding estimate. The `DateMoved` note only
    explains the jump after it has happened. Fix it at the source, so the
    seeded account reproduces the date the person was shown.
+   **Done (D-80):** a seeded account already matched; the jumps were the
+   already-free case and a first bank replacing the seeded savings.
 9. **Tapping a notification does nothing.** There is no response listener,
    so the 9pm Today reminder opens wherever the app was last left.
+   **Done:** `components/NotificationTaps` opens Today or Calendar by the
+   reminder's identifier, cold start included.
 10. **Nothing daily for people who skip sign-up.** They allowed
     notifications, but nothing is scheduled without an account
     (`today-reminder.ts:42`).
