@@ -47,24 +47,54 @@ async function confirm(accessToken: string, signedTransaction: string): Promise<
   return body.error ?? "Apple took the payment but Pro didn't switch on yet. Tap Restore purchases."
 }
 
+const isPro = (productId: string) => (Object.values(PRO_PRODUCTS) as string[]).includes(productId)
+const WAIT_MS = 120_000
+export const PENDING = "Waiting on Apple. If someone needs to approve it, Pro switches on once they do."
+
+/**
+ * From launch while signed in: any Pro purchase Apple delivers outside the
+ * Pro screen (one left unfinished last time, an Ask to Buy approved later, a
+ * renewal) is confirmed with the website and finished, then `onPro` runs.
+ * Returns the stop function.
+ */
+export function listenForPurchases(accessToken: string, onPro: () => void): () => void {
+  const m = iap()
+  if (!m) return () => {}
+  const sub = m.purchaseUpdatedListener(async purchase => {
+    if (!isPro(purchase.productId) || !purchase.purchaseToken) return
+    if (await confirm(accessToken, purchase.purchaseToken)) return
+    await m.finishTransaction({ purchase, isConsumable: false }).catch(() => {})
+    onPro()
+  })
+  m.initConnection().catch(() => {})
+  return () => sub.remove()
+}
+
 /**
  * Buys a plan. Resolves to null when Pro is on, 'cancelled' when the person
- * backed out of Apple's sheet, or a message to show.
+ * backed out of Apple's sheet, PENDING when Apple hasn't answered (Ask to
+ * Buy, a deferred payment; the launch listener picks it up later), or a
+ * message to show.
  */
 export function buyPro(plan: ProPlan, accessToken: string): Promise<string | 'cancelled' | null> {
   const m = iap()
   if (!m) return Promise.resolve('Purchases work in the App Store version of UntilFire.')
   return new Promise(resolve => {
-    const done = (r: string | 'cancelled' | null) => { ok.remove(); fail.remove(); resolve(r) }
+    let settled = false
+    const done = (r: string | 'cancelled' | null) => { if (settled) return; settled = true; clearTimeout(timer); ok.remove(); fail.remove(); resolve(r) }
+    // Never leave the screen on "One moment…": after a while, say it's with Apple.
+    const timer = setTimeout(() => done(PENDING), WAIT_MS)
     const ok = m.purchaseUpdatedListener(async purchase => {
-      if (purchase.productId !== PRO_PRODUCTS[plan] || !purchase.purchaseToken) return
+      // Either plan counts: Apple may deliver the other one (an upgrade, or a purchase made elsewhere).
+      if (!isPro(purchase.productId) || !purchase.purchaseToken) return
       const problem = await confirm(accessToken, purchase.purchaseToken)
       // Finish only once the website has it, so an unconfirmed purchase replays on next launch.
       if (!problem) await m.finishTransaction({ purchase, isConsumable: false }).catch(() => {})
       done(problem)
     })
     const fail = m.purchaseErrorListener(error => {
-      done(String((error as { code?: string }).code ?? '').includes('cancel') ? 'cancelled' : "The purchase didn't go through. Please try again.")
+      const code = String((error as { code?: string }).code ?? '')
+      done(code.includes('cancel') ? 'cancelled' : code.includes('deferred') || code.includes('pending') ? PENDING : "The purchase didn't go through. Please try again.")
     })
     m.initConnection()
       .then(() => m.requestPurchase({ request: { apple: { sku: PRO_PRODUCTS[plan] } }, type: 'subs' }))
@@ -79,7 +109,7 @@ export async function restorePro(accessToken: string): Promise<string | null> {
   await m.initConnection()
   await m.restorePurchases().catch(() => {})
   const purchases = (await m.getAvailablePurchases().catch(() => [])) ?? []
-  const pro = purchases.find(p => (Object.values(PRO_PRODUCTS) as string[]).includes(p.productId) && p.purchaseToken)
+  const pro = purchases.find(p => isPro(p.productId) && p.purchaseToken)
   if (!pro) return 'No UntilFire Pro purchase found on this Apple ID.'
   const problem = await confirm(accessToken, pro.purchaseToken!)
   if (!problem) await m.finishTransaction({ purchase: pro, isConsumable: false }).catch(() => {})

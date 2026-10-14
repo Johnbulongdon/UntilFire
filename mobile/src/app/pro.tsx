@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Button } from '@/components/Button'
 import { Icon } from '@/components/Icon'
 import { Text } from '@/components/Text'
-import { buyPro, iapAvailable, loadProPrices, restorePro, type ProPlan, type ProPrice } from '@/lib/apple-iap'
+import { buyPro, iapAvailable, PENDING, loadProPrices, restorePro, type ProPlan, type ProPrice } from '@/lib/apple-iap'
 import { haptic } from '@/lib/haptics'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
@@ -21,7 +21,7 @@ const FEATURES: { icon: SymbolName; fallback: string; title: string; detail: str
   { icon: 'sun.max.fill', fallback: '☀', title: 'Payday and big-spend checks', detail: 'Today tells you what is safe to invest, and when one spend tips a budget.' },
   { icon: 'square.stack.3d.up.fill', fallback: '▤', title: 'Every account in one place', detail: 'All your banks behind one freedom date, not just the first.' },
 ]
-// Shown until Apple's own prices load (and in Expo Go). The website's prices (lib/pricing.ts).
+// Shown in Expo Go, where there is no StoreKit. The website's prices (lib/pricing.ts).
 const FALLBACK: Record<ProPlan, string> = { monthly: '$9', yearly: '$79' }
 
 /**
@@ -37,6 +37,8 @@ export default function Pro() {
 
   useEffect(() => { loadProPrices().then(setPrices).catch(() => {}) }, [])
   const price = (p: ProPlan) => prices.find(x => x.plan === p)?.price ?? FALLBACK[p]
+  // In the App Store build, buy only at Apple's own price, never the website's fallback.
+  const waiting = iapAvailable() && prices.length === 0
 
   const buy = async () => {
     if (!session) { router.push('/sign-in'); return }
@@ -45,6 +47,7 @@ export default function Pro() {
     const result = await buyPro(plan, session.access_token)
     setBusy(false)
     if (result === null) { haptic.success(); await refresh(); router.back() }
+    else if (result === PENDING) Alert.alert(result)
     else if (result !== 'cancelled') { haptic.warn(); Alert.alert(result) }
   }
   const restore = async () => {
@@ -96,7 +99,7 @@ export default function Pro() {
                 <Pressable key={p} accessibilityRole="radio" accessibilityState={{ selected: on }} onPress={() => { haptic.select(); setPlan(p) }} style={{ flex: 1 }}>
                   <View style={{ borderRadius: 18, borderWidth: 2, borderColor: on ? colors.green : colors.border2, borderBottomWidth: 5, padding: 14, backgroundColor: colors.card, gap: 2 }}>
                     <Text className="text-[13px] font-bold uppercase tracking-[1px] text-ink-3">{p === 'yearly' ? 'Yearly' : 'Monthly'}</Text>
-                    <Text className="font-mono text-[22px] text-ink">{price(p)}</Text>
+                    <Text className="font-mono text-[22px] text-ink">{waiting ? '…' : price(p)}</Text>
                     <Text className="text-[12px] text-ink-2">{p === 'yearly' ? 'a year, best value' : 'a month'}</Text>
                   </View>
                 </Pressable>
@@ -107,7 +110,7 @@ export default function Pro() {
       </ScrollView>
       {!data?.pro && (
         <View className="gap-3 px-6 pb-3">
-          <Button label={busy ? 'One moment…' : `Get Pro for ${price(plan)} ${plan === 'yearly' ? 'a year' : 'a month'}`} disabled={busy} onPress={buy} />
+          <Button label={busy ? 'One moment…' : waiting ? "Loading Apple's prices…" : `Get Pro for ${price(plan)} ${plan === 'yearly' ? 'a year' : 'a month'}`} disabled={busy || waiting} onPress={buy} />
           <Button kind="quiet" label="Restore purchases" disabled={busy} onPress={restore} />
           <Text className="text-center text-[11px] leading-4 text-ink-3">
             Billed by Apple to your Apple ID. Renews automatically until you turn it off in Settings at least a day before it renews.

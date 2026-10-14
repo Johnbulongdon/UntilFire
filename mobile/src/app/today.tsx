@@ -7,7 +7,9 @@ import Animated, { FadeIn, SlideInRight, SlideOutLeft } from 'react-native-reani
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { Button, type ButtonKind } from '@/components/Button'
+import { EmptyState } from '@/components/EmptyState'
 import { Icon } from '@/components/Icon'
+import { LoadingState } from '@/components/LoadingState'
 import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
 import { FLAG_COPY } from '@/components/WorthALook'
@@ -83,7 +85,21 @@ export default function Today() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open.length, day])
 
-  if (!data || !session) return null
+  // Opened from a link or a reminder before the account is in: never a blank sheet with no way out.
+  if (!data || !session) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.ground }}>
+        <View className="flex-row justify-end px-5 pt-2">
+          <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} onPress={() => { haptic.tick(); router.back() }}>
+            <Icon name="xmark" fallback="✕" size={20} color={colors.ink3} />
+          </Pressable>
+        </View>
+        <View className="flex-1 justify-center px-5">
+          {session ? <LoadingState /> : <EmptyState title="Today needs your account" body="Sign in and Today shows a few one-tap items from yesterday's money." action={{ label: 'Sign in', onPress: () => router.replace('/sign-in') }} />}
+        </View>
+      </SafeAreaView>
+    )
+  }
 
   const clear = (key: string) => setCleared(c => new Set(c).add(key))
   const ack = async (item: TodayItem) => {

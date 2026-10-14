@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { PanResponder, Pressable, View, type LayoutChangeEvent } from 'react-native'
-import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg'
+import Svg, { Circle, Line, Rect } from 'react-native-svg'
 
 import { freedomPath } from '@/engine'
 import { compactMoney } from '@/lib/format'
@@ -15,9 +15,11 @@ const HEIGHT = 168
 const PAD_TOP = 26
 
 /**
- * Home option B (Copilot / Robinhood): invested money as a line against the
- * dashed target. Drag a finger along it to read any year, with a haptic tick
- * as each year passes; 5Y / 15Y / All below.
+ * Home's freedom chart: invested money as one bar per year against the dashed
+ * target (Oct 2026 QA: was a line; a bar a year makes each year's step
+ * visible). Bars short of the target are paler; from the freedom year they
+ * are full. Drag a finger along it to read any year, with a haptic tick as
+ * each year passes; 5Y / 15Y / All below.
  */
 /** `onDark` draws it in white and aqua for the teal hero card on Home. */
 export function FreedomLineChart({ f, onDark }: { f: Freedom; onDark?: boolean }) {
@@ -39,15 +41,15 @@ export function FreedomLineChart({ f, onDark }: { f: Freedom; onDark?: boolean }
   const peak = range > 0 && f.target > top * 1.15 ? top * 1.15 : Math.max(top, f.target) * 1.04
   const thisYear = new Date().getFullYear()
 
-  const x = (i: number) => (pts.length > 1 ? (i / (pts.length - 1)) * width : 0)
+  const slot = width / Math.max(pts.length, 1)
+  const barW = Math.max(2, Math.min(18, slot * 0.68))
+  const x = (i: number) => slot * (i + 0.5)
   const y = (v: number) => PAD_TOP + (1 - v / peak) * (HEIGHT - PAD_TOP - 4)
-  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.invested).toFixed(1)}`).join(' ')
-  const area = `${line} L${width},${HEIGHT} L0,${HEIGHT} Z`
   const targetY = f.target <= peak ? y(f.target) : null
   const freeAt = pts.findIndex(p => p.invested >= f.target)
 
   // Dragging: the nearest year to the finger, a tick each time it changes.
-  const indexAt = (px: number) => Math.max(0, Math.min(pts.length - 1, Math.round((px / Math.max(width, 1)) * (pts.length - 1))))
+  const indexAt = (px: number) => Math.max(0, Math.min(pts.length - 1, Math.floor(px / Math.max(slot, 1))))
   const move = (px: number) => {
     const i = indexAt(px)
     if (i !== lastIndex.current) { lastIndex.current = i; haptic.select() }
@@ -62,7 +64,7 @@ export function FreedomLineChart({ f, onDark }: { f: Freedom; onDark?: boolean }
     onPanResponderRelease: () => { setScrub(null); lastIndex.current = null },
     onPanResponderTerminate: () => { setScrub(null); lastIndex.current = null },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [width, pts.length])
+  }), [width, pts.length, slot])
 
   const s = scrub != null ? pts[scrub] : null
   // The label is as wide as its text ($71,028 needs more room than $485K), kept inside the chart.
@@ -74,23 +76,15 @@ export function FreedomLineChart({ f, onDark }: { f: Freedom; onDark?: boolean }
         accessible accessibilityLabel={`Invested money over ${end} years, reaching ${compactMoney(f.target)}. Drag to read a year.`}>
         {width > 0 && pts.length > 1 && (
           <Svg width={width} height={HEIGHT}>
-            <Defs>
-              <LinearGradient id="fill" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={c.line} stopOpacity={0.28} />
-                <Stop offset="1" stopColor={c.line} stopOpacity={0} />
-              </LinearGradient>
-            </Defs>
+            {pts.map((p, i) => {
+              const top = Math.min(y(p.invested), HEIGHT - 2)
+              const free = freeAt >= 0 && i >= freeAt
+              return <Rect key={p.year} x={x(i) - barW / 2} y={top} width={barW} height={HEIGHT - top} rx={Math.min(3, barW / 2)}
+                fill={scrub === i ? c.scrub : c.line} opacity={scrub === i || free ? 1 : 0.45} />
+            })}
             {targetY != null && <Line x1={0} x2={width} y1={targetY} y2={targetY} stroke={c.target} strokeDasharray="4 4" strokeWidth={1} />}
-            <Path d={area} fill="url(#fill)" />
-            <Path d={line} fill="none" stroke={c.line} strokeWidth={3} strokeLinejoin="round" strokeLinecap="round" />
-            {/* Where the line meets the target: the freedom year. */}
-            {freeAt >= 0 && !s && <Circle cx={x(freeAt)} cy={y(pts[freeAt].invested)} r={6} fill={c.line} stroke={c.ring} strokeWidth={2} />}
-            {s && (
-              <>
-                <Line x1={x(scrub!)} x2={x(scrub!)} y1={PAD_TOP - 4} y2={HEIGHT} stroke={c.scrub} strokeWidth={1} />
-                <Circle cx={x(scrub!)} cy={y(s.invested)} r={6} fill={c.scrub} stroke={c.ring} strokeWidth={2} />
-              </>
-            )}
+            {/* The first bar to reach the target: the freedom year. */}
+            {freeAt >= 0 && !s && <Circle cx={x(freeAt)} cy={y(pts[freeAt].invested) - 7} r={4} fill={c.line} stroke={c.ring} strokeWidth={2} />}
           </Svg>
         )}
         {s && (

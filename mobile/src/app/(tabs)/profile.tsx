@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { nativeBuild } from '@/lib/native-build'
 import { router, useFocusEffect } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import { useCallback, useState } from 'react'
@@ -98,7 +99,8 @@ export default function Profile() {
           <Row label="UntilFire Pro" value={data?.pro ? 'On' : 'See plans'} onPress={() => router.push('/pro')} />
           <Row label="Name" value={data?.displayName || 'Add'} onPress={() => router.push('/name')} />
           <Row label="Household" value="" onPress={() => router.push('/household')} />
-          <Row label="Give a month, get a month" value="" onPress={() => router.push('/give-a-month')} />
+          {/* Its reward is a longer web trial, which App Review reads as paying outside Apple (3.1.1); hidden in the App Store build. */}
+          {!nativeBuild && <Row label="Give a month, get a month" value="" onPress={() => router.push('/give-a-month')} />}
           <Row label="Currency" value={data ? `${currencyFlag(data.currency)}  ${CURRENCY_NAMES[data.currency] ?? data.currency}` : '…'} onPress={() => router.push('/currency')} />
           <Row label="Sign out" value="" onPress={() => {
             haptic.warn()
@@ -176,7 +178,8 @@ export default function Profile() {
         )}
         <Row label="Replay onboarding" value="" onPress={() => editPlan(true)} />
         <Row label="Show the tour" value="" onPress={async () => { await replayTour(); router.navigate('/') }} />
-        <Row label="Character preview" value="" onPress={() => router.push('/character-lab')} />
+        {/* A design comparison, not for App Review or customers. */}
+        {__DEV__ && <Row label="Character preview" value="" onPress={() => router.push('/character-lab')} />}
       </Card>
 
       {session && (

@@ -50,6 +50,10 @@ under today's date, creating the heading if it is not there yet.
 - Fix (D-77): a bigger city globe that zooms further, a faster Review with
   subcategories (tap, or hold and drag), the freedom ring filling from empty,
   and no globe flashing.
+- New (D-77): "I already have an account" on Welcome; Calendar shows category
+  icons; Home's freedom chart is a bar per year; Pro purchases are picked up
+  from launch and never hang; screens show loading instead of looking empty.
+  Launch audit in docs/launch-gaps.md.
 
 ## 2026-10-11
 

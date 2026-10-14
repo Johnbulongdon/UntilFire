@@ -1,4 +1,4 @@
-import { router } from 'expo-router'
+import { Redirect, router } from 'expo-router'
 import { useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -23,6 +23,12 @@ const MOMENTS: { mood: Mood; label: string; where: string }[] = [
 
 /** Temporary: compare character directions A and C, moving, on the phone. */
 export default function CharacterLab() {
+  // A design comparison: never reachable, by link or otherwise, outside development.
+  if (!__DEV__) return <Redirect href="/" />
+  return <Lab />
+}
+
+function Lab() {
   const [option, setOption] = useState<'A' | 'C' | 'icons'>('A')
   const [mood, setMood] = useState<Mood>('hello')
   const [run, setRun] = useState(0)

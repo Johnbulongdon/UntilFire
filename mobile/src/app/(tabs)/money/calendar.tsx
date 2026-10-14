@@ -9,14 +9,17 @@ import { DetailScreen } from '@/components/DetailScreen'
 import { Card, Label } from '@/components/Screen'
 import { Text } from '@/components/Text'
 import { EmptyState } from '@/components/EmptyState'
+import { LoadingState } from '@/components/LoadingState'
+import { CategoryGlyph } from '@/components/Icon'
 import { addMonths, detectRecurring, FALLBACK_RATES, isoDay, RECURRENCE_LABEL, sameMerchant, toRecurrence, type DetectedItem } from '@/engine'
 import { upcoming, type BillEvent } from '@/lib/bills'
 import { compactMoney, money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
-import { dayLabel, thisMonth } from '@/lib/money-data'
+import { categoryOf, dayLabel, thisMonth } from '@/lib/money-data'
 import { markBillPaid, saveBill } from '@/lib/mutations'
 import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
+import { colors } from '@/theme/colors'
 
 const DISMISSED_KEY = 'untilfire.bill-suggestions.dismissed'
 const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
@@ -34,6 +37,7 @@ export default function Bills() {
   }, [])
 
   const events = useMemo(() => (data ? upcoming(data.bills, 30) : []), [data])
+  const catOf = (billId: string) => data?.bills.find(b => b.id === billId)?.category ?? null
   // Only the next occurrence of each bill can be ticked off, as on the website.
   const firstOf = new Set<string>()
   const tickable = new Set(events.filter(e => (firstOf.has(e.billId) ? false : (firstOf.add(e.billId), true))).map(e => `${e.billId}@${e.iso}`))
@@ -98,21 +102,26 @@ export default function Bills() {
           ))}
         </View>
 
-        {view === 'list'
-          ? <ListView events={events} tickable={tickable} busyId={busyId} onTick={tick} />
-          : data ? <MonthView data={data} /> : null}
+        {!data ? <LoadingState cards={2} /> : view === 'list'
+          ? <ListView events={events} catOf={catOf} tickable={tickable} busyId={busyId} onTick={tick} />
+          : <MonthView data={data} />}
 
         {suggestions.length > 0 && (
           <Card soft>
             <Label>Looks like it repeats</Label>
             {suggestions.map((s, i) => (
               <View key={s.key} className={`py-2.5 ${i > 0 ? 'border-t border-border' : ''}`}>
-                <View className="flex-row justify-between">
-                  <Text numberOfLines={1} className="flex-1 pr-3 text-[15px] font-semibold text-ink">{s.description}</Text>
-                  <Text className="font-mono text-[15px] text-ink">{money(s.avgAmountUSD)}</Text>
+                <View className="flex-row items-center gap-3">
+                  <Glyph category={s.category} income={s.transaction_type === 'income'} />
+                  <View className="flex-1">
+                    <View className="flex-row justify-between">
+                      <Text numberOfLines={1} className="flex-1 pr-3 text-[15px] font-semibold text-ink">{s.description}</Text>
+                      <Text className="font-mono text-[15px] text-ink">{money(s.avgAmountUSD)}</Text>
+                    </View>
+                    <Text className="text-[12px] text-ink-3">{RECURRENCE_LABEL[toRecurrence(s.frequency) as keyof typeof RECURRENCE_LABEL]} · next around {dayLabel(s.nextDueDate)}</Text>
+                  </View>
                 </View>
-                <Text className="text-[12px] text-ink-3">{RECURRENCE_LABEL[toRecurrence(s.frequency) as keyof typeof RECURRENCE_LABEL]} · next around {dayLabel(s.nextDueDate)}</Text>
-                <View className="mt-2 flex-row gap-5">
+                <View className="mt-2 flex-row gap-5 pl-12">
                   <Button small kind="quiet" label={`Add as ${s.transaction_type === 'income' ? 'payday' : 'bill'}`} onPress={() => accept(s)} />
                   <Button small kind="quiet" label={s.transaction_type === 'income' ? 'Not a payday' : 'Not a bill'} onPress={() => dismiss(s.key)} />
                 </View>
@@ -208,8 +217,9 @@ function MonthView({ data }: { data: AccountData }) {
         {dayEvents.length === 0 ? (
           <View className="mt-2"><Button small kind="quiet" label="Add a bill on this day" onPress={() => router.push({ pathname: '/bill', params: { on: picked } })} /></View>
         ) : dayEvents.map((e, i) => (
-          <Pressable accessibilityRole="button" key={i} onPress={() => router.push({ pathname: '/bill', params: { id: e.billId } })} className="mt-2 flex-row justify-between">
-            <Text className="text-[15px] text-ink">{e.description}</Text>
+          <Pressable accessibilityRole="button" key={i} onPress={() => router.push({ pathname: '/bill', params: { id: e.billId } })} className="mt-2 flex-row items-center gap-3">
+            <Glyph category={data.bills.find(b => b.id === e.billId)?.category} income={e.type === 'income'} />
+            <Text numberOfLines={1} className="flex-1 text-[15px] text-ink">{e.description}</Text>
             <Text className={`font-mono text-[15px] ${e.type === 'income' ? 'text-pos-ink' : 'text-ink'}`}>{e.type === 'income' ? '+' : ''}{money(Math.abs(e.amount))}</Text>
           </Pressable>
         ))}
@@ -218,7 +228,17 @@ function MonthView({ data }: { data: AccountData }) {
   )
 }
 
-function ListView({ events, tickable, busyId, onTick }: { events: BillEvent[]; tickable: Set<string>; busyId: string | null; onTick: (id: string) => void }) {
+/** A payment's category as its icon on a tinted tile, as in Transactions and Review. */
+function Glyph({ category, income }: { category?: string | null; income: boolean }) {
+  const cat = categoryOf(category || (income ? 'income' : 'other'))
+  return (
+    <View className="h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: `${cat.color ?? colors.ink3}1F` }}>
+      <CategoryGlyph cat={cat} size={20} />
+    </View>
+  )
+}
+
+function ListView({ events, catOf, tickable, busyId, onTick }: { events: BillEvent[]; catOf: (billId: string) => string | null; tickable: Set<string>; busyId: string | null; onTick: (id: string) => void }) {
   const groups: { iso: string; items: BillEvent[] }[] = []
   for (const e of events) {
     const last = groups[groups.length - 1]
@@ -236,7 +256,8 @@ function ListView({ events, tickable, busyId, onTick }: { events: BillEvent[]; t
           <Card>
             {g.items.map((e, i) => (
               <Pressable accessibilityRole="button" key={`${e.billId}-${i}`} onPress={() => { haptic.tick(); router.push({ pathname: '/bill', params: { id: e.billId } }) }}
-                className={`flex-row items-center justify-between py-2 ${i > 0 ? 'border-t border-border' : ''}`}>
+                className={`flex-row items-center gap-3 py-2 ${i > 0 ? 'border-t border-border' : ''}`}>
+                <Glyph category={catOf(e.billId)} income={e.type === 'income'} />
                 <View className="flex-1 pr-3">
                   <Text numberOfLines={1} className="text-[15px] font-semibold text-ink">{e.description}</Text>
                   <Text className="text-[12px] text-ink-3">{e.overdue ? 'Overdue' : e.recurring ? 'Repeats' : 'One-off'}</Text>

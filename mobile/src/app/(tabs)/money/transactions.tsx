@@ -8,6 +8,7 @@ import { AddButton } from '@/components/AddButton'
 import { CategoryGlyph } from '@/components/Icon'
 import { Text } from '@/components/Text'
 import { EmptyState } from '@/components/EmptyState'
+import { LoadingState } from '@/components/LoadingState'
 import { TransactionRow } from '@/components/TransactionRow'
 import { addMonths, INCOME_CATEGORIES, isoDay, merchantKey, rangeFor, stepRange, type RangePreset } from '@/engine'
 import { compactMoney, money } from '@/lib/format'
@@ -200,7 +201,7 @@ export default function Transactions() {
           </View>
         )}
         ListEmptyComponent={
-          !data ? <Text className="mt-10 text-center text-[15px] text-ink-2">Loading…</Text>
+          !data ? <View className="mt-4"><LoadingState /></View>
             : <View className="mt-6"><EmptyState mood={q ? 'think' : 'quiet'} title={q ? 'No matches' : 'Nothing here yet'} body={q ? `Nothing matches "${query.trim()}".` : 'No spending or income in this range.'} /></View>
         }
       />

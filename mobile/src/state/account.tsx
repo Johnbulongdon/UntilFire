@@ -8,6 +8,7 @@ import { addMonths, type CategoryDef, CITIES, FALLBACK_RATES, fetchAllPages, iso
 import { effectiveBalances, effectiveDebts, type PlaidAccount } from '@/lib/balances'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/state/auth'
+import { listenForPurchases } from '@/lib/apple-iap'
 import { usePlan } from '@/state/plan'
 import { scheduleBillReminders } from '@/lib/bill-reminders'
 import { cancelTodayReminders, scheduleTodayReminders } from '@/lib/today-reminder'
@@ -318,6 +319,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   refreshRef.current = refresh
   useEffect(() => { refresh() }, [refresh])
   // Signed out, amounts show in the currency picked in onboarding.
+  // Apple purchases that land outside the Pro screen still switch Pro on (launch audit, Oct 2026).
+  useEffect(() => (session ? listenForPurchases(session.access_token, () => { refresh() }) : undefined), [session?.access_token]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!session) setDisplayCurrency(draft.currency ?? plan?.currency ?? 'USD') }, [session, plan?.currency, draft.currency])
 
   const value = useMemo(() => ({ data, loading, error, offline, savedAt, refresh }), [data, loading, error, offline, savedAt, refresh])
