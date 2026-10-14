@@ -1,5 +1,5 @@
 import { router } from 'expo-router'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { View } from 'react-native'
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -8,9 +8,43 @@ import { Button } from '@/components/Button'
 import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
 import { haptic } from '@/lib/haptics'
+import { useAccount, type AccountData } from '@/state/account'
+import { useAuth } from '@/state/auth'
+import { usePlan, type Plan } from '@/state/plan'
 
-/** Welcome (V2): the wordmark (without the logo's own sun, so there is one sun), Sunny coming up, one punchline, one button. */
+/** The plan an existing account already holds, so a returning customer skips the questions. */
+function planFromAccount(d: AccountData): Plan | null {
+  if (!(d.income > 0)) return null
+  const t = d.typed
+  return {
+    monthlyIncome: d.income,
+    monthlySpending: Object.values(d.budget).reduce((s, v) => s + v, 0),
+    invested: t.k401 + t.rothIRA + t.taxable + t.cashSavings,
+    ...(d.age ? { age: d.age } : {}),
+  }
+}
+
+/**
+ * Welcome (V2): the wordmark (without the logo's own sun, so there is one sun),
+ * Sunny coming up, one punchline, one button. "I already have an account"
+ * (Oct 2026 launch audit) signs in first; a set-up account goes straight to
+ * Home, one never set up answers the questions as usual.
+ */
 export default function Welcome() {
+  const { session } = useAuth()
+  const { data } = useAccount()
+  const { plan, savePlan } = usePlan()
+  // Only a sign-in started here moves on from here (sign-up at the end of onboarding has its own route), and only once.
+  const asked = useRef(false)
+  useEffect(() => {
+    if (!asked.current || !session || !data) return
+    asked.current = false
+    if (plan) { router.replace('/(tabs)'); return }
+    const fromAccount = planFromAccount(data)
+    if (fromAccount) savePlan(fromAccount).then(() => router.replace('/(tabs)'))
+    else router.push('/onboarding/goal')
+  }, [session, data, plan, savePlan])
+
   // A soft tap as the sun rises.
   useEffect(() => {
     const t = setTimeout(haptic.tick, 900)
@@ -36,6 +70,7 @@ export default function Welcome() {
 
         <Animated.View entering={FadeInDown.delay(1800).duration(600)}>
           <Button kind="onDark" label="Get started" onPress={() => router.push('/onboarding/goal')} />
+          <Button kind="onDarkQuiet" small style={{ marginTop: 10 }} label="I already have an account" onPress={() => { haptic.tick(); asked.current = true; router.push('/sign-in') }} />
         </Animated.View>
       </View>
     </SafeAreaView>

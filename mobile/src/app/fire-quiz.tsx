@@ -13,6 +13,9 @@ import { Text } from '@/components/Text'
 import { AXIS_STRENGTHS, AXIS_WATCH_OUTS, computeAxisLeans, FIRE_AXES, getTypeMeta, QUIZ_QUESTIONS, scoreQuiz, type AxisLetter, type QuizAnswer } from '@quiz'
 import { FIRE_QUIZ_KEY } from '@/lib/fire-quiz'
 import { haptic } from '@/lib/haptics'
+import { Events, track } from '@/lib/analytics'
+import { useAuth } from '@/state/auth'
+import { useAccount } from '@/state/account'
 import { colors } from '@/theme/colors'
 
 
@@ -25,6 +28,9 @@ const SCALE: { value: QuizAnswer }[] = [{ value: 0 }, { value: 1 }, { value: 2 }
  */
 export default function FireQuiz() {
   const [answers, setAnswers] = useState<QuizAnswer[]>([])
+  const [rewardUntil, setRewardUntil] = useState<string | null>(null)
+  const { session } = useAuth()
+  const { refresh } = useAccount()
   const done = answers.length >= QUIZ_QUESTIONS.length
   const i = Math.min(answers.length, QUIZ_QUESTIONS.length - 1)
   const q = QUIZ_QUESTIONS[i]
@@ -37,6 +43,9 @@ export default function FireQuiz() {
       const code = scoreQuiz(next)
       haptic.success()
       AsyncStorage.setItem(FIRE_QUIZ_KEY, JSON.stringify({ code, name: getTypeMeta(code).name, answers: next })).catch(() => {})
+      // A free month of Pro for finishing, once per account (D-79). The site decides who qualifies.
+      if (session) fetch('https://www.untilfire.com/api/rewards/quiz-month', { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}` } })
+        .then(r => r.json()).then((j: { granted?: boolean; until?: string }) => { if (j.granted && j.until) { setRewardUntil(j.until); track(Events.REWARD_MONTH_GRANTED, { source: 'fire_quiz' }); refresh() } }).catch(() => {})
     }
   }
 
@@ -50,7 +59,7 @@ export default function FireQuiz() {
         <View className="flex-1"><ProgressBar step={done ? QUIZ_QUESTIONS.length : answers.length} steps={QUIZ_QUESTIONS.length} /></View>
       </View>
 
-      {done ? <Result answers={answers} onRetake={() => setAnswers([])} /> : (
+      {done ? <Result answers={answers} rewardUntil={rewardUntil} onRetake={() => setAnswers([])} /> : (
         <Animated.View key={q.id} entering={FadeInRight.duration(220)} style={{ flex: 1, paddingHorizontal: 24, paddingBottom: 24, paddingTop: 28 }}>
           <Text className="text-[13px] font-bold uppercase tracking-[2px] text-ink-3">Question {i + 1} of {QUIZ_QUESTIONS.length}</Text>
           <Text className="mt-3 font-display text-[26px] font-bold leading-8 text-ink">{q.prompt}</Text>
@@ -75,7 +84,7 @@ export default function FireQuiz() {
   )
 }
 
-function Result({ answers, onRetake }: { answers: QuizAnswer[]; onRetake: () => void }) {
+function Result({ answers, rewardUntil, onRetake }: { answers: QuizAnswer[]; rewardUntil: string | null; onRetake: () => void }) {
   const code = scoreQuiz(answers)
   const meta = getTypeMeta(code)
   const leans = computeAxisLeans(answers, code)
@@ -91,6 +100,15 @@ function Result({ answers, onRetake }: { answers: QuizAnswer[]; onRetake: () => 
         <Text className="mt-3 text-center text-[15px] italic text-teal-deep">“{meta.quote}”</Text>
       </View>
       </Animated.View>
+
+      {rewardUntil ? (
+        <Animated.View entering={FadeIn.duration(400)} className="mt-6 rounded-card border border-border bg-card p-5">
+          <Text className="font-display text-[18px] font-bold text-ink">🎁 You’ve unlocked a free month of Pro</Text>
+          <Text className="mt-1 text-[14px] leading-5 text-ink-2">
+            Thanks for taking the quiz. Everything in Pro is open until {new Date(rewardUntil).toLocaleDateString(undefined, { day: 'numeric', month: 'long' })}. No card, and nothing to cancel.
+          </Text>
+        </Animated.View>
+      ) : null}
 
       <View className="mt-6 gap-3 rounded-card border border-border bg-card p-5">
         {FIRE_AXES.map((ax, k) => (

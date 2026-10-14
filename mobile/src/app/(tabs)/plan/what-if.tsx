@@ -1,6 +1,6 @@
 import Slider from '@react-native-community/slider'
 import { Button } from '@/components/Button'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 
 import { Bouncy } from '@/components/Bouncy'
@@ -36,6 +36,8 @@ export default function WhatIf() {
   const yearFor = (p: PlanData) => (full ? project({ ...full, monthlyExpenses: p.monthlySpending, annualIncome: p.monthlyIncome * 12 }, null).year : freedomFor(p).year)
   const [spending, setSpending] = useState(plan?.monthlySpending ?? 0)
   const [income, setIncome] = useState(plan?.monthlyIncome ?? 0)
+  // Account data can arrive, or a budget change, after the screen opens: start the sliders from it.
+  useEffect(() => { setSpending(plan?.monthlySpending ?? 0); setIncome(plan?.monthlyIncome ?? 0) }, [plan?.monthlySpending, plan?.monthlyIncome])
   const lastYear = useRef<number | null>(null)
   if (!plan) return null
 

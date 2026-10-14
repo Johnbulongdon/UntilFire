@@ -44,7 +44,8 @@ export default function Reveal() {
   }, [reached])
 
   return (
-    <RevealFrame next="Continue" onNext={() => router.push('/onboarding/life')} second={{ label: 'Change my answers', onPress: () => router.back() }}>
+    <RevealFrame next="Continue" onNext={() => router.push('/onboarding/life')} second={{ label: 'Change my answers', onPress: () => router.back() }}
+      overlay={<ConfettiBurst play={landed && reached} />}>
       <Sunny mood={landed ? (reached ? 'win' : 'quiet') : 'think'} size={112} />
       <Animated.View entering={FadeIn.duration(400)}>
         <Text className="text-[18px] font-semibold text-aqua">
@@ -61,7 +62,6 @@ export default function Reveal() {
           <Text className="mt-1 text-[22px] text-mint">You'll be {result.ageAtFreedom}.</Text>
         </Animated.View>
       )}
-      <ConfettiBurst play={landed && reached} />
       {!reached && <Text className="mt-3 text-[17px] leading-6 text-mint">Spending less or saving more moves this a lot.</Text>}
     </RevealFrame>
   )

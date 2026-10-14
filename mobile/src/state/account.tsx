@@ -4,10 +4,11 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 import { setCustomCategories } from '@/lib/custom-categories'
 import { loadRates, setDisplayCurrency } from '@/lib/display-currency'
-import { addMonths, type CategoryDef, CITIES, FALLBACK_RATES, fetchAllPages, isoDay, loadMortgages, monthOf, netAmount, type Mortgage, type MortgageTerms, type PlanSettings, REAL_RETURN, type StoredPlan, type LifeVersion, normaliseLayout, type DashboardLayout } from '@/engine'
+import { addMonths, type CategoryDef, CITIES, FALLBACK_RATES, fetchAllPages, isoDay, loadMortgages, monthOf, netAmount, type Mortgage, type MortgageTerms, type PlanSettings, REAL_RETURN, type StoredPlan, type LifeVersion, normaliseLayout, type DashboardLayout, stampActive } from '@/engine'
 import { effectiveBalances, effectiveDebts, type PlaidAccount } from '@/lib/balances'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/state/auth'
+import { listenForPurchases } from '@/lib/apple-iap'
 import { usePlan } from '@/state/plan'
 import { scheduleBillReminders } from '@/lib/bill-reminders'
 import { cancelTodayReminders, scheduleTodayReminders } from '@/lib/today-reminder'
@@ -56,6 +57,8 @@ export interface Goal {
 
 export interface TodayProgress { done: string[]; acks: string[] }
 
+export type MerchantRule = { category: string; sub_category: string | null; need: 'need' | 'want' }
+
 export interface AccountData {
   /** Pro, on this account or through the household (lib/supabase isPro). */
   pro: boolean
@@ -88,9 +91,13 @@ export interface AccountData {
     mortgageMonthly: number
     mortgageTerms: MortgageTerms
     comparisons: LifeVersion[]
+    /** The savings total onboarding seeded as cash, until the person places the rest (SavingsGap on Home). */
+    onboardingSavings: number
     contributionDone: { iso: string; amount: number } | null
     /** The Today list (D-73): days finished and items answered, shared with the website. */
     today: TodayProgress
+    /** "Always file this merchant like this", by merchantKey (Oct 2026). */
+    merchantRules: Record<string, MerchantRule>
   }
   /** From profiles: what to call you and which currency to show money in. */
   displayName: string
@@ -171,6 +178,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         setData(d); setSavedAt(cached.savedAt); shown.current = true
       }
     }
+    // Keeps a used bank connected (lib/bank-cleanup drops idle free ones).
+    stampActive(supabase as never, userId)
     try {
     const today = isoDay(new Date())
     const since = `${addMonths(monthOf(today), -HISTORY_MONTHS)}-01`
@@ -281,6 +290,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
           done: Array.isArray(fp.today?.done) ? fp.today.done.filter((d: unknown) => typeof d === 'string') : [],
           acks: Array.isArray(fp.today?.acks) ? fp.today.acks.filter((d: unknown) => typeof d === 'string') : [],
         },
+        merchantRules: fp.merchantRules && typeof fp.merchantRules === 'object' && !Array.isArray(fp.merchantRules) ? fp.merchantRules as Record<string, MerchantRule> : {},
+        onboardingSavings: Number(fp.onboardingSavings) || 0,
         comparisons: Array.isArray(fp.comparisons) ? fp.comparisons.filter((c: LifeVersion) => c && typeof c.id === 'string' && Array.isArray(c.changes)) : [],
       },
       customCategories,
@@ -318,6 +329,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   refreshRef.current = refresh
   useEffect(() => { refresh() }, [refresh])
   // Signed out, amounts show in the currency picked in onboarding.
+  // Apple purchases that land outside the Pro screen still switch Pro on (launch audit, Oct 2026).
+  useEffect(() => (session ? listenForPurchases(session.access_token, () => { refresh() }) : undefined), [session?.access_token]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (!session) setDisplayCurrency(draft.currency ?? plan?.currency ?? 'USD') }, [session, plan?.currency, draft.currency])
 
   const value = useMemo(() => ({ data, loading, error, offline, savedAt, refresh }), [data, loading, error, offline, savedAt, refresh])

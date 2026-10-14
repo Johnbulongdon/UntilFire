@@ -13,7 +13,7 @@ import { Text } from './Text'
 // The website's WorthALook copy (app/dashboard/WorthALook.tsx). Bills are asked on the website.
 export const FLAG_COPY: Partial<Record<FlagKind, { label: string; tip: string; yes: string; no: string }>> = {
   card_payment: { label: 'Card payment', tip: 'Paying a credit card bill moves money; the purchases on the card were the spending. Counting both doubles it.', yes: "It's a card payment", no: "No, it's spending" },
-  duplicate: { label: 'Possible duplicate', tip: 'Same merchant and amount within two days of another row. Overlapping imports and re-posted charges do this.', yes: 'Delete this one', no: 'Keep both' },
+  duplicate: { label: 'Possible duplicate', tip: 'Same amount as another row a day or two apart, or one you typed in that your bank has now sent. Deleting keeps the bank’s copy.', yes: 'Delete this one', no: 'Keep both' },
   large: { label: 'Unusually large', tip: 'Well above what this merchant usually costs, or among your largest expenses.', yes: '', no: 'Looks right' },
 }
 

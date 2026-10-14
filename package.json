@@ -17,6 +17,8 @@
     "test:city-coverage": "node scripts/verify-city-coverage.mjs",
     "test:household-rls": "node scripts/verify-household-rls-safety.mjs",
     "test:merchant-memory": "node --experimental-strip-types --no-warnings scripts/verify-merchant-memory.ts",
+    "test:merchant-rules": "node --experimental-strip-types --no-warnings scripts/verify-merchant-rules.ts",
+    "test:bank-cleanup": "node --experimental-strip-types --no-warnings scripts/verify-bank-cleanup.ts",
     "test:spend-range": "node --experimental-strip-types --no-warnings scripts/verify-spend-range.ts",
     "test:transaction-flags": "node --experimental-strip-types --no-warnings scripts/verify-transaction-flags.ts",
     "test:spend-forecast": "node --experimental-strip-types --no-warnings scripts/verify-spend-forecast.ts",
@@ -70,7 +72,8 @@
     "test:classification-rules": "node --experimental-strip-types --no-warnings scripts/verify-classification-rules.mjs",
     "test:emergency-fund-accounts": "node --experimental-strip-types --no-warnings scripts/verify-emergency-fund-accounts.mjs",
     "test:contribution-plan": "node --experimental-strip-types --no-warnings scripts/verify-contribution-plan.mjs",
-    "test:contribution-waterfall": "node --experimental-strip-types --no-warnings scripts/verify-contribution-waterfall.mjs"
+    "test:contribution-waterfall": "node --experimental-strip-types --no-warnings scripts/verify-contribution-waterfall.mjs",
+    "test:reward-month": "node --experimental-strip-types scripts/verify-reward-month.ts"
   },
   "dependencies": {
     "@apple/app-store-server-library": "^3.1.0",

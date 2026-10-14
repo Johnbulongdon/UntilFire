@@ -34,6 +34,11 @@ export const Events = {
   TRANSACTION_SAVED: 'app_transaction_saved',
   REMINDER_TOGGLED: 'app_reminder_toggled',
   ACCOUNT_DELETED: 'app_account_deleted',
+  // Pro in the app (D-75), named as the website's funnel so both feed one paywall funnel.
+  PAYWALL_VIEWED: 'funnel_paywall_viewed',
+  CHECKOUT_STARTED: 'funnel_checkout_started',
+  PURCHASE_RESULT: 'app_purchase_result',
+  REWARD_MONTH_GRANTED: 'app_reward_month_granted',
 } as const
 
 export function track(event: (typeof Events)[keyof typeof Events], props?: Record<string, string | number | boolean | null>) {

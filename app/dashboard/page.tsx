@@ -60,6 +60,7 @@ import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
 import { Alert, Button, ICON_PATHS, Input } from "@/components/ui";
+import { stampActive } from "@/lib/last-active";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
@@ -617,6 +618,9 @@ function exactFreedomDateFrom(data: Record<string, number>[], fireYear: number |
   const prevVal = prevPoint["Investable"] ?? 0;
   const curVal = curPoint["Investable"] ?? 0;
   const msPerYearExact = 365.25 * 24 * 60 * 60 * 1000;
+  // Past the target today: work is already optional, as the first result said. Year 0 is never the
+  // freedom year (it guards the zero-input moment), so without this it read as a year from now.
+  if (fireYear === 1 && prevVal >= fireTarget) return new Date();
   // Already past the target the year before: freedom waited for the bridge (D-59), so it is this year exactly.
   if (prevVal >= fireTarget) return new Date(Date.now() + fireYear * msPerYearExact);
   const span = curVal - prevVal;
@@ -4790,6 +4794,10 @@ const MOBILE_PRIMARY_ITEMS: { key: MobilePrimaryKey; label: string; svg: string 
 // ─── Root ────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [tab, setTab] = useState<TabKey>("overview");
+  // Keeps a used bank connected (lib/bank-cleanup drops idle free ones).
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => { if (session) stampActive(supabase as never, session.user.id); });
+  }, []);
   const [cashflowSubTab, setCashflowSubTab] = useState<CashflowSubTab>("cashflow");
   const [categoriesKey, setCategoriesKey] = useState(0);
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "invest-sim" | "compare">("menu");

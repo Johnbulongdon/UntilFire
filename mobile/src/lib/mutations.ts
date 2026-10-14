@@ -5,7 +5,7 @@
  */
 import { addRecurrence, isoDay, parseIsoDate, type LifeVersion } from '@/engine'
 import { supabase } from '@/lib/supabase'
-import type { Bill } from '@/state/account'
+import type { Bill, MerchantRule } from '@/state/account'
 
 export interface TransactionDraft {
   id?: string
@@ -227,7 +227,7 @@ export async function seedFromOnboarding(userId: string, plan: { monthlyIncome: 
     expenses: {
       ...expenses,
       ...(hasBudget ? {} : { other: plan.monthlySpending }),
-      _fire_profile: { ...fp, cashSavings: Number(fp.cashSavings) || plan.invested, ...(plan.city && !fp.cityName ? { cityName: plan.city.name } : {}) },
+      _fire_profile: { ...fp, cashSavings: Number(fp.cashSavings) || plan.invested, ...(!Number(fp.cashSavings) && plan.invested > 0 ? { onboardingSavings: plan.invested } : {}), ...(plan.city && !fp.cityName ? { cityName: plan.city.name } : {}) },
     },
     ...(plan.age ? { fire_age: plan.age } : {}),
     updated_at: new Date().toISOString(),
@@ -256,6 +256,17 @@ export async function resolveFlag(tx: { id: string; tags: string[] }, kind: stri
     ? { transaction_type: 'transfer' }
     : { tags: [...tx.tags.filter(g => g !== `ok:${kind}`), `ok:${kind}`] }
   const { error } = await supabase.from('expenses').update(patch).eq('id', tx.id)
+  return error ? 'Couldn\'t save that. Please try again.' : null
+}
+
+/** Save "always file this merchant like this", keeping the person's other rules. */
+export async function saveMerchantRule(userId: string, rules: Record<string, MerchantRule>, key: string, rule: MerchantRule): Promise<string | null> {
+  return saveFireProfile(userId, { merchantRules: { ...rules, [key]: rule } })
+}
+
+/** A move between your own accounts, as the website files one: no longer spending, so out of budgets and Review. */
+export async function markTransfer(id: string): Promise<string | null> {
+  const { error } = await supabase.from('expenses').update({ transaction_type: 'transfer', category: 'transfer', sub_category: null }).eq('id', id)
   return error ? 'Couldn\'t save that. Please try again.' : null
 }
 

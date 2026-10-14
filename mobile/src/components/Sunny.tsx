@@ -105,11 +105,13 @@ export function Sunny({ mood, size = 200 }: { mood: Mood; size?: number }) {
 
   const bodyStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateY: bob.value + jump.value + (mood === 'rise' ? size * 0.1 + (1 - rise.value) * size * 0.7 : 0) },
+      // Rise floats up and fades in on its own; no horizon line or clipped edge (Oct 2026 QA).
+      { translateY: bob.value + jump.value + (mood === 'rise' ? (1 - rise.value) * size * 0.3 : 0) },
       { rotate: `${tilt.value}deg` },
       { scaleX: 2 - squash.value },
       { scaleY: squash.value },
     ],
+    opacity: mood === 'rise' ? Math.min(1, rise.value * 1.6) : 1,
   }))
   const raysStyle = useAnimatedStyle(() => ({ opacity: rayOpacity.value, transform: [{ rotate: `${spin.value}deg` }, { scale: rayScale.value }] }))
   const eyesStyle = useAnimatedStyle(() => ({ transform: [{ translateX: lookX.value * size / 200 }, { translateY: lookY.value * size / 200 }] }))
@@ -124,7 +126,7 @@ export function Sunny({ mood, size = 200 }: { mood: Mood; size?: number }) {
 
   return (
     <View style={{ width: size, height: size }}>
-      <View style={{ position: 'absolute', left: 0, top: 0, width: size, height: mood === 'rise' ? size * 0.8 : size, overflow: mood === 'rise' ? 'hidden' : 'visible' }}>
+      <View style={{ position: 'absolute', left: 0, top: 0, width: size, height: size }}>
       <Confetti progress={burst} size={size} />
       <Animated.View style={[StyleSheet.absoluteFill, bodyStyle]}>
         <Layer style={raysStyle}>
@@ -159,7 +161,6 @@ export function Sunny({ mood, size = 200 }: { mood: Mood; size?: number }) {
         <Layer style={calmStyle}><Path d="M90 115q10 6 20 0" stroke={INK} strokeWidth={5} fill="none" strokeLinecap="round" /></Layer>
       </Animated.View>
       </View>
-      {mood === 'rise' && <View style={{ position: 'absolute', left: -size * 0.1, right: -size * 0.1, top: size * 0.8 - 2, height: 4, borderRadius: 2, backgroundColor: '#0E9C86' }} />}
     </View>
   )
 }

@@ -13,6 +13,7 @@ import { deleteBill, saveBill } from '@/lib/mutations'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { colors } from '@/theme/colors'
+import { amountInput } from '@/lib/format'
 
 const REPEATS: Recurrence[] = ['none', 'weekly', 'biweekly', 'monthly', 'quarterly', 'annual']
 
@@ -118,7 +119,7 @@ export default function BillSheet() {
               placeholder="0"
               placeholderTextColor={colors.border2}
               value={amount}
-              onChangeText={t => setAmount(t.replace(/[^0-9.]/g, ''))}
+              onChangeText={t => setAmount(amountInput(t))}
             />
           </View>
 

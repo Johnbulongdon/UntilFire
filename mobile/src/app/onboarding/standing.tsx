@@ -1,7 +1,7 @@
 import { router } from 'expo-router'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Share, View } from 'react-native'
-import Animated, { FadeInUp } from 'react-native-reanimated'
+import Animated, { Easing, FadeIn, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated'
 
 import { RevealFrame } from '@/components/RevealFrame'
 import { Text } from '@/components/Text'
@@ -44,13 +44,16 @@ export default function Standing() {
   )
 }
 
+/** A bar that grows up out of the shared baseline (Oct 2026 QA: it used to slide in from above). */
 function Bar({ label, value, max, tone, delay }: { label: string; value: number; max: number; tone: string; delay: number }) {
+  const full = Math.max(8, (value / max) * 160)
+  const h = useSharedValue(0)
+  useEffect(() => { h.value = withDelay(delay, withTiming(full, { duration: 700, easing: Easing.out(Easing.cubic) })) }, [full, delay, h])
+  const grow = useAnimatedStyle(() => ({ height: h.value }))
   return (
     <View className="w-24 items-center">
-      <Text className="mb-1 font-mono text-[16px] text-white">{value}%</Text>
-      <Animated.View entering={FadeInUp.delay(delay).duration(500)}>
-        <View style={{ width: 52, borderTopLeftRadius: 14, borderTopRightRadius: 14, backgroundColor: tone, height: Math.max(8, (value / max) * 160) }} />
-      </Animated.View>
+      <Animated.View entering={FadeIn.delay(delay + 500).duration(300)}><Text className="mb-1 font-mono text-[16px] text-white">{value}%</Text></Animated.View>
+      <Animated.View style={[{ width: 52, borderTopLeftRadius: 14, borderTopRightRadius: 14, backgroundColor: tone }, grow]} />
       {/* Two lines for every label, so a label that wraps doesn't lift its bar off the shared baseline. */}
       <View style={{ height: 36, marginTop: 8 }}><Text className="text-center text-[12px] leading-4 text-mint">{label}</Text></View>
     </View>

@@ -9,6 +9,14 @@
       "schedule": "0 11 * * *"
     },
     {
+      "path": "/api/cron/reward-expiry",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/bank-cleanup",
+      "schedule": "0 8 * * *"
+    },
+    {
       "path": "/api/cron/plaid-sync",
       "schedule": "0 9 * * *"
     }

@@ -12,7 +12,7 @@ import { Button } from './Button'
 import { Sunny, type Mood } from './Sunny'
 import { Text } from './Text'
 import { ThemeScope } from './ThemeScope'
-import { measureAnchor, type Rect, type TourAnchor } from './tour-anchors'
+import { measureAnchor, setTourShowing, type Rect, type TourAnchor } from './tour-anchors'
 
 const KEY = 'tour-seen'
 const PAD = 8
@@ -21,7 +21,7 @@ const PAD = 8
 // screen, one at a time. 'tabs' is the system tab bar, measured from the edge.
 const STOPS: { at: TourAnchor | 'tabs'; mood: Mood; title: string; body: string }[] = [
   { at: 'hero', mood: 'hello', title: 'Your freedom date', body: 'The month work becomes optional. Tap it any time to see how it\'s worked out.' },
-  { at: 'actions', mood: 'think', title: 'Four quick moves', body: 'Add a spend, review what came in, invest, or try a what-if.' },
+  { at: 'actions', mood: 'think', title: 'Four quick moves', body: 'Add a spend, check your budget, invest, or try a what-if.' },
   { at: 'today', mood: 'done', title: 'Today, one minute a day', body: 'A short list from your money. Clear it and your plan stays true. Days are counted, never streaked.' },
   { at: 'tabs', mood: 'win', title: 'Money, Plan, Profile', body: 'Money is what you have now, Plan is where you\'re heading, Profile is you. Same account as untilfire.com.' },
 ]
@@ -44,6 +44,11 @@ export function GuidedTour({ force, onClose }: { force?: boolean; onClose?: () =
     if (force || !focused) return
     AsyncStorage.getItem(KEY).then(v => { if (!v) setOpen(true) }).catch(() => {})
   }, [force, focused])
+
+  useEffect(() => {
+    setTourShowing(open && focused)
+    return () => setTourShowing(false)
+  }, [open, focused])
 
   // Find the part this stop is about; a stop whose part isn't on screen just shows its card.
   const stop = STOPS[i]

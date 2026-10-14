@@ -21,7 +21,7 @@ const COPY: Record<FlagKind, { label: string; tip: string; yes: string; no: stri
   },
   duplicate: {
     label: "Possible duplicate",
-    tip: "Same merchant and amount within two days of another row. Overlapping imports and re-posted charges do this.",
+    tip: "Same amount as another row a day or two apart, or one you typed in that your bank has now sent. Deleting keeps the bank's copy.",
     yes: "Delete this one", no: "Keep both",
   },
   large: {

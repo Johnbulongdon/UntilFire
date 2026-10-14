@@ -2589,3 +2589,92 @@ picked the sun over a flame (B reads as streaks or burning money) and over
 plain shapes (C, less personality).
 **Revisit:** a Rive Sunny with a motion designer after the app's own build;
 whether the website adopts Sunny too.
+
+### D-77 — October 13: phone QA fixes, Budget on Home, Review polished
+**Decision:** from the founder's first iPhone QA pass:
+- **Answers never wait on the network.** A tapped Today answer turns into a
+  tick and the next item slides in; the save runs behind it and a failure puts
+  the item back. Review works the same way. Onboarding taps move on in 180ms.
+- **Home's four actions are Add, Budget, Invest, What if.** Budget replaced
+  Review, since Today already does the reviewing every day.
+- **Review** is grouped by day, picks categories in a half-height sheet,
+  approves a row with one check (swipe to skip), and ends on Sunny.
+- **Invest page:** the ladder is drawn to scale (one split bar, a bar per
+  rung) instead of seven rows of text.
+- The globe clips land at the horizon; the welcome sunrise has no horizon line.
+**Why:** taps felt laggy because each waited for a save; Review was the last
+screen in the old style; the ladder hid the order of magnitude.
+- **Second pass:** the city globe pinches to zoom (1–4×); Review is a Money
+  tile with a count (in Add's place); the reveal confetti rains from the top
+  of the screen, like Robinhood's; "How you stack up" bars grow upward; the
+  Invest page (renamed from Contributions) keeps only the amount, the date,
+  one button and the picture, with the working one tap away.
+- **Third pass:** the city globe fills the space under the search edge to
+  edge and zooms to 16×, with no hint line; Review draws only the rows on
+  screen (108 rows lagged) and its sheet offers subcategories; the freedom
+  ring fills from empty after the screen arrives; Invest shows where money
+  goes on its first card, savings rungs included, and the order even at $0;
+  the abroad globe no longer fills the disc when its far side sits inside a
+  continent. Holding a Review row's category and dragging opens a grid;
+  resting on a category opens its kinds, and letting go picks. Fourth pass:
+  the grid sits on a solid backdrop and the kinds open in a popover against
+  the cell, like the iOS keyboard's accent picker, so the finger moves one
+  row; Calendar's suggestion buttons showed raw code and repeated merchants.
+**Revisit:** if Home feels busy, Budget is reachable three ways there (chip,
+"This month" bar, button); the bar is the one to trim.
+The "How you stack up" average is the US saving rate for everyone; per-country
+benchmarks are deferred until there is data.
+
+### D-78 — October 14: idle free banks are disconnected; merchant rules file automatically
+
+**Decision (founder, on a decision card):** Plaid bills every bank connection
+monthly while it exists, so a connection should only live while it earns money
+or is being used. Pro, own or household, keeps every bank. A free account keeps
+one bank while active; after 30 days without opening the app or the dashboard,
+its bank is disconnected at Plaid. After Pro ends, extra banks go after a 7-day
+grace and the first connected stays. Synced transactions are always kept.
+Rejected: banks for Pro only (weakens the daily Today hook for free users) and
+keeping one free bank forever (pays for dead accounts).
+**How:** `profiles.last_active_at` (migration 0051) is stamped once a day on
+open; `lib/bank-cleanup` plans and `/api/cron/bank-cleanup` acts at 08:00 UTC,
+before the sync. It only reports until `BANK_CLEANUP=on`, and does nothing when
+activity can't be read.
+**Also:** "Always file this merchant like this" in the app's Review saves a rule
+in `_fire_profile.merchantRules`; Review files covered rows itself and bank sync
+applies rules as rows arrive. A row typed by hand and a bank row with the same
+amount within three days are now a possible duplicate even under different
+names; confirming keeps the bank's copy.
+**Rollout:** apply 0051 before setting `BANK_CLEANUP=on`; check one dry run's
+`wouldRemove` count first.
+**Revisit:** the email warning before an idle disconnect, and whether active
+free users' one bank pays for itself once Plaid bills arrive.
+
+### D-79 — October 14: finishing the FIRE type quiz gives a free month of Pro
+
+**Decision (founder):** finishing the FIRE type quiz while signed in gives 30
+days of Pro, with no card, once per account, and only for an account that has
+never had Pro or a trial (Stripe or Apple). It ends by itself; nothing renews
+and nothing charges. Rejected: asking for a card (that is the website's 30-day
+trial, D-26, which stays the paid path), and repeat grants.
+**How:** `/api/rewards/quiz-month` checks `lib/reward-month`, stamps
+`profiles.reward_month_at` (migration 0052) to claim it once, and writes the
+subscriptions row with `source='reward'`, so every Pro check works unchanged.
+`/api/cron/reward-expiry` (07:00 UTC) turns expired reward rows back to free.
+Apple verify now only defers to an active Stripe row, so buying in the app
+during the month replaces the reward row.
+**Rollout:** apply 0052 before merging; until then the endpoint grants nothing.
+**Revisit:** whether quiz-month users later take the card trial and convert.
+
+### D-80 — October 14: the date no longer jumps after sign-up or a first bank
+
+**Finding:** a freshly seeded account gives the same year as onboarding (checked
+on six typical answers); launch-gaps item 8's cause was wrong. Two real jumps
+remained. Someone already past their target was told "work is already optional"
+and then shown next year, because year 0 is never the freedom year; both
+engines (dashboard and app) now return today in that case. And onboarding's one
+savings answer is seeded as cash, so the first connected bank replaced it with
+that bank's cash alone. The seed now records `onboardingSavings`, and Home
+explains the gap once and sends the person to Balances to place the rest; it
+goes when something is placed there or on "That was all of it".
+**Rejected:** seeding the answer as investments (double counts the cash part
+once a bank connects, and shows zero months of safety before one does).

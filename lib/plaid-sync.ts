@@ -13,6 +13,7 @@ import type { PlaidApi, Transaction as PlaidTransaction } from "plaid";
 import { mapPlaidTx } from "@/lib/plaid";
 import { planTagging, type ClassificationRule } from "@/lib/classification-rules";
 import { fetchAllPages } from "@/lib/supabase-pages";
+import { planMerchantRules, readMerchantRules } from "@/lib/merchant-rules";
 
 type Admin = SupabaseClient<any, any, any>;
 
@@ -79,6 +80,29 @@ export async function syncPlaidItem(admin: Admin, plaid: PlaidApi, item: SyncIte
       })
       .eq("plaid_transaction_id", tx.transaction_id)
       .eq("user_id", userId);
+  }
+
+  // The person's "always file this merchant" rules. A new row is filed
+  // outright; a changed one gets its category back, since the update above
+  // re-reads Plaid's.
+  try {
+    const { data: budget } = await admin.from("user_budget").select("expenses").eq("user_id", userId).maybeSingle();
+    const rules = readMerchantRules((budget?.expenses as { _fire_profile?: { merchantRules?: unknown } } | null)?._fire_profile?.merchantRules);
+    if (Object.keys(rules).length > 0) {
+      const isNew = new Set(added.map((tx) => tx.transaction_id));
+      const rows = [...added, ...modified].map((tx) => mapPlaidTx(tx, userId)).filter((r): r is NonNullable<typeof r> => !!r);
+      for (const r of planMerchantRules(rows, rules)) {
+        await admin
+          .from("expenses")
+          .update(isNew.has(r.plaid_transaction_id)
+            ? { category: r.category, sub_category: r.sub_category, tags: [r.need] }
+            : { category: r.category, sub_category: r.sub_category })
+          .eq("plaid_transaction_id", r.plaid_transaction_id)
+          .eq("user_id", userId);
+      }
+    }
+  } catch (ruleErr) {
+    console.error("[plaid/sync] merchant rules:", ruleErr);
   }
 
   // Hard-delete removed (Plaid only marks removed when they were errors/duplicates)

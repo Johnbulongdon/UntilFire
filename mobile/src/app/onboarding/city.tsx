@@ -1,6 +1,6 @@
 import { router } from 'expo-router'
 import { useMemo, useState } from 'react'
-import { Keyboard, Pressable, TextInput, useWindowDimensions, View } from 'react-native'
+import { Keyboard, Pressable, TextInput, View } from 'react-native'
 
 import { Button } from '@/components/Button'
 import { CITY_COORDS, Globe } from '@/components/Globe'
@@ -19,9 +19,10 @@ import { colors, TAB_COLOR } from '@/theme/colors'
  */
 export default function City() {
   const { draft, setDraft } = usePlan()
-  const { width, height } = useWindowDimensions()
-  // The globe fills what the header, search, city line and footer buttons leave, so nothing overlaps.
-  const globe = Math.max(200, Math.min(width - 48, 340, height - 590))
+  // The globe's canvas fills the space under the search, edge to edge (Oct 2026 QA: zooming
+  // in a small square felt cramped); the city line keeps CITY_LINE points below it.
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null)
+  const frame = box ? { w: box.w, h: Math.max(200, box.h - CITY_LINE) } : null
   const [query, setQuery] = useState('')
   const [picked, setPicked] = useState<CityRow | undefined>(() => CITIES.find(c => c.name === draft.city?.name))
   const q = query.trim().toLowerCase()
@@ -46,7 +47,6 @@ export default function City() {
       step={2}
       steps={8}
       title="Where do you live?"
-      hint="Search, or spin the globe and tap your city."
       noScroll
       cta="Continue"
       canContinue={!!picked}
@@ -75,10 +75,10 @@ export default function City() {
           ))}
         </View>
       ) : (
-        <View className="mt-4 items-center">
-          <Globe size={globe} focus={focus} cities={dots}
+        <View className="-mx-6 mt-3 flex-1 items-center" onLayout={e => { const { width: w, height: h } = e.nativeEvent.layout; setBox(b => (b?.w === w && b.h === h ? b : { w, h })) }}>
+          {frame && <Globe size={Math.min(frame.w - 16, frame.h)} frame={frame} focus={focus} cities={dots}
             onCenter={setCentered} onTap={key => { const c = CITIES.find(x => x.key === key); if (c) pick(c) }}
-            colors={{ sea: colors.surface, land: TAB_COLOR.home, line: colors.border, edge: colors.border2, pin: brandPin, dot: '#FFFFFF' }} />
+            colors={{ sea: colors.surface, land: TAB_COLOR.home, line: colors.border, edge: colors.border2, pin: brandPin, dot: '#FFFFFF' }} />}
           {offer ? (
             <View className="mt-3 items-center gap-2">
               <Text className="text-[20px] font-bold text-ink">{offer.flag} {offer.name}</Text>
@@ -97,3 +97,4 @@ export default function City() {
 }
 
 const brandPin = '#F2A65A'
+const CITY_LINE = 96

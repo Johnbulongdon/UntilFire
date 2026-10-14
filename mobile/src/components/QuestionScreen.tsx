@@ -50,7 +50,7 @@ export function QuestionScreen(props: {
             {!!props.hint && <Text className="mt-3 text-base leading-6 text-ink-2">{props.hint}</Text>}
           </Animated.View>
           {/* Answers sit mid-screen, in reach of a thumb holding the phone one-handed (a globe screen fills the space itself). */}
-          <Animated.View entering={FadeInDown.delay(90).duration(320)} style={props.noScroll ? { marginTop: 20 } : { flex: 1, justifyContent: 'center', paddingVertical: 24 }}>
+          <Animated.View entering={FadeInDown.delay(90).duration(320)} style={props.noScroll ? { flex: 1, marginTop: 20 } : { flex: 1, justifyContent: 'center', paddingVertical: 24 }}>
             {props.children}
           </Animated.View>
         </ScrollView>

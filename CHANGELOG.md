@@ -42,6 +42,18 @@ under today's date, creating the heading if it is not there yet.
   Plaid, built and switched on in the app's own build; until then "Connect a
   bank" opens untilfire.com. The admin Users page shows Apple and Stripe
   subscribers.
+- Fix (D-77): Today answers and Review approvals move on instantly with a
+  tick instead of waiting for the save; a failed save puts the item back.
+- New (D-77): Home's actions are Add, Budget, Invest and What if; Review is
+  redesigned (grouped by day, category sheet, swipe to skip); the Invest
+  ladder is drawn to scale; the globe no longer cuts a line across the land.
+- Fix (D-77): a bigger city globe that zooms further, a faster Review with
+  subcategories (tap, or hold and drag), the freedom ring filling from empty,
+  and no globe flashing.
+- New (D-77): "I already have an account" on Welcome; Calendar shows category
+  icons; Home's freedom chart is a bar per year; Pro purchases are picked up
+  from launch and never hang; screens show loading instead of looking empty.
+  Launch audit in docs/launch-gaps.md.
 
 ## 2026-10-11
 

@@ -17,7 +17,7 @@ export default function Know() {
           <OptionCard key={k} title={label} selected={picked === k}
             onPress={() => {
               haptic.select(); setPicked(k); answers.know = k
-              setTimeout(() => router.push('/onboarding/spending'), 280)
+              setTimeout(() => router.push('/onboarding/spending'), 90)
             }} />
         ))}
       </View>

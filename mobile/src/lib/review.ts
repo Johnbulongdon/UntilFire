@@ -1,8 +1,12 @@
 import type { Transaction } from '@/state/account'
 
-/** Filed means a real category and a need or want tag (the website's reviewCounts in TransactionsTab). */
+/**
+ * Filed means a category and a need or want tag (the website's reviewCounts in
+ * TransactionsTab). "Other" counts once it's tagged: only filing adds the tag,
+ * so it's a choice for something you don't recognise (Oct 2026 QA).
+ */
 export const isFiled = (t: Transaction) =>
-  !!t.category && t.category !== 'other' && t.tags.some(g => g === 'need' || g === 'want')
+  !!t.category && t.tags.some(g => g === 'need' || g === 'want')
 
 export function reviewCounts(rows: Transaction[]) {
   const expenses = rows.filter(t => t.transaction_type === 'expense')

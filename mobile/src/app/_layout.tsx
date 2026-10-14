@@ -10,7 +10,7 @@ import {
   Manrope_800ExtraBold,
 } from '@expo-google-fonts/manrope'
 import { useFonts } from 'expo-font'
-import { Stack, usePathname } from 'expo-router'
+import { Stack, usePathname, type ErrorBoundaryProps } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { useColorScheme, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
@@ -25,8 +25,19 @@ import { PlanProvider } from '@/state/plan'
 import { colors, setPalette, themeVars } from '@/theme/colors'
 import { Events, track } from '@/lib/analytics'
 import { AppLock } from '@/components/AppLock'
+import { NotificationTaps } from '@/components/NotificationTaps'
+import { EmptyState } from '@/components/EmptyState'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
+
+/** A screen that throws shows this and can try again, instead of closing the app (App Store readiness, Oct 2026). */
+export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.ground }}>
+      <EmptyState mood="quiet" title="Something went wrong" body="Your money and plan are safe. Try again." action={{ label: 'Try again', onPress: () => { retry() } }} />
+    </View>
+  )
+}
 
 export default function RootLayout() {
   // The website's three faces: Fraunces display, Manrope body, DM Mono numbers.
@@ -54,6 +65,7 @@ export default function RootLayout() {
         <AccountProvider>
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <ScreenViews />
+        <NotificationTaps />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ground } }}>
           <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
           <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />

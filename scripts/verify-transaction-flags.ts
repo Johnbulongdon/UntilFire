@@ -31,6 +31,16 @@ ok("a day apart counts only when a bank and an import overlap", () => {
   const coffee1 = tx("Blue Bottle", 6.5, "2026-09-15"), coffee2 = tx("Blue Bottle", 6.5, "2026-09-16");
   assert.equal(findFlags([coffee1, coffee2], [], usd).size, 0, "the same coffee two days running is not a duplicate");
 });
+ok("a hand-typed row matches the bank's copy by amount, even under another name", () => {
+  const typed = tx("Coffee", 6.5, "2026-09-14"), bank = { ...tx("STARBUCKS #1234", 6.5, "2026-09-16"), source: "plaid" };
+  const f = findFlags([typed, bank], [], usd);
+  assert.equal(f.get(typed.id), "duplicate", "the typed row is flagged, so confirming keeps the bank's");
+  assert.equal(f.has(bank.id), false);
+  const later = { ...tx("STARBUCKS #1234", 6.5, "2026-09-20"), source: "plaid" };
+  assert.equal(findFlags([tx("Coffee", 6.5, "2026-09-14"), later], [], usd).size, 0, "more than three days apart is a different purchase");
+  const two = [tx("Lunch", 12, "2026-09-14"), tx("Parking", 12, "2026-09-15")], one = { ...tx("CHIPOTLE", 12, "2026-09-15"), source: "plaid" };
+  assert.equal([...findFlags([...two, one], [], usd).values()].length, 1, "one bank row answers for one typed row");
+});
 ok("different amounts are not duplicates", () => {
   assert.equal(findFlags([tx("Uber", 18), tx("Uber", 22)], [], usd).size, 0);
 });

@@ -9,15 +9,18 @@ import { FreedomLineChart } from '@/components/FreedomLineChart'
 import { GuidedTour } from '@/components/GuidedTour'
 import { useTourAnchor } from '@/components/tour-anchors'
 import { HouseholdCard } from '@/components/HouseholdCard'
+import { RecurringTeaser } from '@/components/RecurringCard'
 import { Icon } from '@/components/Icon'
 import { ProgressTrack, Screen } from '@/components/Screen'
 import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
+import { isBrokerageAccount, isRetirementAccount } from '@/lib/balances'
 import { money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { monthSpend, thisMonth } from '@/lib/money-data'
 import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
+import { saveFireProfile } from '@/lib/mutations'
 import { useFreedom, type Freedom } from '@/state/freedom'
 import { useLivePlan } from '@/state/live-plan'
 import { quickFreedom } from '@/engine'
@@ -41,8 +44,10 @@ export default function Home() {
     <Screen tab="home" flat hideTitle title="Home" refreshing={loading && !!data} onRefresh={data ? refresh : undefined}>
       <Hero result={result} />
       <DateMoved result={result} />
+      {data && <SavingsGap data={data} />}
       <Actions signedIn={!!session} />
       {data && <ThisMonth data={data} />}
+      {data && <RecurringTeaser data={data} freedom={result} />}
       {data && <NextGoal data={data} />}
       {data && <HouseholdCard />}
       <GuidedTour />
@@ -58,7 +63,7 @@ export default function Home() {
 function Hero({ result }: { result: Freedom }) {
   const yearsAway = result.years != null ? Math.ceil(result.years) : null
   const date = result.year == null ? '65+ years' : result.date ? result.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : String(result.year)
-  const sub = [yearsAway != null ? (yearsAway === 0 ? 'Now' : `${yearsAway} years away`) : null, result.ageAtFreedom != null ? `age ${result.ageAtFreedom}` : null].filter(Boolean).join(' · ')
+  const sub = [yearsAway != null ? (yearsAway === 0 ? 'Now' : yearsAway === 1 ? '1 year away' : `${yearsAway} years away`) : null, result.ageAtFreedom != null ? `age ${result.ageAtFreedom}` : null].filter(Boolean).join(' · ')
   return (
     <View {...useTourAnchor('hero')} style={{ borderRadius: 28, overflow: 'hidden', backgroundColor: TAB_COLOR.home }}>
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100">
@@ -110,6 +115,36 @@ function DateMoved({ result }: { result: Freedom }) {
   )
 }
 
+/**
+ * Onboarding's one savings answer is seeded as cash, so a first connected bank
+ * replaces all of it with that bank's cash and the date jumps. When it falls
+ * short, say why and where the rest goes. Home only explains; Balances is
+ * where it's typed. Gone once something is placed there, or on "That was all".
+ */
+function SavingsGap({ data }: { data: AccountData }) {
+  const { session } = useAuth()
+  const { refresh } = useAccount()
+  const told = data.profile.onboardingSavings
+  const cash = data.plaidAccounts.filter(a => a.type === 'depository').reduce((s, a) => s + (a.balance_current ?? 0), 0)
+  const placed = data.typed.k401 + data.typed.rothIRA + data.typed.taxable > 0 || data.plaidAccounts.some(a => isRetirementAccount(a) || isBrokerageAccount(a))
+  if (!told || !session || cash <= 0 || placed || cash >= told * 0.9) return null
+  const done = () => { haptic.tick(); saveFireProfile(session.user.id, { onboardingSavings: null }).then(() => refresh()).catch(() => {}) }
+  return (
+    <View className="flex-row items-center gap-3 rounded-3xl p-4" style={{ backgroundColor: panel() }}>
+      <Sunny mood="think" size={56} />
+      <View className="flex-1 gap-2">
+        <Text className="text-[15px] leading-5 text-ink">
+          You told us {money(told)} saved, and your bank shows {money(cash)} in cash. If the other {money(told - cash)} is in retirement or investments, add it so your date counts it.
+        </Text>
+        <View className="flex-row flex-wrap gap-2">
+          <Button small label="Add it" onPress={() => { haptic.tick(); router.push('/balances') }} />
+          <Button small kind="quiet" label="That was all of it" onPress={done} />
+        </View>
+      </View>
+    </View>
+  )
+}
+
 /** A soft panel that shows against the page in both themes (surface in light, card in dark). */
 const panel = () => (Appearance.getColorScheme() === 'dark' ? colors.card : colors.surface)
 
@@ -128,7 +163,9 @@ function ThisMonth({ data }: { data: AccountData }) {
         <Text className="text-[16px] font-bold text-ink">This month</Text>
         <Text className={`font-mono text-[16px] ${left < 0 ? 'text-neg-ink' : 'text-ink'}`}>{money(Math.abs(left))} {left < 0 ? 'over' : 'left'}</Text>
       </View>
-      <ProgressTrack share={Math.min(1, total / budget)} />
+      <View className="h-2.5 overflow-hidden rounded-full bg-surface-2">
+        <View className={`h-full rounded-full ${left < 0 ? 'bg-neg' : total / budget > now.getDate() / days ? 'bg-warn' : 'bg-green'}`} style={{ width: `${Math.min(1, total / budget) * 100}%` }} />
+      </View>
       <View className="flex-row justify-between">
         <Text className="text-[13px] text-ink-2">Spent {money(total)} of {money(budget)}</Text>
         <Text className="text-[13px] text-ink-2">Day {now.getDate()} of {days}</Text>
@@ -164,7 +201,8 @@ function Actions({ signedIn }: { signedIn: boolean }) {
   const go = (to: Parameters<typeof router.push>[0]) => () => { haptic.press(); router.push(to) }
   const items: { label: string; icon: SymbolName; fallback: string; onPress: () => void }[] = [
     { label: 'Add', icon: 'plus', fallback: '+', onPress: signedIn ? go('/transaction') : go('/sign-in') },
-    { label: 'Review', icon: 'checklist', fallback: '✓', onPress: signedIn ? go('/review') : go('/sign-in') },
+    // Budget replaced Review (Oct 2026): Today already does the reviewing every day.
+    { label: 'Budget', icon: 'chart.pie.fill', fallback: '◔', onPress: signedIn ? go('/money/budget') : go('/sign-in') },
     { label: 'Invest', icon: 'arrow.up.right', fallback: '↗', onPress: go('/plan/contributions') },
     { label: 'What if', icon: 'wand.and.stars', fallback: '?', onPress: go('/plan/what-if') },
   ]
@@ -178,7 +216,7 @@ function Actions({ signedIn }: { signedIn: boolean }) {
                 width: 60, height: 60, borderRadius: 30, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center',
                 borderBottomWidth: pressed ? 0 : 4, borderBottomColor: 'rgba(0,0,0,0.28)', marginTop: pressed ? 4 : 0,
               }}>
-                <Icon name={a.icon} fallback={a.fallback} size={24} color="#FFFFFF" />
+                <Icon name={a.icon} fallback={a.fallback} size={24} color={colors.card} />
               </View>
               <Text className="text-[13px] font-bold text-ink">{a.label}</Text>
             </>
