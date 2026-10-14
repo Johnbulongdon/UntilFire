@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router'
-import { memo, useCallback, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Modal, Pressable, ScrollView, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable'
@@ -12,18 +12,19 @@ import { EmptyState } from '@/components/EmptyState'
 import { LoadingState } from '@/components/LoadingState'
 import { CategoryGlyph, Icon } from '@/components/Icon'
 import { Text } from '@/components/Text'
-import { buildMerchantMemory, isoDay, SUB_CATEGORIES, suggestFromHistory } from '@/engine'
+import { buildMerchantMemory, isoDay, merchantKey, SUB_CATEGORIES, suggestFromHistory } from '@/engine'
 import { moneyIn } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { categoryOf, expenseCategories } from '@/lib/money-data'
-import { fileTransactions, markTransfer } from '@/lib/mutations'
+import { fileTransactions, markTransfer, saveMerchantRule } from '@/lib/mutations'
 import { defaultNeed, isFiled } from '@/lib/review'
 import { addDays } from '@/lib/today'
 import { useAccount, type Transaction } from '@/state/account'
+import { useAuth } from '@/state/auth'
 import { colors } from '@/theme/colors'
 
 // chosen: the category was picked, by the person or their history, so "Other" can be filed too.
-type Filing = { category: string; sub_category: string | null; need: 'need' | 'want'; fromHistory: number; chosen: boolean }
+type Filing = { category: string; sub_category: string | null; need: 'need' | 'want'; fromHistory: number; chosen: boolean; byRule?: boolean }
 const TICK_MS = 150
 
 const dayLabel = (iso: string) => {
@@ -44,6 +45,8 @@ const dayLabel = (iso: string) => {
 export default function Review() {
   const { months } = useLocalSearchParams<{ months?: string }>()
   const { data, refresh } = useAccount()
+  const { session } = useAuth()
+  const [byRule, setByRule] = useState(0)
   const [overrides, setOverrides] = useState<Record<string, Partial<Filing>>>({})
   const [gone, setGone] = useState<Set<string>>(new Set())
   const [ticked, setTicked] = useState<Set<string>>(new Set())
@@ -56,7 +59,10 @@ export default function Review() {
     const all = data?.transactions ?? []
     // Memory from everything already filed, so a suggestion is the person's own past answer.
     const memory = buildMerchantMemory(all.filter(isFiled))
+    const rules = data?.profile.merchantRules ?? {}
     const suggest = (t: Transaction): Filing => {
+      const rule = rules[merchantKey(t.description)]
+      if (rule) return { ...rule, fromHistory: 0, chosen: true, byRule: true }
       const s = suggestFromHistory(t, memory)
       const category = s?.category ?? (t.category && t.category !== 'other' ? t.category : 'other')
       return { category, sub_category: s?.sub_category ?? t.sub_category, need: s?.classification ?? defaultNeed(category), fromHistory: s?.seen ?? 0, chosen: category !== 'other' || !!s?.category }
@@ -93,6 +99,14 @@ export default function Review() {
       haptic.success(); refresh()
     })
   }
+  // Rows a merchant rule covers file themselves when Review opens.
+  useEffect(() => {
+    const rows = shown.filter(t => base.get(t.id)?.byRule && !overrides[t.id])
+    if (rows.length === 0) return
+    setByRule(n => n + rows.length)
+    approve(rows)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [base])
   const approveOne = (t: Transaction) => {
     if (!filingOf(t).chosen) { haptic.warn(); setPicking(t); return }
     haptic.select()
@@ -133,6 +147,7 @@ export default function Review() {
         <View className="w-9" />
       </View>
       {shown.length > 0 && <Text className="text-center text-[12px] text-ink-3">{shown.length} to file · suggestions come from your history</Text>}
+      {byRule > 0 && <Text className="text-center text-[12px] font-bold text-pos-ink">Filed {byRule} by your merchant rules</Text>}
 
       {!data ? <LoadingState /> : shown.length === 0 ? (
         <View className="flex-1 justify-center">
@@ -158,7 +173,18 @@ export default function Review() {
 
       <DragCategoryPicker ref={picker} open={dragging} />
       <CategorySheet t={picking} current={picking && filingOf(picking).chosen ? filingOf(picking).category : null} onClose={() => setPicking(null)}
-        onSave={(key, sub) => { if (picking) set(picking.id, { category: key, sub_category: sub, need: defaultNeed(key), chosen: true }); setPicking(null) }}
+        onSave={(key, sub, always) => {
+          const t = picking
+          setPicking(null)
+          if (!t) return
+          set(t.id, { category: key, sub_category: sub, need: defaultNeed(key), chosen: true })
+          if (always && session && data) {
+            const rule = { category: key, sub_category: sub, need: defaultNeed(key) }
+            saveMerchantRule(session.user.id, data.profile.merchantRules, merchantKey(t.description), rule).then(problem => {
+              if (problem) { haptic.warn(); Alert.alert(problem) } else refresh()
+            })
+          }
+        }}
         onTransfer={() => {
           const t = picking
           setPicking(null)
@@ -245,12 +271,13 @@ function Row({ t, f, edited, ticked, onCategory, onNeed, onApprove, onDrag }: Ro
 }
 
 /** Half-height category picker, like every other edit: an icon grid, its kinds once one is picked, and one Save. */
-function CategorySheet({ t, current, onClose, onSave, onTransfer }: { t: Transaction | null; current: string | null; onClose: () => void; onSave: (key: string, sub: string | null) => void; onTransfer: () => void }) {
+function CategorySheet({ t, current, onClose, onSave, onTransfer }: { t: Transaction | null; current: string | null; onClose: () => void; onSave: (key: string, sub: string | null, always: boolean) => void; onTransfer: () => void }) {
+  const [always, setAlways] = useState(false)
   const [choice, setChoice] = useState<string | null>(null)
   const [sub, setSub] = useState<string | null>(null)
   const picked = choice ?? current
   const subs = picked ? SUB_CATEGORIES[picked] : undefined
-  const close = () => { setChoice(null); setSub(null); onClose() }
+  const close = () => { setChoice(null); setSub(null); setAlways(false); onClose() }
   return (
     <Modal visible={!!t} transparent animationType="slide" onRequestClose={close}>
       <Pressable accessibilityLabel="Close" onPress={close} style={{ flex: 1, backgroundColor: 'rgba(20,14,8,0.45)' }} />
@@ -283,10 +310,16 @@ function CategorySheet({ t, current, onClose, onSave, onTransfer }: { t: Transac
         )}
         <View className="gap-2 px-5 pb-3 pt-2">
           <View className="flex-row gap-2">
-            {picked !== 'other' && <Button small kind="quiet" label="Don't remember? Other" style={{ flex: 1 }} onPress={() => { haptic.select(); onSave('other', null); setChoice(null); setSub(null) }} />}
+            {picked !== 'other' && <Button small kind="quiet" label="Don't remember? Other" style={{ flex: 1 }} onPress={() => { haptic.select(); onSave('other', null, false); setChoice(null); setSub(null) }} />}
             <Button small kind="quiet" label="It's a transfer" style={{ flex: 1 }} onPress={() => { haptic.select(); setChoice(null); setSub(null); onTransfer() }} />
           </View>
-          <Button label="Save" disabled={!picked} onPress={() => { if (picked) { haptic.select(); onSave(picked, sub); setChoice(null); setSub(null) } }} />
+          <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: always }} onPress={() => { haptic.select(); setAlways(a => !a) }} className="flex-row items-center gap-2.5 py-1">
+            <View className={`h-6 w-6 items-center justify-center rounded-md border-2 ${always ? 'border-green bg-green' : 'border-border-2'}`}>
+              {always && <Icon name="checkmark" fallback="✓" size={13} color={colors.card} weight="heavy" />}
+            </View>
+            <Text numberOfLines={1} className="flex-1 text-[14px] font-bold text-ink">Always file {t?.description ?? 'this merchant'} like this</Text>
+          </Pressable>
+          <Button label="Save" disabled={!picked} onPress={() => { if (picked) { haptic.select(); onSave(picked, sub, always); setChoice(null); setSub(null); setAlways(false) } }} />
         </View>
       </SafeAreaView>
     </Modal>

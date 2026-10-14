@@ -57,6 +57,8 @@ export interface Goal {
 
 export interface TodayProgress { done: string[]; acks: string[] }
 
+export type MerchantRule = { category: string; sub_category: string | null; need: 'need' | 'want' }
+
 export interface AccountData {
   /** Pro, on this account or through the household (lib/supabase isPro). */
   pro: boolean
@@ -92,6 +94,8 @@ export interface AccountData {
     contributionDone: { iso: string; amount: number } | null
     /** The Today list (D-73): days finished and items answered, shared with the website. */
     today: TodayProgress
+    /** "Always file this merchant like this", by merchantKey (Oct 2026). */
+    merchantRules: Record<string, MerchantRule>
   }
   /** From profiles: what to call you and which currency to show money in. */
   displayName: string
@@ -282,6 +286,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
           done: Array.isArray(fp.today?.done) ? fp.today.done.filter((d: unknown) => typeof d === 'string') : [],
           acks: Array.isArray(fp.today?.acks) ? fp.today.acks.filter((d: unknown) => typeof d === 'string') : [],
         },
+        merchantRules: fp.merchantRules && typeof fp.merchantRules === 'object' && !Array.isArray(fp.merchantRules) ? fp.merchantRules as Record<string, MerchantRule> : {},
         comparisons: Array.isArray(fp.comparisons) ? fp.comparisons.filter((c: LifeVersion) => c && typeof c.id === 'string' && Array.isArray(c.changes)) : [],
       },
       customCategories,

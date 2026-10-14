@@ -7,7 +7,9 @@
  *   duplicate    — same merchant, amount and currency on the same day, or
  *                  within two days when the rows came from different
  *                  sources (a bank and a CSV overlapping). Buying the same
- *                  coffee two days running is not a duplicate.
+ *                  coffee two days running is not a duplicate. A row
+ *                  typed in by hand matches the bank's copy on amount
+ *                  alone, within three days.
  *   large        — far above what this merchant usually costs, or, for a
  *                  new merchant, among the person's largest expenses.
  *
@@ -54,6 +56,20 @@ export function findFlags(inView: FlagTx[], history: FlagTx[], toUSD: (amount: n
       const twin = gap === 0 || (gap <= 2 && (t.source ?? "manual") !== (prev.source ?? "manual"));
       if (twin && !ok(t, "duplicate") && !out.has(t.id)) out.set(t.id, "duplicate");
     }
+  }
+
+  // Typed in by hand, then the bank sends its own copy (Oct 2026): the names
+  // rarely match ("Coffee" vs "STARBUCKS #1234"), so the same amount within
+  // three days is enough. The hand-typed row is the one flagged, so confirming
+  // keeps the bank's record. Each bank row matches one typed row at most.
+  const fromBank = (t: FlagTx) => t.source === "plaid";
+  const typed = (t: FlagTx) => (t.source ?? "manual") === "manual";
+  const claimed = new Set<string>();
+  for (const t of expenses) {
+    if (!typed(t) || out.has(t.id) || ok(t, "duplicate")) continue;
+    const twin = expenses.find((b) => fromBank(b) && !claimed.has(b.id) && b.currency === t.currency
+      && Math.abs(b.amount - t.amount) < 0.005 && Math.abs(dayNumber(b.date) - dayNumber(t.date)) <= 3);
+    if (twin) { claimed.add(twin.id); out.set(t.id, "duplicate"); }
   }
 
   // Large: against this merchant's own history when it has one, else the person's top 5%.

@@ -5,7 +5,7 @@
  */
 import { addRecurrence, isoDay, parseIsoDate, type LifeVersion } from '@/engine'
 import { supabase } from '@/lib/supabase'
-import type { Bill } from '@/state/account'
+import type { Bill, MerchantRule } from '@/state/account'
 
 export interface TransactionDraft {
   id?: string
@@ -257,6 +257,11 @@ export async function resolveFlag(tx: { id: string; tags: string[] }, kind: stri
     : { tags: [...tx.tags.filter(g => g !== `ok:${kind}`), `ok:${kind}`] }
   const { error } = await supabase.from('expenses').update(patch).eq('id', tx.id)
   return error ? 'Couldn\'t save that. Please try again.' : null
+}
+
+/** Save "always file this merchant like this", keeping the person's other rules. */
+export async function saveMerchantRule(userId: string, rules: Record<string, MerchantRule>, key: string, rule: MerchantRule): Promise<string | null> {
+  return saveFireProfile(userId, { merchantRules: { ...rules, [key]: rule } })
 }
 
 /** A move between your own accounts, as the website files one: no longer spending, so out of budgets and Review. */
