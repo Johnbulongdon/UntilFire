@@ -9,7 +9,7 @@ import { haptic } from '@/lib/haptics'
 import { useLivePlan } from '@/state/live-plan'
 import { useFreedom } from '@/state/freedom'
 import { freedomFor } from '@/state/plan'
-import { TAB_COLOR, tabInk } from '@/theme/colors'
+import { TAB_COLOR } from '@/theme/colors'
 
 type SymbolName = Parameters<typeof Icon>[0]['name']
 
@@ -41,7 +41,7 @@ export default function PlanHub() {
     <Screen tab="plan" flat hideTitle title="Plan">
       <Pressable accessibilityRole="button" accessibilityLabel={`Freedom in ${year ?? 'more than 65 years'}. See how it's worked out`} onPress={() => { haptic.tick(); router.push('/plan/freedom') }}>
         <Text className="text-[12px] font-bold uppercase tracking-[2px] text-ink-3">Your freedom date</Text>
-        <Text style={{ color: tabInk('plan') }} className="font-display text-[52px] font-bold leading-[58px] tracking-tight">{year ?? '65+ yrs'}</Text>
+        <Text className="text-teal-deep font-display text-[52px] font-bold leading-[58px] tracking-tight">{year ?? '65+ yrs'}</Text>
         <View className="mt-2"><ProgressTrack share={target > 0 ? invested / target : 0} /></View>
         <Text className="mt-1.5 text-[14px] text-ink-2">
           <Text className="font-mono text-[14px] text-ink">{compactMoney(invested)}</Text> of <Text className="font-mono text-[14px]">{compactMoney(target)}</Text>

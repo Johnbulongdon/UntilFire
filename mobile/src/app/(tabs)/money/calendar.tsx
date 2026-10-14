@@ -2,7 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Button } from '@/components/Button'
 import { router } from 'expo-router'
 import { useEffect, useMemo, useState } from 'react'
-import { Alert, Pressable, View } from 'react-native'
+import { Alert, Platform, Pressable, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Bouncy } from '@/components/Bouncy'
 import { DetailScreen } from '@/components/DetailScreen'
@@ -28,6 +29,7 @@ const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 export default function Bills() {
   const { session } = useAuth()
   const { data, loading, refresh } = useAccount()
+  const insets = useSafeAreaInsets()
   const [view, setView] = useState<'list' | 'month'>('month')
   const [busyId, setBusyId] = useState<string | null>(null)
   const [dismissed, setDismissed] = useState<string[]>([])
@@ -131,10 +133,10 @@ export default function Bills() {
         )}
       </DetailScreen>
 
-      <View pointerEvents="box-none" style={{ position: 'absolute', right: 20, bottom: 20 }}>
+      <View pointerEvents="box-none" style={{ position: 'absolute', right: 20, bottom: Platform.OS === 'ios' ? insets.bottom + 64 : 20 }}>
         <Bouncy accessibilityRole="button" accessibilityLabel="Add a bill or payday" onPress={() => { haptic.press(); router.push('/bill') }} scaleTo={0.9}>
           <View className="h-14 w-14 items-center justify-center rounded-full bg-green" style={{ shadowColor: '#78501E', shadowOpacity: 0.2, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } }}>
-            <Text className="text-[30px] leading-[32px] text-white">+</Text>
+            <Text className="text-[30px] leading-[32px] text-card">+</Text>
           </View>
         </Bouncy>
       </View>

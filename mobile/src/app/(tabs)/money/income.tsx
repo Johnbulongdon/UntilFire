@@ -27,7 +27,7 @@ export default function Income() {
   const gross = plan.grossAnnual ?? 0, pension = plan.pensionAnnual ?? 0, employer = plan.employerAnnual ?? 0
   const pay = gross > 0 ? paycheck(gross, pension, taxKey) : null
   const yearTakeHome = pay && Math.abs(pay.takeHome / 12 - data.income) < 1 ? pay.takeHome : data.income * 12
-  const pensionName = pensionFor('USD', true).payroll
+  const pensionName = pensionFor(data.currency, !!STATE_TAX[taxKey] || data.currency === 'USD').payroll
   const taxLabel = STATE_TAX[taxKey]?.label ?? pay?.label ?? ''
   const edit = () => { haptic.tick(); router.push('/income-edit') }
 

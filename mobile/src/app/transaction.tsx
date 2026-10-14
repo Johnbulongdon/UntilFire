@@ -11,7 +11,7 @@ import { Text } from '@/components/Text'
 import { INCOME_CATEGORIES, isoDay, SUB_CATEGORIES } from '@/engine'
 import { currencySymbol, displayCurrency } from '@/lib/display-currency'
 import { haptic } from '@/lib/haptics'
-import { moneyIn } from '@/lib/format'
+import { amountInput, moneyIn } from '@/lib/format'
 import { dayLabel, expenseCategories } from '@/lib/money-data'
 import { deleteTransaction, saveTransaction } from '@/lib/mutations'
 import { defaultNeed } from '@/lib/review'
@@ -122,7 +122,7 @@ export default function TransactionSheet() {
               placeholderTextColor={colors.border2}
               autoFocus={!editing}
               value={amount}
-              onChangeText={t => { setAmount(t.replace(/[^0-9.]/g, '')); setError('') }}
+              onChangeText={t => { setAmount(amountInput(t)); setError('') }}
             />
           </View>
 
@@ -215,7 +215,7 @@ export default function TransactionSheet() {
                       placeholder="0"
                       placeholderTextColor={colors.border2}
                       value={refund}
-                      onChangeText={t => setRefund(t.replace(/[^0-9.]/g, ''))}
+                      onChangeText={t => setRefund(amountInput(t))}
                     />
                   </View>
                 </View>

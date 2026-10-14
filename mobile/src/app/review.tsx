@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Button } from '@/components/Button'
 import { DragCategoryPicker, type DragPickerHandle } from '@/components/DragCategoryPicker'
 import { EmptyState } from '@/components/EmptyState'
+import { LoadingState } from '@/components/LoadingState'
 import { CategoryGlyph, Icon } from '@/components/Icon'
 import { Text } from '@/components/Text'
 import { buildMerchantMemory, isoDay, SUB_CATEGORIES, suggestFromHistory } from '@/engine'
@@ -132,7 +133,7 @@ export default function Review() {
       </View>
       {shown.length > 0 && <Text className="text-center text-[12px] text-ink-3">{shown.length} to file · suggestions come from your history</Text>}
 
-      {shown.length === 0 ? (
+      {!data ? <LoadingState /> : shown.length === 0 ? (
         <View className="flex-1 justify-center">
           <EmptyState mood="done" size={150} title="All caught up" body="Everything is filed. Your budget and freedom date are up to date." />
         </View>

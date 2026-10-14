@@ -9,6 +9,7 @@ import { colors } from '@/theme/colors'
 
 import { PrimaryButton } from './PrimaryButton'
 import { Text } from './Text'
+import { amountInput } from '@/lib/format'
 
 /** The frame every edit sheet shares: Cancel, a title, the form, and one save button. */
 export function SheetFrame({ title, children, saveLabel, onSave, canSave, busy, error }: {
@@ -68,7 +69,7 @@ export function MoneyRow({ label, note, value, onChange, first, suffix }: {
           placeholder="0"
           placeholderTextColor={colors.border2}
           value={value}
-          onChangeText={t => onChange(t.replace(/[^0-9.]/g, ''))}
+          onChangeText={t => onChange(amountInput(t))}
         />
         {suffix ? <Text className="font-mono text-[15px] text-ink-3">{suffix}</Text> : null}
       </View>

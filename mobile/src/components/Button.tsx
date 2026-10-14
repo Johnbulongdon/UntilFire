@@ -32,7 +32,7 @@ export function Button({ label, onPress, kind = 'primary', small, disabled, done
     onDarkQuiet: 'rgba(255,255,255,0.14)',
     danger: colors.card,
   }[kind]
-  const ink = { primary: '#FFFFFF', quiet: colors.ink, onDark: colors.deep, onDarkQuiet: '#FFFFFF', danger: colors.negInk }[kind]
+  const ink = { primary: colors.card, quiet: colors.ink, onDark: colors.deep, onDarkQuiet: '#FFFFFF', danger: colors.negInk }[kind]
   const lip = { primary: 'rgba(0,0,0,0.28)', quiet: colors.border2, onDark: 'rgba(0,0,0,0.22)', onDarkQuiet: 'rgba(0,0,0,0.25)', danger: colors.border2 }[kind]
   const outlined = kind === 'quiet' || kind === 'danger'
   return (

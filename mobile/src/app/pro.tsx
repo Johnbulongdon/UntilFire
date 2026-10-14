@@ -35,7 +35,9 @@ export default function Pro() {
   const [plan, setPlan] = useState<ProPlan>('yearly')
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => { loadProPrices().then(setPrices).catch(() => {}) }, [])
+  const [failed, setFailed] = useState(false)
+  const load = () => { setFailed(false); loadProPrices().then(setPrices).catch(() => setFailed(true)) }
+  useEffect(load, [])
   const price = (p: ProPlan) => prices.find(x => x.plan === p)?.price ?? FALLBACK[p]
   // In the App Store build, buy only at Apple's own price, never the website's fallback.
   const waiting = iapAvailable() && prices.length === 0
@@ -110,7 +112,9 @@ export default function Pro() {
       </ScrollView>
       {!data?.pro && (
         <View className="gap-3 px-6 pb-3">
-          <Button label={busy ? 'One moment…' : waiting ? "Loading Apple's prices…" : `Get Pro for ${price(plan)} ${plan === 'yearly' ? 'a year' : 'a month'}`} disabled={busy || waiting} onPress={buy} />
+          {waiting && failed
+            ? <Button label="Couldn't reach the App Store. Try again" onPress={load} />
+            : <Button label={busy ? 'One moment…' : waiting ? "Loading Apple's prices…" : `Get Pro for ${price(plan)} ${plan === 'yearly' ? 'a year' : 'a month'}`} disabled={busy || waiting} onPress={buy} />}
           <Button kind="quiet" label="Restore purchases" disabled={busy} onPress={restore} />
           <Text className="text-center text-[11px] leading-4 text-ink-3">
             Billed by Apple to your Apple ID. Renews automatically until you turn it off in Settings at least a day before it renews.

@@ -58,7 +58,7 @@ export default function Home() {
 function Hero({ result }: { result: Freedom }) {
   const yearsAway = result.years != null ? Math.ceil(result.years) : null
   const date = result.year == null ? '65+ years' : result.date ? result.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : String(result.year)
-  const sub = [yearsAway != null ? (yearsAway === 0 ? 'Now' : `${yearsAway} years away`) : null, result.ageAtFreedom != null ? `age ${result.ageAtFreedom}` : null].filter(Boolean).join(' · ')
+  const sub = [yearsAway != null ? (yearsAway === 0 ? 'Now' : yearsAway === 1 ? '1 year away' : `${yearsAway} years away`) : null, result.ageAtFreedom != null ? `age ${result.ageAtFreedom}` : null].filter(Boolean).join(' · ')
   return (
     <View {...useTourAnchor('hero')} style={{ borderRadius: 28, overflow: 'hidden', backgroundColor: TAB_COLOR.home }}>
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100">
@@ -128,7 +128,9 @@ function ThisMonth({ data }: { data: AccountData }) {
         <Text className="text-[16px] font-bold text-ink">This month</Text>
         <Text className={`font-mono text-[16px] ${left < 0 ? 'text-neg-ink' : 'text-ink'}`}>{money(Math.abs(left))} {left < 0 ? 'over' : 'left'}</Text>
       </View>
-      <ProgressTrack share={Math.min(1, total / budget)} />
+      <View className="h-2.5 overflow-hidden rounded-full bg-surface-2">
+        <View className={`h-full rounded-full ${left < 0 ? 'bg-neg' : total / budget > now.getDate() / days ? 'bg-warn' : 'bg-green'}`} style={{ width: `${Math.min(1, total / budget) * 100}%` }} />
+      </View>
       <View className="flex-row justify-between">
         <Text className="text-[13px] text-ink-2">Spent {money(total)} of {money(budget)}</Text>
         <Text className="text-[13px] text-ink-2">Day {now.getDate()} of {days}</Text>
@@ -179,7 +181,7 @@ function Actions({ signedIn }: { signedIn: boolean }) {
                 width: 60, height: 60, borderRadius: 30, backgroundColor: colors.green, alignItems: 'center', justifyContent: 'center',
                 borderBottomWidth: pressed ? 0 : 4, borderBottomColor: 'rgba(0,0,0,0.28)', marginTop: pressed ? 4 : 0,
               }}>
-                <Icon name={a.icon} fallback={a.fallback} size={24} color="#FFFFFF" />
+                <Icon name={a.icon} fallback={a.fallback} size={24} color={colors.card} />
               </View>
               <Text className="text-[13px] font-bold text-ink">{a.label}</Text>
             </>

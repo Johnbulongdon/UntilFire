@@ -34,3 +34,8 @@ export function moneyExact(usd: number): string {
 export function moneyIn(amount: number, currency: string): string {
   return `${sign(amount)}${currencySymbol(currency)}${Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
+
+/** What someone typed in an amount field, as a plain number string. A comma decimal ("12,50") is a decimal point, so it isn't saved as 1250. */
+export function amountInput(t: string): string {
+  return t.replace(',', '.').replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1')
+}
