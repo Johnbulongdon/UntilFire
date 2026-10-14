@@ -20,13 +20,16 @@ import { colors } from '@/theme/colors'
 export default function BudgetEdit() {
   const { session } = useAuth()
   const { data, refresh } = useAccount()
+  // Every category with a budget, the website's own keys included, so all of it can be edited here.
+  const [rows] = useState(() => [
+    ...expenseCategories(),
+    ...Object.entries(data?.budget ?? {}).filter(([k, v]) => v > 0 && !expenseCategories().some(c => c.key === k)).map(([k]) => categoryOf(k)),
+  ])
   const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(expenseCategories().map(c => [c.key, toInput(data?.budget[c.key])])))
+    Object.fromEntries(rows.map(c => [c.key, toInput(data?.budget[c.key])])))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  // Custom categories from the website keep their amounts; they're shown read-only below.
-  const custom = Object.entries(data?.budget ?? {}).filter(([k, v]) => v > 0 && !expenseCategories().some(c => c.key === k))
   const spent = new Map(monthSpend(data?.transactions ?? [], thisMonth()).categories.map(c => [c.key, c.usd]))
   // The website's budget helper (BudgetSetupModal): each category's average over the last three full months.
   const { averages, months } = useMemo(() => {
@@ -38,9 +41,9 @@ export default function BudgetEdit() {
   }, [data])
   const useAverages = () => {
     haptic.success()
-    setValues(v => ({ ...v, ...Object.fromEntries([...averages].filter(([k]) => expenseCategories().some(c => c.key === k)).map(([k, usd]) => [k, toInput(usd)])) }))
+    setValues(v => ({ ...v, ...Object.fromEntries([...averages].filter(([k]) => rows.some(c => c.key === k)).map(([k, usd]) => [k, toInput(usd)])) }))
   }
-  const total = Object.values(values).reduce((s, v) => s + fromInput(v), 0) + custom.reduce((s, [, v]) => s + v, 0)
+  const total = Object.values(values).reduce((s, v) => s + fromInput(v), 0)
 
   const save = async () => {
     if (!session) return
@@ -80,7 +83,7 @@ export default function BudgetEdit() {
             </Pressable>
           )}
           <View className="rounded-card border border-border bg-card px-4">
-            {expenseCategories().map((c, i) => (
+            {rows.map((c, i) => (
               <View key={c.key} className={`flex-row items-center gap-3 py-2.5 ${i > 0 ? 'border-t border-border' : ''}`}>
                 <CategoryGlyph cat={c} size={22} />
                 <View className="flex-1">
@@ -107,11 +110,6 @@ export default function BudgetEdit() {
               </View>
             ))}
           </View>
-          {custom.length > 0 && (
-            <Text className="mt-3 text-[12px] leading-5 text-ink-3">
-              Also in your budget from untilfire.com: {custom.map(([k, v]) => `${categoryOf(k).label} ${money(v)}`).join(', ')}. Edit those on the website.
-            </Text>
-          )}
           {error ? <Text className="mt-4 text-[14px] text-neg-ink">{error}</Text> : null}
         </ScrollView>
 

@@ -105,7 +105,7 @@ export default function TransactionSheet() {
                   onPress={() => { haptic.select(); setType(t); setCategory('') }}
                   className={`flex-1 items-center rounded-lg py-2 ${type === t ? 'bg-card' : ''}`}
                 >
-                  <Text className={`text-[14px] font-semibold ${type === t ? 'text-ink' : 'text-ink-2'}`}>{t === 'expense' ? 'Spent' : 'Received'}</Text>
+                  <Text className={`text-[14px] font-semibold ${type === t ? 'text-ink' : 'text-ink-2'}`}>{t === 'expense' ? 'Expense' : 'Income'}</Text>
                 </Pressable>
               ))}
             </View>

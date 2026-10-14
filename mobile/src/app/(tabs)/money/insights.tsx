@@ -94,7 +94,7 @@ export default function Insights() {
 
       <Card>
         <View className="flex-row items-center justify-between">
-          <Label>In and out</Label>
+          <Label>Income and expenses</Label>
           <View className="flex-row rounded-full bg-surface-2 p-0.5">
             {PERIODS.map(p => (
               <Pressable accessibilityRole="button" key={p} onPress={() => { haptic.select(); setPeriod(p) }} className={`rounded-full px-3 py-1 ${period === p ? 'bg-card' : ''}`}>
@@ -106,8 +106,8 @@ export default function Insights() {
         <View className="mt-4 h-32 flex-row items-end" style={{ gap: period === 12 ? 4 : 8 }}>
           {trend.map(t => (
             <View key={t.m} className="flex-1 flex-row items-end" style={{ gap: 2, height: '100%' }}>
-              <View className="flex-1 rounded-t bg-green" style={{ height: `${Math.max(1, (t.inn / peak) * 100)}%` }} />
-              <View className="flex-1 rounded-t bg-sun" style={{ height: `${Math.max(1, (t.out / peak) * 100)}%` }} />
+              <View className="flex-1 rounded-t bg-pos" style={{ height: `${Math.max(1, (t.inn / peak) * 100)}%` }} />
+              <View className="flex-1 rounded-t bg-ink-3" style={{ height: `${Math.max(1, (t.out / peak) * 100)}%` }} />
             </View>
           ))}
         </View>
@@ -117,8 +117,8 @@ export default function Insights() {
           ))}
         </View>
         <View className="mt-3 flex-row gap-4">
-          <View className="flex-row items-center gap-1.5"><View className="h-2 w-2 rounded-full bg-green" /><Text className="text-[13px] text-ink-2">In, avg {compactMoney(avgIn)}</Text></View>
-          <View className="flex-row items-center gap-1.5"><View className="h-2 w-2 rounded-full bg-sun" /><Text className="text-[13px] text-ink-2">Out, avg {compactMoney(avgOut)}</Text></View>
+          <View className="flex-row items-center gap-1.5"><View className="h-2 w-2 rounded-full bg-pos" /><Text className="text-[13px] text-ink-2">Income, avg {compactMoney(avgIn)}</Text></View>
+          <View className="flex-row items-center gap-1.5"><View className="h-2 w-2 rounded-full bg-ink-3" /><Text className="text-[13px] text-ink-2">Expenses, avg {compactMoney(avgOut)}</Text></View>
         </View>
         {avgIn > 0 && (
           <Text className="mt-2 text-[13px] text-ink-2">

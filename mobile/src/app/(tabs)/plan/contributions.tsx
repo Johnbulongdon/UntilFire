@@ -50,7 +50,7 @@ export default function Contributions() {
   const efShare = view.efTarget > 0 ? view.efBalance / view.efTarget : 0
 
   return (
-    <DetailScreen back="Plan" title="Invest" refreshing={loading} onRefresh={refresh}>
+    <DetailScreen back="Plan" title="Contributions" refreshing={loading} onRefresh={refresh}>
       {/* Simplified Oct 2026 QA: the amount, when, one button; the working is one tap away. */}
       <Card>
         <Label>{a.done ? 'Made this time' : `Put in by ${a.nextDate.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}`}</Label>
@@ -73,7 +73,7 @@ export default function Contributions() {
         {!view.budgetIsCustom && !a.done && (showHow || view.budget <= 0) && (
           <View className="mt-3 gap-1 border-t border-border pt-3">
             <Line label="Cash outside your emergency fund" value={money(a.cash)} />
-            {a.income > 0 && <Line label="Coming in before then" value={`+${money(a.income)}`} tone="pos" />}
+            {a.income > 0 && <Line label="Income before then" value={`+${money(a.income)}`} tone="pos" />}
             {a.committed > 0 && <Line label="Bills and day-to-day before then" value={`−${money(a.committed)}`} />}
             {!a.hasExpectedData && <Text className="mt-1 text-[12px] text-ink-3">Add bills and paydays in Money → Calendar so this counts what's already spoken for.</Text>}
           </View>

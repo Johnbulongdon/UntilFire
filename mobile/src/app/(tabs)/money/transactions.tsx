@@ -1,10 +1,10 @@
 import { router } from 'expo-router'
-import { Button } from '@/components/Button'
 import { useMemo, useState } from 'react'
 import { Alert, Modal, Pressable, RefreshControl, ScrollView, SectionList, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { AddButton } from '@/components/AddButton'
+import { Button } from '@/components/Button'
 import { CategoryGlyph } from '@/components/Icon'
 import { Text } from '@/components/Text'
 import { EmptyState } from '@/components/EmptyState'
@@ -265,9 +265,9 @@ function SelectBar({ count, sameMerchant, allShown, onPick, onCancel }: {
     <View className="absolute left-0 right-0 top-0 border-b border-border bg-ground px-5 pb-3 pt-2"
       style={{ shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 }}>
       <View className="flex-row items-center justify-between">
-        <Pressable accessibilityRole="button" hitSlop={10} onPress={onCancel}><Text className="text-[16px] font-semibold text-pos-ink">Cancel</Text></Pressable>
+        <Button small kind="quiet" label="Cancel" onPress={onCancel} />
         <Text accessibilityLiveRegion="polite" className="text-[16px] font-bold text-ink">{count === 0 ? 'Select transactions' : `${count} selected`}</Text>
-        <Pressable accessibilityRole="button" hitSlop={10} onPress={allShown}><Text className="text-[16px] font-semibold text-pos-ink">All</Text></Pressable>
+        <Button small kind="quiet" label="Select all" onPress={allShown} />
       </View>
       <View className="mt-3 flex-row items-center gap-3">
         {sameMerchant && (

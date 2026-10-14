@@ -91,8 +91,8 @@ export default function Bills() {
       <DetailScreen back="Money" title="Calendar" subtitle="Bills and paydays" refreshing={loading} onRefresh={refresh}>
         <Card>
           <View className="flex-row">
-            <View className="flex-1"><Label>Going out, 30 days</Label><Text className="mt-1 font-mono text-[22px] text-ink">{money(out)}</Text></View>
-            <View className="flex-1"><Label>Coming in</Label><Text className="mt-1 font-mono text-[22px] text-pos-ink">{money(inn)}</Text></View>
+            <View className="flex-1"><Label>Expenses, next 30 days</Label><Text className="mt-1 font-mono text-[22px] text-ink">{money(out)}</Text></View>
+            <View className="flex-1"><Label>Income</Label><Text className="mt-1 font-mono text-[22px] text-pos-ink">{money(inn)}</Text></View>
           </View>
         </Card>
 
@@ -201,7 +201,7 @@ function MonthView({ data }: { data: AccountData }) {
                 <Text className={`text-[14px] ${on ? 'font-bold text-white' : iso < today ? 'text-ink-3' : 'text-ink'}`}>{i + 1}</Text>
                 {evs.length > 0 && (
                   <View className="mt-0.5 flex-row gap-0.5">
-                    {evs.slice(0, 3).map((e, k) => <View key={k} className={`h-1 w-1 rounded-full ${on ? 'bg-card' : e.type === 'income' ? 'bg-green' : 'bg-sun'}`} />)}
+                    {evs.slice(0, 3).map((e, k) => <View key={k} className={`h-1 w-1 rounded-full ${on ? 'bg-card' : e.type === 'income' ? 'bg-pos' : 'bg-ink-3'}`} />)}
                   </View>
                 )}
               </View>
@@ -269,9 +269,9 @@ function ListView({ events, catOf, tickable, busyId, onTick }: { events: BillEve
                     {e.type === 'income' ? '+' : ''}{money(Math.abs(e.amount))}
                   </Text>
                   {tickable.has(`${e.billId}@${e.iso}`) && (
-                    <Pressable accessibilityRole="button" hitSlop={8} disabled={busyId === e.billId} onPress={() => { haptic.select(); onTick(e.billId) }}>
-                      <Text className="mt-0.5 text-[13px] font-bold text-pos-ink">{busyId === e.billId ? 'Saving…' : e.type === 'income' ? 'Mark received' : 'Mark paid'}</Text>
-                    </Pressable>
+                    <Button small kind="quiet" style={{ marginTop: 4 }} disabled={busyId === e.billId}
+                      label={busyId === e.billId ? 'Saving…' : e.type === 'income' ? 'Mark received' : 'Mark paid'}
+                      onPress={() => { haptic.select(); onTick(e.billId) }} />
                   )}
                 </View>
               </Pressable>
