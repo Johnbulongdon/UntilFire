@@ -9,6 +9,7 @@ import { Button } from '@/components/Button'
 import { replayTour } from '@/components/GuidedTour'
 import { PersonalityAvatar } from '@/components/PersonalityAvatar'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { Icon } from '@/components/Icon'
 import { Card, Label, Screen } from '@/components/Screen'
 import { Text } from '@/components/Text'
 import { CURRENCY_NAMES } from '@/engine'
@@ -75,18 +76,18 @@ export default function Profile() {
   const open = (url: string) => { WebBrowser.openBrowserAsync(url, { controlsColor: colors.green }).catch(() => {}) }
 
   return (
-    <Screen tab="profile" title="Profile">
+    <Screen tab="profile" flat hideTitle title="Profile">
       {/* One type only (V2): the quiz result once taken, else the type from your answers. */}
       <Pressable accessibilityRole="button" accessibilityLabel={`Your FIRE type: ${quiz ? quiz.name : type.name}. ${quiz ? 'Retake the quiz' : 'Take the quiz'}`} onPress={() => { haptic.tick(); router.push('/fire-quiz') }}
         className="flex-row items-center gap-4 active:opacity-70">
         {quiz ? (
-          <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: TAB_COLOR.profile, alignItems: 'center', justifyContent: 'center' }}>
-            <Text className="text-[28px]">{getTypeMeta(quiz.code).emoji}</Text>
+          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: TAB_COLOR.profile, alignItems: 'center', justifyContent: 'center' }}>
+            <Text className="text-[36px]">{getTypeMeta(quiz.code).emoji}</Text>
           </View>
-        ) : <PersonalityAvatar profile={type} size={56} />}
+        ) : <PersonalityAvatar profile={type} size={72} />}
         <View className="flex-1">
           <Text className="text-[12px] font-bold uppercase tracking-[1.5px] text-ink-3">Your FIRE type</Text>
-          <Text style={{ color: tabInk('profile') }} className="font-display text-[22px] font-bold">{quiz ? quiz.name : type.name}</Text>
+          <Text style={{ color: tabInk('profile') }} className="font-display text-[30px] font-bold leading-9 tracking-tight">{quiz ? quiz.name : type.name}</Text>
           <Text className="text-[13px] text-ink-2">{quiz ? 'Retake the quiz' : 'Take the 8-question quiz'}</Text>
         </View>
         <Text className="text-[18px] text-ink-3">›</Text>
@@ -95,14 +96,14 @@ export default function Profile() {
       {session ? (
         <Card>
           <Label>Account</Label>
-          <Row label="Email" value={session.user.email ?? ''} first />
-          <Row label="UntilFire Pro" value={data?.pro ? 'On' : 'See plans'} onPress={() => router.push('/pro')} />
-          <Row label="Name" value={data?.displayName || 'Add'} onPress={() => router.push('/name')} />
-          <Row label="Household" value="" onPress={() => router.push('/household')} />
+          <Row icon="envelope.fill" fallback="@" label="Email" value={session.user.email ?? ''} first />
+          <Row icon="star.fill" fallback="★" label="UntilFire Pro" value={data?.pro ? 'On' : 'See plans'} onPress={() => router.push('/pro')} />
+          <Row icon="person.fill" fallback="☺" label="Name" value={data?.displayName || 'Add'} onPress={() => router.push('/name')} />
+          <Row icon="house.fill" fallback="⌂" label="Household" value="" onPress={() => router.push('/household')} />
           {/* Its reward is a longer web trial, which App Review reads as paying outside Apple (3.1.1); hidden in the App Store build. */}
-          {!nativeBuild && <Row label="Give a month, get a month" value="" onPress={() => router.push('/give-a-month')} />}
-          <Row label="Currency" value={data ? `${currencyFlag(data.currency)}  ${CURRENCY_NAMES[data.currency] ?? data.currency}` : '…'} onPress={() => router.push('/currency')} />
-          <Row label="Sign out" value="" onPress={() => {
+          {!nativeBuild && <Row icon="gift.fill" fallback="🎁" label="Give a month, get a month" value="" onPress={() => router.push('/give-a-month')} />}
+          <Row icon="dollarsign.circle.fill" fallback="$" label="Currency" value={data ? `${currencyFlag(data.currency)}  ${CURRENCY_NAMES[data.currency] ?? data.currency}` : '…'} onPress={() => router.push('/currency')} />
+          <Row icon="rectangle.portrait.and.arrow.right" fallback="↩" label="Sign out" value="" onPress={() => {
             haptic.warn()
             Alert.alert('Sign out?', 'Your onboarding answers stay on this phone.', [
               { text: 'Cancel', style: 'cancel' },
@@ -138,7 +139,8 @@ export default function Profile() {
       <Card>
         <Label>Settings</Label>
         {session && (
-          <View className="flex-row items-center justify-between py-3">
+          <View className="flex-row items-center justify-between gap-3 py-3">
+            <RowIcon name="bell.fill" fallback="!" />
             <View className="flex-1 pr-3">
               <Text className="text-[15px] text-ink">Today reminder</Text>
               <Text className="text-[12px] text-ink-3">9pm on days you haven't finished</Text>
@@ -153,7 +155,8 @@ export default function Profile() {
           </View>
         )}
         {session && (
-          <View className="flex-row items-center justify-between border-t border-border py-3">
+          <View className="flex-row items-center justify-between gap-3 border-t border-border py-3">
+            <RowIcon name="calendar" fallback="▦" />
             <View className="flex-1 pr-3">
               <Text className="text-[15px] text-ink">Bill and payday reminders</Text>
               <Text className="text-[12px] text-ink-3">The evening before a bill, the morning of payday</Text>
@@ -168,7 +171,8 @@ export default function Profile() {
           </View>
         )}
         {lockInfo.ok && (
-          <View className="flex-row items-center justify-between border-t border-border py-3">
+          <View className="flex-row items-center justify-between gap-3 border-t border-border py-3">
+            <RowIcon name="faceid" fallback="◉" />
             <View className="flex-1 pr-3">
               <Text className="text-[15px] text-ink">Lock with {lockInfo.label}</Text>
               <Text className="text-[12px] text-ink-3">Asks each time you open the app</Text>
@@ -176,8 +180,8 @@ export default function Profile() {
             <Switch accessibilityLabel={`Lock with ${lockInfo.label}`} value={lockOn} onValueChange={toggleLock} trackColor={{ true: colors.green, false: colors.border2 }} />
           </View>
         )}
-        <Row label="Replay onboarding" value="" onPress={() => editPlan(true)} />
-        <Row label="Show the tour" value="" onPress={async () => { await replayTour(); router.navigate('/') }} />
+        <Row icon="arrow.counterclockwise" fallback="↺" label="Replay onboarding" value="" onPress={() => editPlan(true)} />
+        <Row icon="map.fill" fallback="◎" label="Show the tour" value="" onPress={async () => { await replayTour(); router.navigate('/') }} />
         {/* A design comparison, not for App Review or customers. */}
         {__DEV__ && <Row label="Character preview" value="" onPress={() => router.push('/character-lab')} />}
       </Card>
@@ -185,18 +189,18 @@ export default function Profile() {
       {session && (
         <Card>
           <Label>Your data</Label>
-          <Row label="Export transactions" value={exporting === 'csv' ? '' : 'CSV'} onPress={() => doExport('csv')} first busy={exporting === 'csv'} />
-          <Row label="Export everything" value={exporting === 'json' ? '' : 'JSON'} onPress={() => doExport('json')} busy={exporting === 'json'} />
+          <Row icon="tablecells" fallback="▦" label="Export transactions" value={exporting === 'csv' ? '' : 'CSV'} onPress={() => doExport('csv')} first busy={exporting === 'csv'} />
+          <Row icon="square.and.arrow.up" fallback="↑" label="Export everything" value={exporting === 'json' ? '' : 'JSON'} onPress={() => doExport('json')} busy={exporting === 'json'} />
           <Text className="mt-1 text-[12px] text-ink-3">Free, any time, whether or not you're on Pro.</Text>
         </Card>
       )}
 
       <Card>
         <Label>Help</Label>
-        <Row label="Send feedback" value="" onPress={() => router.push('/feedback')} first />
-        <Row label="Email support" value="hello@untilfire.com" onPress={() => Linking.openURL('mailto:hello@untilfire.com')} />
-        <Row label="Privacy policy" value="" onPress={() => open('https://www.untilfire.com/privacy')} />
-        <Row label="Terms of use" value="" onPress={() => open('https://www.untilfire.com/terms')} />
+        <Row icon="bubble.left.fill" fallback="✎" label="Send feedback" value="" onPress={() => router.push('/feedback')} first />
+        <Row icon="questionmark.circle.fill" fallback="?" label="Email support" value="hello@untilfire.com" onPress={() => Linking.openURL('mailto:hello@untilfire.com')} />
+        <Row icon="lock.fill" fallback="🔒" label="Privacy policy" value="" onPress={() => open('https://www.untilfire.com/privacy')} />
+        <Row icon="doc.text.fill" fallback="≡" label="Terms of use" value="" onPress={() => open('https://www.untilfire.com/terms')} />
       </Card>
 
       {session ? (
@@ -214,9 +218,21 @@ export default function Profile() {
   )
 }
 
-function Row({ label, value, onPress, first, busy }: { label: string; value: string; onPress?: () => void; first?: boolean; busy?: boolean }) {
+type SymbolName = Parameters<typeof Icon>[0]['name']
+
+/** A settings row's icon: white on Profile's colour, in a small rounded square, as iOS Settings does. */
+function RowIcon({ name, fallback }: { name: SymbolName; fallback: string }) {
+  return (
+    <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: TAB_COLOR.profile, alignItems: 'center', justifyContent: 'center' }}>
+      <Icon name={name} fallback={fallback} size={17} color="#FFFFFF" />
+    </View>
+  )
+}
+
+function Row({ label, value, onPress, first, busy, icon, fallback }: { label: string; value: string; onPress?: () => void; first?: boolean; busy?: boolean; icon?: SymbolName; fallback?: string }) {
   const body = (
     <View className={`flex-row items-center justify-between gap-3 py-3 ${first ? '' : 'border-t border-border'}`}>
+      {icon ? <RowIcon name={icon} fallback={fallback ?? ''} /> : null}
       <Text className="text-[15px] text-ink">{label}</Text>
       <View className="flex-1 flex-row items-center justify-end gap-1.5">
         {busy ? <ActivityIndicator color={colors.green} /> : <Text numberOfLines={1} className="text-[14px] text-ink-2">{value}</Text>}
