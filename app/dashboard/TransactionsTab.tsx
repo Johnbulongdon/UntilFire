@@ -1768,7 +1768,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0), [transactions, currentMonth, rates]);
   const reviewCounts = useMemo(() => {
     const expenses = monthTxns.filter((t) => t.transaction_type === "expense");
-    const done = expenses.filter((t) => t.category && t.category !== "other" && t.tags?.some((g) => g === "need" || g === "want")).length;
+    // "Other" counts once tagged: the app files a transaction nobody recognises as Other (Oct 2026).
+    const done = expenses.filter((t) => t.category && t.tags?.some((g) => g === "need" || g === "want")).length;
     return { filed: done, need: expenses.length - done };
   }, [monthTxns]);
 
@@ -1845,7 +1846,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       for (const tx of needsAi) {
         const h = suggestFromHistory(tx, memory);
         const fileIt = !!h?.category && (unfiled(tx) || (h.category === tx.category && !tx.sub_category && !!h.sub_category));
-        if (!fileIt && tagged(tx) && !unfiled(tx)) continue;
+        if (!fileIt && tagged(tx)) continue;
         const was = (tx.tags?.includes("need") ? "need" : tx.tags?.includes("want") ? "want" : undefined) as "need" | "want" | undefined;
         const item: ReviewItem = {
           tx, suggestion: h?.classification ?? was ?? "want", wasTag: was,

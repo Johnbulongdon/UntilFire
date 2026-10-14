@@ -22,7 +22,8 @@ import { addDays } from '@/lib/today'
 import { useAccount, type Transaction } from '@/state/account'
 import { colors } from '@/theme/colors'
 
-type Filing = { category: string; sub_category: string | null; need: 'need' | 'want'; fromHistory: number }
+// chosen: the category was picked, by the person or their history, so "Other" can be filed too.
+type Filing = { category: string; sub_category: string | null; need: 'need' | 'want'; fromHistory: number; chosen: boolean }
 const TICK_MS = 150
 
 const dayLabel = (iso: string) => {
@@ -58,7 +59,7 @@ export default function Review() {
     const suggest = (t: Transaction): Filing => {
       const s = suggestFromHistory(t, memory)
       const category = s?.category ?? (t.category && t.category !== 'other' ? t.category : 'other')
-      return { category, sub_category: s?.sub_category ?? t.sub_category, need: s?.classification ?? defaultNeed(category), fromHistory: s?.seen ?? 0 }
+      return { category, sub_category: s?.sub_category ?? t.sub_category, need: s?.classification ?? defaultNeed(category), fromHistory: s?.seen ?? 0, chosen: category !== 'other' || !!s?.category }
     }
     const pending = all.filter(t => t.transaction_type === 'expense' && inMonths(t) && !isFiled(t))
     return { pending: [...pending].sort((a, b) => b.date.localeCompare(a.date)), suggest }
@@ -75,7 +76,7 @@ export default function Review() {
   const shown = useMemo(() => pending.filter(t => !gone.has(t.id)), [pending, gone])
   const filingOf = (t: Transaction): Filing => filings.get(t.id) ?? suggest(t)
   const set = (id: string, patch: Partial<Filing>) => setOverrides(o => ({ ...o, [id]: { ...o[id], ...patch } }))
-  const ready = shown.filter(t => filingOf(t).category !== 'other')
+  const ready = shown.filter(t => filingOf(t).chosen)
   const hide = (ids: string[], on: boolean) => setGone(g => { const n = new Set(g); ids.forEach(id => (on ? n.add(id) : n.delete(id))); return n })
 
   // Hides the rows straight away and saves behind them; a failure brings them back.
@@ -93,7 +94,7 @@ export default function Review() {
     })
   }
   const approveOne = (t: Transaction) => {
-    if (filingOf(t).category === 'other') { haptic.warn(); setPicking(t); return }
+    if (!filingOf(t).chosen) { haptic.warn(); setPicking(t); return }
     haptic.select()
     setTicked(s => new Set(s).add(t.id))
     setTimeout(() => approve([t]), TICK_MS)
@@ -112,7 +113,7 @@ export default function Review() {
     if (phase !== 'end') { picker.current?.move(x, y); return }
     const r = picker.current?.end()
     setDragging(false)
-    if (r) { haptic.success(); latest.current.set(t.id, { category: r.category, sub_category: r.sub, need: defaultNeed(r.category) }) }
+    if (r) { haptic.success(); latest.current.set(t.id, { category: r.category, sub_category: r.sub, need: defaultNeed(r.category), chosen: true }) }
   }, [])
 
   // Newest day first, each day's header followed by its rows.
@@ -156,8 +157,8 @@ export default function Review() {
       </View>
 
       <DragCategoryPicker ref={picker} open={dragging} />
-      <CategorySheet t={picking} current={picking ? filingOf(picking).category : null} onClose={() => setPicking(null)}
-        onSave={(key, sub) => { if (picking) set(picking.id, { category: key, sub_category: sub, need: defaultNeed(key) }); setPicking(null) }} />
+      <CategorySheet t={picking} current={picking && filingOf(picking).chosen ? filingOf(picking).category : null} onClose={() => setPicking(null)}
+        onSave={(key, sub) => { if (picking) set(picking.id, { category: key, sub_category: sub, need: defaultNeed(key), chosen: true }); setPicking(null) }} />
     </SafeAreaView>
   )
 }
@@ -185,7 +186,7 @@ const SwipeRow = memo(function SwipeRow(p: RowProps) {
 
 function Row({ t, f, edited, ticked, onCategory, onNeed, onApprove, onDrag }: RowProps) {
   const cat = categoryOf(f.category)
-  const unpicked = f.category === 'other'
+  const unpicked = !f.chosen
   // A tap opens the sheet; holding then dragging opens the drag picker.
   const pill = useMemo(() => Gesture.Exclusive(
     Gesture.Pan().activateAfterLongPress(300)
@@ -237,7 +238,7 @@ function Row({ t, f, edited, ticked, onCategory, onNeed, onApprove, onDrag }: Ro
 function CategorySheet({ t, current, onClose, onSave }: { t: Transaction | null; current: string | null; onClose: () => void; onSave: (key: string, sub: string | null) => void }) {
   const [choice, setChoice] = useState<string | null>(null)
   const [sub, setSub] = useState<string | null>(null)
-  const picked = choice ?? (current !== 'other' ? current : null)
+  const picked = choice ?? current
   const subs = picked ? SUB_CATEGORIES[picked] : undefined
   const close = () => { setChoice(null); setSub(null); onClose() }
   return (
@@ -270,7 +271,8 @@ function CategorySheet({ t, current, onClose, onSave }: { t: Transaction | null;
             ))}
           </ScrollView>
         )}
-        <View className="px-5 pb-3 pt-2">
+        <View className="gap-2 px-5 pb-3 pt-2">
+          {picked !== 'other' && <Button small kind="quiet" label="Don't remember? File as Other" onPress={() => { haptic.select(); onSave('other', null); setChoice(null); setSub(null) }} />}
           <Button label="Save" disabled={!picked} onPress={() => { if (picked) { haptic.select(); onSave(picked, sub); setChoice(null); setSub(null) } }} />
         </View>
       </SafeAreaView>
