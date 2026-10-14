@@ -5,11 +5,11 @@ import HomeClient from "./HomeClient";
 export const metadata = {
   title: 'UntilFire — FIRE Calculator & Financial Freedom Planner',
   description:
-    'UntilFire helps you estimate your FIRE number and freedom date from your income, spending and savings. Explore your path to financial independence, free with no login.',
+    'Use UntilFire’s free FIRE calculator to estimate your FIRE number and freedom date from your income, spending and savings. No login required.',
   alternates: { canonical: 'https://www.untilfire.com/' },
   openGraph: {
     title: 'UntilFire — FIRE Calculator & Financial Freedom Planner',
-    description: 'Estimate your FIRE number and freedom date with UntilFire. Free financial independence planning, no login required.',
+    description: 'Use UntilFire’s free FIRE calculator to estimate your FIRE number and freedom date. Explore when work could become optional, no login required.',
     siteName: 'UntilFire',
     url: 'https://www.untilfire.com/',
     type: 'website',
@@ -17,7 +17,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'UntilFire — FIRE Calculator & Financial Freedom Planner',
-    description: 'Estimate your FIRE number and freedom date with UntilFire. Free financial independence planning, no login required.',
+    description: 'Use UntilFire’s free FIRE calculator to estimate your FIRE number and freedom date. Explore when work could become optional, no login required.',
     images: ['https://www.untilfire.com/opengraph-image'],
   },
 }
@@ -51,11 +51,11 @@ const homeFaqs = [
   },
   {
     q: "What is my FIRE number?",
-    a: "Your FIRE number is the portfolio size that can fund your lifestyle indefinitely at a safe withdrawal rate. Multiply your expected annual expenses by 25 for a quick estimate, or run the calculator above for a number adjusted to your city, income, and savings rate.",
+    a: "Your FIRE number is an estimate of the invested portfolio needed to cover your expected annual spending at a chosen withdrawal rate. At 4%, multiply spending by 25. This is a starting point, not a guarantee: retirement length, taxes, fees, inflation and market returns can change what you need.",
   },
   {
     q: "What is a freedom date?",
-    a: "Your freedom date is the year you could stop working for money because your investments cover your expenses. It moves earlier when you raise your savings rate, lower your spending, or grow your income — and UntilFire shows you exactly which move brings it closer.",
+    a: "Your freedom date is the estimated year your investments could support your expected spending. UntilFire lets you explore how changes to saving, spending or income could move that date. It is a projection based on assumptions, not a promised retirement year.",
   },
   {
     q: "What are Coast, Barista, Lean, and Fat FIRE?",
@@ -81,37 +81,19 @@ export default function Home() {
         <div style={{ maxWidth: 980, margin: "0 auto", padding: "56px 24px 72px" }}>
           <p style={seoHeading}>Finance your freedom</p>
           <h2 style={{ fontFamily: "'Instrument Serif', Georgia, 'Times New Roman', serif", fontSize: "clamp(32px, 4.6vw, 46px)", fontWeight: 400, lineHeight: 1.12, letterSpacing: "-0.02em", color: "var(--uf-ink)", margin: "0 0 16px" }}>
-            FIRE Calculator — Find Your Freedom Date and FIRE Number
+            Understand your FIRE estimate
           </h2>
           <p style={{ fontSize: 18, lineHeight: 1.8, color: "var(--uf-ink-2)", margin: "0 0 16px", maxWidth: 720 }}>
-            UntilFire is a free FIRE calculator and personal finance planner for anyone chasing financial
-            independence and early retirement. Enter your income, spending, and savings, and we&apos;ll show your{" "}
-            <strong style={{ color: "var(--uf-teal)" }}>FIRE number</strong>, your{" "}
-            <strong style={{ color: "var(--uf-teal)" }}>freedom date</strong>, and the single move that brings early
-            retirement closer — no account needed.
+            Your <strong style={{ color: "var(--uf-teal)" }}>FIRE number</strong> estimates the investments needed
+            to cover your spending. Your <strong style={{ color: "var(--uf-teal)" }}>freedom date</strong> estimates
+            when you could reach it. Use the free calculator above to explore your own numbers, without an account.
           </p>
           <p style={{ fontSize: 16, lineHeight: 1.8, color: "var(--uf-ink-2)", margin: "0 0 32px", maxWidth: 720 }}>
-            Most calculators stop at a number. UntilFire does it with you: a clear path, a next move, and continuity
-            toward work optionality — built on the same 25× rule and 4% safe withdrawal math the FIRE community trusts.
+            The 25× rule is a starting point: $50,000 in annual spending gives a $1.25 million target at a 4%
+            withdrawal rate. It does not guarantee your money will last. Review the assumptions in the{" "}
+            <Link href="/calculators/4-percent-rule" style={{ color: "var(--uf-green)", fontWeight: 700 }}>4% rule guide</Link>
+            {" "}before treating an estimate as a retirement plan.
           </p>
-
-          {/* How it works */}
-          <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-ink)", letterSpacing: "-0.03em", margin: "0 0 18px" }}>
-            How the FIRE calculator works
-          </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, marginBottom: 40 }}>
-            {[
-              { n: "1", t: "Tell us your numbers", d: "Income, monthly spending or savings, and current net worth. Location and age are optional." },
-              { n: "2", t: "See your freedom date", d: "We estimate your FIRE number with the 25× rule and project the year work becomes optional." },
-              { n: "3", t: "Find your next move", d: "See how saving more, spending less, or earning more pulls your retirement date earlier." },
-            ].map((s) => (
-              <div key={s.n} style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "20px 18px" }}>
-                <div style={{ width: 28, height: 28, borderRadius: 999, background: "rgba(98,250,227,0.12)", color: "var(--uf-teal)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 16, marginBottom: 12 }}>{s.n}</div>
-                <h3 style={{ fontSize: 18, color: "var(--uf-ink)", margin: "0 0 8px" }}>{s.t}</h3>
-                <p style={{ margin: 0, fontSize: 16, color: "var(--uf-ink-2)", lineHeight: 1.7 }}>{s.d}</p>
-              </div>
-            ))}
-          </div>
 
           {/* FIRE calculators */}
           <h2 style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-ink)", letterSpacing: "-0.03em", margin: "0 0 18px" }}>
