@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { Pressable, View } from 'react-native'
 
 import { LoadingState } from '@/components/LoadingState'
+import { RecurringCard } from '@/components/RecurringCard'
+import { useFreedom } from '@/state/freedom'
 import { DetailScreen } from '@/components/DetailScreen'
 import { Card, Label } from '@/components/Screen'
 import { CategoryGlyph } from '@/components/Icon'
@@ -18,6 +20,7 @@ const PERIODS = [3, 6, 12] as const
 /** The website's Insights: one month explained, then spending and income over 3, 6 or 12 months. */
 export default function Insights() {
   const { data, loading, refresh } = useAccount()
+  const freedom = useFreedom()
   const [period, setPeriod] = useState<(typeof PERIODS)[number]>(6)
   const month = thisMonth()
   const today = isoDay(new Date())
@@ -87,6 +90,8 @@ export default function Insights() {
         )}
       </Card>
 
+      <RecurringCard data={data} freedom={freedom} />
+
       <Card>
         <View className="flex-row items-center justify-between">
           <Label>In and out</Label>
@@ -121,6 +126,7 @@ export default function Insights() {
           </Text>
         )}
       </Card>
+
     </DetailScreen>
   )
 }

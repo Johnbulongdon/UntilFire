@@ -9,6 +9,7 @@ import { FreedomLineChart } from '@/components/FreedomLineChart'
 import { GuidedTour } from '@/components/GuidedTour'
 import { useTourAnchor } from '@/components/tour-anchors'
 import { HouseholdCard } from '@/components/HouseholdCard'
+import { RecurringTeaser } from '@/components/RecurringCard'
 import { Icon } from '@/components/Icon'
 import { ProgressTrack, Screen } from '@/components/Screen'
 import { Sunny } from '@/components/Sunny'
@@ -46,6 +47,7 @@ export default function Home() {
       {data && <SavingsGap data={data} />}
       <Actions signedIn={!!session} />
       {data && <ThisMonth data={data} />}
+      {data && <RecurringTeaser data={data} freedom={result} />}
       {data && <NextGoal data={data} />}
       {data && <HouseholdCard />}
       <GuidedTour />
