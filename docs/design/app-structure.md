@@ -39,7 +39,8 @@ Money                         actual finances and operational planning
   ├ Income (salary to take-home, pension before tax, employer money; D-59)
   ├ Net Worth
   ├ Debts
-  └ Insights
+  ├ Insights
+  └ Offers                    where to keep your money: partner savings, bank, brokerage (D-81)
 
 Plan                          long-term projections and scenarios
   ├ Freedom Date

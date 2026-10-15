@@ -299,8 +299,8 @@ export function trackFireTypeCtaClicked(input: { fireTypeCode: string; source?: 
 }
 
 export function trackHysaEmptyStateCtaClicked(input: {
-  cta: 'learn_more' | 'connect_account';
-  destination: 'apy_calculator' | 'plaid_connect';
+  cta: 'learn_more' | 'connect_account' | 'see_offers';
+  destination: 'apy_calculator' | 'plaid_connect' | 'offers';
   placement?: 'assets_empty_state';
 }) {
   const props: HysaEmptyStateCtaClickedProperties = withVersion({

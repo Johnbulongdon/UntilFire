@@ -8,6 +8,12 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-15
 
+### Dashboard
+- New: Money → Offers, "Where to keep your money": savings, bank and
+  brokerage accounts UntilFire lists, each with its rate, any current bonus
+  and a line saying who earns from the link (D-81). Admin → Offers adds,
+  edits, shows and hides offers and counts clicks.
+
 ### iOS app (in development)
 - Fix: Home no longer says you'd be free sooner without your rent or other
   essentials. The line only picks optional repeating payments, and the

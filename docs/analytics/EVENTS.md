@@ -35,7 +35,7 @@ funnel_landing_viewed
                → funnel_fire_type_shared    (optional, on share action)
                → funnel_fire_type_cta_clicked → rejoins primary funnel
 
-  → [dashboard experiment] funnel_hysa_empty_state_cta_clicked (cta=learn_more|connect_account)
+  → [dashboard experiment] funnel_hysa_empty_state_cta_clicked (cta=learn_more|connect_account|see_offers)
 ```
 
 `step_id=currency` is a tombstone: an earlier flow had a standalone currency-selection
@@ -355,8 +355,8 @@ client-side experience without double-counting conversions.
 
 - **Where**: `app/dashboard/PlaidConnect.tsx`, only in the Assets empty state card when no bank is connected yet.
 - **Properties**:
-  - `cta` — `learn_more` | `connect_account`.
-  - `destination` — `apy_calculator` | `plaid_connect`.
+  - `cta` — `learn_more` | `connect_account` | `see_offers` (Money → Offers, D-81).
+  - `destination` — `apy_calculator` | `plaid_connect` | `offers`.
   - `placement` — `assets_empty_state`.
 
 ## Engagement loop (post-auth)
