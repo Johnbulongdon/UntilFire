@@ -347,9 +347,11 @@ async function stateGeographies(year: number, key: string, fips: string, moverVa
   // to pay the same — Toledo and Palo Alto both show a 0% gap, and a range of
   // zero width is not a range.
   const moeVar = moverVar ? moverVar.replace(/E$/, "M") : null;
-  // Income bands go last and are read from the end of each row, so their
-  // position does not depend on whether the mover columns were asked for.
+  // Income bands go last among the variables. Census then appends the
+  // geography codes (state and place, or state and county) to every row, so
+  // they are read by position from the variable list, not from the row's end.
   const get = `NAME,${MEDIAN_GROSS_RENT}${moverVar ? `,${moverVar}` : ""}${moeVar ? `,${moeVar}` : ""},${INCOME_BANDS.join(",")}`;
+  const bandsAt = get.split(",").length - INCOME_BANDS.length;
   const [places, counties] = await Promise.all([
     censusRows(year, key, { get, for: "place:*", in: `state:${fips}` }),
     censusRows(year, key, { get, for: "county:*", in: `state:${fips}` }),
@@ -370,7 +372,7 @@ async function stateGeographies(year: number, key: string, fips: string, moverVa
     // the incorporated city is the one anyone means.
     if (seen.has(bare)) continue;
     seen.add(bare);
-    placeList.push({ bare, rent, marketRent, moe: moeValue, geo: String(name), incomeBands: bandsFrom(row.slice(-5)) });
+    placeList.push({ bare, rent, marketRent, moe: moeValue, geo: String(name), incomeBands: bandsFrom(row.slice(bandsAt, bandsAt + INCOME_BANDS.length)) });
   }
 
   const byCounty = new Map<string, PlaceHit>();
@@ -383,7 +385,7 @@ async function stateGeographies(year: number, key: string, fips: string, moverVa
       marketRent: moverVar ? rentFrom(mover) : null,
       moe: moeVar ? moeFrom(moe) : null,
       geo: String(name),
-      incomeBands: bandsFrom(row.slice(-5)),
+      incomeBands: bandsFrom(row.slice(bandsAt, bandsAt + INCOME_BANDS.length)),
     });
   }
 
