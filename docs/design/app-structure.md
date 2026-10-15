@@ -39,7 +39,8 @@ Money                         actual finances and operational planning
   ├ Income (salary to take-home, pension before tax, employer money; D-59)
   ├ Net Worth
   ├ Debts
-  └ Insights
+  ├ Insights
+  └ Offers                    where to keep your money: partner savings, bank, brokerage (D-81)
 
 Plan                          long-term projections and scenarios
   ├ Freedom Date
@@ -186,7 +187,7 @@ browser.
   map and cards as public `/explore`, at your plan's numbers, lifestyle and tax
   in retirement. "Plan for" a city sets the retirement city that Freedom
   date's Retire in row holds; the Live in row beside it is today's city, the
-  baseline a retirement city is priced against (D-81).
+  baseline a retirement city is priced against (D-82).
 - **Citizenship asks for your passport first** (D-46), then shows its score and
   what it means as rows; other passports are a sortable list.
 - **Learn starts from your stage** (D-47) and its tools open Plan pages, not

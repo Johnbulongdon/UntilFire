@@ -28,7 +28,7 @@ export interface Freedom {
   bridge: { needed: number; reachable: number; locked: number; years: number } | null
   /** The engine's inputs, so what-ifs change one thing and run the same maths. */
   inputs: Inputs | null
-  /** A planned move to the retirement city (D-81): the year and where, for the chart's flag. */
+  /** A planned move to the retirement city (D-82): the year and where, for the chart's flag. */
   move: { year: number; city: string; flag: string } | null
 }
 
@@ -36,7 +36,7 @@ export interface Freedom {
  * The projection inputs exactly as the dashboard builds them (projectionInputs
  * in app/dashboard/page.tsx): balances with connected accounts replacing typed
  * ones, debts by the same rule, mortgages with their terms, and the target from
- * the retirement goal, then today's spending moved to a retirement city (D-81),
+ * the retirement goal, then today's spending moved to a retirement city (D-82),
  * then today's spending; an earlier move reprices spending from its year.
  */
 export function inputsFor(data: AccountData): Inputs {

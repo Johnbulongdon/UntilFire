@@ -19,7 +19,7 @@ const PAD_TOP = 26
  * target (Oct 2026 QA: was a line; a bar a year makes each year's step
  * visible). Bars short of the target are paler; from the freedom year they
  * are full. Drag a finger along it to read any year, with a haptic tick as
- * each year passes; 5Y / 15Y / All below. A planned move (D-81) puts the
+ * each year passes; 5Y / 15Y / All below. A planned move (D-82) puts the
  * new city's flag on its year and stripes the years lived there, so the move
  * reads without relying on colour.
  */

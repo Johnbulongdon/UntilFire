@@ -1,5 +1,5 @@
 // What retiring somewhere else does to the spending a FIRE target is priced on
-// (D-81). The person's own spending is the starting point; the move only
+// (D-82). The person's own spending is the starting point; the move only
 // changes prices. Living costs in `CITIES` are annual USD, so their ratio has
 // no units and works whatever currency the spending is in.
 
@@ -19,7 +19,7 @@ export type RetirementLocationSpendInput = {
  * retirement city is chosen. With both cities known it is today's spending ×
  * (retirement city ÷ current city) × lifestyle. Without a current city there is
  * nothing to scale from, so it falls back to the retirement city's typical
- * cost × lifestyle, which is what the target used before D-81.
+ * cost × lifestyle, which is what the target used before D-82.
  */
 export function retirementLocationMonthlySpend({
   monthlySpend, currentCityCol, retirementCityCol, lifestyleMultiplier,
@@ -32,7 +32,7 @@ export function retirementLocationMonthlySpend({
 }
 
 /**
- * Moving before freedom (D-81): from the move year, today's spending is priced
+ * Moving before freedom (D-82): from the move year, today's spending is priced
  * at the new city and, when they say they will earn a different take-home
  * there, pay switches to it. Never a guessed city salary. Returns the engine's
  * dated change, or null when there is no earlier move or nothing to price it by.

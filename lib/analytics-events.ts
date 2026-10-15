@@ -217,8 +217,8 @@ export interface FireTypeCtaClickedProperties extends BaseFunnelProperties {
 }
 
 export interface HysaEmptyStateCtaClickedProperties extends BaseFunnelProperties {
-  cta: 'learn_more' | 'connect_account';
-  destination: 'apy_calculator' | 'plaid_connect';
+  cta: 'learn_more' | 'connect_account' | 'see_offers';
+  destination: 'apy_calculator' | 'plaid_connect' | 'offers';
   placement: 'assets_empty_state';
 }
 

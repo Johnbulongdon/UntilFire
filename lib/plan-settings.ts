@@ -30,7 +30,7 @@ export type PlanSettings = {
   mortgages?: { balance: number; monthly: number; rate: number }[];
   /** A different path, compared on Plan → Compare and never saved as the plan itself (D-66). */
   change?: LifeChange;
-  /** Calendar year they move to the retirement city before freedom (D-81). Unset, they move when free. */
+  /** Calendar year they move to the retirement city before freedom (D-82). Unset, they move when free. */
   moveYear?: number;
   /** Take-home a month in the retirement city after an earlier move. Unset, today's pay continues. */
   movePayMonthly?: number;

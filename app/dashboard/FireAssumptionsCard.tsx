@@ -30,7 +30,7 @@ import { MoneyList, MoneyRow } from "./MoneyCards";
 interface Props {
   fireAge: number;
   onFireAgeChange: (age: number) => void;
-  /** Where they live now (D-81): the baseline a retirement city's prices are compared with. */
+  /** Where they live now (D-82): the baseline a retirement city's prices are compared with. */
   currentCityName: string;
   onCurrentCityChange: (name: string) => void;
   retirementCityName: string;
@@ -38,7 +38,7 @@ interface Props {
   onRetirementCityChange: (name: string, col: number) => void;
   /** Monthly spending the FIRE number is priced on, in the display currency. */
   retirementMonthly: number;
-  /** An earlier move (D-81): its calendar year and take-home a month there; both unset means moving when free. */
+  /** An earlier move (D-82): its calendar year and take-home a month there; both unset means moving when free. */
   moveYear?: number;
   movePayMonthly?: number;
   onMoveChange: (moveYear?: number, movePayMonthly?: number) => void;
@@ -189,7 +189,7 @@ export default function FireAssumptionsCard({
 
   const selectedLifestyle = LIFESTYLE_TIERS.find((t) => t.multiplier === lifestyleMultiplier) ?? LIFESTYLE_TIERS[1];
   const showMoney = (n: number) => formatMoney(n, { currency: displayCurrency });
-  // A retirement city scales your own spending by how its prices compare with home (D-81).
+  // A retirement city scales your own spending by how its prices compare with home (D-82).
   const currentCityCol = CITIES.find((c) => c.name === currentCityName)?.col ?? 0;
   const priceChange = currentCityCol > 0 && retirementCityCol > 0 ? Math.round((retirementCityCol / currentCityCol - 1) * 100) : null;
   const homeShort = currentCityName.split(",")[0];

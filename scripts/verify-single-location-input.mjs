@@ -54,7 +54,7 @@ check(
     /Not in our list\? We&apos;ll still save it\./.test(assumptions),
 );
 
-// D-81: where you live and where you retire are separate. Choosing a
+// D-82: where you live and where you retire are separate. Choosing a
 // retirement city only fills the current city when none is set yet.
 check(
   "choosing a retirement city keeps the current city",

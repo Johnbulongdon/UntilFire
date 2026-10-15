@@ -9,7 +9,11 @@ under today's date, creating the heading if it is not there yet.
 ## 2026-10-15
 
 ### Dashboard
-- New (D-81): Plan → Assumptions has "Live in" and "Retire in". A retirement
+- New: Money → Offers, "Where to keep your money": savings, bank and
+  brokerage accounts UntilFire lists, each with its rate, any current bonus
+  and a line saying who earns from the link (D-81). Admin → Offers adds,
+  edits, shows and hides offers and counts clicks.
+- New (D-82): Plan → Assumptions has "Live in" and "Retire in". A retirement
   city now scales your own spending by how its prices compare with where you
   live, instead of replacing it with the city's average.
 - New: "When do you move?" When you're free (the default) or earlier, in a
@@ -22,7 +26,7 @@ under today's date, creating the heading if it is not there yet.
   years in the new city striped.
 
 ### iOS app (in development)
-- The freedom date uses the same retirement-city and move rules (D-81).
+- The freedom date uses the same retirement-city and move rules (D-82).
 - Fix: Home no longer says you'd be free sooner without your rent or other
   essentials. The line only picks optional repeating payments, and the
   Recurring list marks housing, food, care and anything tagged Need as

@@ -39,7 +39,7 @@ export function FreedomCard({ dateLabel, yearsAway, age, invested, target, fmt, 
   fmt: (n: number, compact?: boolean) => string;
   period: ChartPeriod;
   onPeriod: (p: ChartPeriod) => void;
-  /** A planned move to the retirement city (D-81), shown under the date so the number says what it assumes. */
+  /** A planned move to the retirement city (D-82), shown under the date so the number says what it assumes. */
   route?: { from: string; to: string; when: string; onOpen: () => void };
   /** The chart, drawn by the dashboard from the same projection as the date. */
   children: React.ReactNode;

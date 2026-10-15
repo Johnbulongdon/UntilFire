@@ -25,7 +25,7 @@ const pick = (name) => {
   assert.ok(text, `${name} exists in ${file}`);
   return text;
 };
-// The retirement-city spending rule (D-81) lives in the FIRE engine; run its real source too.
+// The retirement-city spending rule (D-82) lives in the FIRE engine; run its real source too.
 const locationSource = readFileSync('lib/fire/retirement-location.ts', 'utf8').replace(/^export /gm, '');
 const code = locationSource + '\n' + ['calcProjection', 'freedomProjection', 'projectionInputs', 'effectiveBalances', 'effectiveDebts', 'isRetirementInvestmentAccount', 'isBrokerageInvestmentAccount', 'normalizePlaidSubtype', 'exactFreedomDateFrom', 'PlanFreedomDate'].map(pick).join('\n')
   + '\nexports.freedomProjection = freedomProjection; exports.calcProjection = calcProjection; exports.PlanFreedomDate = PlanFreedomDate; exports.effectiveBalances = effectiveBalances; exports.effectiveDebts = effectiveDebts;';
@@ -43,7 +43,7 @@ const base = {
 };
 const at = (growthRate) => freedomProjection({ ...base, growthRate });
 
-// Retiring somewhere half the price of home halves your own spending (D-81),
+// Retiring somewhere half the price of home halves your own spending (D-82),
 // not the new city's average; with no home city the city average still prices it.
 const moved = freedomProjection({ ...base, growthRate: 0.069, currentCityCol: 60000, retirementCityCol: 30000 });
 assert.equal(moved.fireTarget, (5000 / 2) * 12 / 0.04, 'a retirement city scales your own spending by the price ratio');

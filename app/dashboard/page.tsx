@@ -32,6 +32,7 @@ import CategoriesTab from "./CategoriesTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
 import BudgetSetupModal from "./BudgetSetupModal";
 import ReportsTab from "./ReportsTab";
+import OffersTab from "./OffersTab";
 import ProfileTab from "./ProfileTab";
 import ExploreClient from "../explore/ExploreClient";
 import PurchaseImpactPanel from "./PurchaseImpactPanel";
@@ -107,6 +108,7 @@ type TabKey =
   | "contributions"
   | "citizenship"
   | "reports"
+  | "offers"
   | "learning-hub"
   | "profile";
 
@@ -566,7 +568,7 @@ type FreedomArgs = {
   cashSavings: number; totalDebt: number; mortgageBalance: number; mortgageMonthly: number;
   growthRate: number; withdrawalRate: number; plaidAccounts: PlaidAccount[];
   retirementCityCol: number; lifestyleMultiplier: number; monthlyWorkCosts?: number;
-  /** Annual living costs where they live now, so a retirement city scales their own spending (D-81). */
+  /** Annual living costs where they live now, so a retirement city scales their own spending (D-82). */
   currentCityCol?: number;
   taxEnabled: boolean; retirementTaxRate: number; rothPct: number;
   plan?: PlanSettings;
@@ -591,11 +593,11 @@ function projectionInputs({
   // Work costs disappear at retirement → FIRE target uses adjusted spend.
   const retirementMonthlyExpenses = monthlyWorkCosts ? Math.max(0, monthlyExpenses - monthlyWorkCosts) : monthlyExpenses;
   // What you set to spend once free comes first; then your spending moved to a
-  // retirement city (D-81); then today's spending.
+  // retirement city (D-82); then today's spending.
   const cityMonthly = retirementLocationMonthlySpend({ monthlySpend: retirementMonthlyExpenses, currentCityCol, retirementCityCol, lifestyleMultiplier });
   const targetMonthlyExpenses = (plan?.retirementAnnualSpend ?? 0) > 0 ? plan!.retirementAnnualSpend! / 12
     : cityMonthly ?? (monthlyWorkCosts ? retirementMonthlyExpenses : undefined);
-  // Moving before freedom changes spending, and pay if they said so, from that year (D-81).
+  // Moving before freedom changes spending, and pay if they said so, from that year (D-82).
   const move = moveBeforeFreedomChange({ moveYear: plan?.moveYear, thisYear: new Date().getFullYear(), monthlySpend: monthlyExpenses,
     currentCityCol, retirementCityCol, payMonthly: plan?.movePayMonthly });
   return {
@@ -1073,7 +1075,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 
   // One bar a year, as on the phone (Oct 2026): the last reading of each
   // calendar year, actual where it has happened and projected after. A move to
-  // the retirement city (D-81) is marked with its flag, and the years lived
+  // the retirement city (D-82) is marked with its flag, and the years lived
   // there are striped so the change does not rest on colour alone.
   const thisYear = new Date().getFullYear();
   const freeYear = exactFreedomDate ? exactFreedomDate.getFullYear() : null;
@@ -4739,7 +4741,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
   {
     key: "cashflow",
     label: "Money",
-    activeTabs: ["cashflow", "income", "reports", "assets", "liabilities"],
+    activeTabs: ["cashflow", "income", "reports", "assets", "liabilities", "offers"],
     svg: ICON_PATHS.money,
   },
   {
@@ -4760,6 +4762,8 @@ const MONEY_SECTIONS: { label: string; tab: TabKey }[] = [
   { label: "Net Worth", tab: "assets"      },
   { label: "Debts",     tab: "liabilities" },
   { label: "Insights",  tab: "reports"     },
+  // Where to keep your money: partner savings, bank and brokerage accounts.
+  { label: "Offers",    tab: "offers"      },
 ];
 
 // Plan's destinations. Two of them are sub-tab states of fire-calculator rather
@@ -4897,7 +4901,7 @@ export default function Dashboard() {
     const t = params.get("tab") as TabKey | null;
     const valid: TabKey[] = [
       "overview", "cashflow", "income", "assets", "liabilities",
-      "fire-calculator", "expat-fire", "goals", "contributions", "citizenship", "reports", "learning-hub", "profile",
+      "fire-calculator", "expat-fire", "goals", "contributions", "citizenship", "reports", "offers", "learning-hub", "profile",
     ];
     if (t && valid.includes(t)) setTab(t);
     if (params.get("upgraded") === "true") {
@@ -5046,7 +5050,7 @@ export default function Dashboard() {
   // because the assumptions card in Plan is now its only caller, and an
   // inline copy at the call site was how it read when Profile owned it.
   function handleTaxKeyChange(key: string) {
-    // Keep where they live when it is already in this tax home (D-81).
+    // Keep where they live when it is already in this tax home (D-82).
     const repCity = CITIES.find(c => c.state === key);
     if (repCity && CITIES.find(c => c.name === cityName)?.state !== key) setCityName(repCity.name);
     const taxInfo = STATE_TAX[key];
@@ -6569,6 +6573,7 @@ export default function Dashboard() {
             )}
             {tab === "citizenship" && <CitizenshipTab onOpenExpat={() => openDashboardTab("expat-fire")} />}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar} />}
+            {tab === "offers" && <OffersTab />}
             {tab === "learning-hub" && <LearnTab recommendedStageId={learnPlace.stage} progress={learnPlace.progress} yearsToGo={learnPlace.years} onOpenTab={openDashboardTab} />}
             {tab === "expat-fire" && (
               <ExploreClient appPlan={explorePlan} displayCurrency={defaultCurrency} displayRates={rates}
