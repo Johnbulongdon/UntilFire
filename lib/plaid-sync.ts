@@ -14,6 +14,7 @@ import { mapPlaidTx } from "@/lib/plaid";
 import { planTagging, type ClassificationRule } from "@/lib/classification-rules";
 import { fetchAllPages } from "@/lib/supabase-pages";
 import { planMerchantRules, readMerchantRules } from "@/lib/merchant-rules";
+import { monthStart, pickWithdrawals } from "@/lib/savings-limits";
 
 type Admin = SupabaseClient<any, any, any>;
 
@@ -139,6 +140,50 @@ export async function syncPlaidItem(admin: Admin, plaid: PlaidApi, item: SyncIte
     }
   } catch (accErr) {
     console.error("[plaid/sync] accountsGet:", accErr);
+  }
+
+  /* This month's withdrawals from savings accounts that have a limit set.
+   *
+   * Re-read the whole month each time rather than riding the cursor: the
+   * cursor has already passed transfers synced before a limit was set, and a
+   * pending withdrawal that posts comes back under a new id. Replacing the
+   * month keeps the count exact. Skipped entirely when no limit is set, so
+   * it costs nothing for everyone else.
+   */
+  try {
+    const { data: limited } = await admin
+      .from("plaid_accounts")
+      .select("plaid_account_id")
+      .eq("plaid_item_id", item.id)
+      .eq("user_id", userId)
+      .not("withdrawal_limit", "is", null);
+    const ids = (limited ?? []).map((a) => a.plaid_account_id as string);
+    if (ids.length > 0) {
+      const today = new Date().toISOString().slice(0, 10);
+      const start = monthStart(today);
+      const txs: PlaidTransaction[] = [];
+      let total = Infinity;
+      while (txs.length < total) {
+        const resp = await plaid.transactionsGet({
+          access_token: item.plaid_access_token,
+          start_date: start,
+          end_date: today,
+          options: { account_ids: ids, count: 500, offset: txs.length },
+        });
+        total = resp.data.total_transactions;
+        if (resp.data.transactions.length === 0) break;
+        txs.push(...resp.data.transactions);
+      }
+      const rows = pickWithdrawals(txs, new Set(ids), userId);
+      await admin.from("savings_withdrawals").delete()
+        .eq("user_id", userId).in("plaid_account_id", ids).gte("date", start);
+      if (rows.length > 0) {
+        await admin.from("savings_withdrawals").upsert(rows, { onConflict: "plaid_transaction_id" });
+      }
+    }
+  } catch (wdErr) {
+    // The countdown is a nice-to-have; a failure here never fails the sync.
+    console.error("[plaid/sync] savings withdrawals:", wdErr);
   }
 
   /* Apply the user's need/want rules to anything still untagged.

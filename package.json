@@ -74,6 +74,7 @@
     "test:emergency-fund-accounts": "node --experimental-strip-types --no-warnings scripts/verify-emergency-fund-accounts.mjs",
     "test:contribution-plan": "node --experimental-strip-types --no-warnings scripts/verify-contribution-plan.mjs",
     "test:contribution-waterfall": "node --experimental-strip-types --no-warnings scripts/verify-contribution-waterfall.mjs",
+    "test:savings-withdrawals": "node --experimental-strip-types --no-warnings scripts/verify-savings-withdrawals.ts",
     "test:reward-month": "node --experimental-strip-types scripts/verify-reward-month.ts"
   },
   "dependencies": {

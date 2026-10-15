@@ -18,6 +18,10 @@ export interface PlaidAccount {
   balance_available?: number | null
   iso_currency_code?: string | null
   mask?: string | null
+  /** Monthly withdrawal limit, set on the website; null when not tracked. */
+  withdrawal_limit?: number | null
+  /** This month's money out, sent only when a limit is set. */
+  withdrawals?: { date: string; amount: number; description: string | null; pending: boolean }[]
 }
 
 type Kind = Pick<PlaidAccount, 'type' | 'subtype'>

@@ -14,6 +14,7 @@ import { isMortgageAccount } from '@/lib/balances'
 import { compactMoney, money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { netWorthOf } from '@/lib/net-worth'
+import { withdrawalsLeftLabel } from '@engine/savings-limits.ts'
 import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
 
@@ -180,9 +181,20 @@ function Accounts({ data }: { data: AccountData }) {
               <View className="flex-1 pr-3">
                 <Text numberOfLines={1} className="text-[15px] font-semibold text-ink">{a.name}{a.mask ? ` ••${a.mask}` : ''}</Text>
                 <Text className="text-[12px] text-ink-3">{isMortgageAccount(a) ? 'Mortgage' : KIND[a.type] ?? a.type}</Text>
+                {a.withdrawal_limit != null && (
+                  <Text className={`text-[12px] ${(a.withdrawals?.length ?? 0) > a.withdrawal_limit ? 'font-semibold text-neg-ink' : 'text-ink-2'}`}>
+                    {withdrawalsLeftLabel(a.withdrawal_limit, a.withdrawals?.length ?? 0)}
+                  </Text>
+                )}
               </View>
               <Text className={`font-mono text-[15px] ${a.type === 'credit' || a.type === 'loan' ? 'text-neg-ink' : 'text-ink'}`}>{money(a.balance_current ?? 0)}</Text>
             </View>
+            {(a.withdrawals ?? []).map((w, j) => (
+              <View key={`w${j}`} className="mt-1 flex-row justify-between pl-3">
+                <Text numberOfLines={1} className="flex-1 pr-3 text-[13px] text-ink-2">{w.date.slice(5).replace('-', '/')} · {w.description ?? 'Transfer'}{w.pending ? ' · pending' : ''}</Text>
+                <Text className="font-mono text-[13px] text-ink-2">{money(w.amount)}</Text>
+              </View>
+            ))}
             {inside.slice(0, 6).map(h => (
               <View key={h.security_id} className="mt-1 flex-row justify-between pl-3">
                 <Text numberOfLines={1} className="flex-1 pr-3 text-[13px] text-ink-2">{holdings?.names[h.security_id]?.ticker_symbol ?? holdings?.names[h.security_id]?.name ?? 'Holding'}</Text>
