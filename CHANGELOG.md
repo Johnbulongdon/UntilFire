@@ -6,6 +6,14 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-15
+
+### iOS app (in development)
+- Fix: Home no longer says you'd be free sooner without your rent or other
+  essentials. The line only picks optional repeating payments, and the
+  Recurring list marks housing, food, care and anything tagged Need as
+  "Essential" without a "sooner" number.
+
 ## 2026-10-13
 
 ### Dashboard
