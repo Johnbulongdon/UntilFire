@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CITIES, STATE_TAX } from "@/lib/fire-data";
 import { formatMoney } from "@/lib/money";
+import { suggestPayByRank } from "@/lib/fire";
 import GrowthSetting from "@/app/components/GrowthSetting";
 import { MoneyList, MoneyRow } from "./MoneyCards";
 
@@ -42,6 +43,8 @@ interface Props {
   moveYear?: number;
   movePayMonthly?: number;
   onMoveChange: (moveYear?: number, movePayMonthly?: number) => void;
+  /** Today's take-home a month, ranked against where they live for "Suggest by rank" (D-82). */
+  takeHomeMonthly: number;
   lifestyleMultiplier: number;
   onLifestyleChange: (multiplier: number) => void;
   taxKey: string;
@@ -169,6 +172,7 @@ export default function FireAssumptionsCard({
   moveYear,
   movePayMonthly,
   onMoveChange,
+  takeHomeMonthly,
   lifestyleMultiplier,
   onLifestyleChange,
   taxKey,
@@ -194,6 +198,11 @@ export default function FireAssumptionsCard({
   const priceChange = currentCityCol > 0 && retirementCityCol > 0 ? Math.round((retirementCityCol / currentCityCol - 1) * 100) : null;
   const homeShort = currentCityName.split(",")[0];
   const thisYear = new Date().getFullYear();
+  // Pay at the same income rank in the new city (D-82), only where Census measured both.
+  const homeCity = CITIES.find((c) => c.name === currentCityName);
+  const retireCity = CITIES.find((c) => c.name === retirementCityName);
+  const byRank = homeCity && retireCity ? suggestPayByRank({ takeHomeMonthly, fromKey: homeCity.key, toKey: retireCity.key, fromState: homeCity.state, toState: retireCity.state }) : null;
+  const usingRank = !!byRank && movePayMonthly === byRank.takeHomeMonthly;
   const retireMeta = spendGoalSet ? "Not used: your goal sets the spending"
     : !retirementCityName ? "Same as now: your own spending sets the target"
     : retirementCityCol <= 0 ? "Not in our list, so your own spending sets the target"
@@ -270,6 +279,17 @@ export default function FireAssumptionsCard({
                           onChange={(e) => { const v = Number(e.target.value); onMoveChange(moveYear, v > 0 ? v : undefined); flash(); }}
                           style={{ ...inputStyle, maxWidth: 160, marginTop: 4 }} />
                       </label>
+                      {byRank && !usingRank && (
+                        <button type="button" onClick={() => { onMoveChange(moveYear, byRank.takeHomeMonthly); flash(); }}
+                          style={{ alignSelf: "flex-end", border: "1px solid var(--uf-border)", borderRadius: 999, padding: "8px 14px", font: "inherit", fontSize: 13, fontWeight: 700, cursor: "pointer", background: "var(--uf-surface-2)", color: "var(--uf-ink)" }}>
+                          Suggest by rank: {showMoney(byRank.takeHomeMonthly)}
+                        </button>
+                      )}
+                      {usingRank && (
+                        <span className="uf-t-small" style={{ color: "var(--uf-ink-2)", flexBasis: "100%" }}>
+                          Suggested: about the {ordinal(byRank.percentile)} percentile of household income in {homeShort}{byRank.aboveMeasured ? " (Census stops at $250k, so a lower rank was compared)" : ""}, at the same rank in {retirementCityName.split(",")[0]}, after its taxes. Census figures, not a job offer: change it if you know your pay.
+                        </span>
+                      )}
                       <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", flexBasis: "100%" }}>
                         From {moveYear}, your spending follows {retirementCityName.split(",")[0]} prices{movePayMonthly ? " and your pay switches to this" : " and your pay stays as it is"}.
                       </span>
@@ -346,4 +366,10 @@ export default function FireAssumptionsCard({
       </MoneyList>
     </div>
   );
+}
+
+/** 47 → "47th", 21 → "21st". */
+function ordinal(n: number): string {
+  const tail = n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th";
+  return `${n}${tail}`;
 }
