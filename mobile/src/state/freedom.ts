@@ -28,6 +28,8 @@ export interface Freedom {
   bridge: { needed: number; reachable: number; locked: number; years: number } | null
   /** The engine's inputs, so what-ifs change one thing and run the same maths. */
   inputs: Inputs | null
+  /** A planned move to the retirement city (D-81): the year and where, for the chart's flag. */
+  move: { year: number; city: string; flag: string } | null
 }
 
 /**
@@ -68,6 +70,21 @@ export function inputsFor(data: AccountData): Inputs {
   }
 }
 
+/**
+ * Where and when they move, as Home's web chart shows it: the retirement city
+ * when it differs from where they live, in the year they set (only when both
+ * cities are priced and it comes before freedom), otherwise the freedom year.
+ */
+function moveFor(data: AccountData, freeYear: number | null): Freedom['move'] {
+  const p = data.profile
+  const to = CITIES.find(c => c.name === p.retirementCityName)
+  if (!to || to.name === p.cityName) return null
+  const from = CITIES.find(c => c.name === p.cityName)
+  const early = p.plan.moveYear && from && (freeYear == null || p.plan.moveYear < freeYear) ? p.plan.moveYear : null
+  const year = early ?? freeYear
+  return year != null ? { year, city: to.name.split(',')[0], flag: to.flag } : null
+}
+
 /** Runs the engine and reads off the date, the way the dashboard's freedomProjection does. */
 export function project(inputs: Inputs, age: number | null) {
   const r = calcProjection(inputs)
@@ -90,7 +107,7 @@ export function useFreedom(): Freedom | null {
         source: 'account', date, year, years, ageAtFreedom, target: r.fireTarget, invested,
         monthlyIncome: data.income, monthlySpending: inputs.monthlyExpenses,
         series: r.data.map(d => ({ year: d.year, invested: d['Investable'], target: d['FIRE Target'], reachable: d['Reachable'] })),
-        bridge: r.bridge, inputs,
+        bridge: r.bridge, inputs, move: moveFor(data, year),
       } satisfies Freedom
     }
     if (!plan) return null
@@ -98,7 +115,7 @@ export function useFreedom(): Freedom | null {
     return {
       source: 'answers', date: null, year: q.year, years: q.years, ageAtFreedom: plan.age != null && q.years != null ? Math.floor(plan.age + q.years) : null,
       target: q.target, invested: plan.invested, monthlyIncome: plan.monthlyIncome, monthlySpending: plan.monthlySpending,
-      series: [], bridge: null, inputs: null,
+      series: [], bridge: null, inputs: null, move: null,
     } satisfies Freedom
   }, [data, plan])
 }
