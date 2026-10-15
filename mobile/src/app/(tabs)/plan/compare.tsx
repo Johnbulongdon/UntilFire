@@ -63,7 +63,7 @@ export default function Compare() {
     const k = JSON.stringify(changes)
     let r = cache.get(k)
     if (!r && inputs) {
-      const p = calcProjection({ ...inputs, changes })
+      const p = calcProjection({ ...inputs, changes: [...(inputs.changes ?? []), ...changes] }) // keeps an earlier move (D-82)
       r = { fireYear: p.fireYear, invested: p.data.map(d => d['Investable'] ?? 0), target: p.fireTarget, date: exactFreedomDateFrom(p.data, p.fireYear, p.fireTarget), broke: p.broke }
       cache.set(k, r)
     }

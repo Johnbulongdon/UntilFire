@@ -13,8 +13,22 @@ under today's date, creating the heading if it is not there yet.
   brokerage accounts UntilFire lists, each with its rate, any current bonus
   and a line saying who earns from the link (D-81). Admin → Offers adds,
   edits, shows and hides offers and counts clicks.
+- New (D-82): Plan → Assumptions has "Live in" and "Retire in". A retirement
+  city now scales your own spending by how its prices compare with where you
+  live, instead of replacing it with the city's average.
+- New: "When do you move?" When you're free (the default) or earlier, in a
+  year you choose, with an optional take-home there. Pay never follows a city
+  unless you type it.
+- Fix: choosing a retirement city or a tax home no longer overwrites where you
+  live.
+- Home's freedom chart is one bar a year, as on the phone. A planned move
+  shows as a route chip under the date and a flag on the move year, with the
+  years in the new city striped.
+- Admin: the Census sync also stores household income by rank for each city
+  (migration 0054), ready for suggesting pay after a move (D-82).
 
 ### iOS app (in development)
+- The freedom date uses the same retirement-city and move rules (D-82).
 - Fix: Home no longer says you'd be free sooner without your rent or other
   essentials. The line only picks optional repeating payments, and the
   Recurring list marks housing, food, care and anything tagged Need as

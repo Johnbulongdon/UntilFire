@@ -5,8 +5,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
   XAxis, YAxis, Tooltip,
-  ResponsiveContainer, LineChart, Line, Legend, ReferenceLine,
-  ComposedChart, Area,
+  ResponsiveContainer, ReferenceLine, BarChart, Bar, Cell,
 } from "recharts";
 import TransactionsTab from "./TransactionsTab";
 import PlaidConnect, { type PlaidItem } from "./PlaidConnect";
@@ -39,7 +38,7 @@ import ExploreClient from "../explore/ExploreClient";
 import PurchaseImpactPanel from "./PurchaseImpactPanel";
 import Logo from "@/app/components/Logo";
 import FeedbackWidget from "./FeedbackWidget";
-import { REAL_RETURN } from "@/lib/fire";
+import { REAL_RETURN, moveBeforeFreedomChange, retirementLocationMonthlySpend } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, getCurrencySymbol } from "@/lib/currency";
 import { HOUSEHOLD_INVITE_KEY } from "@/lib/household-invite";
 import FireAssumptionsCard from "./FireAssumptionsCard";
@@ -569,6 +568,8 @@ type FreedomArgs = {
   cashSavings: number; totalDebt: number; mortgageBalance: number; mortgageMonthly: number;
   growthRate: number; withdrawalRate: number; plaidAccounts: PlaidAccount[];
   retirementCityCol: number; lifestyleMultiplier: number; monthlyWorkCosts?: number;
+  /** Annual living costs where they live now, so a retirement city scales their own spending (D-82). */
+  currentCityCol?: number;
   taxEnabled: boolean; retirementTaxRate: number; rothPct: number;
   plan?: PlanSettings;
   /** Life changes on top of the plan (Compare, D-69), already as the engine's dated changes. */
@@ -584,18 +585,21 @@ type FreedomArgs = {
 function projectionInputs({
   income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
   growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-  taxEnabled, retirementTaxRate, rothPct, plan, changes,
+  currentCityCol = 0, taxEnabled, retirementTaxRate, rothPct, plan, changes,
 }: FreedomArgs) {
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
     .reduce((s, [, v]) => s + (v || 0), 0);
   // Work costs disappear at retirement → FIRE target uses adjusted spend.
   const retirementMonthlyExpenses = monthlyWorkCosts ? Math.max(0, monthlyExpenses - monthlyWorkCosts) : monthlyExpenses;
-  // What you set to spend once free comes first; then a retirement city; then today's spending.
+  // What you set to spend once free comes first; then your spending moved to a
+  // retirement city (D-82); then today's spending.
+  const cityMonthly = retirementLocationMonthlySpend({ monthlySpend: retirementMonthlyExpenses, currentCityCol, retirementCityCol, lifestyleMultiplier });
   const targetMonthlyExpenses = (plan?.retirementAnnualSpend ?? 0) > 0 ? plan!.retirementAnnualSpend! / 12
-    : retirementCityCol > 0
-    ? (retirementCityCol * lifestyleMultiplier) / 12
-    : monthlyWorkCosts ? retirementMonthlyExpenses : undefined;
+    : cityMonthly ?? (monthlyWorkCosts ? retirementMonthlyExpenses : undefined);
+  // Moving before freedom changes spending, and pay if they said so, from that year (D-82).
+  const move = moveBeforeFreedomChange({ moveYear: plan?.moveYear, thisYear: new Date().getFullYear(), monthlySpend: monthlyExpenses,
+    currentCityCol, retirementCityCol, payMonthly: plan?.movePayMonthly });
   return {
     ...plan,
     annualIncome: income * 12, monthlyExpenses,
@@ -603,7 +607,7 @@ function projectionInputs({
     ...(({ otherDebt, mortgage }) => ({ totalDebt: otherDebt, mortgageBalance: mortgage }))(effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts })),
     mortgageMonthly,
     growthRate, withdrawalRate, targetMonthlyExpenses,
-    taxEnabled, retirementTaxRate, rothPct, changes,
+    taxEnabled, retirementTaxRate, rothPct, changes: move ? [move, ...(changes ?? [])] : changes,
   };
 }
 
@@ -681,7 +685,7 @@ function SectionLabel({ icon, text, color = "var(--uf-ink)" }: { icon: string; t
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange, plan }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange, plan }: {
   userId: string;
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
@@ -690,7 +694,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   prevIncome?: number; prevExpenses?: number; userName?: string;
   displayCurrency: string; displayRates: Record<string, number>;
   plaidAccounts?: PlaidAccount[];
-  retirementCityCol?: number; lifestyleMultiplier?: number;
+  retirementCityCol?: number; retirementCityName?: string; lifestyleMultiplier?: number;
   fireAge?: number;
   nwSnapshots?: { portfolio_value: number; captured_at: string }[];
   recentTransactions?: { date: string; amount: number; refund_amount?: number; currency: string; transaction_type?: string; tags?: string[]; description?: string; category?: string }[];
@@ -784,23 +788,23 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     ? Math.max(0, monthlyExpenses - monthlyWorkCosts)
     : monthlyExpenses;
 
-  const targetMonthlyExpenses = retirementCityCol > 0
-    ? (retirementCityCol * lifestyleMultiplier) / 12
-    : monthlyWorkCosts ? retirementMonthlyExpenses : undefined;
+  const currentCityCol = CITIES.find((c) => c.name === cityName)?.col ?? 0;
+  const targetMonthlyExpenses = retirementLocationMonthlySpend({ monthlySpend: retirementMonthlyExpenses, currentCityCol, retirementCityCol, lifestyleMultiplier })
+    ?? (monthlyWorkCosts ? retirementMonthlyExpenses : undefined);
 
   // Shared with Plan's freedom date (freedomProjection), so the two can't
   // disagree; the moves and warnings below start from the same inputs.
   const baseInputs = useMemo(() => projectionInputs({
     income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-    taxEnabled, retirementTaxRate, rothPct, plan,
-  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, taxEnabled, retirementTaxRate, rothPct, plan]);
+    currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan,
+  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan]);
   const balances = { k401: baseInputs.k401, rothIRA: baseInputs.rothIRA, taxable: baseInputs.taxable, cash: baseInputs.cashSavings };
   const { data, fireYear, fireTarget, annualSavings } = useMemo(() => freedomProjection({
     income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-    taxEnabled, retirementTaxRate, rothPct, plan,
-  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, taxEnabled, retirementTaxRate, rothPct, plan]);
+    currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan,
+  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan]);
 
   const nextMoveScenarios = useMemo(() => {
     if (!(income > 0 && fireYear !== null)) return null;
@@ -1068,6 +1072,28 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     const limit = chartPeriod === "5Y" ? 5 : chartPeriod === "15Y" ? 15 : Number.POSITIVE_INFINITY;
     return chartData.filter(entry => entry.phase !== "projection" || ((entry.yearsOut ?? 0) <= limit));
   }, [chartData, chartPeriod]);
+
+  // One bar a year, as on the phone (Oct 2026): the last reading of each
+  // calendar year, actual where it has happened and projected after. A move to
+  // the retirement city (D-82) is marked with its flag, and the years lived
+  // there are striped so the change does not rest on colour alone.
+  const thisYear = new Date().getFullYear();
+  const freeYear = exactFreedomDate ? exactFreedomDate.getFullYear() : null;
+  const retireCity = retirementCityName && retirementCityName !== cityName ? retirementCityName : "";
+  // An earlier move counts only where the maths can price it (both cities listed), as in moveBeforeFreedomChange.
+  const earlyMove = plan?.moveYear && currentCityCol > 0 && retirementCityCol > 0 && (freeYear == null || plan.moveYear < freeYear) ? plan.moveYear : null;
+  const moveYear = retireCity ? earlyMove ?? freeYear : null;
+  const yearBars = useMemo(() => {
+    const byYear = new Map<number, { year: number; value: number; actual: boolean }>();
+    for (const e of periodData) {
+      const year = e.phase === "today" ? thisYear : Number(e.label.slice(-4));
+      const value = e.actual ?? e.projected;
+      if (!Number.isFinite(year) || value == null) continue;
+      if (year === thisYear && e.phase !== "today" && byYear.get(year)?.actual) continue;
+      byYear.set(year, { year, value, actual: e.phase !== "projection" });
+    }
+    return Array.from(byYear.values()).map((b) => ({ ...b, label: String(b.year) }));
+  }, [periodData, thisYear]);
 
   // KPI trends — cashflow transactions only
   const hasActuals       = actualIncome > 0 || actualExpenses > 0;
@@ -1514,30 +1540,58 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         fmt={fmtMoney}
         period={chartPeriod}
         onPeriod={setChartPeriod}
+        route={retireCity ? {
+          from: cityName ? `${CITIES.find((c) => c.name === cityName)?.flag ?? "\u{1F3E0}"} ${cityName.split(",")[0]}` : "",
+          to: `${CITIES.find((c) => c.name === retireCity)?.flag ?? "\u{1F4CD}"} ${retireCity.split(",")[0]}`,
+          when: moveYear != null && moveYear !== freeYear ? `from ${moveYear}` : "when you're free",
+          onOpen: () => onTabChange?.("fire-calculator"),
+        } : undefined}
       >
         <ResponsiveContainer width="100%" height={180}>
-          <ComposedChart data={periodData} margin={{ top: 16, right: 18, bottom: 0, left: 18 }}>
-            <XAxis dataKey="shortLabel" tick={{ fill: "var(--uf-ink-3)", fontSize: 12, fontFamily: "var(--uf-font-mono)" }} axisLine={{ stroke: "var(--uf-border)" }} tickLine={false} interval="preserveStartEnd" minTickGap={40} />
+          <BarChart data={yearBars} margin={{ top: 34, right: 18, bottom: 0, left: 18 }} barCategoryGap="22%">
+            <defs>
+              <pattern id="uf-moved" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="6" height="6" fill="var(--uf-teal)" fillOpacity={0.45} />
+                <line x1="0" y1="0" x2="0" y2="6" stroke="var(--uf-teal)" strokeWidth={2.5} />
+              </pattern>
+            </defs>
+            <XAxis dataKey="label" tick={{ fill: "var(--uf-ink-3)", fontSize: 12, fontFamily: "var(--uf-font-mono)" }} axisLine={{ stroke: "var(--uf-border)" }} tickLine={false} interval="preserveStartEnd" minTickGap={28} />
             <YAxis hide domain={[0, "auto"]} />
             <Tooltip
               animationDuration={150}
+              cursor={{ fill: "var(--uf-surface-2)", fillOpacity: 0.4 }}
               content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
-                const entry = payload[0]?.payload as { label?: string; actual?: number | null; projected?: number | null; phase?: string } | undefined;
-                const value = entry?.actual ?? entry?.projected;
-                if (value == null) return null;
+                const b = active ? payload?.[0]?.payload as { year: number; value: number; actual: boolean } | undefined : undefined;
+                if (!b) return null;
                 return (
                   <div className="uf-t-small" style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "8px 10px", boxShadow: "var(--uf-e2)" }}>
-                    <div style={{ color: "var(--uf-ink-2)" }}>{entry?.label ?? ""}{entry?.actual == null ? " · projected" : ""}</div>
-                    <b style={{ fontFamily: "var(--uf-font-mono)", color: "var(--uf-ink)" }}>{fmtMoney(value, true)}</b>
+                    <div style={{ color: "var(--uf-ink-2)" }}>{b.year}{b.actual ? "" : " · projected"}{moveYear != null && b.year >= moveYear ? ` · in ${retireCity.split(",")[0]}` : ""}</div>
+                    <b style={{ fontFamily: "var(--uf-font-mono)", color: "var(--uf-ink)" }}>{fmtMoney(b.value, true)}</b>
                   </div>
                 );
               }}
             />
             <ReferenceLine y={fireTarget} stroke="var(--uf-ink-3)" strokeDasharray="4 5" label={{ value: "FIRE number", position: "insideTopLeft", fill: "var(--uf-ink-3)", fontSize: 12, fontFamily: "var(--uf-font-mono)" }} />
-            <Area type="monotone" dataKey="actual" stroke="var(--uf-teal)" strokeWidth={2.5} fill="var(--uf-teal)" fillOpacity={0.1} connectNulls={false} dot={false} activeDot={{ r: 4, fill: "var(--uf-teal)" }} isAnimationActive={false} />
-            <Line type="monotone" dataKey="projected" stroke="var(--uf-teal)" strokeWidth={2} strokeDasharray="1 5" strokeLinecap="round" dot={false} activeDot={{ r: 4, fill: "var(--uf-teal)" }} isAnimationActive={false} />
-          </ComposedChart>
+            {moveYear != null && yearBars.some((b) => b.year === moveYear) && (
+              <ReferenceLine x={String(moveYear)} stroke="var(--uf-ink-3)" strokeDasharray="2 3"
+                label={(props: { viewBox?: { x?: number; y?: number } }) => {
+                  const x = props.viewBox?.x ?? 0, y = (props.viewBox?.y ?? 0) - 18;
+                  return (
+                    <g aria-label={`Move to ${retireCity} in ${moveYear}`}>
+                      <circle cx={x} cy={y} r={14} fill="var(--uf-card)" stroke="var(--uf-teal)" strokeWidth={1.5} />
+                      <text x={x} y={y + 5} textAnchor="middle" fontSize={14}>{CITIES.find((c) => c.name === retireCity)?.flag ?? "\u{1F4CD}"}</text>
+                    </g>
+                  );
+                }} />
+            )}
+            <Bar dataKey="value" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+              {yearBars.map((b) => (
+                <Cell key={b.year}
+                  fill={moveYear != null && b.year >= moveYear && !b.actual ? "url(#uf-moved)" : "var(--uf-teal)"}
+                  fillOpacity={b.actual || (freeYear != null && b.year >= freeYear) ? 1 : 0.5} />
+              ))}
+            </Bar>
+          </BarChart>
         </ResponsiveContainer>
       </FreedomCard>
 
@@ -4996,8 +5050,9 @@ export default function Dashboard() {
   // because the assumptions card in Plan is now its only caller, and an
   // inline copy at the call site was how it read when Profile owned it.
   function handleTaxKeyChange(key: string) {
+    // Keep where they live when it is already in this tax home (D-82).
     const repCity = CITIES.find(c => c.state === key);
-    if (repCity) setCityName(repCity.name);
+    if (repCity && CITIES.find(c => c.name === cityName)?.state !== key) setCityName(repCity.name);
     const taxInfo = STATE_TAX[key];
     if (taxInfo) {
       const isUSKey = !key.startsWith("ca_");
@@ -5025,7 +5080,8 @@ export default function Dashboard() {
     const monthlyExpenses = Object.entries(expenses)
       .filter(([key]) => !key.startsWith("_"))
       .reduce((sum, [, amount]) => sum + (amount || 0), 0);
-    const targetMonthlyExpenses = retirementCityCol > 0 ? (retirementCityCol * lifestyleMultiplier) / 12 : undefined;
+    const currentCityCol = CITIES.find((c) => c.name === cityName)?.col ?? 0;
+    const targetMonthlyExpenses = retirementLocationMonthlySpend({ monthlySpend: monthlyExpenses, currentCityCol, retirementCityCol, lifestyleMultiplier });
     const { fireYear, fireTarget } = calcProjection({
       ...planBase,
       annualIncome: income * 12,
@@ -5048,7 +5104,7 @@ export default function Dashboard() {
     if (progress >= 45 || (fireYear !== null && fireYear <= 12)) return place("approaching-fire");
     if (investable > 0 || income > 0) return place("building-momentum");
     return place("starting-out");
-  }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, planBase, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
+  }, [cashSavings, cityName, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, planBase, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
 
   type CommittedRow = { id?: string; match_merchant?: string | null; amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null; category: string | null; description?: string | null; recurrence?: string | null };
@@ -5168,8 +5224,9 @@ export default function Dashboard() {
   const planFreedomInputs = useMemo(() => ({
     income: effectiveIncome, expenses: effectiveExpenses as Record<string, number>, k401, rothIRA, taxable, cashSavings,
     totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier,
-    monthlyWorkCosts: histWorkAvg > 0 ? histWorkAvg : undefined, taxEnabled, retirementTaxRate, rothPct, plan,
-  }), [plan, effectiveIncome, effectiveExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, histWorkAvg, taxEnabled, retirementTaxRate, rothPct]);
+    monthlyWorkCosts: histWorkAvg > 0 ? histWorkAvg : undefined, currentCityCol: CITIES.find((c) => c.name === cityName)?.col ?? 0,
+    taxEnabled, retirementTaxRate, rothPct, plan,
+  }), [plan, effectiveIncome, effectiveExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, histWorkAvg, cityName, taxEnabled, retirementTaxRate, rothPct]);
   const planFreedom = useMemo(() => freedomProjection({ ...planFreedomInputs, growthRate }), [planFreedomInputs, growthRate]);
   // Plan → Compare (D-69): the plan with a set of life changes, on the same engine as the date (D-66).
   const compareSpendNow = useMemo(() => Object.entries(effectiveExpenses).filter(([k, v]) => !k.startsWith("_") && typeof v === "number")
@@ -6282,6 +6339,7 @@ export default function Dashboard() {
                 displayRates={rates}
                 plaidAccounts={plaidAccounts}
                 retirementCityCol={retirementCityCol}
+                retirementCityName={retirementCityName}
                 lifestyleMultiplier={lifestyleMultiplier}
                 fireAge={fireAge}
                 nwSnapshots={nwSnapshots}
@@ -6438,9 +6496,15 @@ export default function Dashboard() {
                       spendGoalSet={(planSettings.retirementAnnualSpend ?? 0) > 0}
                       fireAge={fireAge}
                       onFireAgeChange={setFireAge}
+                      currentCityName={cityName}
+                      onCurrentCityChange={setCityName}
+                      retirementMonthly={planFacts.retirementMonthly}
+                      moveYear={planSettings.moveYear}
+                      movePayMonthly={planSettings.movePayMonthly}
+                      onMoveChange={(moveYear, movePayMonthly) => setPlanSettings((p) => ({ ...p, moveYear, movePayMonthly }))}
                       retirementCityName={retirementCityName}
                       retirementCityCol={retirementCityCol}
-                      onRetirementCityChange={(name, col) => { setCityName(name); setRetirementCityName(name); setRetirementCityCol(col); }}
+                      onRetirementCityChange={(name, col) => { if (!cityName) setCityName(name); setRetirementCityName(name); setRetirementCityCol(col); }}
                       lifestyleMultiplier={lifestyleMultiplier}
                       onLifestyleChange={setLifestyleMultiplier}
                       taxKey={CITIES.find(c => c.name === cityName)?.state ?? ""}
@@ -6513,7 +6577,7 @@ export default function Dashboard() {
             {tab === "learning-hub" && <LearnTab recommendedStageId={learnPlace.stage} progress={learnPlace.progress} yearsToGo={learnPlace.years} onOpenTab={openDashboardTab} />}
             {tab === "expat-fire" && (
               <ExploreClient appPlan={explorePlan} displayCurrency={defaultCurrency} displayRates={rates}
-                onPlanFor={(key) => { const c = CITIES.find(x => x.key === key); if (c) { setCityName(c.name); setRetirementCityName(c.name); setRetirementCityCol(c.col); } }} />
+                onPlanFor={(key) => { const c = CITIES.find(x => x.key === key); if (c) { if (!cityName) setCityName(c.name); setRetirementCityName(c.name); setRetirementCityCol(c.col); } }} />
             )}
             {tab === "profile" && userId && (
               <ProfileTab

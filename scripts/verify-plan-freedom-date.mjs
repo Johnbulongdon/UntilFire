@@ -25,7 +25,9 @@ const pick = (name) => {
   assert.ok(text, `${name} exists in ${file}`);
   return text;
 };
-const code = ['calcProjection', 'freedomProjection', 'projectionInputs', 'effectiveBalances', 'effectiveDebts', 'isRetirementInvestmentAccount', 'isBrokerageInvestmentAccount', 'normalizePlaidSubtype', 'exactFreedomDateFrom', 'PlanFreedomDate'].map(pick).join('\n')
+// The retirement-city spending rule (D-82) lives in the FIRE engine; run its real source too.
+const locationSource = readFileSync('lib/fire/retirement-location.ts', 'utf8').replace(/^export /gm, '');
+const code = locationSource + '\n' + ['calcProjection', 'freedomProjection', 'projectionInputs', 'effectiveBalances', 'effectiveDebts', 'isRetirementInvestmentAccount', 'isBrokerageInvestmentAccount', 'normalizePlaidSubtype', 'exactFreedomDateFrom', 'PlanFreedomDate'].map(pick).join('\n')
   + '\nexports.freedomProjection = freedomProjection; exports.calcProjection = calcProjection; exports.PlanFreedomDate = PlanFreedomDate; exports.effectiveBalances = effectiveBalances; exports.effectiveDebts = effectiveDebts;';
 const exports = {};
 vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2020 } }).outputText,
@@ -40,6 +42,19 @@ const base = {
   retirementCityCol: 0, lifestyleMultiplier: 1, monthlyWorkCosts: undefined, taxEnabled: false, retirementTaxRate: 0, rothPct: 0,
 };
 const at = (growthRate) => freedomProjection({ ...base, growthRate });
+
+// Retiring somewhere half the price of home halves your own spending (D-82),
+// not the new city's average; with no home city the city average still prices it.
+const moved = freedomProjection({ ...base, growthRate: 0.069, currentCityCol: 60000, retirementCityCol: 30000 });
+assert.equal(moved.fireTarget, (5000 / 2) * 12 / 0.04, 'a retirement city scales your own spending by the price ratio');
+const noHome = freedomProjection({ ...base, growthRate: 0.069, retirementCityCol: 30000 });
+assert.equal(noHome.fireTarget, 30000 / 0.04, 'without a current city the retirement city average prices the target');
+// Moving before freedom: from the move year spending follows the new city's prices, and pay only changes when they say so.
+const thisYear = new Date().getFullYear();
+const early = freedomProjection({ ...base, growthRate: 0.069, currentCityCol: 50000, retirementCityCol: 60000, plan: { moveYear: thisYear } });
+assert.equal(early.firstYearInvested, 96000 - 5000 * 12 * 1.2, 'an earlier move prices spending at the new city from that year');
+const earlyPaid = freedomProjection({ ...base, growthRate: 0.069, currentCityCol: 50000, retirementCityCol: 60000, plan: { moveYear: thisYear, movePayMonthly: 10000 } });
+assert.equal(earlyPaid.firstYearInvested, 120000 - 5000 * 12 * 1.2, 'and pay switches only to a take-home they typed');
 
 // Same numbers Home computed before (its inputs, written out as Home had them).
 const home = calcProjection({ annualIncome: 96000, monthlyExpenses: 5000, k401: 40000, rothIRA: 10000, taxable: 10000, cashSavings: 10000, totalDebt: 0, mortgageBalance: 0, mortgageMonthly: 0, growthRate: 0.069, withdrawalRate: 0.04, targetMonthlyExpenses: undefined, taxEnabled: false, retirementTaxRate: 0, rothPct: 0 });

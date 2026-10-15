@@ -186,7 +186,8 @@ browser.
 - **Explore replaced Expat FIRE** (D-58, superseding D-45's list): the same
   map and cards as public `/explore`, at your plan's numbers, lifestyle and tax
   in retirement. "Plan for" a city sets the retirement city that Freedom
-  date's Retire in row holds.
+  date's Retire in row holds; the Live in row beside it is today's city, the
+  baseline a retirement city is priced against (D-82).
 - **Citizenship asks for your passport first** (D-46), then shows its score and
   what it means as rows; other passports are a sortable list.
 - **Learn starts from your stage** (D-47) and its tools open Plan pages, not

@@ -149,6 +149,7 @@ export async function POST(req: NextRequest) {
         basis: c.basis,
         matched_by: c.matchedBy,
         previous: c.previous,
+        income_bands: c.incomeBands,
         acs_year: result.year,
         synced_at: syncedAt,
       })),

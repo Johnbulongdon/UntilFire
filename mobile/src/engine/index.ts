@@ -28,6 +28,7 @@ export { planContribution, type StoredPlan, type StoredLadder } from '@engine/co
 export { toCashAccounts } from '@engine/emergency-fund-accounts.ts'
 export { countdownLabel, DEFAULT_SCHEDULE } from '@engine/contribution-schedule.ts'
 export { REAL_RETURN } from '@engine/fire/strategies/traditional.ts'
+export { moveBeforeFreedomChange, retirementLocationMonthlySpend } from '@engine/fire/retirement-location.ts'
 export { engineMortgages, type MortgageTerms } from '@engine/mortgages.ts'
 export { PAY_GROWTH_PRESETS, taxFreeFor } from '@engine/plan-settings.ts'
 export { transactionsCsv, type ExportTransaction } from '@engine/export-csv.ts'
