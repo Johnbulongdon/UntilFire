@@ -17,6 +17,9 @@ under today's date, creating the heading if it is not there yet.
   unless you type it.
 - Fix: choosing a retirement city or a tax home no longer overwrites where you
   live.
+- Home's freedom chart is one bar a year, as on the phone. A planned move
+  shows as a route chip under the date and a flag on the move year, with the
+  years in the new city striped.
 
 ### iOS app (in development)
 - The freedom date uses the same retirement-city and move rules (D-81).

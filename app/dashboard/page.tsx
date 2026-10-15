@@ -5,8 +5,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
   XAxis, YAxis, Tooltip,
-  ResponsiveContainer, LineChart, Line, Legend, ReferenceLine,
-  ComposedChart, Area,
+  ResponsiveContainer, ReferenceLine, BarChart, Bar, Cell,
 } from "recharts";
 import TransactionsTab from "./TransactionsTab";
 import PlaidConnect, { type PlaidItem } from "./PlaidConnect";
@@ -684,7 +683,7 @@ function SectionLabel({ icon, text, color = "var(--uf-ink)" }: { icon: string; t
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange, plan }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange, plan }: {
   userId: string;
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
@@ -693,7 +692,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   prevIncome?: number; prevExpenses?: number; userName?: string;
   displayCurrency: string; displayRates: Record<string, number>;
   plaidAccounts?: PlaidAccount[];
-  retirementCityCol?: number; lifestyleMultiplier?: number;
+  retirementCityCol?: number; retirementCityName?: string; lifestyleMultiplier?: number;
   fireAge?: number;
   nwSnapshots?: { portfolio_value: number; captured_at: string }[];
   recentTransactions?: { date: string; amount: number; refund_amount?: number; currency: string; transaction_type?: string; tags?: string[]; description?: string; category?: string }[];
@@ -1071,6 +1070,28 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     const limit = chartPeriod === "5Y" ? 5 : chartPeriod === "15Y" ? 15 : Number.POSITIVE_INFINITY;
     return chartData.filter(entry => entry.phase !== "projection" || ((entry.yearsOut ?? 0) <= limit));
   }, [chartData, chartPeriod]);
+
+  // One bar a year, as on the phone (Oct 2026): the last reading of each
+  // calendar year, actual where it has happened and projected after. A move to
+  // the retirement city (D-81) is marked with its flag, and the years lived
+  // there are striped so the change does not rest on colour alone.
+  const thisYear = new Date().getFullYear();
+  const freeYear = exactFreedomDate ? exactFreedomDate.getFullYear() : null;
+  const retireCity = retirementCityName && retirementCityName !== cityName ? retirementCityName : "";
+  // An earlier move counts only where the maths can price it (both cities listed), as in moveBeforeFreedomChange.
+  const earlyMove = plan?.moveYear && currentCityCol > 0 && retirementCityCol > 0 && (freeYear == null || plan.moveYear < freeYear) ? plan.moveYear : null;
+  const moveYear = retireCity ? earlyMove ?? freeYear : null;
+  const yearBars = useMemo(() => {
+    const byYear = new Map<number, { year: number; value: number; actual: boolean }>();
+    for (const e of periodData) {
+      const year = e.phase === "today" ? thisYear : Number(e.label.slice(-4));
+      const value = e.actual ?? e.projected;
+      if (!Number.isFinite(year) || value == null) continue;
+      if (year === thisYear && e.phase !== "today" && byYear.get(year)?.actual) continue;
+      byYear.set(year, { year, value, actual: e.phase !== "projection" });
+    }
+    return Array.from(byYear.values()).map((b) => ({ ...b, label: String(b.year) }));
+  }, [periodData, thisYear]);
 
   // KPI trends — cashflow transactions only
   const hasActuals       = actualIncome > 0 || actualExpenses > 0;
@@ -1517,30 +1538,58 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         fmt={fmtMoney}
         period={chartPeriod}
         onPeriod={setChartPeriod}
+        route={retireCity ? {
+          from: cityName ? `${CITIES.find((c) => c.name === cityName)?.flag ?? "\u{1F3E0}"} ${cityName.split(",")[0]}` : "",
+          to: `${CITIES.find((c) => c.name === retireCity)?.flag ?? "\u{1F4CD}"} ${retireCity.split(",")[0]}`,
+          when: moveYear != null && moveYear !== freeYear ? `from ${moveYear}` : "when you're free",
+          onOpen: () => onTabChange?.("fire-calculator"),
+        } : undefined}
       >
         <ResponsiveContainer width="100%" height={180}>
-          <ComposedChart data={periodData} margin={{ top: 16, right: 18, bottom: 0, left: 18 }}>
-            <XAxis dataKey="shortLabel" tick={{ fill: "var(--uf-ink-3)", fontSize: 12, fontFamily: "var(--uf-font-mono)" }} axisLine={{ stroke: "var(--uf-border)" }} tickLine={false} interval="preserveStartEnd" minTickGap={40} />
+          <BarChart data={yearBars} margin={{ top: 34, right: 18, bottom: 0, left: 18 }} barCategoryGap="22%">
+            <defs>
+              <pattern id="uf-moved" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <rect width="6" height="6" fill="var(--uf-teal)" fillOpacity={0.45} />
+                <line x1="0" y1="0" x2="0" y2="6" stroke="var(--uf-teal)" strokeWidth={2.5} />
+              </pattern>
+            </defs>
+            <XAxis dataKey="label" tick={{ fill: "var(--uf-ink-3)", fontSize: 12, fontFamily: "var(--uf-font-mono)" }} axisLine={{ stroke: "var(--uf-border)" }} tickLine={false} interval="preserveStartEnd" minTickGap={28} />
             <YAxis hide domain={[0, "auto"]} />
             <Tooltip
               animationDuration={150}
+              cursor={{ fill: "var(--uf-surface-2)", fillOpacity: 0.4 }}
               content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
-                const entry = payload[0]?.payload as { label?: string; actual?: number | null; projected?: number | null; phase?: string } | undefined;
-                const value = entry?.actual ?? entry?.projected;
-                if (value == null) return null;
+                const b = active ? payload?.[0]?.payload as { year: number; value: number; actual: boolean } | undefined : undefined;
+                if (!b) return null;
                 return (
                   <div className="uf-t-small" style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "8px 10px", boxShadow: "var(--uf-e2)" }}>
-                    <div style={{ color: "var(--uf-ink-2)" }}>{entry?.label ?? ""}{entry?.actual == null ? " · projected" : ""}</div>
-                    <b style={{ fontFamily: "var(--uf-font-mono)", color: "var(--uf-ink)" }}>{fmtMoney(value, true)}</b>
+                    <div style={{ color: "var(--uf-ink-2)" }}>{b.year}{b.actual ? "" : " · projected"}{moveYear != null && b.year >= moveYear ? ` · in ${retireCity.split(",")[0]}` : ""}</div>
+                    <b style={{ fontFamily: "var(--uf-font-mono)", color: "var(--uf-ink)" }}>{fmtMoney(b.value, true)}</b>
                   </div>
                 );
               }}
             />
             <ReferenceLine y={fireTarget} stroke="var(--uf-ink-3)" strokeDasharray="4 5" label={{ value: "FIRE number", position: "insideTopLeft", fill: "var(--uf-ink-3)", fontSize: 12, fontFamily: "var(--uf-font-mono)" }} />
-            <Area type="monotone" dataKey="actual" stroke="var(--uf-teal)" strokeWidth={2.5} fill="var(--uf-teal)" fillOpacity={0.1} connectNulls={false} dot={false} activeDot={{ r: 4, fill: "var(--uf-teal)" }} isAnimationActive={false} />
-            <Line type="monotone" dataKey="projected" stroke="var(--uf-teal)" strokeWidth={2} strokeDasharray="1 5" strokeLinecap="round" dot={false} activeDot={{ r: 4, fill: "var(--uf-teal)" }} isAnimationActive={false} />
-          </ComposedChart>
+            {moveYear != null && yearBars.some((b) => b.year === moveYear) && (
+              <ReferenceLine x={String(moveYear)} stroke="var(--uf-ink-3)" strokeDasharray="2 3"
+                label={(props: { viewBox?: { x?: number; y?: number } }) => {
+                  const x = props.viewBox?.x ?? 0, y = (props.viewBox?.y ?? 0) - 18;
+                  return (
+                    <g aria-label={`Move to ${retireCity} in ${moveYear}`}>
+                      <circle cx={x} cy={y} r={14} fill="var(--uf-card)" stroke="var(--uf-teal)" strokeWidth={1.5} />
+                      <text x={x} y={y + 5} textAnchor="middle" fontSize={14}>{CITIES.find((c) => c.name === retireCity)?.flag ?? "\u{1F4CD}"}</text>
+                    </g>
+                  );
+                }} />
+            )}
+            <Bar dataKey="value" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+              {yearBars.map((b) => (
+                <Cell key={b.year}
+                  fill={moveYear != null && b.year >= moveYear && !b.actual ? "url(#uf-moved)" : "var(--uf-teal)"}
+                  fillOpacity={b.actual || (freeYear != null && b.year >= freeYear) ? 1 : 0.5} />
+              ))}
+            </Bar>
+          </BarChart>
         </ResponsiveContainer>
       </FreedomCard>
 
@@ -6286,6 +6335,7 @@ export default function Dashboard() {
                 displayRates={rates}
                 plaidAccounts={plaidAccounts}
                 retirementCityCol={retirementCityCol}
+                retirementCityName={retirementCityName}
                 lifestyleMultiplier={lifestyleMultiplier}
                 fireAge={fireAge}
                 nwSnapshots={nwSnapshots}

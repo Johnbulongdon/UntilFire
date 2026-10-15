@@ -29,7 +29,7 @@ export function ProgressTrack({ share, height = 8, label }: { share: number; hei
 const PERIODS = ["5Y", "15Y", "All"] as const;
 export type ChartPeriod = typeof PERIODS[number];
 
-export function FreedomCard({ dateLabel, yearsAway, age, invested, target, fmt, period, onPeriod, children }: {
+export function FreedomCard({ dateLabel, yearsAway, age, invested, target, fmt, period, onPeriod, route, children }: {
   /** "March 2041"; null until the plan has enough to project. */
   dateLabel: string | null;
   yearsAway: number | null;
@@ -39,6 +39,8 @@ export function FreedomCard({ dateLabel, yearsAway, age, invested, target, fmt, 
   fmt: (n: number, compact?: boolean) => string;
   period: ChartPeriod;
   onPeriod: (p: ChartPeriod) => void;
+  /** A planned move to the retirement city (D-81), shown under the date so the number says what it assumes. */
+  route?: { from: string; to: string; when: string; onOpen: () => void };
   /** The chart, drawn by the dashboard from the same projection as the date. */
   children: React.ReactNode;
 }) {
@@ -55,6 +57,14 @@ export function FreedomCard({ dateLabel, yearsAway, age, invested, target, fmt, 
                 <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 2 }}>
                   In {yearsAway} {yearsAway === 1 ? "year" : "years"}{age ? `, at ${age}` : ""}
                 </div>
+              )}
+              {route && (
+                <button type="button" onClick={route.onOpen} aria-label={`Planned move to ${route.to} ${route.when}. Change it in Plan`}
+                  style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--uf-border)", background: "var(--uf-surface-2)", borderRadius: 999, padding: "5px 12px", font: "inherit", fontSize: 13, fontWeight: 700, color: "var(--uf-ink)", cursor: "pointer" }}>
+                  {route.from && <><span>{route.from}</span><span aria-hidden style={{ color: "var(--uf-ink-3)" }}>→</span></>}
+                  <span>{route.to}</span>
+                  <span style={{ color: "var(--uf-ink-3)", fontWeight: 500 }}>· {route.when} ›</span>
+                </button>
               )}
             </>
           ) : (
