@@ -8,6 +8,20 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-15
 
+### Household
+- Fix: an invitation that could not be accepted (expired, cancelled, already
+  used) no longer sends the invitee back to the error page on every dashboard
+  visit.
+- The invitation link now asks "Join John's household?" before joining,
+  instead of joining as soon as it opens.
+- Partners can no longer read each other's transactions, accounts, goals or
+  other raw rows through the database; the combined freedom date is unchanged
+  (D-84, migration 0057).
+- Fix: confirming a shared checking account no longer subtracts its balance
+  from the household's investments. Linked investment accounts now count in the
+  combined total the same way they do on each person's own dashboard.
+- Security: the waitlist is no longer readable with the public key (0057).
+
 ### Dashboard
 - New (D-83): savings withdrawal countdown. Tap a savings account in Money to
   set its monthly withdrawal limit; the account then shows "4 of 6 withdrawals
