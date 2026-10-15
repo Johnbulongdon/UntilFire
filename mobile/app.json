@@ -164,10 +164,15 @@
           "enableBackgroundPlayback": false
         }
       ],
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      "expo-iap",
+      "expo-updates"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     }
   }
 }

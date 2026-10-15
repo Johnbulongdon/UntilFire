@@ -46,7 +46,16 @@ Expo Go, and turn on by themselves there (`mobile/src/lib/native-build.ts`).
    through their own app (OAuth), add a redirect URI on untilfire.com with an
    `apple-app-site-association` file and the Associated Domains capability.
 9. Remove the website branch of `BankBridge`.
-10. **Listing:** paste `docs/app-store-listing.md`, take the screenshots it
+10. **App Review login:** in Supabase, Authentication, Users, add
+    `appreview@untilfire.com` with a 6-digit numeric password and auto-confirm.
+    Sign in with it on the phone (email, then the password as the code), answer
+    the questions and add a few transactions so the review sees a real Home.
+    In App Store Connect's Review Notes give the email, the code, and "connect
+    a bank with Plaid's sandbox: First Platypus Bank, user_good / pass_good".
+11. **Over-the-air updates:** run `eas update:configure` once (it adds the
+    update URL to `app.json`), then hotfixes ship with
+    `eas update --channel production`.
+12. **Listing:** paste `docs/app-store-listing.md`, take the screenshots it
     lists, then `eas build --profile production` and `eas submit`.
 
 ## Known follow-ups

@@ -117,6 +117,8 @@ one.
 16. **A login for App Review.** Sign-in is only email code, Apple or Google
     (`state/auth.tsx`). Add a fixed-code reviewer account with seeded data,
     and Plaid sandbox notes in the Review Notes.
+    **Done in code:** `appreview@untilfire.com` signs in with a fixed code
+    (`state/auth.tsx`); creating the account is a purchase-day step.
 17. **Banks that log in on their own site, such as Chase.** These need a
     `redirect_uri` in `app/api/plaid/create-link-token/route.ts:27` and an
     `apple-app-site-association` file served from untilfire.com.
@@ -126,6 +128,8 @@ one.
     - Install expo-updates so there's a hotfix path; `eas.json` sets
       channels but nothing uses them.
     - Add the `expo-iap` plugin.
+    **Done:** expo-updates and the expo-iap plugin are in `app.json`;
+    `eas update:configure` and the PostHog key are purchase-day steps.
 19. **Manage subscription.** The Pro screen sends everyone to Apple's
     subscriptions page, including people billed through the website
     (`pro.tsx:89`).

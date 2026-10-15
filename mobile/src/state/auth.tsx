@@ -11,6 +11,14 @@ import { whileAway } from '@/lib/app-lock'
 import { supabase } from '@/lib/supabase'
 import { Events, identify, track } from '@/lib/analytics'
 
+/**
+ * App Review can't receive our emails, so this one account signs in with a
+ * fixed 6-digit code: its Supabase password, given to Apple in the Review Notes.
+ * Every other address gets the normal emailed code.
+ */
+const REVIEW_EMAIL = 'appreview@untilfire.com'
+const isReviewEmail = (email: string) => email.trim().toLowerCase() === REVIEW_EMAIL
+
 const SITE = 'https://www.untilfire.com'
 
 WebBrowser.maybeCompleteAuthSession()
@@ -49,11 +57,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     ready,
     sendCode: async email => {
+      // App Review's account signs in with a fixed code instead of an email (docs/ios-launch.md).
+      if (isReviewEmail(email)) return null
       const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } })
       return error ? friendly(error.message) : null
     },
     verifyCode: async (email, code) => {
-      const { data, error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code, type: 'email' })
+      const { data, error } = isReviewEmail(email)
+        ? await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password: code })
+        : await supabase.auth.verifyOtp({ email: email.trim(), token: code, type: 'email' })
       if (error) return friendly(error.message)
       if (data.session) welcomeIfNew(data.session)
       return null
