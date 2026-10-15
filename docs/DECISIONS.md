@@ -2733,5 +2733,12 @@ one, and one city field could not say whether pay follows a move. Moving to a
 pricier city to retire is not moving there to work.
 **Rejected:** guessing a city salary (an invented number about someone's pay);
 the city average as the target (ignores the actual household).
+**Suggest by rank (added the same day, founder's choice):** take-home in the new
+city can be filled from Census B19080 household income by rank
+(`lib/fire/pay-by-rank.ts`, `lib/city-income-bands.ts`): gross here × the two
+cities' ratio at your rank, then the new city's tax. Only the ratio is used
+(household, not individual, income); ranks under the 40th use the 40th's ratio
+(non-earning households skew the bottom); top-coded $250k bands are never
+values. A labelled, editable button, never applied on its own.
 **Later:** scale housing and everything else separately (rent spreads ~3.9×
 across cities, totals ~1.7×; see [cost of living](cost-of-living.md)).

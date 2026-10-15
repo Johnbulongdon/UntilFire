@@ -21,6 +21,7 @@ export {
 
 export { calcFIRE, REAL_RETURN, yearsToTarget } from './strategies/traditional';
 export { moveBeforeFreedomChange, retirementLocationMonthlySpend } from './retirement-location';
+export { suggestPayByRank, type PayByRank } from './pay-by-rank';
 import { calcFIRE } from './strategies/traditional';
 
 export { calcTakeHome, getLocale, takeHomePay } from './tax';
