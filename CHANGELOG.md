@@ -9,6 +9,10 @@ under today's date, creating the heading if it is not there yet.
 ## 2026-10-15
 
 ### Dashboard
+- New (D-83): savings withdrawal countdown. Tap a savings account in Money to
+  set its monthly withdrawal limit; the account then shows "4 of 6 withdrawals
+  left this month" and lists this month's transfers out (migrations 0055,
+  0056). The phone shows the same line under Net worth.
 - New: Money → Offers, "Where to keep your money": savings, bank and
   brokerage accounts UntilFire lists, each with its rate, any current bonus
   and a line saying who earns from the link (D-81). Admin → Offers adds,

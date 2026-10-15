@@ -2742,3 +2742,26 @@ cities' ratio at your rank, then the new city's tax. Only the ratio is used
 values. A labelled, editable button, never applied on its own.
 **Later:** scale housing and everything else separately (rent spreads ~3.9×
 across cities, totals ~1.7×; see [cost of living](cost-of-living.md)).
+
+### D-83 — October 15: a monthly countdown for savings withdrawals
+
+**Status:** Active. The founder asked for a count of withdrawals left on a
+high-yield savings account, with a Bilt autopay counting as one.
+**Decision:**
+- **The person sets the limit.** Reg D's six-transfer cap was suspended in 2020.
+  Capital One 360 still lists six but says it is not enforcing it; Ally, Marcus
+  and Amex have none; Chase, Bank of America and Wells Fargo still cap savings
+  at six (Bankrate, March 2026). So the limit is an optional number per savings
+  account, suggested only for banks known to enforce one
+  (`lib/savings-limits.ts`), never assumed.
+- **Only money out counts.** Deposits never use up a withdrawal. Rows live in
+  `savings_withdrawals`, not `expenses`: the sync drops transfers and card
+  payments from spending on purpose, and those are what use up a withdrawal.
+- **Calendar month, refreshed whole.** Plaid gives no statement-cycle dates for
+  savings, so the count resets on the 1st. Each sync re-reads the month for
+  limited accounts only, so pending rows that post are not counted twice and
+  accounts without a limit cost no extra Plaid calls.
+- **Shown on the account, not as a prompt.** "4 of 6 withdrawals left this
+  month" on the account in Money (web) and Net worth (phone); past the limit it
+  says how many over. The limit is set on the website for now.
+

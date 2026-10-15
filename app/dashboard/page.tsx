@@ -61,6 +61,7 @@ import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomiz
 import { useCustomCategories } from "@/lib/useCustomCategories";
 import { Alert, Button, ICON_PATHS, Input } from "@/components/ui";
 import { stampActive } from "@/lib/last-active";
+import { knownWithdrawalLimit, parseWithdrawalLimit, withdrawalsLeftLabel } from "@/lib/savings-limits";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
@@ -80,6 +81,9 @@ type PlaidAccount = {
   plaid_item_id: string;
   updated_at: string;
   apy: number | null;
+  withdrawal_limit?: number | null;
+  /** This month's money out, present only when a limit is set. */
+  withdrawals?: { date: string; amount: number; description: string | null; pending: boolean }[];
 };
 type PlaidHolding = {
   account_id: string;
@@ -3612,6 +3616,61 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
     );
   }
 
+  // ── Monthly withdrawal limit (savings) ──────────────────────────────────
+  const [limitMap, setLimitMap] = useState<Record<string, number | null>>({});
+  const effectiveLimit = (a: PlaidAccount) => limitMap[a.id] !== undefined ? limitMap[a.id] : a.withdrawal_limit ?? null;
+
+  const handleSaveLimit = async (accountId: string, withdrawal_limit: number | null) => {
+    setLimitMap(prev => ({ ...prev, [accountId]: withdrawal_limit }));
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const res = await fetch(`/api/plaid/accounts/${accountId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ withdrawal_limit }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      const orig = plaidAccounts.find(a => a.id === accountId)?.withdrawal_limit ?? null;
+      setLimitMap(prev => ({ ...prev, [accountId]: orig }));
+    } else {
+      onRefreshAccounts?.();
+    }
+  };
+
+  function LimitField({ account }: { account: PlaidAccount }) {
+    const current = effectiveLimit(account);
+    const known = knownWithdrawalLimit(bankOf(account)?.institution_name);
+    const [editing, setEditing] = useState(false);
+    const [val, setVal] = useState(current != null ? String(current) : known != null ? String(known) : "");
+    useEffect(() => { setVal(current != null ? String(current) : known != null ? String(known) : ""); }, [current, known]);
+
+    const commit = () => {
+      handleSaveLimit(account.id, parseWithdrawalLimit(val));
+      setEditing(false);
+    };
+
+    if (editing) return (
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+        <input autoFocus type="number" step="1" min="1" max="99" value={val}
+          onChange={e => setVal(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") setEditing(false); }}
+          onBlur={commit}
+          aria-label="Withdrawals allowed per month"
+          style={{ width: 52, border: "1px solid var(--uf-green)", borderRadius: 6, padding: "3px 6px", fontSize: 12, outline: "none", fontFamily: "inherit" }}
+          placeholder="6"
+        />
+        <span style={{ fontSize: 12, color: "var(--uf-ink-2)" }}>withdrawals a month (blank for none)</span>
+      </div>
+    );
+
+    return (
+      <button onClick={() => setEditing(true)}
+        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--uf-ink-3)", textAlign: "left", padding: 0, fontFamily: "inherit", marginTop: 2 }}>
+        {current != null ? `${current} withdrawals a month ✏️` : known != null ? `＋ Track withdrawal limit (this bank usually allows ${known})` : "＋ Track withdrawal limit"}
+      </button>
+    );
+  }
+
   // ── Emergency fund logic ─────────────────────────────────────────────────
   const HYSA_THRESHOLD = 3.5;
   const savingsAccts = bankAssets.filter(isSavingsAccount);
@@ -3693,12 +3752,23 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
             const line = [bank?.institution_name, meta.label, a.mask ? `•••• ${a.mask}` : null, apy != null ? `${apy}% APY` : null, native,
               stale ? `balance from ${new Date(a.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : null].filter(Boolean).join(" · ");
             const value = a.balance_current ?? 0;
+            const limit = effectiveLimit(a);
+            const used = a.withdrawals?.length ?? 0;
+            const countdown = limit != null && isSavingsAccount(a) ? withdrawalsLeftLabel(limit, used) : null;
             return (
-              <MoneyRow key={a.id} dot={meta.color} name={a.name} meta={line} value={fmtMoney(value)}
+              <MoneyRow key={a.id} dot={meta.color} name={a.name}
+                meta={countdown ? <>{line}<br /><span style={used > limit! ? { color: "var(--uf-neg-ink)", fontWeight: 600 } : undefined}>{countdown}</span></> : line} value={fmtMoney(value)}
                 icon={<BankLogo logo={bank?.institution_logo} name={bank?.institution_name ?? a.name} color={bank?.institution_color} />}
                 bar={haveTotal > 0 && value > 0 ? <MoneyTrack share={value / haveTotal} color={meta.color} label={`${a.name}: ${Math.round((value / haveTotal) * 100)}% of what you have`} /> : undefined}
                 onClick={isSavingsAccount(a) ? () => toggleRow(a.id) : undefined}
-                after={openRow === a.id && <ApyField account={a} />} />
+                after={openRow === a.id && <><ApyField account={a} /><LimitField account={a} />
+                  {(a.withdrawals?.length ?? 0) > 0 && (
+                    <ul className="uf-t-small" style={{ margin: "4px 0 0", padding: 0, listStyle: "none", color: "var(--uf-ink-2)" }}>
+                      {a.withdrawals!.map((w, i) => (
+                        <li key={i}>{new Date(`${w.date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {w.description ?? "Transfer"} · <span className="uf-t-data">{fmtMoney(w.amount)}</span>{w.pending ? " · pending" : ""}</li>
+                      ))}
+                    </ul>
+                  )}</>} />
             );
           })}
           {typedRows.map((t) => (
