@@ -97,7 +97,11 @@ export default function Pro() {
         {data?.pro ? (
           <View className="gap-3">
             <Text className="text-[17px] font-bold text-ink">You're on Pro. Thank you.</Text>
-            <Button kind="quiet" label="Manage your subscription" onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions').catch(() => {})} />
+            {data.proSource === 'apple' ? (
+              <Button kind="quiet" label="Manage your subscription" onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions').catch(() => {})} />
+            ) : (
+              <Text className="text-[15px] leading-6 text-ink-2">{proNote(data.proSource, data.proUntil)}</Text>
+            )}
           </View>
         ) : (
           <View className="flex-row gap-3">
@@ -133,4 +137,12 @@ export default function Pro() {
       )}
     </SafeAreaView>
   )
+}
+
+/** Where Pro comes from when it isn't billed by Apple, so nobody is sent to the wrong place to manage it. */
+function proNote(source: string | null, until: string | null): string {
+  const date = until ? new Date(until).toLocaleDateString(undefined, { month: 'long', day: 'numeric' }) : null
+  if (source === 'reward') return date ? `Your free month of Pro runs until ${date}.` : 'You have a free month of Pro.'
+  if (source === 'household') return 'Pro comes with your household.'
+  return 'Your Pro is billed through your untilfire.com account. You can manage it there.'
 }

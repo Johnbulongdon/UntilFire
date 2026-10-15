@@ -7,8 +7,17 @@ import * as WebBrowser from 'expo-web-browser'
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 import { isFirstSignIn } from '@/engine'
+import { whileAway } from '@/lib/app-lock'
 import { supabase } from '@/lib/supabase'
 import { Events, identify, track } from '@/lib/analytics'
+
+/**
+ * App Review can't receive our emails, so this one account signs in with a
+ * fixed 6-digit code: its Supabase password, given to Apple in the Review Notes.
+ * Every other address gets the normal emailed code.
+ */
+const REVIEW_EMAIL = 'appreview@untilfire.com'
+const isReviewEmail = (email: string) => email.trim().toLowerCase() === REVIEW_EMAIL
 
 const SITE = 'https://www.untilfire.com'
 
@@ -48,11 +57,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     ready,
     sendCode: async email => {
+      // App Review's account signs in with a fixed code instead of an email (docs/ios-launch.md).
+      if (isReviewEmail(email)) return null
       const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } })
       return error ? friendly(error.message) : null
     },
     verifyCode: async (email, code) => {
-      const { data, error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code, type: 'email' })
+      const { data, error } = isReviewEmail(email)
+        ? await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password: code })
+        : await supabase.auth.verifyOtp({ email: email.trim(), token: code, type: 'email' })
       if (error) return friendly(error.message)
       if (data.session) welcomeIfNew(data.session)
       return null
@@ -66,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         options: { redirectTo, skipBrowserRedirect: true },
       })
       if (error || !data.url) return friendly(error?.message ?? '')
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo)
+      const result = await whileAway(() => WebBrowser.openAuthSessionAsync(data.url, redirectTo))
       if (result.type !== 'success') return null
       const params = new URL(result.url).searchParams
       const code = params.get('code')
@@ -81,10 +94,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // A one-time nonce: Apple signs its hash, Supabase checks the original.
         const raw = Crypto.randomUUID()
         const hashed = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, raw)
-        const cred = await AppleAuthentication.signInAsync({
+        const cred = await whileAway(() => AppleAuthentication.signInAsync({
           requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME, AppleAuthentication.AppleAuthenticationScope.EMAIL],
           nonce: hashed,
-        })
+        }))
         if (!cred.identityToken) return "Apple sign-in didn't finish. Please try again."
         const { data, error } = await supabase.auth.signInWithIdToken({ provider: 'apple', token: cred.identityToken, nonce: raw })
         if (error) return friendly(error.message)

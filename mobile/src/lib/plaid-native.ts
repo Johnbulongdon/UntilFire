@@ -1,5 +1,6 @@
 import type { LinkSuccess } from 'react-native-plaid-link-sdk'
 
+import { whileAway } from '@/lib/app-lock'
 import { nativeBuild } from '@/lib/native-build'
 
 const SITE = 'https://www.untilfire.com'
@@ -27,7 +28,7 @@ export async function connectBankNative(accessToken: string): Promise<string | '
   const body = res ? await res.json().catch(() => ({})) : {}
   if (!res || !res.ok || !body.link_token) return body.error ?? "Couldn't start connecting a bank. Please try again."
 
-  return new Promise(resolve => {
+  return whileAway(() => new Promise(resolve => {
     createPlaidLinkSession({
       token: body.link_token,
       onEvent: () => {},
@@ -52,5 +53,5 @@ export async function connectBankNative(accessToken: string): Promise<string | '
     })
       .then(session => session.open())
       .catch(() => resolve("Couldn't open the bank connection. Please try again."))
-  })
+  }))
 }

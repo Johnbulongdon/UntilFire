@@ -92,9 +92,14 @@ one.
       could show in the app switcher.
     - It locks on every `inactive` change: Control Center, the Apple
       purchase sheet, Plaid and Google sign-in all trigger it.
+    **Done:** the lock is a Modal over every screen; Control Center only
+    covers it, leaving locks it, and the app's own system sheets
+    (`whileAway` in `lib/app-lock.ts`) don't.
 12. **The session and account cache sit in plain AsyncStorage**
     (`lib/supabase.ts:15`). Finance apps at this level keep them in the
     Keychain (expo-secure-store).
+    **Done:** the session is in the Keychain (`lib/secure-storage.ts`),
+    moved across from plain storage on first read.
 13. **The path to Pro can't be measured.** There are no paywall-viewed or
     purchased events (`lib/analytics.ts`). There's no trial or introductory
     offer, and the feature list repeats itself (`pro.tsx:20-22`). Without
@@ -108,9 +113,12 @@ one.
 15. **Privacy manifest.** Declare the required-reason APIs (AsyncStorage,
     PostHog, Plaid) in `app.json` `ios.privacyManifests`. Without this,
     Apple can reject the upload (ITMS-91053).
+    **Done:** `ios.privacyManifests` in `app.json`.
 16. **A login for App Review.** Sign-in is only email code, Apple or Google
     (`state/auth.tsx`). Add a fixed-code reviewer account with seeded data,
     and Plaid sandbox notes in the Review Notes.
+    **Done in code:** `appreview@untilfire.com` signs in with a fixed code
+    (`state/auth.tsx`); creating the account is a purchase-day step.
 17. **Banks that log in on their own site, such as Chase.** These need a
     `redirect_uri` in `app/api/plaid/create-link-token/route.ts:27` and an
     `apple-app-site-association` file served from untilfire.com.
@@ -120,9 +128,13 @@ one.
     - Install expo-updates so there's a hotfix path; `eas.json` sets
       channels but nothing uses them.
     - Add the `expo-iap` plugin.
+    **Done:** expo-updates and the expo-iap plugin are in `app.json`;
+    `eas update:configure` and the PostHog key are purchase-day steps.
 19. **Manage subscription.** The Pro screen sends everyone to Apple's
     subscriptions page, including people billed through the website
     (`pro.tsx:89`).
+    **Done:** only Apple subscribers get the link; the free month, a
+    household and website billing each get a line saying where Pro comes from.
 20. **Privacy labels.** Declare email and user ID, financial info, usage and
     crash data linked to the user, and feedback text.
 
