@@ -30,6 +30,9 @@ under today's date, creating the heading if it is not there yet.
   years in the new city striped.
 - Admin: the Census sync also stores household income by rank for each city
   (migration 0054), ready for suggesting pay after a move (D-82).
+- New: "Suggest by rank" in the move form fills take-home in the new city at
+  the same household-income rank as where you live, after its taxes (D-82).
+  US cities only; labelled and editable.
 
 ### iOS app (in development)
 - The freedom date uses the same retirement-city and move rules (D-82).

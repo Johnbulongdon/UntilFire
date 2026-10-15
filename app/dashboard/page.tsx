@@ -6572,6 +6572,7 @@ export default function Dashboard() {
                       moveYear={planSettings.moveYear}
                       movePayMonthly={planSettings.movePayMonthly}
                       onMoveChange={(moveYear, movePayMonthly) => setPlanSettings((p) => ({ ...p, moveYear, movePayMonthly }))}
+                      takeHomeMonthly={effectiveIncome}
                       retirementCityName={retirementCityName}
                       retirementCityCol={retirementCityCol}
                       onRetirementCityChange={(name, col) => { if (!cityName) setCityName(name); setRetirementCityName(name); setRetirementCityCol(col); }}
