@@ -2765,3 +2765,21 @@ high-yield savings account, with a Bilt autopay counting as one.
   month" on the account in Money (web) and Net worth (phone); past the limit it
   says how many over. The limit is set on the website for now.
 
+### D-84 — October 15: partners share the combined view, not raw rows
+
+**Status:** Active. Narrows "full transparency within a household"
+([family accounts](design/family-accounts.md), 16 Aug) at the database level.
+The founder asked for it in the pre-launch household audit.
+**Decision:**
+- **Owner-only reads on every financial table** (0057). 0016 let a partner read
+  the other's transactions, Plaid accounts, goals, net-worth history, budget,
+  scenarios, expected payments and profile. No screen used it: every query
+  filters by the caller's own id, and the household card is computed server
+  side. It only widened what a partner could pull through the API, beyond
+  what the invite promises.
+- **What partners see is what the household summary returns:** each person's
+  income, spending, portfolio and age, and the combined freedom date. Wider
+  sharing returns, if wanted, as a deliberate server-side view.
+- **Joining waits for a tap** on the invitation page, since it shares the
+  invitee's numbers too.
+
