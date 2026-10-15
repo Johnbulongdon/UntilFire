@@ -29,3 +29,17 @@ export async function unlock(): Promise<boolean> {
   const r = await LocalAuthentication.authenticateAsync({ promptMessage: 'Unlock UntilFire', fallbackLabel: 'Use passcode' })
   return r.success
 }
+
+let away = 0
+
+/**
+ * Runs something that shows a system sheet (Apple's purchase sheet, Plaid,
+ * Google or Apple sign-in). Those make the app inactive, which isn't the
+ * person leaving, so the lock stays down until shortly after it finishes.
+ */
+export async function whileAway<T>(fn: () => Promise<T>): Promise<T> {
+  away++
+  try { return await fn() } finally { setTimeout(() => { away-- }, 1000) }
+}
+
+export const isAway = () => away > 0

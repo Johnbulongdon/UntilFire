@@ -7,6 +7,7 @@ import * as WebBrowser from 'expo-web-browser'
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 
 import { isFirstSignIn } from '@/engine'
+import { whileAway } from '@/lib/app-lock'
 import { supabase } from '@/lib/supabase'
 import { Events, identify, track } from '@/lib/analytics'
 
@@ -66,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         options: { redirectTo, skipBrowserRedirect: true },
       })
       if (error || !data.url) return friendly(error?.message ?? '')
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo)
+      const result = await whileAway(() => WebBrowser.openAuthSessionAsync(data.url, redirectTo))
       if (result.type !== 'success') return null
       const params = new URL(result.url).searchParams
       const code = params.get('code')
@@ -81,10 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // A one-time nonce: Apple signs its hash, Supabase checks the original.
         const raw = Crypto.randomUUID()
         const hashed = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, raw)
-        const cred = await AppleAuthentication.signInAsync({
+        const cred = await whileAway(() => AppleAuthentication.signInAsync({
           requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME, AppleAuthentication.AppleAuthenticationScope.EMAIL],
           nonce: hashed,
-        })
+        }))
         if (!cred.identityToken) return "Apple sign-in didn't finish. Please try again."
         const { data, error } = await supabase.auth.signInWithIdToken({ provider: 'apple', token: cred.identityToken, nonce: raw })
         if (error) return friendly(error.message)

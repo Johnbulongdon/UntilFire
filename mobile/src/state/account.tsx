@@ -62,6 +62,10 @@ export type MerchantRule = { category: string; sub_category: string | null; need
 export interface AccountData {
   /** Pro, on this account or through the household (lib/supabase isPro). */
   pro: boolean
+  /** Who bills Pro: 'apple', 'stripe' (the website), 'reward' (the quiz month), 'household', or null. */
+  proSource: string | null
+  /** When the current Pro period ends, if known. */
+  proUntil: string | null
   /** Monthly take-home from the website's budget. */
   income: number
   /** Monthly budget per expense category, in USD. */
@@ -184,7 +188,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const today = isoDay(new Date())
     const since = `${addMonths(monthOf(today), -HISTORY_MONTHS)}-01`
 
-    const [budgetRes, txRes, plaid, billsRes, goalsRes, snapRes, profileRes, pro] = await Promise.all([
+    const [budgetRes, txRes, plaid, billsRes, goalsRes, snapRes, profileRes, proRes] = await Promise.all([
       supabase.from('user_budget').select('income, expenses, fire_age, fire_assets').eq('user_id', userId).maybeSingle(),
       fetchAllPages<Transaction>((from, to) => supabase.from('expenses')
         .select('id, date, amount, refund_amount, currency, description, category, sub_category, transaction_type, notes, tags, source')
@@ -214,11 +218,11 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       supabase.from('profiles').select('contribution_plan, display_name, default_currency, dashboard_layout').eq('user_id', userId).maybeSingle(),
       // Pro as the website decides it: an active Pro subscription, or a household that has one.
       (async () => {
-        const { data: sub } = await supabase.from('subscriptions').select('status, plan').eq('user_id', userId).maybeSingle()
-        if (sub?.status === 'active' && sub?.plan === 'pro') return true
+        const { data: sub } = await supabase.from('subscriptions').select('status, plan, source, current_period_end').eq('user_id', userId).maybeSingle()
+        if (sub?.status === 'active' && sub?.plan === 'pro') return { pro: true, source: (sub.source as string | null) ?? 'stripe', until: (sub.current_period_end as string | null) ?? null }
         const { data } = await supabase.rpc('household_has_pro')
-        return data === true
-      })().catch(() => false),
+        return { pro: data === true, source: data === true ? 'household' : null, until: null }
+      })().catch(() => ({ pro: false, source: null, until: null })),
     ])
     // Money shows in the account's currency, at today's rate when it can be fetched.
     const currency = (profileRes.data?.default_currency as string | null) || 'USD'
@@ -245,7 +249,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const mortgageBalance = mortgages.reduce((s, m) => s + m.balance, 0)
 
     const next: AccountData = {
-      pro,
+      pro: proRes.pro,
+      proSource: proRes.source,
+      proUntil: proRes.until,
       income: Number(budgetRes.data?.income ?? 0),
       budget,
       age: budgetRes.data?.fire_age ?? null,

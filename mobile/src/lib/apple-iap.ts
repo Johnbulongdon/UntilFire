@@ -1,3 +1,4 @@
+import { whileAway } from '@/lib/app-lock'
 import { nativeBuild } from '@/lib/native-build'
 
 const SITE = 'https://www.untilfire.com'
@@ -79,7 +80,7 @@ export function listenForPurchases(accessToken: string, onPro: () => void): () =
 export function buyPro(plan: ProPlan, accessToken: string): Promise<string | 'cancelled' | null> {
   const m = iap()
   if (!m) return Promise.resolve('Purchases work in the App Store version of UntilFire.')
-  return new Promise(resolve => {
+  return whileAway(() => new Promise(resolve => {
     let settled = false
     const done = (r: string | 'cancelled' | null) => { if (settled) return; settled = true; clearTimeout(timer); ok.remove(); fail.remove(); resolve(r) }
     // Never leave the screen on "One moment…": after a while, say it's with Apple.
@@ -99,7 +100,7 @@ export function buyPro(plan: ProPlan, accessToken: string): Promise<string | 'ca
     m.initConnection()
       .then(() => m.requestPurchase({ request: { apple: { sku: PRO_PRODUCTS[plan] } }, type: 'subs' }))
       .catch(() => done("Couldn't open Apple's purchase sheet. Please try again."))
-  })
+  }))
 }
 
 /** Restore purchases (Apple requires the button): re-sends any active Pro to the website. */
@@ -107,7 +108,7 @@ export async function restorePro(accessToken: string): Promise<string | null> {
   const m = iap()
   if (!m) return 'Purchases work in the App Store version of UntilFire.'
   await m.initConnection()
-  await m.restorePurchases().catch(() => {})
+  await whileAway(() => m.restorePurchases()).catch(() => {})
   const purchases = (await m.getAvailablePurchases().catch(() => [])) ?? []
   const pro = purchases.find(p => isPro(p.productId) && p.purchaseToken)
   if (!pro) return 'No UntilFire Pro purchase found on this Apple ID.'
