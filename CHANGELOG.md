@@ -24,6 +24,8 @@ under today's date, creating the heading if it is not there yet.
 - Home's freedom chart is one bar a year, as on the phone. A planned move
   shows as a route chip under the date and a flag on the move year, with the
   years in the new city striped.
+- Admin: the Census sync also stores household income by rank for each city
+  (migration 0054), ready for suggesting pay after a move (D-82).
 
 ### iOS app (in development)
 - The freedom date uses the same retirement-city and move rules (D-82).
