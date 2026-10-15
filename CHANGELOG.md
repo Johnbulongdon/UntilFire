@@ -6,6 +6,14 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-15
+
+### Dashboard
+- New: Money → Offers, "Where to keep your money": savings, bank and
+  brokerage accounts UntilFire lists, each with its rate, any current bonus
+  and a line saying who earns from the link (D-81). Admin → Offers adds,
+  edits, shows and hides offers and counts clicks.
+
 ## 2026-10-13
 
 ### Dashboard

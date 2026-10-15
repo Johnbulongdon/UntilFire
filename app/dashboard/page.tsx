@@ -33,6 +33,7 @@ import CategoriesTab from "./CategoriesTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
 import BudgetSetupModal from "./BudgetSetupModal";
 import ReportsTab from "./ReportsTab";
+import OffersTab from "./OffersTab";
 import ProfileTab from "./ProfileTab";
 import ExploreClient from "../explore/ExploreClient";
 import PurchaseImpactPanel from "./PurchaseImpactPanel";
@@ -108,6 +109,7 @@ type TabKey =
   | "contributions"
   | "citizenship"
   | "reports"
+  | "offers"
   | "learning-hub"
   | "profile";
 
@@ -4685,7 +4687,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
   {
     key: "cashflow",
     label: "Money",
-    activeTabs: ["cashflow", "income", "reports", "assets", "liabilities"],
+    activeTabs: ["cashflow", "income", "reports", "assets", "liabilities", "offers"],
     svg: ICON_PATHS.money,
   },
   {
@@ -4706,6 +4708,8 @@ const MONEY_SECTIONS: { label: string; tab: TabKey }[] = [
   { label: "Net Worth", tab: "assets"      },
   { label: "Debts",     tab: "liabilities" },
   { label: "Insights",  tab: "reports"     },
+  // Where to keep your money: partner savings, bank and brokerage accounts.
+  { label: "Offers",    tab: "offers"      },
 ];
 
 // Plan's destinations. Two of them are sub-tab states of fire-calculator rather
@@ -4843,7 +4847,7 @@ export default function Dashboard() {
     const t = params.get("tab") as TabKey | null;
     const valid: TabKey[] = [
       "overview", "cashflow", "income", "assets", "liabilities",
-      "fire-calculator", "expat-fire", "goals", "contributions", "citizenship", "reports", "learning-hub", "profile",
+      "fire-calculator", "expat-fire", "goals", "contributions", "citizenship", "reports", "offers", "learning-hub", "profile",
     ];
     if (t && valid.includes(t)) setTab(t);
     if (params.get("upgraded") === "true") {
@@ -6505,6 +6509,7 @@ export default function Dashboard() {
             )}
             {tab === "citizenship" && <CitizenshipTab onOpenExpat={() => openDashboardTab("expat-fire")} />}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar} />}
+            {tab === "offers" && <OffersTab />}
             {tab === "learning-hub" && <LearnTab recommendedStageId={learnPlace.stage} progress={learnPlace.progress} yearsToGo={learnPlace.years} onOpenTab={openDashboardTab} />}
             {tab === "expat-fire" && (
               <ExploreClient appPlan={explorePlan} displayCurrency={defaultCurrency} displayRates={rates}

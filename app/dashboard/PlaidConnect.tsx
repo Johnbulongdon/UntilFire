@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { usePlaidLink } from "react-plaid-link";
 import { trackHysaEmptyStateCtaClicked } from "@/lib/analytics";
@@ -452,7 +451,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
               </div>
               <p style={{ fontSize: 13, lineHeight: 1.6, color: "#475569", margin: "6px 0 0" }}>
                 A high-yield savings account can help idle cash earn interest while staying easy to reach for true emergencies.
-                We are not recommending any bank here yet — first we want to learn whether people want education or account connection.
+                At about 4%, every $10,000 earns roughly $400 a year. Offers lists accounts we picked, and says who earns from each link.
               </p>
             </div>
           </div>
@@ -479,12 +478,13 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-            <Link
-              href="/calculators/apy?source=dashboard-hysa-card"
+            {/* A full load: the dashboard reads ?tab= when it mounts. */}
+            <a
+              href="/dashboard?tab=offers"
               onClick={() =>
                 trackHysaEmptyStateCtaClicked({
-                  cta: 'learn_more',
-                  destination: 'apy_calculator',
+                  cta: 'see_offers',
+                  destination: 'offers',
                 })
               }
               style={{
@@ -502,8 +502,8 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                 minWidth: 0,
               }}
             >
-              Learn more
-            </Link>
+              See savings accounts
+            </a>
             <button
               onClick={handleConnectClick}
               disabled={loadingLink}

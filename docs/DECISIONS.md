@@ -2678,3 +2678,33 @@ explains the gap once and sends the person to Balances to place the rest; it
 goes when something is placed there or on "That was all of it".
 **Rejected:** seeding the answer as investments (double counts the cash part
 once a bank connects, and shows zero months of safety before one does).
+
+### D-81 — October 15: partner offers, from a list UntilFire picks
+
+**Status:** Step 1 built (UntilFire's own links); step 2, creators' links, next.
+**Decision:** Money → Offers ("Where to keep your money") lists high-yield
+savings, bank and brokerage accounts with UntilFire's referral link
+(`partner_offers`, migration 0053; `lib/partner-offers.ts`). Every click goes
+through `/go/<slug>`, which counts it (no user id) and redirects only to the
+stored link, and only while its host is the offer's allowed domain. A bonus
+hides itself after its end date. Every offer says who earns from it, next to
+the button (FTC endorsement guides), and links are `rel="sponsored"`.
+Creators will add their own link only for offers on this list, approved in
+/admin; a referred user then sees the creator's link and name in the
+disclosure, otherwise UntilFire's (attribution is the existing
+`referral_attributions`, D-27).
+**Why:** The founder wants creators to earn from the accounts their audience
+opens while only ever talking about UntilFire. A fixed list is the only way to
+check each program's referral terms (many personal invite programs forbid
+commercial or directory placement), keep the disclosure honest and refuse
+look-alike or short links.
+**Rejected:** creators pasting any link (terms and phishing risk); banners
+(read as ads and break "one useful next move"); robo-advisors (close to a
+competitor); credit cards, loans and crypto (lending rules, harm to people in
+debt, App Store scrutiny).
+**Open:** D-03's legal-input question applies before a brokerage offer goes
+live. An idle-cash card for people with banks connected is not built yet.
+**Changed:** the founder chose (2026-10-15) to drop the HYSA empty-state
+card's "We are not recommending any bank here yet"; it now links to Offers
+(`cta: see_offers`), and `test:hysa-empty-state` checks that.
+
