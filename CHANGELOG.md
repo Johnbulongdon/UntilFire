@@ -14,6 +14,12 @@ under today's date, creating the heading if it is not there yet.
   and a line saying who earns from the link (D-81). Admin → Offers adds,
   edits, shows and hides offers and counts clicks.
 
+### iOS app (in development)
+- Fix: Home no longer says you'd be free sooner without your rent or other
+  essentials. The line only picks optional repeating payments, and the
+  Recurring list marks housing, food, care and anything tagged Need as
+  "Essential" without a "sooner" number.
+
 ## 2026-10-13
 
 ### Dashboard
