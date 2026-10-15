@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 
-import { engineMortgages, quickFreedom } from '@/engine'
+import { CITIES, engineMortgages, moveBeforeFreedomChange, quickFreedom, retirementLocationMonthlySpend } from '@/engine'
 import { isMortgageAccount } from '@/lib/balances'
 import { addMonths } from '@/engine'
 import { monthSpend, thisMonth } from '@/lib/money-data'
@@ -34,14 +34,18 @@ export interface Freedom {
  * The projection inputs exactly as the dashboard builds them (projectionInputs
  * in app/dashboard/page.tsx): balances with connected accounts replacing typed
  * ones, debts by the same rule, mortgages with their terms, and the target from
- * the retirement goal, then a retirement city, then today's spending.
+ * the retirement goal, then today's spending moved to a retirement city (D-81),
+ * then today's spending; an earlier move reprices spending from its year.
  */
 export function inputsFor(data: AccountData): Inputs {
   const p = data.profile
   const budget = Object.values(data.budget).reduce((s, v) => s + v, 0)
   const monthlyExpenses = budget > 0 ? budget : monthSpend(data.transactions, addMonths(thisMonth(), -1)).total
+  const currentCityCol = CITIES.find(c => c.name === p.cityName)?.col ?? 0
   const targetMonthlyExpenses = (p.plan.retirementAnnualSpend ?? 0) > 0 ? p.plan.retirementAnnualSpend! / 12
-    : p.retirementCityCol > 0 ? (p.retirementCityCol * p.lifestyleMultiplier) / 12 : undefined
+    : retirementLocationMonthlySpend({ monthlySpend: monthlyExpenses, currentCityCol, retirementCityCol: p.retirementCityCol, lifestyleMultiplier: p.lifestyleMultiplier })
+  const move = moveBeforeFreedomChange({ moveYear: p.plan.moveYear, thisYear: new Date().getFullYear(), monthlySpend: monthlyExpenses,
+    currentCityCol, retirementCityCol: p.retirementCityCol, payMonthly: p.plan.movePayMonthly })
   const connectedMortgages = data.plaidAccounts.filter(isMortgageAccount).map(a => ({ id: a.id, balance: Math.max(0, a.balance_current ?? 0) }))
   return {
     ...p.plan,
@@ -60,6 +64,7 @@ export function inputsFor(data: AccountData): Inputs {
     taxEnabled: p.taxEnabled,
     retirementTaxRate: p.retirementTaxRate,
     rothPct: p.rothPct,
+    ...(move ? { changes: [move] } : {}),
   }
 }
 

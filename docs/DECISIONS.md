@@ -2678,3 +2678,31 @@ explains the gap once and sends the person to Balances to place the rest; it
 goes when something is placed there or on "That was all of it".
 **Rejected:** seeding the answer as investments (double counts the cash part
 once a bank connects, and shows zero months of safety before one does).
+
+### D-81 — October 15: where you live and where you retire are two places
+
+**Status:** Active. The founder asked for a current and a retirement location,
+and chose "scale my spending" over the city average.
+**Decision:**
+- **Two fields in Plan → Assumptions.** "Live in" is today's city and the
+  baseline; "Retire in" defaults to "Same as now". Choosing a retirement city no
+  longer overwrites where you live (it used to), and choosing a tax home keeps
+  your city when it is already in that state. There is still exactly one
+  retirement-city input (`test:single-location`).
+- **The target scales your own spending.** Spending once free = today's spending
+  (work costs removed) × retirement city cost ÷ current city cost × lifestyle
+  (`lib/fire/retirement-location.ts`). The ratio has no units, so it works in any
+  currency. With no listed current city it falls back to the retirement city's
+  typical cost × lifestyle, as before.
+- **When you move is asked, not assumed.** Default "When I'm free": pay and
+  spending stay as today until the freedom date. "Earlier" takes a year and an
+  optional take-home there (`plan.moveYear`, `plan.movePayMonthly`); from that
+  year spending follows the new city's prices and pay changes only to a typed
+  figure, as one dated engine change that Home, Plan, Compare and the app share.
+**Why:** The city average replaced the person's real household with an average
+one, and one city field could not say whether pay follows a move. Moving to a
+pricier city to retire is not moving there to work.
+**Rejected:** guessing a city salary (an invented number about someone's pay);
+the city average as the target (ignores the actual household).
+**Later:** scale housing and everything else separately (rent spreads ~3.9×
+across cities, totals ~1.7×; see [cost of living](cost-of-living.md)).

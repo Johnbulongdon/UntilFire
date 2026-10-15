@@ -38,7 +38,7 @@ import ExploreClient from "../explore/ExploreClient";
 import PurchaseImpactPanel from "./PurchaseImpactPanel";
 import Logo from "@/app/components/Logo";
 import FeedbackWidget from "./FeedbackWidget";
-import { REAL_RETURN } from "@/lib/fire";
+import { REAL_RETURN, moveBeforeFreedomChange, retirementLocationMonthlySpend } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, getCurrencySymbol } from "@/lib/currency";
 import { HOUSEHOLD_INVITE_KEY } from "@/lib/household-invite";
 import FireAssumptionsCard from "./FireAssumptionsCard";
@@ -567,6 +567,8 @@ type FreedomArgs = {
   cashSavings: number; totalDebt: number; mortgageBalance: number; mortgageMonthly: number;
   growthRate: number; withdrawalRate: number; plaidAccounts: PlaidAccount[];
   retirementCityCol: number; lifestyleMultiplier: number; monthlyWorkCosts?: number;
+  /** Annual living costs where they live now, so a retirement city scales their own spending (D-81). */
+  currentCityCol?: number;
   taxEnabled: boolean; retirementTaxRate: number; rothPct: number;
   plan?: PlanSettings;
   /** Life changes on top of the plan (Compare, D-69), already as the engine's dated changes. */
@@ -582,18 +584,21 @@ type FreedomArgs = {
 function projectionInputs({
   income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
   growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-  taxEnabled, retirementTaxRate, rothPct, plan, changes,
+  currentCityCol = 0, taxEnabled, retirementTaxRate, rothPct, plan, changes,
 }: FreedomArgs) {
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
     .reduce((s, [, v]) => s + (v || 0), 0);
   // Work costs disappear at retirement → FIRE target uses adjusted spend.
   const retirementMonthlyExpenses = monthlyWorkCosts ? Math.max(0, monthlyExpenses - monthlyWorkCosts) : monthlyExpenses;
-  // What you set to spend once free comes first; then a retirement city; then today's spending.
+  // What you set to spend once free comes first; then your spending moved to a
+  // retirement city (D-81); then today's spending.
+  const cityMonthly = retirementLocationMonthlySpend({ monthlySpend: retirementMonthlyExpenses, currentCityCol, retirementCityCol, lifestyleMultiplier });
   const targetMonthlyExpenses = (plan?.retirementAnnualSpend ?? 0) > 0 ? plan!.retirementAnnualSpend! / 12
-    : retirementCityCol > 0
-    ? (retirementCityCol * lifestyleMultiplier) / 12
-    : monthlyWorkCosts ? retirementMonthlyExpenses : undefined;
+    : cityMonthly ?? (monthlyWorkCosts ? retirementMonthlyExpenses : undefined);
+  // Moving before freedom changes spending, and pay if they said so, from that year (D-81).
+  const move = moveBeforeFreedomChange({ moveYear: plan?.moveYear, thisYear: new Date().getFullYear(), monthlySpend: monthlyExpenses,
+    currentCityCol, retirementCityCol, payMonthly: plan?.movePayMonthly });
   return {
     ...plan,
     annualIncome: income * 12, monthlyExpenses,
@@ -601,7 +606,7 @@ function projectionInputs({
     ...(({ otherDebt, mortgage }) => ({ totalDebt: otherDebt, mortgageBalance: mortgage }))(effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts })),
     mortgageMonthly,
     growthRate, withdrawalRate, targetMonthlyExpenses,
-    taxEnabled, retirementTaxRate, rothPct, changes,
+    taxEnabled, retirementTaxRate, rothPct, changes: move ? [move, ...(changes ?? [])] : changes,
   };
 }
 
@@ -782,23 +787,23 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     ? Math.max(0, monthlyExpenses - monthlyWorkCosts)
     : monthlyExpenses;
 
-  const targetMonthlyExpenses = retirementCityCol > 0
-    ? (retirementCityCol * lifestyleMultiplier) / 12
-    : monthlyWorkCosts ? retirementMonthlyExpenses : undefined;
+  const currentCityCol = CITIES.find((c) => c.name === cityName)?.col ?? 0;
+  const targetMonthlyExpenses = retirementLocationMonthlySpend({ monthlySpend: retirementMonthlyExpenses, currentCityCol, retirementCityCol, lifestyleMultiplier })
+    ?? (monthlyWorkCosts ? retirementMonthlyExpenses : undefined);
 
   // Shared with Plan's freedom date (freedomProjection), so the two can't
   // disagree; the moves and warnings below start from the same inputs.
   const baseInputs = useMemo(() => projectionInputs({
     income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-    taxEnabled, retirementTaxRate, rothPct, plan,
-  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, taxEnabled, retirementTaxRate, rothPct, plan]);
+    currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan,
+  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan]);
   const balances = { k401: baseInputs.k401, rothIRA: baseInputs.rothIRA, taxable: baseInputs.taxable, cash: baseInputs.cashSavings };
   const { data, fireYear, fireTarget, annualSavings } = useMemo(() => freedomProjection({
     income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-    taxEnabled, retirementTaxRate, rothPct, plan,
-  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, taxEnabled, retirementTaxRate, rothPct, plan]);
+    currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan,
+  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan]);
 
   const nextMoveScenarios = useMemo(() => {
     if (!(income > 0 && fireYear !== null)) return null;
@@ -4992,8 +4997,9 @@ export default function Dashboard() {
   // because the assumptions card in Plan is now its only caller, and an
   // inline copy at the call site was how it read when Profile owned it.
   function handleTaxKeyChange(key: string) {
+    // Keep where they live when it is already in this tax home (D-81).
     const repCity = CITIES.find(c => c.state === key);
-    if (repCity) setCityName(repCity.name);
+    if (repCity && CITIES.find(c => c.name === cityName)?.state !== key) setCityName(repCity.name);
     const taxInfo = STATE_TAX[key];
     if (taxInfo) {
       const isUSKey = !key.startsWith("ca_");
@@ -5021,7 +5027,8 @@ export default function Dashboard() {
     const monthlyExpenses = Object.entries(expenses)
       .filter(([key]) => !key.startsWith("_"))
       .reduce((sum, [, amount]) => sum + (amount || 0), 0);
-    const targetMonthlyExpenses = retirementCityCol > 0 ? (retirementCityCol * lifestyleMultiplier) / 12 : undefined;
+    const currentCityCol = CITIES.find((c) => c.name === cityName)?.col ?? 0;
+    const targetMonthlyExpenses = retirementLocationMonthlySpend({ monthlySpend: monthlyExpenses, currentCityCol, retirementCityCol, lifestyleMultiplier });
     const { fireYear, fireTarget } = calcProjection({
       ...planBase,
       annualIncome: income * 12,
@@ -5044,7 +5051,7 @@ export default function Dashboard() {
     if (progress >= 45 || (fireYear !== null && fireYear <= 12)) return place("approaching-fire");
     if (investable > 0 || income > 0) return place("building-momentum");
     return place("starting-out");
-  }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, planBase, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
+  }, [cashSavings, cityName, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, planBase, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
 
   type CommittedRow = { id?: string; match_merchant?: string | null; amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null; category: string | null; description?: string | null; recurrence?: string | null };
@@ -5164,8 +5171,9 @@ export default function Dashboard() {
   const planFreedomInputs = useMemo(() => ({
     income: effectiveIncome, expenses: effectiveExpenses as Record<string, number>, k401, rothIRA, taxable, cashSavings,
     totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier,
-    monthlyWorkCosts: histWorkAvg > 0 ? histWorkAvg : undefined, taxEnabled, retirementTaxRate, rothPct, plan,
-  }), [plan, effectiveIncome, effectiveExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, histWorkAvg, taxEnabled, retirementTaxRate, rothPct]);
+    monthlyWorkCosts: histWorkAvg > 0 ? histWorkAvg : undefined, currentCityCol: CITIES.find((c) => c.name === cityName)?.col ?? 0,
+    taxEnabled, retirementTaxRate, rothPct, plan,
+  }), [plan, effectiveIncome, effectiveExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, histWorkAvg, cityName, taxEnabled, retirementTaxRate, rothPct]);
   const planFreedom = useMemo(() => freedomProjection({ ...planFreedomInputs, growthRate }), [planFreedomInputs, growthRate]);
   // Plan → Compare (D-69): the plan with a set of life changes, on the same engine as the date (D-66).
   const compareSpendNow = useMemo(() => Object.entries(effectiveExpenses).filter(([k, v]) => !k.startsWith("_") && typeof v === "number")
@@ -6434,9 +6442,15 @@ export default function Dashboard() {
                       spendGoalSet={(planSettings.retirementAnnualSpend ?? 0) > 0}
                       fireAge={fireAge}
                       onFireAgeChange={setFireAge}
+                      currentCityName={cityName}
+                      onCurrentCityChange={setCityName}
+                      retirementMonthly={planFacts.retirementMonthly}
+                      moveYear={planSettings.moveYear}
+                      movePayMonthly={planSettings.movePayMonthly}
+                      onMoveChange={(moveYear, movePayMonthly) => setPlanSettings((p) => ({ ...p, moveYear, movePayMonthly }))}
                       retirementCityName={retirementCityName}
                       retirementCityCol={retirementCityCol}
-                      onRetirementCityChange={(name, col) => { setCityName(name); setRetirementCityName(name); setRetirementCityCol(col); }}
+                      onRetirementCityChange={(name, col) => { if (!cityName) setCityName(name); setRetirementCityName(name); setRetirementCityCol(col); }}
                       lifestyleMultiplier={lifestyleMultiplier}
                       onLifestyleChange={setLifestyleMultiplier}
                       taxKey={CITIES.find(c => c.name === cityName)?.state ?? ""}
@@ -6508,7 +6522,7 @@ export default function Dashboard() {
             {tab === "learning-hub" && <LearnTab recommendedStageId={learnPlace.stage} progress={learnPlace.progress} yearsToGo={learnPlace.years} onOpenTab={openDashboardTab} />}
             {tab === "expat-fire" && (
               <ExploreClient appPlan={explorePlan} displayCurrency={defaultCurrency} displayRates={rates}
-                onPlanFor={(key) => { const c = CITIES.find(x => x.key === key); if (c) { setCityName(c.name); setRetirementCityName(c.name); setRetirementCityCol(c.col); } }} />
+                onPlanFor={(key) => { const c = CITIES.find(x => x.key === key); if (c) { if (!cityName) setCityName(c.name); setRetirementCityName(c.name); setRetirementCityCol(c.col); } }} />
             )}
             {tab === "profile" && userId && (
               <ProfileTab

@@ -6,6 +6,21 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-15
+
+### Dashboard
+- New (D-81): Plan → Assumptions has "Live in" and "Retire in". A retirement
+  city now scales your own spending by how its prices compare with where you
+  live, instead of replacing it with the city's average.
+- New: "When do you move?" When you're free (the default) or earlier, in a
+  year you choose, with an optional take-home there. Pay never follows a city
+  unless you type it.
+- Fix: choosing a retirement city or a tax home no longer overwrites where you
+  live.
+
+### iOS app (in development)
+- The freedom date uses the same retirement-city and move rules (D-81).
+
 ## 2026-10-13
 
 ### Dashboard
