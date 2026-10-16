@@ -1,6 +1,6 @@
 import { View } from 'react-native'
 
-import { upcoming } from '@/lib/bills'
+import { unpaid, upcoming } from '@/lib/bills'
 import { money } from '@/lib/format'
 import { monthSpend, thisMonth } from '@/lib/money-data'
 import type { AccountData } from '@/state/account'
@@ -18,7 +18,8 @@ export function SetAside({ data }: { data: AccountData }) {
   const month = thisMonth()
   const budget = Object.values(data.budget).reduce((s, v) => s + v, 0)
   const spent = monthSpend(data.transactions, month).total
-  const events = upcoming(data.bills, 62, now)
+  // Bills already paid this month (a matching transaction) aren't set aside twice.
+  const events = unpaid(upcoming(data.bills, 62, now), data.bills, data.transactions)
   const billsLeft = events.filter(e => e.type === 'expense' && e.iso.startsWith(month)).reduce((s, e) => s - e.amount, 0)
   const everyday = budget - spent - billsLeft
 

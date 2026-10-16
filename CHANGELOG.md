@@ -34,6 +34,9 @@ under today's date, creating the heading if it is not there yet.
   panels. The progress bar now sits below the iPhone status bar.
 - FIRE type result: each strength and watch-out is its own box with a picture
   and one short line, instead of two dense paragraphs.
+- Fix: a bill already paid this month (a matching transaction within 3%, same
+  name) is no longer set aside again in Budget's "left for everyday spending",
+  "free to spend until payday", or Home's free-to-spend card.
 
 ## 2026-10-15
 

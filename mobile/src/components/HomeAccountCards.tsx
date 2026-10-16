@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { Pressable, TextInput, View } from 'react-native'
 
 import { calcPurchaseImpact, compareNetWorth, countdownLabel, formatDelay, REAL_RETURN, ladderViewFromPlan, NET_WORTH_BENCHMARKS, NET_WORTH_INFLATION } from '@/engine'
-import { upcoming } from '@/lib/bills'
+import { unpaid, upcoming } from '@/lib/bills'
 import { contributionFacts, EMPTY_PLAN } from '@/lib/contribution-facts'
 import { currencySymbol, fromInput } from '@/lib/display-currency'
 import { compactMoney, money } from '@/lib/format'
@@ -51,7 +51,7 @@ function Tile({ icon, fallback, tint, label, value, negative, onPress }: { icon:
 
 /** FreeToSpendHome (D-29): one sentence, the cash free until payday once bills before it are set aside. */
 export function FreeToSpend({ data }: { data: AccountData }) {
-  const events = upcoming(data.bills, 45)
+  const events = unpaid(upcoming(data.bills, 45), data.bills, data.transactions)
   const payday = events.find(e => e.type === 'income' && e.counted)
   if (!payday) return null
   const before = events.filter(e => e.type === 'expense' && e.iso < payday.iso).reduce((s, e) => s - e.amount, 0)
