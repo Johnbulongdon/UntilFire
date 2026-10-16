@@ -39,6 +39,10 @@ under today's date, creating the heading if it is not there yet.
   "free to spend until payday", or Home's free-to-spend card.
 - Calendar: "Mark paid" and "Mark received" now offer Undo, so a mistaken tap
   can be taken back.
+- Categories: merge a category into another. Its transactions, bills, merchant
+  rules and (if the target has none) budget move across, and the old one is
+  removed. Leftover labels nothing defines any more, like an old "Dog" still on
+  transactions or the budget, now show under "Your own" so they can be merged.
 
 ## 2026-10-15
 

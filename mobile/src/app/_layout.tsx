@@ -78,6 +78,7 @@ export default function RootLayout() {
           <Stack.Screen name="mortgage" options={{ presentation: 'modal' }} />
           <Stack.Screen name="income-edit" options={{ presentation: 'modal' }} />
           <Stack.Screen name="category" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="merge-category" options={{ presentation: 'modal' }} />
           <Stack.Screen name="contribution-edit" options={{ presentation: 'modal' }} />
           <Stack.Screen name="goal" options={{ presentation: 'modal' }} />
           <Stack.Screen name="assumptions" options={{ presentation: 'modal' }} />

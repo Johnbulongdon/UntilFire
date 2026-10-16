@@ -299,3 +299,29 @@ export async function fileTransactions(rows: { id: string; category: string; sub
   }
   return null
 }
+
+/**
+ * Merge one category into another (Oct 16 2026, the founder): its
+ * transactions and bills move across, its budget goes to the target only if
+ * the target has none, merchant rules follow, and the old category is gone.
+ */
+export async function mergeCategory(userId: string, from: string, to: string): Promise<string | null> {
+  const failed = 'Couldn\'t merge. Please try again.'
+  const moved = await supabase.from('expenses').update({ category: to, sub_category: null }).eq('user_id', userId).eq('category', from)
+  if (moved.error) return failed
+  const bills = await supabase.from('expected_payments').update({ category: to, sub_category: null }).eq('user_id', userId).eq('category', from)
+  if (bills.error) return failed
+  const { data: row, error: readError } = await supabase.from('user_budget').select('expenses').eq('user_id', userId).maybeSingle()
+  if (readError) return failed
+  if (!row) return null
+  const { [from]: oldBudget, ...rest } = (row.expenses as Record<string, any>) ?? {}
+  if (typeof oldBudget === 'number' && !(Number(rest[to]) > 0)) rest[to] = oldBudget
+  if (Array.isArray(rest._custom_cats)) rest._custom_cats = rest._custom_cats.filter((c: any) => c?.key !== from)
+  const rules = rest._fire_profile?.merchantRules
+  if (rules && typeof rules === 'object') {
+    const next = Object.fromEntries(Object.entries(rules).map(([k, r]: [string, any]) => [k, r?.category === from ? { ...r, category: to, sub_category: null } : r]))
+    rest._fire_profile = { ...rest._fire_profile, merchantRules: next }
+  }
+  const { error } = await supabase.from('user_budget').update({ expenses: rest, updated_at: new Date().toISOString() }).eq('user_id', userId)
+  return error ? failed : null
+}

@@ -8,7 +8,7 @@ import { DetailScreen } from '@/components/DetailScreen'
 import { Card, Label } from '@/components/Screen'
 import { CategoryGlyph } from '@/components/Icon'
 import { Text } from '@/components/Text'
-import { addMonths } from '@/engine'
+import { addMonths, ALL_CATEGORIES } from '@/engine'
 import { money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { categoryOf, monthSpend, needOf, thisMonth, typicalBy, typicalByCategory } from '@/lib/money-data'
@@ -40,17 +40,33 @@ export default function Categories() {
   const step = (dir: -1 | 1) => { haptic.tick(); setMonth(m => addMonths(m, dir)) }
   const isCurrent = month === thisMonth()
   const used = (key: string) => data.transactions.some(t => t.category === key)
+  // Your own categories, then leftover labels nothing defines any more (an
+  // old "Dog" still on transactions or the budget), so each can be merged away.
+  const known = new Set([...ALL_CATEGORIES, ...data.customCategories].map(c => c.key))
+  const leftovers = [...new Set([...data.transactions.filter(t => t.transaction_type === 'expense').map(t => t.category), ...Object.keys(data.budget)])]
+    .filter(k => k && !known.has(k)).map(k => categoryOf(k))
+  const own = [...data.customCategories.map(c => ({ cat: c, custom: true })), ...leftovers.map(c => ({ cat: c, custom: false }))]
 
   const remove = (key: string, label: string) => {
     if (!session) return
     haptic.warn()
-    Alert.alert(`Remove ${label}?`, used(key) ? 'Transactions already in it keep the category; it just won\'t be offered any more.' : undefined, [
+    Alert.alert(`Remove ${label}?`, used(key) ? 'Transactions already in it keep the category. To move them, use Merge instead.' : undefined, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: async () => {
         const problem = await saveCustomCategories(session.user.id, data.customCategories.filter(c => c.key !== key))
         if (problem) { Alert.alert(problem); return }
         haptic.success(); refresh()
       } },
+    ])
+  }
+
+  // The less common actions behind one ••• button (Oct 16 2026, the founder).
+  const options = (key: string, label: string, custom: boolean) => {
+    haptic.tick()
+    Alert.alert(label, undefined, [
+      { text: 'Merge into another category', onPress: () => router.push({ pathname: '/merge-category', params: { key } }) },
+      ...(custom ? [{ text: 'Remove', style: 'destructive' as const, onPress: () => remove(key, label) }] : []),
+      { text: 'Cancel', style: 'cancel' as const },
     ])
   }
 
@@ -117,14 +133,17 @@ export default function Categories() {
           <Label>Your own</Label>
           <Button small kind="quiet" label="+ Add" onPress={() => { haptic.tick(); router.push('/category') }} />
         </View>
-        {data.customCategories.length === 0 ? (
+        {own.length === 0 ? (
           <Text className="mt-2 text-[14px] text-ink-2">Add a category for anything the standard ones don't fit, like Kids or Side business.</Text>
-        ) : data.customCategories.map((c, i) => (
+        ) : own.map(({ cat: c, custom }, i) => (
           <View key={c.key} className={`flex-row items-center gap-3 py-2.5 ${i > 0 ? 'border-t border-border' : ''}`}>
             <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: `${c.color}22` }}><CategoryGlyph cat={c} size={20} /></View>
             <Text className="flex-1 text-[15px] font-semibold text-ink">{c.label}</Text>
             <Text className="font-mono text-[14px] text-ink-2">{money(spent.get(c.key) ?? 0)}</Text>
-            <Button small kind="quiet" label="Remove" onPress={() => remove(c.key, c.label)} />
+            <Pressable accessibilityRole="button" accessibilityLabel={`${c.label} options`} hitSlop={8} onPress={() => options(c.key, c.label, custom)}
+              className="h-8 w-10 items-center justify-center rounded-control border border-border">
+              <Text className="text-[16px] font-bold text-ink-2">•••</Text>
+            </Pressable>
           </View>
         ))}
       </Card>
