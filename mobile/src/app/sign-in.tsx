@@ -96,6 +96,47 @@ export default function SignIn() {
                 onSubmitEditing={send}
                 returnKeyType="send"
               />
+              {/* Every way in sits right under the field, so the keyboard never hides Google or Apple (John, Oct 2026). */}
+              <View className="mt-4">
+                {busy ? (
+                  <View className="h-14 items-center justify-center"><ActivityIndicator color={colors.green} /></View>
+                ) : (
+                <View style={{ gap: 12 }}>
+                  <PrimaryButton label="Email me a sign-in code" onPress={send} disabled={!email.trim()} />
+                  {appleReady && (
+                    // Apple's own button, as its guidelines require. Only in the app's own build.
+                    <AppleAuthentication.AppleAuthenticationButton
+                      buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                      buttonStyle={scheme === 'dark' ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                      cornerRadius={18}
+                      style={{ height: 56 }}
+                      onPress={async () => {
+                        haptic.press(); setError(''); setBusy(true)
+                        track(Events.SIGNUP_STARTED, { method: 'apple' })
+                        const problem = await signInWithApple()
+                        setBusy(false)
+                        if (problem) { haptic.warn(); setError(problem) }
+                      }}
+                    />
+                  )}
+                  <Bouncy
+                    accessibilityRole="button"
+                    onPress={async () => {
+                      haptic.press(); setError(''); setBusy(true)
+                      track(Events.SIGNUP_STARTED, { method: 'google' })
+                      const problem = await signInWithGoogle()
+                      setBusy(false)
+                      if (problem) { haptic.warn(); setError(problem) }
+                    }}
+                  >
+                    <View className="h-14 flex-row items-center justify-center gap-2 rounded-full border border-border-2 bg-card">
+                      <GoogleMark />
+                      <Text className="text-[17px] font-bold text-ink">Continue with Google</Text>
+                    </View>
+                  </Bouncy>
+                </View>
+                )}
+              </View>
             </Animated.View>
           ) : (
             <Animated.View entering={FadeInRight.duration(380)}>
@@ -139,43 +180,8 @@ export default function SignIn() {
         </View>
 
         <View className="px-6 pb-4">
-          {busy ? (
+          {stage === 'email' ? null : busy ? (
             <View className="h-14 items-center justify-center"><ActivityIndicator color={colors.green} /></View>
-          ) : stage === 'email' ? (
-            <View style={{ gap: 12 }}>
-              <PrimaryButton label="Email me a sign-in code" onPress={send} disabled={!email.trim()} />
-              {appleReady && (
-                // Apple's own button, as its guidelines require. Only in the app's own build.
-                <AppleAuthentication.AppleAuthenticationButton
-                  buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-                  buttonStyle={scheme === 'dark' ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-                  cornerRadius={18}
-                  style={{ height: 56 }}
-                  onPress={async () => {
-                    haptic.press(); setError(''); setBusy(true)
-                    track(Events.SIGNUP_STARTED, { method: 'apple' })
-                    const problem = await signInWithApple()
-                    setBusy(false)
-                    if (problem) { haptic.warn(); setError(problem) }
-                  }}
-                />
-              )}
-              <Bouncy
-                accessibilityRole="button"
-                onPress={async () => {
-                  haptic.press(); setError(''); setBusy(true)
-                  track(Events.SIGNUP_STARTED, { method: 'google' })
-                  const problem = await signInWithGoogle()
-                  setBusy(false)
-                  if (problem) { haptic.warn(); setError(problem) }
-                }}
-              >
-                <View className="h-14 flex-row items-center justify-center gap-2 rounded-full border border-border-2 bg-card">
-                  <GoogleMark />
-                  <Text className="text-[17px] font-bold text-ink">Continue with Google</Text>
-                </View>
-              </Bouncy>
-            </View>
           ) : (
             <PrimaryButton label="Sign in" onPress={() => verify()} disabled={normaliseCode(code).length < 6} />
           )}
