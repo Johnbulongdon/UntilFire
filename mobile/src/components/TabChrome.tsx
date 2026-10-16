@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { haptic } from '@/lib/haptics'
 import { compactMoney } from '@/lib/format'
-import { monthSpend, safetyMonths, thisMonth } from '@/lib/money-data'
+import { safetyMonths } from '@/lib/money-data'
+import { splitBudget } from '@/lib/budget-split'
 import { monthCount, todayItems } from '@/lib/today'
 import { useAccount } from '@/state/account'
 import { useFreedom } from '@/state/freedom'
@@ -26,8 +27,8 @@ export function TopBar({ tab }: { tab: TabKey }) {
   const { data } = useAccount()
   const f = useFreedom()
   const tint = TAB_COLOR[tab]
-  const budget = data ? Object.values(data.budget).reduce((s, v) => s + v, 0) : 0
-  const left = data && budget > 0 ? budget - monthSpend(data.transactions, thisMonth()).total : null
+  const split = useMemo(() => (data ? splitBudget(data) : null), [data])
+  const left = split && split.everydayBudget > 0 ? split.left : null
   const safety = useMemo(() => (data ? safetyMonths(data) : null), [data])
   const date = f?.year == null ? null : f.date ? f.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : String(f.year)
   return (

@@ -19,6 +19,7 @@ import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { freedomFor, usePlan } from '@/state/plan'
 import { TAB_COLOR, tabInk } from '@/theme/colors'
+import { splitBudget } from '@/lib/budget-split'
 
 /**
  * Money's hub (V2): this month's spending as the headline, every Money page as
@@ -47,8 +48,8 @@ export default function Money() {
 
 function Headline({ data }: { data: AccountData }) {
   const { total, categories } = monthSpend(data.transactions, thisMonth())
-  const budget = Object.values(data.budget).reduce((s, v) => s + v, 0)
-  const left = budget - total
+  // The one "left": everyday budget less everyday spending, bills set aside (lib/budget-split).
+  const { everydayBudget: budget, left } = splitBudget(data)
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`Spent ${money(total)} this month. Open transactions`} onPress={() => { haptic.tick(); router.push('/money/transactions') }}>
       <Text className="text-[12px] font-bold uppercase tracking-[2px] text-ink-3">Spent this month</Text>

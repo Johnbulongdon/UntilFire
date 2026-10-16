@@ -73,6 +73,8 @@ export default function RootLayout() {
           <Stack.Screen name="save-plan" options={{ animation: 'fade' }} />
           <Stack.Screen name="transaction" options={{ presentation: 'modal' }} />
           <Stack.Screen name="budget-edit" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="spending-accounts" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="shared-accounts" options={{ presentation: 'modal' }} />
           <Stack.Screen name="bill" options={{ presentation: 'modal' }} />
           <Stack.Screen name="balances" options={{ presentation: 'modal' }} />
           <Stack.Screen name="mortgage" options={{ presentation: 'modal' }} />

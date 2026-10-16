@@ -1768,8 +1768,9 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0), [transactions, currentMonth, rates]);
   const reviewCounts = useMemo(() => {
     const expenses = monthTxns.filter((t) => t.transaction_type === "expense");
+    // Filed once it has a category; need or want comes from the category (lib/needs, D-86), as on the phone.
     // "Other" counts once tagged: the app files a transaction nobody recognises as Other (Oct 2026).
-    const done = expenses.filter((t) => t.category && t.tags?.some((g) => g === "need" || g === "want")).length;
+    const done = expenses.filter((t) => t.category && (t.category !== "other" || t.tags?.some((g) => g === "need" || g === "want"))).length;
     return { filed: done, need: expenses.length - done };
   }, [monthTxns]);
 

@@ -20,6 +20,9 @@ export const currencySymbol = (c = code) => SYMBOLS[c] ?? `${c} `
 export const displayCurrency = () => code
 const rate = () => (code === 'USD' ? 1 : rates[code] ?? 1)
 
+/** Units of a currency per USD: today's rate when loaded, else the website's fixed one. */
+export const rateFor = (c: string) => (c === 'USD' ? 1 : rates[c] ?? FALLBACK_RATES[c])
+
 /** USD → the display currency. */
 export const fromUSD = (usd: number) => usd * rate()
 /** The display currency → USD, for amounts typed in. */

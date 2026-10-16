@@ -43,7 +43,7 @@ type Row = PlanRow;
 
 /** One emoji per ladder step, for the calm step rows (D-42). */
 const STEP_ICON: Record<RungKind, string> = {
-  "emergency-floor": "🛟", "employer-match": "🤝", "high-interest-debt": "💳", "emergency-target": "🛟",
+  "emergency-floor": "🛟", "employer-match": "🤝", "high-interest-debt": "💳", "emergency-target": "🛟", "goals": "🎯",
   "tax-advantaged": "🏖️", "low-interest-debt": "🧾", "taxable": "📈",
 };
 

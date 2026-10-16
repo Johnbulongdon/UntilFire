@@ -11,7 +11,8 @@ import { reportHtml, shareReport } from '@/lib/freedom-report'
 import { haptic } from '@/lib/haptics'
 import { colors } from '@/theme/colors'
 import { useAccount } from '@/state/account'
-import { useFreedom } from '@/state/freedom'
+import { project, useFreedom } from '@/state/freedom'
+import { spendingBasis } from '@/lib/budget-split'
 
 /**
  * The freedom date with everything behind it. Signed in, it is the website's
@@ -110,6 +111,7 @@ export default function Freedom() {
             <Row label="Pension opens at" value={p.plan.accessAge ? String(p.plan.accessAge) : 'No bridge check'} />
           </Card>
 
+          <BudgetWhatIf />
           <SavingSplit />
         </>
       ) : (
@@ -120,6 +122,33 @@ export default function Freedom() {
         </Card>
       )}
     </DetailScreen>
+  )
+}
+
+/**
+ * The date runs on what you really spend, the last 12 months on average
+ * (money logic study, Oct 16 2026). The budget is the what-if: the date if
+ * you spent what you plan to instead.
+ */
+function BudgetWhatIf() {
+  const { data } = useAccount()
+  const f = useFreedom()
+  if (!data || !f || f.source !== 'account' || !f.inputs) return null
+  const basis = spendingBasis(data)
+  if (basis.source !== 'actual' || basis.budget <= 0 || Math.abs(basis.budget - basis.monthly) < basis.monthly * 0.05) return null
+  // A city-based retirement target scales with spending too; one they typed stays as typed.
+  const i = f.inputs, typedTarget = (data.profile.plan.retirementAnnualSpend ?? 0) > 0
+  const target = !typedTarget && i.targetMonthlyExpenses && i.monthlyExpenses > 0 ? i.targetMonthlyExpenses * (basis.budget / i.monthlyExpenses) : i.targetMonthlyExpenses
+  const alt = project({ ...i, monthlyExpenses: basis.budget, targetMonthlyExpenses: target }, data.age)
+  const when = alt.date ? alt.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : alt.year != null ? String(alt.year) : null
+  return (
+    <Card>
+      <Label>Based on what you really spend</Label>
+      <Text className="mt-1 text-[15px] leading-6 text-ink">
+        You spend about <Text className="font-mono text-[15px]">{money(basis.monthly)}</Text> a month (the last {basis.months} months on average).
+        {when ? <> Stick to your budget of <Text className="font-mono text-[15px]">{money(basis.budget)}</Text> and you'd be free in <Text className="font-bold text-teal-deep">{when}</Text>.</> : null}
+      </Text>
+    </Card>
   )
 }
 

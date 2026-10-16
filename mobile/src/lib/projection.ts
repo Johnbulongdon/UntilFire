@@ -10,7 +10,7 @@ import { REAL_RETURN } from '@/engine'
 export function calcProjection({
   annualIncome, monthlyExpenses, k401, rothIRA, taxable, cashSavings = 0,
   totalDebt, mortgageBalance, mortgageMonthly,
-  growthRate = REAL_RETURN, withdrawalRate = 0.04, years = 50,
+  growthRate = REAL_RETURN, withdrawalRate = 0.04, years = 50, debtRate = 0.05,
   targetMonthlyExpenses,
   taxEnabled = false, retirementTaxRate = 0, rothPct = 0,
   retirementAnnualSpend = 0, payGrowth = 0, employerAnnual = 0, pensionAnnual = 0,
@@ -20,6 +20,8 @@ export function calcProjection({
   rothIRA: number; taxable: number; cashSavings?: number; totalDebt: number;
   mortgageBalance: number; mortgageMonthly: number;
   growthRate?: number; withdrawalRate?: number; years?: number;
+  /** The non-mortgage debt's yearly rate as a fraction; 5% when unknown. */
+  debtRate?: number;
   targetMonthlyExpenses?: number;
   taxEnabled?: boolean; retirementTaxRate?: number; rothPct?: number;
   /** What you plan to spend a year once free (D-59). Set, it is the goal, ahead of today's spending or a city. */
@@ -147,7 +149,8 @@ export function calcProjection({
     const added     = active.reduce((t, e) => t + (e.addIncome ?? 0) - (e.addSpend ?? 0), 0);
     let debtPayment = 0;
     if (curDebt > 0) {
-      const interest = curDebt * 0.05;
+      // The debt's own rate when known (lib/freedom-debt), else 5%.
+      const interest = curDebt * debtRate;
       // Working less repays less, though never below the interest.
       debtPayment = inChange
         ? Math.min(curDebt + interest, Math.max(interest, annualSavings * 0.3 * share))

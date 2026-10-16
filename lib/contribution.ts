@@ -491,7 +491,7 @@ export function storedToLadder(s: StoredLadder): LadderFields {
    rung comes back on. */
 const RUNG_KINDS: Record<RungKind, true> = {
   "emergency-floor": true, "employer-match": true, "high-interest-debt": true,
-  "emergency-target": true, "tax-advantaged": true, "low-interest-debt": true,
+  "emergency-target": true, goals: true, "tax-advantaged": true, "low-interest-debt": true,
   taxable: true,
 };
 

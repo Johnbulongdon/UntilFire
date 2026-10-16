@@ -68,6 +68,8 @@ export interface AccountFacts {
    *  date is the next contribution, nothing more is safe to invest: the money
    *  has already gone, even before the bank balance shows it. */
   contributionDone?: { iso: string; amount: number } | null;
+  /** Goals with a date and their monthly amount (lib/goal-monthly): a rung after the emergency target. */
+  goals?: { name: string; monthly: number }[];
   /** Injectable for tests; the surfaces leave it out and get the real clock. */
   today?: Date;
 }
@@ -249,6 +251,7 @@ export function buildLadderView(
     highInterestThresholdPct: thresholdPct || DEFAULT_THRESHOLD_PCT,
     taxAdvantagedRoom: ladder.taxRoom,
     lowInterestExtra: ladder.lowInterestExtra * cycle,
+    goals: (facts.goals ?? []).map((g) => ({ ...g, monthly: g.monthly * cycle })),
     disabled: ladder.disabled,
   }), budget);
 

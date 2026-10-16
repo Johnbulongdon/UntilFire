@@ -15,6 +15,8 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { freedomCash, safetyPot } from '../lib/freedom-cash.ts';
+import { freedomDebt } from '../lib/freedom-debt.ts';
 
 const file = 'app/dashboard/page.tsx';
 const source = readFileSync(file, 'utf8');
@@ -31,14 +33,14 @@ const code = locationSource + '\n' + ['calcProjection', 'freedomProjection', 'pr
   + '\nexports.freedomProjection = freedomProjection; exports.calcProjection = calcProjection; exports.PlanFreedomDate = PlanFreedomDate; exports.effectiveBalances = effectiveBalances; exports.effectiveDebts = effectiveDebts;';
 const exports = {};
 vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2020 } }).outputText,
-  { exports, Math, Date, Object, React, REAL_RETURN: 0.069, freedomAgeAt: (age, years) => Math.round(age + years) });
+  { exports, Math, Date, Object, React, freedomCash, safetyPot, freedomDebt, REAL_RETURN: 0.069, freedomAgeAt: (age, years) => Math.round(age + years) });
 const { freedomProjection, calcProjection, PlanFreedomDate, effectiveBalances, effectiveDebts } = exports;
 
-// A person: $8k/month take-home, $5k spending, $60k invested, $10k in a linked bank account.
+// A person: $8k/month take-home, $5k spending, $60k invested, $10k in a linked savings account (no needs set, so all of it counts).
 const base = {
   income: 8000, expenses: { housing: 2500, food: 1000, other: 1500, _fire_profile: 0 }, k401: 40000, rothIRA: 10000, taxable: 10000,
   cashSavings: 0, totalDebt: 0, mortgageBalance: 0, mortgageMonthly: 0, withdrawalRate: 0.04,
-  plaidAccounts: [{ type: 'depository', balance_current: 10000 }, { type: 'credit', balance_current: 3000 }],
+  plaidAccounts: [{ id: 's', type: 'depository', subtype: 'savings', balance_current: 10000 }, { type: 'credit', balance_current: 3000 }],
   retirementCityCol: 0, lifestyleMultiplier: 1, monthlyWorkCosts: undefined, taxEnabled: false, retirementTaxRate: 0, rothPct: 0,
 };
 const at = (growthRate) => freedomProjection({ ...base, growthRate });
@@ -81,8 +83,18 @@ assert.equal(Math.round(taxed.fireTarget / 60000 * 1000) / 1000, 31.25, 'target 
 const typedAndLinked = effectiveBalances({ k401: 40000, rothIRA: 10000, taxable: 10000, cashSavings: 5000,
   plaidAccounts: [{ type: 'investment', subtype: '401k', balance_current: 52000 }, { type: 'depository', balance_current: 8000 }, { type: 'credit', balance_current: 900 }] });
 assert.deepEqual({ ...typedAndLinked }, { k401: 52000, rothIRA: 0, taxable: 10000, cashSavings: 8000 }, 'linked 401(k) replaces 401(k) and Roth; bank replaces cash; taxable stays typed');
-const both = freedomProjection({ ...base, plaidAccounts: [{ type: 'investment', subtype: 'brokerage', balance_current: 10000 }, { type: 'depository', balance_current: 10000 }], growthRate: 0.069 });
+const both = freedomProjection({ ...base, plaidAccounts: [{ type: 'investment', subtype: 'brokerage', balance_current: 10000 }, { id: 's', type: 'depository', subtype: 'savings', balance_current: 10000 }], growthRate: 0.069 });
 assert.equal(both.fireYear, home.fireYear, 'a linked brokerage account holding the typed $10k is not counted twice');
+
+// Cash roles (money logic study, Oct 16 2026): checking is spending money and never invested;
+// savings are the safety pot, kept out up to six months of needs; only cash above that counts.
+const cashOf = (accounts, extra = {}) =>
+  freedomProjection({ ...base, plaidAccounts: accounts, growthRate: 0.069, ...extra }).data[0]['Investable'];
+const invested60k = cashOf([]);
+assert.equal(cashOf([{ id: 'c', type: 'depository', subtype: 'checking', balance_current: 10000 }]), invested60k, 'checking never counts toward freedom');
+assert.equal(cashOf([{ id: 's', type: 'depository', subtype: 'savings', balance_current: 10000 }], { safetyNeeds: 2000 }), invested60k, 'savings under six months of needs stay in the safety pot');
+assert.equal(cashOf([{ id: 's', type: 'depository', subtype: 'savings', balance_current: 15000 }], { safetyNeeds: 2000 }), invested60k + 3000, 'only cash above the safety pot counts');
+assert.equal(cashOf([{ id: 'c', type: 'depository', subtype: 'checking', balance_current: 10000 }], { spendToggles: { c: false } }), invested60k + 10000, 'a checking account switched out of spending money counts like savings');
 
 // Debts by the same rule as balances (D-35).
 const debts = effectiveDebts({ totalDebt: 12000, mortgageBalance: 300000, plaidAccounts: [

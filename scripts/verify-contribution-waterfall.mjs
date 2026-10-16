@@ -27,11 +27,19 @@ const run = (over, budget) => {
 // ── Order ───────────────────────────────────────────────────────────────
 {
   const order = buildLadder(BASE).map((x) => x.kind);
-  check("the ladder runs floor, match, expensive debt, target, sheltered, cheap debt, taxable",
-    order.join(" > ") === "emergency-floor > employer-match > high-interest-debt > emergency-target > tax-advantaged > low-interest-debt > taxable",
+  check("the ladder runs floor, match, expensive debt, target, goals, sheltered, cheap debt, taxable",
+    order.join(" > ") === "emergency-floor > employer-match > high-interest-debt > emergency-target > goals > tax-advantaged > low-interest-debt > taxable",
     order.join(" > "));
   check("taxable is last and bottomless — it is what catches the remainder",
     buildLadder(BASE).at(-1).capacity === Infinity);
+}
+
+// ── Goals take what they need after the buffer, before sheltered investing ──
+{
+  const { got } = run({ goals: [{ name: "Car", monthly: 300 }, { name: "Trip", monthly: 200 }], taxAdvantagedRoom: 5000 }, 1000);
+  check("goals take their monthly amounts before tax-advantaged accounts", got("goals") === 500 && got("tax-advantaged") === 500,
+    `goals ${money(got("goals"))}, sheltered ${money(got("tax-advantaged"))}`);
+  check("with no dated goals the rung is off", buildLadder(BASE).find((x) => x.kind === "goals").enabled === false);
 }
 
 // ── The floor comes before the debt, and the target comes after ─────────

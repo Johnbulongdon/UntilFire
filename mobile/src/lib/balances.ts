@@ -6,6 +6,8 @@
  * through src/engine instead and delete this file.
  */
 
+import { isCounted, safetyPot } from '@/engine'
+
 export interface PlaidAccount {
   id: string
   /** Plaid's own id, which holdings refer to. */
@@ -63,4 +65,20 @@ export function effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts }: {
     mortgage: mortgages > 0 ? mortgages : mortgageBalance,
     cards: sum(a => a.type === 'credit'),
   }
+}
+
+/**
+ * Cash by role (money logic study, Oct 16 2026): spending money is the
+ * accounts switched on for free to spend, checking by default (D-29); the
+ * rest of the cash is the safety pot (lib/freedom-cash, the website's rule).
+ * One pot is never counted as both: typed cash is savings, and with no
+ * connected checking there is no spending figure (`spending` null), so free
+ * to spend stays hidden rather than calling all savings spendable.
+ */
+export function cashByRole(plaidAccounts: PlaidAccount[], toggles: Record<string, boolean>, typedCash: number) {
+  const cash = plaidAccounts.filter(a => a.type === 'depository')
+  const counted = (a: PlaidAccount) => isCounted({ id: a.id, name: a.name, type: a.type, subtype: a.subtype, balanceUSD: 0 }, toggles)
+  const spendingAccounts = cash.filter(counted)
+  const spending = spendingAccounts.length ? spendingAccounts.reduce((s, a) => s + (a.balance_available ?? a.balance_current ?? 0), 0) : null
+  return { spending, safety: safetyPot(plaidAccounts, toggles, typedCash), split: cash.length > 0 }
 }

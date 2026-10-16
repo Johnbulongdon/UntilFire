@@ -17,6 +17,14 @@ import ContributionsTab from "./ContributionsTab";
 import CompareCard from "./CompareCard";
 import NextContributionCard, { useContributionPlan } from "./NextContributionCard";
 import { emergencyFundFromPlan, measuredEmergencyFund, type AccountFacts } from "@/lib/contribution-ladder";
+import { goalMonthly, goalRungs, type GoalLike } from "@/lib/goal-monthly";
+import { freedomCash, safetyPot } from "@/lib/freedom-cash";
+import { spendingAverage } from "@/lib/real-spending";
+import { carriedCards, freedomDebt } from "@/lib/freedom-debt";
+import { applyAccountShares, readAccountShares, shareOf, SHARED_PCT, type AccountShares } from "@/lib/account-share";
+import { billCategoryOf, billCategorySet, matchesBill } from "@/lib/bill-categories";
+import { recurrenceToMonthly } from "@/lib/recurring-detect";
+import { budgetNeeds, inLastTwelve, transactionNeed, type NeedOverrides } from "@/lib/needs";
 import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
 import { freeToSpend, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
@@ -128,7 +136,6 @@ type EmergencyFundPriorityMode = "protect" | "balance" | "grow";
 const EMERGENCY_FUND_HISTORY_KEY = "uf_emergency_fund_healthy_once_v1";
 const EMERGENCY_FUND_FLOOR_MONTHS = 1.5;
 const EMERGENCY_FUND_TARGET_MONTHS = 6;
-const EMERGENCY_FUND_BUDGET_NEED_KEYS = ["housing", "food", "transport", "healthcare"] as const;
 const EMERGENCY_FUND_MONTH_MARKS = Array.from({ length: EMERGENCY_FUND_TARGET_MONTHS }, (_, index) => index + 1);
 
 function useEmergencyFundHistory(isHealthyNow: boolean) {
@@ -365,7 +372,7 @@ function effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts }: {
 function calcProjection({
   annualIncome, monthlyExpenses, k401, rothIRA, taxable, cashSavings = 0,
   totalDebt, mortgageBalance, mortgageMonthly,
-  growthRate = REAL_RETURN, withdrawalRate = 0.04, years = 50,
+  growthRate = REAL_RETURN, withdrawalRate = 0.04, years = 50, debtRate = 0.05,
   targetMonthlyExpenses,
   taxEnabled = false, retirementTaxRate = 0, rothPct = 0,
   retirementAnnualSpend = 0, payGrowth = 0, employerAnnual = 0, pensionAnnual = 0,
@@ -375,6 +382,8 @@ function calcProjection({
   rothIRA: number; taxable: number; cashSavings?: number; totalDebt: number;
   mortgageBalance: number; mortgageMonthly: number;
   growthRate?: number; withdrawalRate?: number; years?: number;
+  /** The non-mortgage debt's yearly rate as a fraction; 5% when unknown. */
+  debtRate?: number;
   targetMonthlyExpenses?: number;
   taxEnabled?: boolean; retirementTaxRate?: number; rothPct?: number;
   /** What you plan to spend a year once free (D-59). Set, it is the goal, ahead of today's spending or a city. */
@@ -502,7 +511,8 @@ function calcProjection({
     const added     = active.reduce((t, e) => t + (e.addIncome ?? 0) - (e.addSpend ?? 0), 0);
     let debtPayment = 0;
     if (curDebt > 0) {
-      const interest = curDebt * 0.05;
+      // The debt's own rate when known (lib/freedom-debt), else 5%.
+      const interest = curDebt * debtRate;
       // Working less repays less, though never below the interest.
       debtPayment = inChange
         ? Math.min(curDebt + interest, Math.max(interest, annualSavings * 0.3 * share))
@@ -576,6 +586,10 @@ type FreedomArgs = {
   currentCityCol?: number;
   taxEnabled: boolean; retirementTaxRate: number; rothPct: number;
   plan?: PlanSettings;
+  /** Spending accounts (D-29) and monthly needs, so only cash above the safety pot counts (lib/freedom-cash). */
+  spendToggles?: Record<string, boolean>; safetyNeeds?: number;
+  /** The contribution ladder's debts with their typed rates (lib/freedom-debt). */
+  ladderDebts?: { name: string; balance: number; ratePct: number }[];
   /** Life changes on top of the plan (Compare, D-69), already as the engine's dated changes. */
   changes?: { startYear: number; endYear?: number; workShare?: number; annualIncome?: number; annualSpend?: number; addIncome?: number; addSpend?: number; once?: number }[];
 };
@@ -589,7 +603,7 @@ type FreedomArgs = {
 function projectionInputs({
   income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
   growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-  currentCityCol = 0, taxEnabled, retirementTaxRate, rothPct, plan, changes,
+  currentCityCol = 0, taxEnabled, retirementTaxRate, rothPct, plan, changes, spendToggles = {}, safetyNeeds = 0, ladderDebts = [],
 }: FreedomArgs) {
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
@@ -608,7 +622,14 @@ function projectionInputs({
     ...plan,
     annualIncome: income * 12, monthlyExpenses,
     ...effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts }),
-    ...(({ otherDebt, mortgage }) => ({ totalDebt: otherDebt, mortgageBalance: mortgage }))(effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts })),
+    // Checking never counts and the safety pot keeps six months of needs out (lib/freedom-cash).
+    cashSavings: freedomCash(safetyPot(plaidAccounts, spendToggles, cashSavings), safetyNeeds),
+    // Loans, plus cards carried at a rate, at their own rates (lib/freedom-debt).
+    ...(({ otherDebt, mortgage }) => {
+      const debt = freedomDebt({ otherDebt, ladderDebts,
+        cards: plaidAccounts.filter((a) => a.type === "credit").map((a) => ({ name: a.name || a.official_name || "Credit card", balance: a.balance_current ?? 0 })) });
+      return { totalDebt: debt.balance, debtRate: debt.rate, mortgageBalance: mortgage };
+    })(effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts })),
     mortgageMonthly,
     growthRate, withdrawalRate, targetMonthlyExpenses,
     taxEnabled, retirementTaxRate, rothPct, changes: move ? [move, ...(changes ?? [])] : changes,
@@ -689,7 +710,7 @@ function SectionLabel({ icon, text, color = "var(--uf-ink)" }: { icon: string; t
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange, plan }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange, plan, spendToggles = {} }: {
   userId: string;
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
@@ -712,6 +733,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   histMonthsCount?: number;
   userJoinedAt?: string;
   monthlyNeedsExpenses?: number;
+  spendToggles?: Record<string, boolean>;
   monthlyWorkCosts?: number;
   taxEnabled?: boolean;
   retirementTaxRate?: number;
@@ -801,14 +823,14 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const baseInputs = useMemo(() => projectionInputs({
     income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-    currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan,
-  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan]);
+    currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan, spendToggles, safetyNeeds: monthlyNeedsExpenses, ladderDebts: contributionPlan?.ladder?.debts ?? [],
+  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan, spendToggles, monthlyNeedsExpenses, contributionPlan]);
   const balances = { k401: baseInputs.k401, rothIRA: baseInputs.rothIRA, taxable: baseInputs.taxable, cash: baseInputs.cashSavings };
   const { data, fireYear, fireTarget, annualSavings } = useMemo(() => freedomProjection({
     income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-    currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan,
-  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan]);
+    currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan, spendToggles, safetyNeeds: monthlyNeedsExpenses, ladderDebts: contributionPlan?.ladder?.debts ?? [],
+  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan, spendToggles, monthlyNeedsExpenses, contributionPlan]);
 
   const nextMoveScenarios = useMemo(() => {
     if (!(income > 0 && fireYear !== null)) return null;
@@ -2172,7 +2194,7 @@ function _CalculatorsTab() {
 }
 
 // ─── Budget Tracker Tab ───────────────────────────────────────────────────────
-function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], bills = [], onOpenUpcoming }: {
+function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], bills = [], onOpenUpcoming, spreadCategories = [] }: {
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
   actuals: Record<string, number>;
@@ -2189,6 +2211,8 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   recentTransactions?: { date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; category?: string; tags?: string[]; description?: string }[];
   /** Upcoming expense bills (USD): which categories are bills, and what falls due before payday. */
   bills?: Bill[];
+  /** Categories judged over 12 months, set on the phone (FIRE profile spreadCategories). */
+  spreadCategories?: string[];
   onOpenUpcoming?: () => void;
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
@@ -2289,7 +2313,9 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   /* The focused Budget (D-41). One number first: free to spend until payday.
      Then only what needs attention, bills as one row, and the everyday
      categories folded. The full list is one tap away, for editing. */
-  const billCats = new Set(bills.map((b) => b.category || guessBillCategory(b.description) || "other"));
+  // Repeating bills only, as on the phone (lib/bill-categories): a one-off doesn't make a category fixed.
+  const billCats = billCategorySet(bills);
+  const spreadCats = new Set(spreadCategories.filter((k) => !billCats.has(k)));
   const spentOf = (k: string) => actuals[k] || 0;
   const dueOf = (k: string) => committedByCat[k] || 0;
   const daysIn = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -2312,8 +2338,19 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   const everyday = activeCats.filter((c) => !billCats.has(c.key) && !attention.includes(c));
   const sum = (cs: typeof activeCats, f: (k: string) => number) => cs.reduce((t, c) => t + f(c.key), 0);
   const billSpent = sum(activeCats.filter((c) => billCats.has(c.key)), (k) => spentOf(k) + dueOf(k));
-  const everydaySpent = sum(activeCats.filter((c) => !billCats.has(c.key)), spentOf);
-  const leftInBudget = totalExp - sum(activeCats, (k) => spentOf(k) + dueOf(k));
+  /* The one "left" (D-86), the same as the phone's: everyday budget less
+     everyday spending. Bills are set aside, and spread-over-the-year
+     categories are judged over 12 months, not this one. */
+  // Only a bill's own payment is a bill (lib/bill-categories matchesBill): the rest of its category stays everyday.
+  const billMonthlyOf = (k: string) => bills.filter((b) => b.recurrence !== "none" && billCategoryOf(b) === k).reduce((t, b) => t + recurrenceToMonthly(b.usd, b.recurrence), 0);
+  const everydayCats = activeCats.filter((c) => !spreadCats.has(c.key));
+  const everydayBudget = sum(everydayCats, (k) => Math.max(0, (expenses[k] || 0) - (billCats.has(k) ? billMonthlyOf(k) : 0)));
+  const isBillPayment = (t: typeof monthTxns[number]) => billCats.has(t.category ?? "other")
+    && matchesBill({ description: t.description, usd: toUSD(netAmt(t), t.currency, displayRates), category: t.category ?? "other" }, bills);
+  const everydaySpentOf = (k: string) => monthTxns.filter((t) => (t.transaction_type ?? "expense") === "expense" && (t.category ?? "other") === k && !isBillPayment(t))
+    .reduce((t2, t) => t2 + toUSD(netAmt(t), t.currency, displayRates), 0);
+  const leftInBudget = everydayBudget - sum(everydayCats, everydaySpentOf);
+  const everydaySpent = sum(everydayCats, everydaySpentOf);
   const billsStillDue = sum(billGroup, dueOf);
   const shortDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
@@ -2383,19 +2420,18 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   // Checking can be tighter than the budget before payday; say so when it is.
   const cashTight = freeResult?.cash && freeResult.limitedBy === "cash" ? freeResult : null;
   const daysLeftInMonth = daysIn - dayOfMonth + 1;
-  // The pace bar is everyday spending only; bills are set aside.
-  const everydayBudget = sum(activeCats.filter((c) => !billCats.has(c.key)), (k) => expenses[k] || 0);
+  // The pace bar is everyday spending only; bills are set aside (everydayBudget, above).
   const spentByDay: Record<string, number> = {};
   // Everyday spending only: bills are the calendar's dots, and rent would set the scale.
-  for (const t of monthTxns) if ((t.transaction_type ?? "expense") === "expense" && !billCats.has(t.category ?? "other")) spentByDay[t.date.slice(0, 10)] = (spentByDay[t.date.slice(0, 10)] ?? 0) + toUSD(netAmt(t), t.currency, displayRates);
+  for (const t of monthTxns) if ((t.transaction_type ?? "expense") === "expense" && !billCats.has(t.category ?? "other") && !spreadCats.has(t.category ?? "other")) spentByDay[t.date.slice(0, 10)] = (spentByDay[t.date.slice(0, 10)] ?? 0) + toUSD(netAmt(t), t.currency, displayRates);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <MoneyHead
         label={`Left to spend in ${monthName}`}
         value={<span style={{ fontSize: 44, color: leftInBudget < 0 ? "var(--uf-neg-ink)" : undefined }}>{leftInBudget < 0 ? `Over by ${fmtMoney(-leftInBudget)}` : fmtMoney(leftInBudget)}</span>}
         sub={leftInBudget > 0
-          ? <>About <Fig>{fmtMoney(leftInBudget / daysLeftInMonth)}</Fig> a day for {daysLeftInMonth} {daysLeftInMonth === 1 ? "day" : "days"} · of your <Fig>{fmtMoney(totalExp)}</Fig> budget</>
-          : <>of your <Fig>{fmtMoney(totalExp)}</Fig> budget, after bills still due</>}
+          ? <>About <Fig>{fmtMoney(leftInBudget / daysLeftInMonth)}</Fig> a day for {daysLeftInMonth} {daysLeftInMonth === 1 ? "day" : "days"} · of your <Fig>{fmtMoney(everydayBudget)}</Fig> everyday budget, bills set aside</>
+          : <>of your <Fig>{fmtMoney(everydayBudget)}</Fig> everyday budget, bills set aside</>}
       >
         {cashTight && (
           <div className="uf-t-small" style={{ color: "var(--uf-warn-ink)" }}>
@@ -3064,9 +3100,9 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
   function goalPlan(g: Goal): { kind: "done" } | { kind: "monthly"; amount: number } | { kind: "late" } | { kind: "open" } {
     if (g.target_amount > 0 && g.current_saved >= g.target_amount) return { kind: "done" };
     if (!g.target_date) return { kind: "open" };
-    const monthsLeft = (new Date(g.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30.44);
-    if (monthsLeft <= 0) return { kind: "late" };
-    return { kind: "monthly", amount: (g.target_amount - g.current_saved) / Math.max(monthsLeft, 1) };
+    if (new Date(`${g.target_date.slice(0, 10)}T00:00:00`).getTime() < Date.now()) return { kind: "late" };
+    // The same monthly amount the contribution ladder's goals step takes (lib/goal-monthly).
+    return { kind: "monthly", amount: goalMonthly(g) ?? 0 };
   }
   const monthlyNeeded = goals.reduce((t, g) => { const p = goalPlan(g); return t + (p.kind === "monthly" ? p.amount : 0); }, 0);
 
@@ -3469,11 +3505,13 @@ function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => vo
 }
 
 // ─── Portfolio Overview Tab ───────────────────────────────────────────────────
-function PortfolioOverviewTab({ k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, displayCurrency, displayRates, plaidAccounts = [] }: {
+function PortfolioOverviewTab({ k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, displayCurrency, displayRates, plaidAccounts = [], homeValue = 0 }: {
   k401: number; rothIRA: number; taxable: number; cashSavings?: number;
   totalDebt: number; mortgageBalance: number;
   displayCurrency: string; displayRates: Record<string, number>;
   plaidAccounts?: PlaidAccount[];
+  /** Typed on the phone; in net worth so a mortgage isn't all minus, never toward freedom (audit round 2). */
+  homeValue?: number;
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
 
@@ -3482,14 +3520,15 @@ function PortfolioOverviewTab({ k401, rothIRA, taxable, cashSavings = 0, totalDe
   const investable = eff.k401 + eff.rothIRA + eff.taxable + eff.cashSavings;
   // Debts by the same rule as Home (effectiveDebts): connected replaces typed, cards counted once.
   const debts = effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts });
-  const netWorth   = investable - debts.otherDebt - debts.mortgage - debts.cards;
-  const assets = Math.max(eff.k401, 0) + Math.max(eff.rothIRA, 0) + Math.max(eff.taxable, 0) + Math.max(eff.cashSavings, 0);
+  const netWorth   = investable + homeValue - debts.otherDebt - debts.mortgage - debts.cards;
+  const assets = Math.max(eff.k401, 0) + Math.max(eff.rothIRA, 0) + Math.max(eff.taxable, 0) + Math.max(eff.cashSavings, 0) + homeValue;
   const owed = debts.otherDebt + debts.mortgage + debts.cards;
   // Account types are categories here, so they get category colours (D-40).
   const types = [
     { key: "retirement", label: "Retirement", color: ACCOUNT_TYPE_COLORS.retirement, value: eff.k401 + eff.rothIRA },
     { key: "brokerage", label: "Brokerage", color: ACCOUNT_TYPE_COLORS.brokerage, value: eff.taxable },
     { key: "cash", label: "Cash", color: ACCOUNT_TYPE_COLORS.cash, value: eff.cashSavings },
+    ...(homeValue > 0 ? [{ key: "home", label: "Home", color: ACCOUNT_TYPE_COLORS.home, value: homeValue }] : []),
   ];
 
   return (
@@ -3510,7 +3549,8 @@ function PortfolioOverviewTab({ k401, rothIRA, taxable, cashSavings = 0, totalDe
 }
 
 // ─── Assets Tab ───────────────────────────────────────────────────────────────
-function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, totalDebt = 0, mortgageBalance = 0, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, onUpgradeClick, emergencyFundMonthlyBase = 0, efOverride = null, plaidHoldings = [], plaidSecurities = {}, holdingsNeedsReconnect = [], holdingsLoading = false }: {
+function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, totalDebt = 0, mortgageBalance = 0, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, onUpgradeClick, emergencyFundMonthlyBase = 0, efOverride = null, plaidHoldings = [], plaidSecurities = {}, holdingsNeedsReconnect = [], holdingsLoading = false, accountShares = {}, onShareToggle }: {
+  accountShares?: AccountShares; onShareToggle?: (plaidAccountId: string, shared: boolean) => void;
   /** An emergency fund amount set by hand on Contributions, which counts here too (D-37). */
   efOverride?: number | null;
   /** Typed debts, for What you owe (connected ones come from plaidAccounts). */
@@ -3722,7 +3762,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   const retirementConnected = plaidAccounts.some(isRetirementInvestmentAccount);
   const brokerageConnected = plaidAccounts.some(isBrokerageInvestmentAccount);
   const typedRows = [
-    { key: "cash", name: "Cash & savings", value: cashSavings, set: setCashSavings, show: !cashConnected, color: ACCOUNT_TYPE_COLORS.cash, icon: "🏦", note: "Checking, savings and your emergency fund." },
+    { key: "cash", name: "Cash & savings", value: cashSavings, set: setCashSavings, show: !cashConnected, color: ACCOUNT_TYPE_COLORS.cash, icon: "🏦", note: "Savings and your emergency fund. Up to six months of needs stays out of the freedom date." },
     { key: "k401", name: "401(k)", value: k401, set: setK401, show: !retirementConnected, color: ACCOUNT_TYPE_COLORS.retirement, icon: "🏖️", note: "Retirement savings through work." },
     { key: "roth", name: "Roth IRA", value: rothIRA, set: setRothIRA, show: !retirementConnected, color: ACCOUNT_TYPE_COLORS.retirement, icon: "🏖️", note: "Your own retirement account." },
     { key: "taxable", name: "Taxable brokerage", value: taxable, set: setTaxable, show: !brokerageConnected, color: ACCOUNT_TYPE_COLORS.brokerage, icon: "📈", note: "Investments outside retirement accounts." },
@@ -3732,6 +3772,14 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   const cards = plaidAccounts.filter((a) => a.type === "credit" && (a.balance_current ?? 0) !== 0);
   const efInk = emergencyFundPlan.state === "healthy" ? "var(--uf-pos-ink)" : emergencyFundPlan.state === "rebuilding" ? "var(--uf-ink-2)" : "var(--uf-warn-ink)";
   const nwSection = (t: string) => <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>{t}</div>;
+  // A joint account: half of it on your own figures; the household date counts it once (lib/account-share).
+  const isShared = (a: PlaidAccount) => shareOf(a.plaid_account_id, accountShares) < 1;
+  const sharedField = (a: PlaidAccount) => onShareToggle && (
+    <label className="uf-nw-ef">
+      <input type="checkbox" checked={isShared(a)} onChange={(e) => onShareToggle(a.plaid_account_id, e.target.checked)} />
+      <span style={{ flex: 1, minWidth: 0 }}>Shared with a partner. Count half of its balance and spending on my freedom date.</span>
+    </label>
+  );
 
   return (
     <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 12 }}>
@@ -3749,7 +3797,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
             const stale = (daysSinceSync(a.updated_at) ?? 0) > STALE_AFTER_DAYS;
             const native = a.native_currency && a.native_currency !== "USD" && a.native_balance_current != null
               ? `${a.native_balance_current.toLocaleString("en-US", { style: "currency", currency: a.native_currency, maximumFractionDigits: 0 })}${a.converted === false ? ", no exchange rate, not counted" : ""}` : null;
-            const line = [bank?.institution_name, meta.label, a.mask ? `•••• ${a.mask}` : null, apy != null ? `${apy}% APY` : null, native,
+            const line = [bank?.institution_name, meta.label, a.mask ? `•••• ${a.mask}` : null, isShared(a) ? "Shared, your half" : null, apy != null ? `${apy}% APY` : null, native,
               stale ? `balance from ${new Date(a.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : null].filter(Boolean).join(" · ");
             const value = a.balance_current ?? 0;
             const limit = effectiveLimit(a);
@@ -3760,8 +3808,8 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                 meta={countdown ? <>{line}<br /><span style={used > limit! ? { color: "var(--uf-neg-ink)", fontWeight: 600 } : undefined}>{countdown}</span></> : line} value={fmtMoney(value)}
                 icon={<BankLogo logo={bank?.institution_logo} name={bank?.institution_name ?? a.name} color={bank?.institution_color} />}
                 bar={haveTotal > 0 && value > 0 ? <MoneyTrack share={value / haveTotal} color={meta.color} label={`${a.name}: ${Math.round((value / haveTotal) * 100)}% of what you have`} /> : undefined}
-                onClick={isSavingsAccount(a) ? () => toggleRow(a.id) : undefined}
-                after={openRow === a.id && <><ApyField account={a} /><LimitField account={a} />
+                onClick={() => toggleRow(a.id)}
+                after={openRow === a.id && <>{sharedField(a)}{isSavingsAccount(a) && <><ApyField account={a} /><LimitField account={a} /></>}
                   {(a.withdrawals?.length ?? 0) > 0 && (
                     <ul className="uf-t-small" style={{ margin: "4px 0 0", padding: 0, listStyle: "none", color: "var(--uf-ink-2)" }}>
                       {a.withdrawals!.map((w, i) => (
@@ -3794,7 +3842,8 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
             const bank = bankOf(a);
             return <MoneyRow key={a.id} dot="var(--uf-ink-3)" name={a.name} value={`−${fmtMoney(Math.abs(a.balance_current ?? 0))}`}
               icon={<BankLogo logo={bank?.institution_logo} name={bank?.institution_name ?? a.name} color={bank?.institution_color} />}
-              meta={[bank?.institution_name, "Credit card", a.balance_limit ? `of ${fmtMoney(a.balance_limit)} limit` : null].filter(Boolean).join(" · ")} />;
+              meta={[bank?.institution_name, "Credit card", isShared(a) ? "Shared, your half" : null, a.balance_limit ? `of ${fmtMoney(a.balance_limit)} limit` : null].filter(Boolean).join(" · ")}
+              onClick={() => toggleRow(a.id)} after={openRow === a.id && sharedField(a)} />;
           })}
           {eff.otherDebt > 0 && <MoneyRow dot="var(--uf-ink-3)" icon="🧾" name="Loans and other debt" meta={plaidAccounts.some((a) => a.type === "loan") ? "Connected" : "Typed on Debts"} value={`−${fmtMoney(eff.otherDebt)}`} />}
           {eff.mortgage > 0 && <MoneyRow dot="var(--uf-ink-3)" icon="🏠" name="Mortgage" meta="On Debts" value={`−${fmtMoney(eff.mortgage)}`} />}
@@ -5145,50 +5194,37 @@ export default function Dashboard() {
     if (url) window.location.href = url;
   }
 
-  const learnPlace = useMemo<{ stage: LearnStageId; progress: number | null; years: number | null }>(() => {
-    const investable = k401 + rothIRA + taxable + cashSavings;
-    const monthlyExpenses = Object.entries(expenses)
-      .filter(([key]) => !key.startsWith("_"))
-      .reduce((sum, [, amount]) => sum + (amount || 0), 0);
-    const currentCityCol = CITIES.find((c) => c.name === cityName)?.col ?? 0;
-    const targetMonthlyExpenses = retirementLocationMonthlySpend({ monthlySpend: monthlyExpenses, currentCityCol, retirementCityCol, lifestyleMultiplier });
-    const { fireYear, fireTarget } = calcProjection({
-      ...planBase,
-      annualIncome: income * 12,
-      monthlyExpenses,
-      k401,
-      rothIRA,
-      taxable,
-      cashSavings,
-      totalDebt,
-      mortgageBalance,
-      mortgageMonthly,
-      growthRate,
-      withdrawalRate,
-      targetMonthlyExpenses,
-    });
-    const progress = fireTarget > 0 ? (investable / fireTarget) * 100 : 0;
-
-    const place = (stage: LearnStageId) => ({ stage, progress: fireTarget > 0 && (investable > 0 || income > 0) ? Math.min(1, progress / 100) : null, years: fireYear });
-    if (progress >= 85 || (fireYear !== null && fireYear <= 5)) return place("living-in-fire");
-    if (progress >= 45 || (fireYear !== null && fireYear <= 12)) return place("approaching-fire");
-    if (investable > 0 || income > 0) return place("building-momentum");
-    return place("starting-out");
-  }, [cashSavings, cityName, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, planBase, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
 
   type CommittedRow = { id?: string; match_merchant?: string | null; amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null; category: string | null; description?: string | null; recurrence?: string | null };
   const [committedRows, setCommittedRows] = useState<CommittedRow[]>([]);
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
-  const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[]; category?: string; description?: string }[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[]; category?: string; description?: string; sub_category?: string | null; plaid_account_id?: string | null }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
+  /* The budget as typed in the account's own currency (D-86). USD stays stored
+     beside it for every other reader; this keeps ¥3,000 at ¥3,000 as rates move. */
+  const [budgetLocal, setBudgetLocal] = useState<{ currency?: string; values?: Record<string, number> } | null>(null);
+  const [ratesStatus, setRatesStatus] = useState<"loading" | "live" | "failed">("loading");
+  /* Pending until converted at the live rate: autosave keeps the stored copy
+     meanwhile, so a fallback-rate conversion is never written back as typed. */
+  const budgetLocalPending = useRef(false);
+  budgetLocalPending.current = budgetLocal !== null;
+  useEffect(() => {
+    if (!budgetLocal?.values || !budgetLocal.currency) { if (budgetLocal) setBudgetLocal(null); return; }
+    const cur = budgetLocal.currency;
+    const rate = (ratesStatus === "live" ? rates[cur] : undefined) ?? FALLBACK_RATES[cur];
+    if (rate) setExpenses((prev) => ({ ...prev, ...Object.fromEntries(Object.entries(budgetLocal.values!).filter(([, v]) => typeof v === "number").map(([k, v]) => [k, v / rate])) }));
+    if (!rate || ratesStatus !== "loading") setBudgetLocal(null);
+  }, [budgetLocal, rates, ratesStatus]);
   /* Every balance in dollars, converted once here so that every total built
      from them — net worth, cash, the emergency fund, the contribution
      forecast, the freedom-date projection — is in one currency. Adding them
      raw counted HK$20,000 as $20,000. Recomputed when rates arrive. */
+  // Joint accounts count at your share on your own figures (lib/account-share).
+  const [accountShares, setAccountShares] = useState<AccountShares>({});
   const plaidAccounts = useMemo(
-    () => rawPlaidAccounts.map((a) => accountInUSD(a, rates)),
-    [rawPlaidAccounts, rates],
+    () => applyAccountShares(rawPlaidAccounts.map((a) => accountInUSD(a, rates)), accountShares),
+    [rawPlaidAccounts, rates, accountShares],
   );
   // The plan as every freedom date projects it: settings, age, and each mortgage at its own rate (D-61).
   const connectedMortgages = useMemo(() => plaidAccounts
@@ -5203,38 +5239,36 @@ export default function Dashboard() {
   const freedomDateCompactLabel = freedomDate
     ? freedomDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
     : null;
-  const [budgetMode, setBudgetMode] = useState<"manual" | "history">(() => {
-    try { return (localStorage.getItem("uf_budget_mode") as "manual" | "history") || "manual"; } catch { return "manual"; }
-  });
-  const histIncomeAvg = useMemo(() => {
+  /* Real spending per complete month over the last 12 (D-86): what the
+     freedom date runs on once there are three months, so trips and yearly
+     bills count. A mortgage payment is left out because the engine pays the
+     mortgage separately and would otherwise count it twice. */
+  // Real spending by the shared rule (lib/real-spending): same months, partial-month and mortgage handling as the phone.
+  const hasMortgage = mortgageMonthly > 0 || mortgages.some((m) => m.monthly > 0 || m.balance > 0)
+    || effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts }).mortgage > 0;
+  const realSpending = useMemo(() => {
     const now = new Date();
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const byMonth: Record<string, number> = {};
-    recentTransactions.filter(t => t.transaction_type === "income" && !t.date.startsWith(curMonth))
-      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(t.amount, t.currency, rates); });
-    const vals = Object.values(byMonth);
-    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
-  }, [recentTransactions, rates]);
-  const histExpensesAvg = useMemo(() => {
-    const now = new Date();
-    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const byMonth: Record<string, number> = {};
-    recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth))
-      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
-    const vals = Object.values(byMonth);
-    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
-  }, [recentTransactions, rates]);
+    const rows = recentTransactions.filter(t => t.transaction_type === "expense")
+      .map(t => ({ date: t.date, usd: toUSD(netAmt(t), t.currency, rates) * shareOf(t.plaid_account_id, accountShares), description: t.description, sub_category: t.sub_category }));
+    return spendingAverage(rows, curMonth, { excludeMortgage: hasMortgage, firstDate: recentTransactions[0]?.date ?? null });
+  }, [recentTransactions, rates, hasMortgage, accountShares]);
+  const histExpensesAvg = realSpending.average ?? 0;
   /* Needs per complete month, newest first. The average is what the emergency
      fund sizes itself against; the most recent month is what someone means
      when they say "what I spend", so the contribution ladder offers both. */
+  // Need or want by the shared rule (lib/needs): the category, or a tag on the row; the last 12 complete months.
+  const [categoryNeeds, setCategoryNeeds] = useState<NeedOverrides>({});
+  const [spreadCategories, setSpreadCategories] = useState<string[]>([]);
+  const [homeValue, setHomeValue] = useState(0);
   const needsByMonth = useMemo(() => {
     const now = new Date();
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const byMonth: Record<string, number> = {};
-    recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth) && (t.tags || []).includes("need"))
+    recentTransactions.filter(t => t.transaction_type === "expense" && inLastTwelve(t.date.slice(0, 7), curMonth) && transactionNeed(t, categoryNeeds) === "need")
       .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
     return Object.entries(byMonth).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [recentTransactions, rates]);
+  }, [recentTransactions, rates, categoryNeeds]);
   /* Last complete month's spending, split by tag, in dollars. The
      contribution forecast's day-to-day estimate is built from the needs; the
      wants and untagged totals are shown beside it so it is clear what was
@@ -5245,17 +5279,17 @@ export default function Dashboard() {
     const key = `${first.getFullYear()}-${String(first.getMonth() + 1).padStart(2, "0")}`;
     const month = recentTransactions.filter(t => t.transaction_type === "expense" && t.date.startsWith(key));
     const inUsd = (t: typeof month[number]) => toUSD(netAmt(t), t.currency, rates);
-    const has = (t: typeof month[number], tag: string) => (t.tags || []).includes(tag);
+    const filed = month.filter(t => !!t.category);
     return {
       year: first.getFullYear(),
       monthIndex: first.getMonth(),
-      needs: month.filter(t => has(t, "need")).map(t => ({
+      needs: filed.filter(t => transactionNeed(t, categoryNeeds) === "need").map(t => ({
         description: t.description ?? "", category: t.category ?? null, amountUSD: inUsd(t),
       })),
-      wants: month.filter(t => has(t, "want")).reduce((sum, t) => sum + inUsd(t), 0),
-      untagged: month.filter(t => !has(t, "need") && !has(t, "want")).reduce((sum, t) => sum + inUsd(t), 0),
+      wants: filed.filter(t => transactionNeed(t, categoryNeeds) === "want").reduce((sum, t) => sum + inUsd(t), 0),
+      untagged: month.filter(t => !t.category).reduce((sum, t) => sum + inUsd(t), 0),
     };
-  }, [recentTransactions, rates]);
+  }, [recentTransactions, rates, categoryNeeds]);
   const histNeedsAvg = useMemo(() => {
     const vals = needsByMonth.map(([, v]) => v);
     return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
@@ -5270,34 +5304,81 @@ export default function Dashboard() {
     const vals = Object.values(byMonth);
     return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
   }, [recentTransactions, rates]);
-  const histMonthsCount = useMemo(() => {
-    const now = new Date();
-    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    return new Set(recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth)).map(t => t.date.slice(0, 7))).size;
-  }, [recentTransactions]);
-  const effectiveIncome = budgetMode === "history" && histIncomeAvg > 0 ? histIncomeAvg : income;
+  const histMonthsCount = realSpending.months;
+  // Real spending, not the budget, once there are three months (D-86); the phone uses the same rule. Income stays the take-home typed in.
+  const budgetMode: "manual" | "history" = histExpensesAvg > 0 ? "history" : "manual";
+  const effectiveIncome = income;
   const effectiveExpenses = useMemo((): Expenses => {
-    if (budgetMode !== "history" || histExpensesAvg <= 0) return expenses;
+    if (histExpensesAvg <= 0) return expenses;
     const numericEntries = Object.entries(expenses).filter(([k, v]) => !k.startsWith("_") && typeof v === "number");
     const currentTotal = numericEntries.reduce((s, [, v]) => s + (v as number), 0);
     if (currentTotal <= 0) return { ...expenses, other: histExpensesAvg };
     const scale = histExpensesAvg / currentTotal;
     return { ...expenses, ...Object.fromEntries(numericEntries.map(([k, v]) => [k, Math.round((v as number) * scale)])) };
-  }, [budgetMode, histExpensesAvg, expenses]);
-  const manualEmergencyNeeds = useMemo(
-    () => EMERGENCY_FUND_BUDGET_NEED_KEYS.reduce((sum, key) => sum + (effectiveExpenses[key] || 0), 0),
-    [effectiveExpenses],
-  );
+  }, [histExpensesAvg, expenses]);
+  /* What the freedom date spends: before three months of data the budget, with
+     the mortgage payment taken out of Housing, since the engine pays it on its
+     own (D-86); the real-spending average already leaves it out. */
+  const freedomExpenses = useMemo((): Expenses => {
+    if (histExpensesAvg > 0 || !hasMortgage) return effectiveExpenses;
+    const payment = mortgageMonthly || mortgages.reduce((s, m) => s + (m.monthly || 0), 0);
+    return { ...effectiveExpenses, housing: Math.max(0, (effectiveExpenses.housing || 0) - payment) };
+  }, [effectiveExpenses, histExpensesAvg, hasMortgage, mortgageMonthly, mortgages]);
+  const manualEmergencyNeeds = useMemo(() => budgetNeeds(expenses, categoryNeeds), [expenses, categoryNeeds]);
   const emergencyFundMonthlyBase = histNeedsAvg > 0 ? histNeedsAvg : manualEmergencyNeeds;
+  const sharedPlan = useContributionPlan();
+  // Which accounts are spending money (D-29); the freedom date leaves them out too.
+  const [spendToggles, setSpendToggles] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from("profiles").select("free_to_spend_accounts").eq("user_id", userId).single()
+      .then(({ data }) => { if (data?.free_to_spend_accounts) setSpendToggles(data.free_to_spend_accounts as Record<string, boolean>); });
+  }, [userId]);
+  const setSpendToggle = useCallback((id: string, on: boolean) => {
+    setSpendToggles((prev) => {
+      const next = { ...prev, [id]: on };
+      if (userId) supabase.from("profiles").update({ free_to_spend_accounts: next }).eq("user_id", userId)
+        .then(({ error }) => { if (error) console.error("[free-to-spend] saving account toggles", error); });
+      return next;
+    });
+  }, [userId]);
+  // Marked shared: half of a joint account on your own date. Written straight into the profile so autosave keeps it.
+  const setAccountShared = useCallback((plaidAccountId: string, shared: boolean) => {
+    setAccountShares((prev) => {
+      const next = { ...prev };
+      if (shared) next[plaidAccountId] = SHARED_PCT; else delete next[plaidAccountId];
+      if (userId) void (async () => {
+        const { data } = await supabase.from("user_budget").select("expenses").eq("user_id", userId).maybeSingle();
+        const ex = (data?.expenses as Record<string, unknown>) ?? {};
+        const { error } = await supabase.from("user_budget").update({
+          expenses: { ...ex, _fire_profile: { ...((ex._fire_profile as Record<string, unknown>) ?? {}), accountShares: next } },
+        }).eq("user_id", userId);
+        if (error) console.error("[account-share] saving", error);
+      })();
+      return next;
+    });
+  }, [userId]);
   // The freedom date Home shows, computed here too so Plan can show it beside
   // the assumptions that move it, and what the growth choice changed.
   const planFreedomInputs = useMemo(() => ({
-    income: effectiveIncome, expenses: effectiveExpenses as Record<string, number>, k401, rothIRA, taxable, cashSavings,
+    income: effectiveIncome, expenses: freedomExpenses as Record<string, number>, k401, rothIRA, taxable, cashSavings,
     totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier,
     monthlyWorkCosts: histWorkAvg > 0 ? histWorkAvg : undefined, currentCityCol: CITIES.find((c) => c.name === cityName)?.col ?? 0,
-    taxEnabled, retirementTaxRate, rothPct, plan,
-  }), [plan, effectiveIncome, effectiveExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, histWorkAvg, cityName, taxEnabled, retirementTaxRate, rothPct]);
+    taxEnabled, retirementTaxRate, rothPct, plan, spendToggles, safetyNeeds: emergencyFundMonthlyBase, ladderDebts: sharedPlan?.ladder?.debts ?? [],
+  }), [sharedPlan, spendToggles, emergencyFundMonthlyBase, plan, effectiveIncome, freedomExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, histWorkAvg, cityName, taxEnabled, retirementTaxRate, rothPct]);
   const planFreedom = useMemo(() => freedomProjection({ ...planFreedomInputs, growthRate }), [planFreedomInputs, growthRate]);
+  // Where Learn starts someone: from the freedom date itself (D-86), so it reads the same spending and cash.
+  const learnPlace = useMemo<{ stage: LearnStageId; progress: number | null; years: number | null }>(() => {
+    const inputs = projectionInputs({ ...planFreedomInputs, growthRate });
+    const investable = inputs.k401 + inputs.rothIRA + inputs.taxable + inputs.cashSavings;
+    const { fireYear, fireTarget } = planFreedom;
+    const progress = fireTarget > 0 ? (investable / fireTarget) * 100 : 0;
+    const place = (stage: LearnStageId) => ({ stage, progress: fireTarget > 0 && (investable > 0 || income > 0) ? Math.min(1, progress / 100) : null, years: fireYear });
+    if (progress >= 85 || (fireYear !== null && fireYear <= 5)) return place("living-in-fire");
+    if (progress >= 45 || (fireYear !== null && fireYear <= 12)) return place("approaching-fire");
+    if (investable > 0 || income > 0) return place("building-momentum");
+    return place("starting-out");
+  }, [planFreedomInputs, planFreedom, growthRate, income]);
   // Plan → Compare (D-69): the plan with a set of life changes, on the same engine as the date (D-66).
   const compareSpendNow = useMemo(() => Object.entries(effectiveExpenses).filter(([k, v]) => !k.startsWith("_") && typeof v === "number")
     .reduce((t, [, v]) => t + (v as number), 0), [effectiveExpenses]);
@@ -5447,6 +5528,15 @@ export default function Dashboard() {
       }];
     });
   }, [committedRows, homeBills, rates]);
+  // Goals with a date take a rung on the ladder (lib/goal-monthly), the same list Plan -> Goals edits.
+  const [ladderGoals, setLadderGoals] = useState<GoalLike[]>([]);
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from("goals").select("name, target_amount, current_saved, target_date").eq("user_id", userId)
+      .then(({ data }) => setLadderGoals((data as GoalLike[] | null) ?? []));
+  }, [userId]);
+  const cardCharges = useMemo(() => recentTransactions.filter((t) => t.transaction_type === "expense" && t.plaid_account_id)
+    .map((t) => ({ plaid_account_id: t.plaid_account_id, date: t.date, usd: toUSD(t.amount, t.currency, rates) * shareOf(t.plaid_account_id, accountShares) })), [recentTransactions, rates, accountShares]);
   const contributionFacts: AccountFacts = useMemo(() => ({
     cashAccounts: contributionCashAccounts,
     manualCashSavings: cashSavings,
@@ -5455,8 +5545,11 @@ export default function Dashboard() {
     realReturn: growthRate,
     // Debts the rest of the app knows of, offered on Contributions as rows (D-34).
     knownDebts: [
-      ...plaidAccounts.filter((a) => (a.type === "credit" || a.type === "loan") && (a.balance_current ?? 0) > 0)
-        .map((a) => ({ name: a.name || a.official_name || (a.type === "credit" ? "Credit card" : "Loan"), balance: a.balance_current ?? 0 })),
+      // Cards paid in full each month aren't debts to clear (lib/freedom-debt carriedCards).
+      ...carriedCards(plaidAccounts.filter((a) => a.type === "credit").map((a) => ({ plaid_account_id: a.plaid_account_id, name: a.name || a.official_name || "Credit card", balance: a.balance_current ?? 0 })),
+        cardCharges).map(({ name, balance }) => ({ name, balance })),
+      ...plaidAccounts.filter((a) => a.type === "loan" && (a.balance_current ?? 0) > 0)
+        .map((a) => ({ name: a.name || a.official_name || "Loan", balance: a.balance_current ?? 0 })),
       // Typed figures only where no connected account replaces them (effectiveDebts).
       ...(((d) => [
         ...(d.otherDebt === totalDebt && totalDebt > 0 ? [{ name: "Other debt", balance: totalDebt }] : []),
@@ -5469,11 +5562,11 @@ export default function Dashboard() {
       .filter(([k, v]) => !k.startsWith("_") && typeof v === "number")
       .reduce((sum, [, v]) => sum + (v as number), 0),
     contributionDone,
-  }), [contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate, contributionItems, effectiveExpenses, lastMonthSpending, plaidAccounts, totalDebt, mortgageBalance, mortgages, contributionDone]);
+    goals: goalRungs(ladderGoals),
+  }), [ladderGoals, contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate, contributionItems, effectiveExpenses, lastMonthSpending, plaidAccounts, cardCharges, totalDebt, mortgageBalance, mortgages, contributionDone]);
   // The emergency fund as Contributions defines it (D-34): its needs basis and
   // any amount set by hand. The Assets tab reads it too (D-37), so "months
   // covered" is one number on Home, Contributions and Assets.
-  const sharedPlan = useContributionPlan();
   const sharedEf = useMemo(() => emergencyFundFromPlan(sharedPlan, contributionFacts), [sharedPlan, contributionFacts]);
   const efNeedsBase = sharedEf.monthlyNeeds > 0 ? sharedEf.monthlyNeeds : emergencyFundMonthlyBase;
   // Already-committed outgoings still ahead of us this month, in USD.
@@ -5534,20 +5627,6 @@ export default function Dashboard() {
      next paycheck, against what is left in the flexible budget. Categories
      with a repeating bill in Upcoming are fixed, not flexible: their money is
      already counted on the cash side as bills. */
-  const [spendToggles, setSpendToggles] = useState<Record<string, boolean>>({});
-  useEffect(() => {
-    if (!userId) return;
-    supabase.from("profiles").select("free_to_spend_accounts").eq("user_id", userId).single()
-      .then(({ data }) => { if (data?.free_to_spend_accounts) setSpendToggles(data.free_to_spend_accounts as Record<string, boolean>); });
-  }, [userId]);
-  const setSpendToggle = useCallback((id: string, on: boolean) => {
-    setSpendToggles((prev) => {
-      const next = { ...prev, [id]: on };
-      if (userId) supabase.from("profiles").update({ free_to_spend_accounts: next }).eq("user_id", userId)
-        .then(({ error }) => { if (error) console.error("[free-to-spend] saving account toggles", error); });
-      return next;
-    });
-  }, [userId]);
   // What each debt started at (D-40), so Debts can show how much is paid off.
   const [debtOriginals, setDebtOriginals] = useState<Record<string, number>>({});
   useEffect(() => {
@@ -5645,8 +5724,8 @@ export default function Dashboard() {
   useEffect(() => {
     fetch("https://api.frankfurter.app/latest?from=USD")
       .then(r => r.json())
-      .then(d => { if (d.rates) setRates(d.rates); })
-      .catch(() => {});
+      .then(d => { if (d.rates) setRates(d.rates); setRatesStatus(d.rates ? "live" : "failed"); })
+      .catch(() => setRatesStatus("failed"));
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { window.location.href = "/login"; return; }
@@ -5754,7 +5833,7 @@ export default function Dashboard() {
       const historyStart = `${historyStartDate.getFullYear()}-${String(historyStartDate.getMonth() + 1).padStart(2, '0')}-${String(historyStartDate.getDate()).padStart(2, '0')}`;
       // Every page: this read used to stop at the first 1,000 rows, oldest
       // first, so a busy account never loaded its recent months at all.
-      fetchAllPages((from, to) => supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type, tags, category, description")
+      fetchAllPages((from, to) => supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type, tags, category, sub_category, description, plaid_account_id")
         .eq("user_id", session.user.id)
         .gte("date", historyStart)
         .order("date", { ascending: true })
@@ -5771,6 +5850,8 @@ export default function Dashboard() {
               tags: tx.tags || [],
               category: tx.category ?? "other",
               description: tx.description ?? "",
+              sub_category: tx.sub_category ?? null,
+              plaid_account_id: tx.plaid_account_id ?? null,
             })));
           }
         });
@@ -5800,7 +5881,9 @@ export default function Dashboard() {
           setIncome(prefillIncome || data.income || 0);
           const raw = data.expenses || {};
           const fp  = raw._fire_profile || {};
-          const { _fire_profile: _, _custom_cats: _cc, _custom_subcats: _cs, ...budgetExpenses } = raw;
+          const { _fire_profile: _, _custom_cats: _cc, _custom_subcats: _cs, _budget_local: local, ...budgetExpenses } = raw;
+          // Typed in the account's own currency (D-86): converted to USD at today's rate, above.
+          if (local && typeof local === "object") setBudgetLocal(local);
           const mergedExpenses = Object.fromEntries(EXPENSE_CATEGORIES.map(c => [c.key, 0])) as Record<string, number>;
           Object.assign(mergedExpenses, budgetExpenses);
           setExpenses(mergedExpenses);
@@ -5818,6 +5901,10 @@ export default function Dashboard() {
           setTotalDebt(fp.totalDebt || 0);
           setMortgages(loadMortgages(fp));
           setMortgageTerms(fp.mortgageTerms && typeof fp.mortgageTerms === "object" ? fp.mortgageTerms : {});
+          setHomeValue(Number(fp.homeValue) > 0 ? Number(fp.homeValue) : 0);
+          setSpreadCategories(Array.isArray(fp.spreadCategories) ? fp.spreadCategories.filter((k: unknown) => typeof k === "string") : []);
+          setAccountShares(readAccountShares(fp.accountShares));
+          setCategoryNeeds(fp.categoryNeeds && typeof fp.categoryNeeds === "object" && !Array.isArray(fp.categoryNeeds) ? fp.categoryNeeds : {});
           setComparisons(Array.isArray(fp.comparisons) ? fp.comparisons.filter((c: LifeVersion) => c && typeof c.id === "string" && Array.isArray(c.changes)) : []);
           setContributionDone(fp.contributionDone && typeof fp.contributionDone.iso === "string" ? { iso: fp.contributionDone.iso, amount: Number(fp.contributionDone.amount) || 0 } : null);
           // 0.07 was the typed default every profile saved before growth could be
@@ -5908,6 +5995,16 @@ export default function Dashboard() {
       const preserved: Record<string, unknown> = {};
       if (existingExpenses._custom_cats !== undefined) preserved._custom_cats = existingExpenses._custom_cats;
       if (existingExpenses._custom_subcats !== undefined) preserved._custom_subcats = existingExpenses._custom_subcats;
+      const localRate = defaultCurrency !== "USD" ? rates[defaultCurrency] ?? FALLBACK_RATES[defaultCurrency] : undefined;
+      if (budgetLocalPending.current) { if (existingExpenses._budget_local !== undefined) preserved._budget_local = existingExpenses._budget_local; }
+      else if (localRate) preserved._budget_local = {
+        currency: defaultCurrency,
+        values: Object.fromEntries(Object.entries(expenses).filter(([k, v]) => !k.startsWith("_") && typeof v === "number").map(([k, v]) => [k, Math.round((v as number) * localRate * 100) / 100])),
+      };
+      // This month's budget, so past months keep theirs on the phone too (D-86).
+      const now = new Date(), monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      preserved._budget_history = { ...((existingExpenses._budget_history as Record<string, unknown>) ?? {}),
+        [monthKey]: Object.fromEntries(Object.entries(expenses).filter(([k, v]) => !k.startsWith("_") && typeof v === "number")) };
       const { error: saveError } = await supabase.from("user_budget").upsert({
         user_id:     session.user.id,
         income,
@@ -6357,27 +6454,6 @@ export default function Dashboard() {
                 ))}
               </nav>
             )}
-            {tab === "overview" && histMonthsCount >= 1 && (
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-                <div style={{ display: "flex", background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 999, padding: 3, gap: 2 }}>
-                  {(["manual", "history"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => { setBudgetMode(mode); try { localStorage.setItem("uf_budget_mode", mode); } catch {} }}
-                      style={{
-                        background: budgetMode === mode ? "#047857" : "transparent",
-                        color: budgetMode === mode ? "#fff" : "var(--uf-text-2)",
-                        border: "none", borderRadius: 999, padding: "5px 14px",
-                        fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
-                        fontFamily: "inherit",
-                      }}
-                    >
-                      {mode === "manual" ? "Manual budget" : `${histMonthsCount}mo history`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
             {/* Household, on Home: it interprets both people's Money and Plan,
                 which is rule 3. Renders nothing without a household. */}
             {tab === "overview" && (
@@ -6393,7 +6469,7 @@ export default function Dashboard() {
                 bills={homeBills}
                 onOpenFreeToSpend={() => { setCashflowSubTab("budgets"); setTab("cashflow"); }}
                 userId={userId}
-                income={effectiveIncome} expenses={effectiveExpenses}
+                income={effectiveIncome} expenses={freedomExpenses}
                 k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
                 totalDebt={totalDebt} mortgageBalance={mortgageBalance}
                 mortgageMonthly={mortgageMonthly} growthRate={growthRate}
@@ -6419,6 +6495,7 @@ export default function Dashboard() {
                 histMonthsCount={histMonthsCount}
                 userJoinedAt={userJoinedAt}
                 monthlyNeedsExpenses={emergencyFundMonthlyBase > 0 ? emergencyFundMonthlyBase : undefined}
+                spendToggles={spendToggles}
                 monthlyWorkCosts={histWorkAvg > 0 ? histWorkAvg : undefined}
                 taxEnabled={taxEnabled}
                 retirementTaxRate={retirementTaxRate}
@@ -6438,7 +6515,7 @@ export default function Dashboard() {
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
                 {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} plan={sharedPlan} facts={contributionFacts} billDue={billDue} onMarkDone={setContributionDone} onOpenTransactions={() => setCashflowSubTab("cashflow")} />}
                 {cashflowSubTab === "budgets" && (
-                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} />
+                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} spreadCategories={spreadCategories} />
                 )}
               </div>
             )}
@@ -6451,14 +6528,14 @@ export default function Dashboard() {
             )}
             {tab === "assets" && !profileLoading && (
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-                <PortfolioOverviewTab
+                <PortfolioOverviewTab homeValue={homeValue}
                   k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
                   totalDebt={totalDebt} mortgageBalance={mortgageBalance}
                   displayCurrency={defaultCurrency}
                   displayRates={rates}
                   plaidAccounts={plaidAccounts}
                 />
-                <AssetsTab
+                <AssetsTab accountShares={accountShares} onShareToggle={setAccountShared}
                   totalDebt={totalDebt} mortgageBalance={mortgageBalance}
                   k401={k401} setK401={setK401}
                   rothIRA={rothIRA} setRothIRA={setRothIRA}

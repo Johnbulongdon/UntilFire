@@ -3,9 +3,10 @@
  * a change made on the phone looks the same on untilfire.com. Row-level
  * security limits every write to the signed-in user's own rows.
  */
-import { addRecurrence, isoDay, parseIsoDate, type LifeVersion } from '@/engine'
+import { addRecurrence, isoDay, monthOf, parseIsoDate, type LifeVersion } from '@/engine'
 import { supabase } from '@/lib/supabase'
 import type { Bill, MerchantRule } from '@/state/account'
+import { displayCurrency, fromUSD } from '@/lib/display-currency'
 
 export interface TransactionDraft {
   id?: string
@@ -80,7 +81,21 @@ export async function unmarkBillPaid(before: Bill): Promise<string | null> {
 export async function saveBudget(userId: string, budget: Record<string, number>): Promise<string | null> {
   const { data: row, error: readError } = await supabase.from('user_budget').select('expenses').eq('user_id', userId).maybeSingle()
   if (readError) return 'Couldn\'t save the budget. Please try again.'
-  const expenses = { ...((row?.expenses as Record<string, unknown>) ?? {}), ...budget }
+  const before = (row?.expenses as Record<string, unknown>) ?? {}
+  // Each month keeps the budget it had (money logic study): this month's copy, so past months aren't judged by today's.
+  const merged = { ...before, ...budget }
+  const snapshot = Object.fromEntries(Object.entries(merged).filter(([k, v]) => !k.startsWith('_') && typeof v === 'number'))
+  const history = { ...((before._budget_history as Record<string, unknown>) ?? {}), [monthOf(isoDay(new Date()))]: snapshot }
+  // The budget as typed, in the account's own currency (money logic study): ¥3,000 stays ¥3,000 as rates move.
+  // The USD figures stay beside it for everything that reads USD (the website's other readers, emails, household).
+  const code = displayCurrency()
+  const prevLocal = before._budget_local as { currency?: string; values?: Record<string, number> } | undefined
+  const local = code === 'USD' ? undefined : {
+    currency: code,
+    values: { ...(prevLocal?.currency === code ? prevLocal.values : {}), ...Object.fromEntries(Object.entries(budget).map(([k, v]) => [k, Math.round(fromUSD(v) * 100) / 100])) },
+  }
+  const { _budget_local: _drop, ...rest } = merged as Record<string, unknown>
+  const expenses = { ...rest, _budget_history: history, ...(local ? { _budget_local: local } : {}) }
   const { error } = row
     ? await supabase.from('user_budget').update({ expenses, updated_at: new Date().toISOString() }).eq('user_id', userId)
     : await supabase.from('user_budget').insert({ user_id: userId, expenses })
@@ -208,6 +223,12 @@ export async function saveDisplayName(userId: string, name: string): Promise<str
     supabase.from('profiles').upsert({ user_id: userId, display_name: name.trim(), updated_at: new Date().toISOString() }, { onConflict: 'user_id' }),
   ])
   return a.error || b.error ? 'Couldn\'t save your name. Please try again.' : null
+}
+
+/** Which accounts are spending money (profiles.free_to_spend_accounts), as the website's Free to spend switches save them (D-29). */
+export async function saveSpendAccounts(userId: string, toggles: Record<string, boolean>): Promise<string | null> {
+  const { error } = await supabase.from('profiles').update({ free_to_spend_accounts: toggles }).eq('user_id', userId)
+  return error ? 'Couldn\'t save your accounts. Please try again.' : null
 }
 
 /** The currency money is shown in (profiles.default_currency), as the website's Profile sets it. */

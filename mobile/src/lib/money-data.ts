@@ -1,7 +1,9 @@
-import { addMonths, ALL_CATEGORIES, isoDay, median, monthOf, type CategoryDef } from '@/engine'
+import { addMonths, ALL_CATEGORIES, averageNeeds, budgetNeeds, cashAboveSafetyPot, inLastTwelve, isoDay, median, monthOf, type CategoryDef } from '@/engine'
 import { customCategories } from './custom-categories'
-import { defaultNeed } from './review'
-import { spentUSD, toUSD, type Transaction } from '@/state/account'
+import { defaultNeed, needOverrides } from './review'
+import { spentUSD, toUSD, type AccountData, type Transaction } from '@/state/account'
+
+import { cashByRole } from './balances'
 
 export { expenseCategories } from './custom-categories'
 
@@ -91,25 +93,44 @@ export function byDay(transactions: Transaction[]): { date: string; items: Trans
   return groups
 }
 
-// The website's emergency-fund needs: these budgets (EMERGENCY_FUND_BUDGET_NEED_KEYS).
-const NEED_KEYS = ['housing', 'food', 'transport', 'healthcare']
 
 /**
- * A month of needs, the one figure the safety chip, Home's Safety tile and
- * Net worth's emergency fund all divide cash by: the need budgets; without
- * them, what needs usually cost (need/want answers); a 60% guess last.
+ * A month of needs, the one figure the safety chip, Home's Safety tile, Net
+ * worth's emergency fund and the safety pot all divide cash by. The same rule
+ * as the website (lib/needs): what needs actually cost, averaged over the last
+ * 12 complete months; the need budgets before any data; a 60% guess last.
  */
-export function monthlyNeeds(budget: Record<string, number>, transactions: Transaction[]): { needs: number; basis: string } {
-  const needsBudget = NEED_KEYS.reduce((s, k) => s + (budget[k] ?? 0), 0)
+export function monthlyNeeds(budget: Record<string, number>, transactions: Transaction[], current = thisMonth()): { needs: number; basis: string } {
+  const byMonth = new Map<string, number>()
+  for (const t of transactions) {
+    const m = monthOf(t.date)
+    if (t.transaction_type !== 'expense' || !inLastTwelve(m, current) || needOf(t) !== 'need') continue
+    byMonth.set(m, (byMonth.get(m) ?? 0) + spentUSD(t))
+  }
+  const spentNeeds = averageNeeds(byMonth)
+  if (spentNeeds > 0) return { needs: spentNeeds, basis: 'what your needs cost on average' }
+  const needsBudget = budgetNeeds(budget, needOverrides())
   if (needsBudget > 0) return { needs: needsBudget, basis: 'your need budgets' }
-  const spentNeeds = typicalBy(transactions, needOf).get('need') ?? 0
-  if (spentNeeds > 0) return { needs: spentNeeds, basis: 'what your needs usually cost' }
   return { needs: Object.values(budget).reduce((s, v) => s + v, 0) * 0.6, basis: 'your budget' }
 }
 
-/** Months of needs the cash covers, or null without a needs figure. */
-export function safetyMonths(data: { budget: Record<string, number>; transactions: Transaction[]; balances: { cashSavings: number } }): number | null {
+/** The safety pot: cash outside the spending accounts, so spending money isn't also the emergency fund. */
+export const safetyCash = (data: AccountData) => cashByRole(data.plaidAccounts, data.spendToggles ?? {}, data.balances.cashSavings).safety
+
+/**
+ * Cash that counts toward freedom (money logic study, Oct 16 2026, the
+ * founder's call): spending accounts never do, and the safety pot keeps up to
+ * six months of needs out of the date, earning nothing. Only cash above that
+ * is treated as invested.
+ */
+export function freedomCash(data: AccountData): number {
   const { needs } = monthlyNeeds(data.budget, data.transactions)
-  return needs > 0 ? data.balances.cashSavings / needs : null
+  return cashAboveSafetyPot(safetyCash(data), needs)
+}
+
+/** Months of needs the safety pot covers, or null without a needs figure. */
+export function safetyMonths(data: AccountData): number | null {
+  const { needs } = monthlyNeeds(data.budget, data.transactions)
+  return needs > 0 ? safetyCash(data) / needs : null
 }
 

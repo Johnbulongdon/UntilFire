@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import { Pressable, TextInput, View } from 'react-native'
 
 import { calcPurchaseImpact, compareNetWorth, countdownLabel, formatDelay, REAL_RETURN, ladderViewFromPlan, NET_WORTH_BENCHMARKS, NET_WORTH_INFLATION } from '@/engine'
-import { unpaid, upcoming } from '@/lib/bills'
+import { freeUntilPayday } from '@/lib/bills'
 import { contributionFacts, EMPTY_PLAN } from '@/lib/contribution-facts'
 import { currencySymbol, fromInput } from '@/lib/display-currency'
 import { compactMoney, money } from '@/lib/format'
@@ -49,13 +49,11 @@ function Tile({ icon, fallback, tint, label, value, negative, onPress }: { icon:
   )
 }
 
-/** FreeToSpendHome (D-29): one sentence, the cash free until payday once bills before it are set aside. */
+/** FreeToSpendHome (D-29): one sentence, the same free-until-payday figure Budget shows. */
 export function FreeToSpend({ data }: { data: AccountData }) {
-  const events = unpaid(upcoming(data.bills, 45), data.bills, data.transactions)
-  const payday = events.find(e => e.type === 'income' && e.counted)
-  if (!payday) return null
-  const before = events.filter(e => e.type === 'expense' && e.iso < payday.iso).reduce((s, e) => s - e.amount, 0)
-  const free = data.balances.cashSavings - before
+  const f = freeUntilPayday(data)
+  if (!f) return null
+  const { free, payday } = f
   return (
     <Pressable accessibilityRole="button" onPress={() => { haptic.tick(); router.push('/money/budget') }}>
       <Card>
@@ -95,6 +93,8 @@ export function NextContribution({ data }: { data: AccountData }) {
 /** CompareCard: net worth against US households of the same age (Federal Reserve survey, inflation-adjusted). */
 export function Peers({ data }: { data: AccountData }) {
   const netWorth = netWorthOf(data).netWorth
+  // The survey counts home equity: with a mortgage but no home value typed, the comparison would be unfair.
+  if (data.debts.mortgage > 0 && !(data.typed.homeValue > 0)) return null
   const c = compareNetWorth({ netWorthUsd: netWorth, age: data.age, ageAssumed: !(data.age && data.age > 0), currency: data.currency }, NET_WORTH_BENCHMARKS, NET_WORTH_INFLATION)
   if (!c) return null
   return (

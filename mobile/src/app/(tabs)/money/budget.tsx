@@ -8,13 +8,16 @@ import { DetailScreen } from '@/components/DetailScreen'
 import { CategoryGlyph } from '@/components/Icon'
 import { LoadingState } from '@/components/LoadingState'
 import { Card, Label } from '@/components/Screen'
+import { SavingsLine } from '@/components/SavingsLine'
 import { SetAside } from '@/components/SetAside'
+import { budgetFor, splitBudget } from '@/lib/budget-split'
 import { Text } from '@/components/Text'
 import { addMonths, ALL_CATEGORIES } from '@/engine'
 import { money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { categoryOf, monthSpend, needOf, thisMonth, typicalBy, typicalByCategory } from '@/lib/money-data'
-import { saveCustomCategories } from '@/lib/mutations'
+import { saveCustomCategories, saveFireProfile } from '@/lib/mutations'
+import { defaultNeed } from '@/lib/review'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { colors } from '@/theme/colors'
@@ -24,9 +27,10 @@ const monthName = (ym: string) => new Date(`${ym}-01T00:00:00`).toLocaleDateStri
 const DAY_TO_DAY = ['food', 'transport']
 
 /**
- * Budget and Categories in one (Oct 16 2026, the founder): what's left this
- * month, then one row per category with spent against its budget. Tap a row
- * for its transactions; ••• holds the rarer budget and category actions.
+ * Budget and Categories in one (Oct 16 2026, the founder): what's left of the
+ * everyday budget, then Bills (from Calendar, never typed twice) and one row
+ * per everyday category with spent against its budget. Tap a row for its
+ * transactions; ••• holds the rarer budget and category actions.
  */
 export default function Budget() {
   const { session } = useAuth()
@@ -36,15 +40,18 @@ export default function Budget() {
   const dayToDayWants = useMemo(() => (data ? typicalBy(data.transactions, t => (DAY_TO_DAY.includes(t.category) ? needOf(t) : null)).get('want') ?? 0 : 0), [data])
   if (!data) return <DetailScreen back="Money" title="Budget"><LoadingState /></DetailScreen>
 
-  const { total, categories } = monthSpend(data.transactions, month)
+  const { categories } = monthSpend(data.transactions, month)
   const spent = new Map(categories.map(c => [c.key, c.usd]))
-  const budget = Object.values(data.budget).reduce((s, v) => s + v, 0)
+  const split = splitBudget(data, month)
+  // A past month is judged by the budget it had (lib/budget-split budgetFor).
+  const monthBudget = budgetFor(data, month)
   const custom = new Set(data.customCategories.map(c => c.key))
   const known = new Set([...ALL_CATEGORIES.map(c => c.key), ...custom])
   // Your own and leftover labels (an old "Dog") stay listed at $0 so they can be managed.
   const leftovers = data.transactions.filter(t => t.transaction_type === 'expense' && t.category && !known.has(t.category)).map(t => t.category)
-  const keys = [...new Set([...Object.keys(data.budget).filter(k => data.budget[k] > 0), ...spent.keys(), ...custom, ...leftovers])]
-  const share = (k: string) => (data.budget[k] > 0 ? (spent.get(k) ?? 0) / data.budget[k] : -1)
+  // Bill categories (a repeating bill in Calendar) are listed under Bills instead.
+  const keys = [...new Set([...Object.keys(monthBudget).filter(k => monthBudget[k] > 0), ...spent.keys(), ...custom, ...leftovers])].filter(k => !split.billKeys.has(k) && !split.spreadKeys.has(k))
+  const share = (k: string) => (monthBudget[k] > 0 ? (spent.get(k) ?? 0) / monthBudget[k] : -1)
   const rows = keys.sort((a, b) => share(b) - share(a) || (spent.get(b) ?? 0) - (spent.get(a) ?? 0))
   const dayToDay = DAY_TO_DAY.reduce((s, k) => s + (typical.get(k) ?? 0), 0)
   const isCurrent = month === thisMonth()
@@ -65,10 +72,28 @@ export default function Budget() {
       } },
     ])
   }
+  // Need or want lives on the category, so Today doesn't ask it for every purchase (money logic study).
+  const setNeed = async (key: string, need: 'need' | 'want') => {
+    if (!session) return
+    const problem = await saveFireProfile(session.user.id, { categoryNeeds: { ...data.profile.categoryNeeds, [key]: need } })
+    if (problem) { Alert.alert(problem); return }
+    haptic.success(); refresh()
+  }
+  // Yearly costs (insurance, a trip) are judged over 12 months instead of one (money logic study).
+  const toggleSpread = async (key: string) => {
+    if (!session) return
+    const list = data.profile.spreadCategories ?? []
+    const problem = await saveFireProfile(session.user.id, { spreadCategories: list.includes(key) ? list.filter(k => k !== key) : [...list, key] })
+    if (problem) { Alert.alert(problem); return }
+    haptic.success(); refresh()
+  }
   const options = (key: string, label: string) => {
     haptic.tick()
-    Alert.alert(label, undefined, [
+    const need = defaultNeed(key)
+    Alert.alert(label, `Counted as a ${need}.`, [
       { text: data.budget[key] > 0 ? 'Change budget' : 'Set budget', onPress: () => router.push('/budget-edit') },
+      { text: need === 'need' ? 'Count as a want' : 'Count as a need', onPress: () => setNeed(key, need === 'need' ? 'want' : 'need') },
+      { text: split.spreadKeys.has(key) ? 'Budget it each month' : 'Spread over the year', onPress: () => toggleSpread(key) },
       { text: 'Merge into another category', onPress: () => router.push({ pathname: '/merge-category', params: { key } }) },
       ...(custom.has(key) ? [{ text: 'Remove', style: 'destructive' as const, onPress: () => remove(key, label) }] : []),
       { text: 'Cancel', style: 'cancel' as const },
@@ -87,24 +112,55 @@ export default function Budget() {
         </Pressable>
       </View>
 
-      {budget > 0 ? (
-        <Card><BudgetPace spent={total} budget={budget} now={isCurrent ? new Date() : new Date(y, m, 0)} /></Card>
+      {isCurrent && <SavingsLine data={data} budget={split.total} />}
+
+      {split.everydayBudget > 0 ? (
+        <Card>
+          <Label>Everyday</Label>
+          <BudgetPace spent={split.everydaySpent} budget={split.everydayBudget} now={isCurrent ? new Date() : new Date(y, m, 0)} />
+        </Card>
       ) : (
         <Card soft>
           <Text className="text-[15px] font-semibold text-ink">No budget yet</Text>
-          <Text className="mt-1 text-[14px] leading-5 text-ink-2">Give each category a monthly amount and see what's left as you spend.</Text>
+          <Text className="mt-1 text-[14px] leading-5 text-ink-2">Give each everyday category a monthly amount and see what's left as you spend. Bills come from Calendar.</Text>
           <View className="mt-3"><Button small kind="quiet" label="Set a budget" onPress={() => router.push('/budget-edit')} /></View>
         </Card>
       )}
 
       {isCurrent && <SetAside data={data} />}
 
+      {split.bills.length > 0 && (
+        <Card>
+          <View className="flex-row items-baseline justify-between">
+            <Label>Bills</Label>
+            <Text className="font-mono text-[13px] text-ink-3">{money(split.billsMonthly)} a month</Text>
+          </View>
+          {split.bills.map(b => {
+            const cat = categoryOf(b.key)
+            return (
+              <Pressable key={b.key} accessibilityRole="button" accessibilityLabel={`${cat.label} bills, ${b.due > 0 ? `${money(b.due)} still due` : 'paid'}. Show transactions`}
+                onPress={() => { haptic.tick(); router.push({ pathname: '/money/transactions', params: { category: b.key, month } }) }}
+                className="flex-row items-center gap-3 border-t border-border py-3 active:opacity-70">
+                <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: `${cat.color}22` }}><CategoryGlyph cat={cat} size={20} /></View>
+                <View className="flex-1">
+                  <Text className="text-[15px] font-semibold text-ink">{cat.label}</Text>
+                  <Text className="text-[12px] text-ink-3">{b.due > 0 ? `${money(b.due)} still due${b.next ? ` ${new Date(`${b.next}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}` : isCurrent ? 'Paid this month' : `${money(b.spent)} paid`}</Text>
+                </View>
+                <Text className="font-mono text-[14px] text-ink">{money(b.monthly)}</Text>
+              </Pressable>
+            )
+          })}
+          <Text className="mt-1 text-[12px] text-ink-3">From your bills in Calendar, set aside before everyday spending.</Text>
+        </Card>
+      )}
+
       <Card>
+        {split.bills.length > 0 && <Label>Everyday</Label>}
         {rows.length === 0 && <Text className="text-[14px] text-ink-2">Nothing spent in {monthName(month)}.</Text>}
         {rows.map((key, i) => {
           const cat = categoryOf(key)
           const now = spent.get(key) ?? 0
-          const limit = data.budget[key] > 0 ? data.budget[key] : 0
+          const limit = monthBudget[key] > 0 ? monthBudget[key] : 0
           const over = limit > 0 && now > limit
           return (
             <View key={key} className={`flex-row items-center gap-3 py-3 ${i > 0 ? 'border-t border-border' : ''}`}>
@@ -141,6 +197,27 @@ export default function Budget() {
           )
         })}
       </Card>
+
+      {split.spread.length > 0 && (
+        <Card>
+          <Label>Spread over the year</Label>
+          {split.spread.map(c => {
+            const cat = categoryOf(c.key)
+            const over = c.yearBudget > 0 && c.yearSpent > c.yearBudget
+            return (
+              <Pressable key={c.key} accessibilityRole="button" accessibilityLabel={`${cat.label}: ${money(c.yearSpent)} of ${money(c.yearBudget)} over 12 months. Options`}
+                onPress={() => options(c.key, cat.label)} className="flex-row items-center gap-3 border-t border-border py-3 active:opacity-70">
+                <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: `${cat.color}22` }}><CategoryGlyph cat={cat} size={20} /></View>
+                <View className="flex-1">
+                  <Text className="text-[15px] font-semibold text-ink">{cat.label}</Text>
+                  <Text className={`text-[12px] ${over ? 'text-neg-ink' : 'text-ink-3'}`}>{over ? `${money(c.yearSpent - c.yearBudget)} over` : `${money(c.yearBudget - c.yearSpent)} left`} over 12 months</Text>
+                </View>
+                <Text className="font-mono text-[14px] text-ink">{money(c.yearSpent)}<Text className="font-mono text-[13px] text-ink-3"> / {money(c.yearBudget)}</Text></Text>
+              </Pressable>
+            )
+          })}
+        </Card>
+      )}
 
       <View className="flex-row gap-3">
         <View className="flex-1"><Button kind="quiet" label="+ Category" onPress={() => { haptic.tick(); router.push('/category') }} /></View>

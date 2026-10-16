@@ -1,12 +1,14 @@
+import { categoryNeed, type NeedOverrides } from '@/engine'
 import type { Transaction } from '@/state/account'
 
 /**
- * Filed means a category and a need or want tag (the website's reviewCounts in
- * TransactionsTab). "Other" counts once it's tagged: only filing adds the tag,
- * so it's a choice for something you don't recognise (Oct 2026 QA).
+ * Filed means the transaction has a category (money logic study, Oct 16
+ * 2026): need or want now comes from the category, so Today asks one
+ * question, not two. "Other" counts once it's tagged: only filing adds the
+ * tag, so it's a choice for something you don't recognise (Oct 2026 QA).
  */
 export const isFiled = (t: Transaction) =>
-  !!t.category && t.tags.some(g => g === 'need' || g === 'want')
+  !!t.category && (t.category !== 'other' || t.tags.some(g => g === 'need' || g === 'want'))
 
 export function reviewCounts(rows: Transaction[]) {
   const expenses = rows.filter(t => t.transaction_type === 'expense')
@@ -14,6 +16,9 @@ export function reviewCounts(rows: Transaction[]) {
   return { filed, need: expenses.length - filed }
 }
 
-// With nothing in the person's history, a category's usual answer.
-const NEED_CATEGORIES = new Set(['housing', 'food', 'transport', 'healthcare', 'utilities', 'education'])
-export const defaultNeed = (category: string): 'need' | 'want' => (NEED_CATEGORIES.has(category) ? 'need' : 'want')
+// The one need rule, shared with the website (lib/needs), unless the person changed a category.
+let overrides: NeedOverrides = {}
+/** The account's own need/want per category (FIRE profile categoryNeeds), set when the account loads. */
+export function setCategoryNeeds(next: NeedOverrides) { overrides = next }
+export const needOverrides = () => overrides
+export const defaultNeed = (category: string): 'need' | 'want' => categoryNeed(category, overrides)
