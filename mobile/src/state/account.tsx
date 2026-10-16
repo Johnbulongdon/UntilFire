@@ -328,6 +328,11 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   refreshRef.current = refresh
   useEffect(() => { refresh() }, [refresh])
+  // Account first: onboarding finishes after sign-in, so its plan seeds the new account then.
+  useEffect(() => {
+    if (!session || !plan || !(plan.monthlyIncome > 0) || !data || data.income > 0) return
+    seedFromOnboarding(session.user.id, plan).then(ok => { if (ok) refresh() }).catch(() => {})
+  }, [session, plan, data?.income]) // eslint-disable-line react-hooks/exhaustive-deps
   // Signed out, amounts show in the currency picked in onboarding.
   // Apple purchases that land outside the Pro screen still switch Pro on (launch audit, Oct 2026).
   useEffect(() => (session ? listenForPurchases(session.access_token, () => { refresh() }) : undefined), [session?.access_token]) // eslint-disable-line react-hooks/exhaustive-deps

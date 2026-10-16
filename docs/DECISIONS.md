@@ -2783,3 +2783,18 @@ The founder asked for it in the pre-launch household audit.
 - **Joining waits for a tap** on the invitation page, since it shares the
   invitee's numbers too.
 
+### D-85 — October 16: the phone app asks for an account first
+
+**Status:** Active. The founder chose it: someone who downloaded the app has
+already committed, so they sign in before the questions.
+**Decision:**
+- Signed out, the app opens on the welcome screen, never Home or the tabs.
+  "Get started" and "I already have an account" both open sign-in (email code,
+  Google, Apple). Signing out returns there.
+- After sign-in, an account with a plan goes to Home; a new one answers the
+  onboarding questions, and the plan they finish seeds the account
+  (`seedFromOnboarding`, now also run when the plan arrives after sign-in).
+- This applies to the phone app only. The website's calculator stays free and
+  open without login (CLAUDE.md product constraints); research in the project
+  favoured onboarding first, and the founder chose account first for the app.
+

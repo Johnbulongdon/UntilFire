@@ -26,9 +26,9 @@ function planFromAccount(d: AccountData): Plan | null {
 
 /**
  * Welcome (V2): the wordmark (without the logo's own sun, so there is one sun),
- * Sunny coming up, one punchline, one button. "I already have an account"
- * (Oct 2026 launch audit) signs in first; a set-up account goes straight to
- * Home, one never set up answers the questions as usual.
+ * Sunny coming up, one punchline. Both buttons sign in first (account first,
+ * Oct 16 2026); a set-up account goes straight to Home, a new one answers the
+ * questions next.
  */
 export default function Welcome() {
   const { session } = useAuth()
@@ -44,6 +44,15 @@ export default function Welcome() {
     if (fromAccount) savePlan(fromAccount).then(() => router.replace('/(tabs)'))
     else router.push('/onboarding/goal')
   }, [session, data, plan, savePlan])
+
+  // Account first (Oct 16 2026, the founder: someone who downloaded the app has
+  // already committed). Both buttons sign in; the questions follow for a new account.
+  const start = () => {
+    haptic.tick()
+    if (session) { router.push('/onboarding/goal'); return }
+    asked.current = true
+    router.push('/sign-in')
+  }
 
   // A soft tap as the sun rises.
   useEffect(() => {
@@ -69,8 +78,8 @@ export default function Welcome() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(1800).duration(600)}>
-          <Button kind="onDark" label="Get started" onPress={() => router.push('/onboarding/goal')} />
-          <Button kind="onDarkQuiet" small style={{ marginTop: 10 }} label="I already have an account" onPress={() => { haptic.tick(); asked.current = true; router.push('/sign-in') }} />
+          <Button kind="onDark" label="Get started" onPress={start} />
+          <Button kind="onDarkQuiet" small style={{ marginTop: 10 }} label="I already have an account" onPress={start} />
         </Animated.View>
       </View>
     </SafeAreaView>

@@ -19,6 +19,10 @@ under today's date, creating the heading if it is not there yet.
 - Money shows the top three categories under "Spent this month".
 - Emergency fund shows a target (six months of needs). Without need budgets,
   needs come from what your needs usually cost instead of 60% of the budget.
+- Account first: signed out, the app opens on the welcome screen instead of
+  Home, and both its buttons go to sign-in. A new account answers the
+  onboarding questions next, and their plan saves to the account; an account
+  with a plan goes straight to Home. Signing out returns to the welcome screen.
 
 ## 2026-10-15
 
