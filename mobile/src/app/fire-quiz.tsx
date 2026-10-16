@@ -18,13 +18,12 @@ import { useAuth } from '@/state/auth'
 import { useAccount } from '@/state/account'
 import { colors, TAB_COLOR } from '@/theme/colors'
 
-const SCALE: QuizAnswer[] = [0, 1, 2, 3, 4]
-/** Dot sizes down the scale: strong, slight, in between, slight, strong. */
-const DOT = [46, 36, 28, 36, 46]
-/** A picture for each side of each question, so the answers read at a glance (Oct 16 2026, the founder). */
-const ART: Record<string, [string, string]> = {
-  pa1: ['🗺️', '🧭'], pa2: ['🛠️', '🤔'], se1: ['🛡️', '🚀'], se2: ['🏦', '📈'],
-  rg1: ['✂️', '💼'], rg2: ['🔍', '💡'], bf1: ['🧱', '🕊️'], bf2: ['🎯', '🌴'],
+/** A picture for each question and for each of its sides, so the screen reads at a glance (Oct 16 2026, the founder). */
+const ART: Record<string, { q: string; sides: [string, string] }> = {
+  pa1: { q: '🎛️', sides: ['🗺️', '🧭'] }, pa2: { q: '🔀', sides: ['🛠️', '🤔'] },
+  se1: { q: '💰', sides: ['🛡️', '🚀'] }, se2: { q: '💵', sides: ['🏦', '📈'] },
+  rg1: { q: '🧾', sides: ['✂️', '💼'] }, rg2: { q: '👀', sides: ['🔍', '💡'] },
+  bf1: { q: '🏗️', sides: ['🧱', '🕊️'] }, bf2: { q: '⏳', sides: ['🎯', '🌴'] },
 }
 
 /**
@@ -56,15 +55,15 @@ export default function FireQuiz() {
   }
 
   const insets = useSafeAreaInsets()
-  const [leftArt, rightArt] = ART[q.id] ?? ['◀︎', '▶︎']
-  const side = (v: QuizAnswer) => (v === 2 ? 'In between' : `${v === 0 || v === 4 ? 'Very much' : 'A little'}: ${v < 2 ? q.leftLabel : q.rightLabel}`)
+  const art = ART[q.id] ?? { q: '🔥', sides: ['◀︎', '▶︎'] as [string, string] }
+  const [l, r] = art.sides
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.ground }}>
-      {/* Soft shapes behind the questions, in Profile's colour, so the screen isn't only words. */}
+      {/* Soft tilted panels behind the questions, in Profile's colour, so the screen isn't only words. */}
       <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
-        <View style={{ position: 'absolute', width: 320, height: 320, borderRadius: 160, top: -90, right: -120, backgroundColor: TAB_COLOR.profile, opacity: 0.08 }} />
-        <View style={{ position: 'absolute', width: 260, height: 260, borderRadius: 130, bottom: -80, left: -100, backgroundColor: TAB_COLOR.profile, opacity: 0.06 }} />
+        <View style={{ position: 'absolute', width: 300, height: 300, borderRadius: 64, top: -110, right: -120, backgroundColor: TAB_COLOR.profile, opacity: 0.08, transform: [{ rotate: '18deg' }] }} />
+        <View style={{ position: 'absolute', width: 240, height: 240, borderRadius: 56, bottom: -90, left: -110, backgroundColor: TAB_COLOR.profile, opacity: 0.06, transform: [{ rotate: '-14deg' }] }} />
       </View>
       {/* Below the status bar and Dynamic Island: a full-screen modal can report no top inset, so keep a floor. */}
       <View className="flex-row items-center gap-4 px-5" style={{ paddingTop: Math.max(insets.top, 44) + 8 }}>
@@ -77,21 +76,18 @@ export default function FireQuiz() {
       </View>
 
       {done ? <Result answers={answers} rewardUntil={rewardUntil} onRetake={() => setAnswers([])} /> : (
-        <Animated.View key={q.id} entering={FadeInRight.duration(220)} style={{ flex: 1, paddingHorizontal: 24, paddingBottom: insets.bottom + 16, paddingTop: 20 }}>
-          <Text className="font-display text-[26px] font-bold leading-8 text-ink">{q.prompt}</Text>
-          {/* Two pictured sides and five dots between them: tap the side you lean to, bigger dots mean more. */}
-          <View style={{ flex: 1, justifyContent: 'center', gap: 12, paddingTop: 12 }}>
-            <Pole art={leftArt} label={q.leftLabel} onPress={() => answer(0)} />
-            <View className="items-center" style={{ gap: 8 }}>
-              {SCALE.map(v => (
-                <Bouncy key={v} accessibilityLabel={side(v)} onPress={() => answer(v)}>
-                  <View style={{ width: 64, height: DOT[v] + 4, alignItems: 'center', justifyContent: 'center' }}>
-                    <View style={{ width: DOT[v], height: DOT[v], borderRadius: DOT[v] / 2, borderWidth: 3, borderColor: v === 2 ? colors.border2 : TAB_COLOR.profile, backgroundColor: colors.card }} />
-                  </View>
-                </Bouncy>
-              ))}
-            </View>
-            <Pole art={rightArt} label={q.rightLabel} onPress={() => answer(4)} />
+        <Animated.View key={q.id} entering={FadeInRight.duration(220)} style={{ flex: 1, paddingHorizontal: 24, paddingBottom: insets.bottom + 16, paddingTop: 16 }}>
+          <View style={{ width: 76, height: 76, borderRadius: 22, backgroundColor: TAB_COLOR.profile, alignItems: 'center', justifyContent: 'center' }}>
+            <Text className="text-[40px]">{art.q}</Text>
+          </View>
+          <Text className="mt-4 font-display text-[26px] font-bold leading-8 text-ink">{q.prompt}</Text>
+          {/* Five rectangles, one shape: the two pictured sides, and "a little", "both" and "a little" between them. */}
+          <View style={{ flex: 1, justifyContent: 'center', gap: 8, paddingTop: 12 }}>
+            <Answer art={l} label={q.leftLabel} a11y={`Very much: ${q.leftLabel}`} big onPress={() => answer(0)} />
+            <Answer art={l} label="A little more this" a11y={`A little: ${q.leftLabel}`} onPress={() => answer(1)} />
+            <Answer art="⚖️" label="Both equally" a11y="In between" onPress={() => answer(2)} />
+            <Answer art={r} label="A little more this" a11y={`A little: ${q.rightLabel}`} onPress={() => answer(3)} />
+            <Answer art={r} label={q.rightLabel} a11y={`Very much: ${q.rightLabel}`} big onPress={() => answer(4)} />
           </View>
         </Animated.View>
       )}
@@ -99,15 +95,16 @@ export default function FireQuiz() {
   )
 }
 
-/** One side of a question: its picture and its words; tapping it is a strong lean. */
-function Pole({ art, label, onPress }: { art: string; label: string; onPress: () => void }) {
+/** One answer, always a rounded rectangle: a picture and a few words. The two sides are bigger. */
+function Answer({ art, label, a11y, big, onPress }: { art: string; label: string; a11y: string; big?: boolean; onPress: () => void }) {
+  const tile = big ? 48 : 34
   return (
-    <Bouncy accessibilityLabel={`Very much: ${label}`} onPress={onPress}>
-      <View className="flex-row items-center gap-4 rounded-2xl border-2 border-border bg-card px-4 py-3" style={{ borderBottomWidth: 4 }}>
-        <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' }}>
-          <Text className="text-[30px]">{art}</Text>
+    <Bouncy accessibilityLabel={a11y} onPress={onPress}>
+      <View className={`flex-row items-center gap-3 rounded-2xl border-2 border-border bg-card px-4 ${big ? 'py-3' : 'py-2'}`} style={{ borderBottomWidth: 4 }}>
+        <View style={{ width: tile, height: tile, borderRadius: 12, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' }}>
+          <Text className={big ? 'text-[28px]' : 'text-[18px]'}>{art}</Text>
         </View>
-        <Text numberOfLines={2} className="flex-1 text-[16px] font-semibold leading-5 text-ink">{label}</Text>
+        <Text numberOfLines={2} className={`flex-1 ${big ? 'text-[16px] font-semibold text-ink' : 'text-[14px] text-ink-2'} leading-5`}>{label}</Text>
       </View>
     </Bouncy>
   )
@@ -147,7 +144,7 @@ function Result({ answers, rewardUntil, onRetake }: { answers: QuizAnswer[]; rew
               <Text className={`text-[13px] ${letters[k] === ax.rightLetter ? 'font-bold text-ink' : 'text-ink-3'}`}>{ax.right}</Text>
             </View>
             <View className="mt-1 h-2 rounded-full bg-surface-2">
-              <View className="absolute h-3.5 w-3.5 -translate-y-[3px] rounded-full bg-teal" style={{ left: `${Math.min(96, Math.max(0, leans[k] * 100 - 2))}%` }} />
+              <View className="absolute h-3.5 w-2.5 -translate-y-[3px] rounded-[3px] bg-teal" style={{ left: `${Math.min(96, Math.max(0, leans[k] * 100 - 2))}%` }} />
             </View>
           </View>
         ))}
