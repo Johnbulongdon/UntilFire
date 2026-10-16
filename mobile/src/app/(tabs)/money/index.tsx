@@ -54,9 +54,9 @@ function Headline({ data }: { data: AccountData }) {
       <Text className="text-[12px] font-bold uppercase tracking-[2px] text-ink-3">Spent this month</Text>
       <Text style={{ color: tabInk('money') }} className="font-display text-[52px] font-bold leading-[58px] tracking-tight">{money(total)}</Text>
       {budget > 0 && <Text className="text-[15px] text-ink-2">{left >= 0 ? `${money(left)} left of ${money(budget)}` : `${money(-left)} over ${money(budget)}`}</Text>}
-      {/* Where it went, so the headline isn't a bare total; the rest is in Categories. */}
+      {/* Where it went, so the headline isn't a bare total; the rest is in Budget. */}
       {categories.length > 0 && (
-        <Pressable accessibilityRole="button" accessibilityLabel="Spending by category" hitSlop={4} onPress={() => { haptic.tick(); router.push('/money/categories') }} className="mt-1 active:opacity-70">
+        <Pressable accessibilityRole="button" accessibilityLabel="Spending by category" hitSlop={4} onPress={() => { haptic.tick(); router.push('/money/budget') }} className="mt-1 active:opacity-70">
           <Text className="text-[14px] text-ink-2">
             {categories.slice(0, 3).map((c, i) => (
               <Text key={c.key} className="text-[14px] text-ink-2">{i > 0 ? ' · ' : ''}{categoryOf(c.key).label} <Text className="font-mono text-[14px] text-ink">{money(c.usd)}</Text></Text>
@@ -79,7 +79,6 @@ const TILES: { label: string; icon: SymbolName; fallback: string; to: string }[]
   { label: 'Net worth', icon: 'building.columns.fill', fallback: '▥', to: '/money/net-worth' },
   { label: 'Income', icon: 'arrow.down.circle.fill', fallback: '↓', to: '/money/income' },
   { label: 'Insights', icon: 'lightbulb.fill', fallback: '!', to: '/money/insights' },
-  { label: 'Categories', icon: 'square.grid.2x2.fill', fallback: '▤', to: '/money/categories' },
 ]
 
 /** Every Money page as a chunky icon tile, four to a row. */

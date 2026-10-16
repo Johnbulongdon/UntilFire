@@ -1,40 +1,94 @@
 import { router } from 'expo-router'
-import { Button } from '@/components/Button'
-import { View } from 'react-native'
+import { useMemo, useState } from 'react'
+import { Alert, Pressable, View } from 'react-native'
 
 import { BudgetPace } from '@/components/BudgetPace'
-import { SetAside } from '@/components/SetAside'
-import { LoadingState } from '@/components/LoadingState'
+import { Button } from '@/components/Button'
 import { DetailScreen } from '@/components/DetailScreen'
-import { Card, Label } from '@/components/Screen'
 import { CategoryGlyph } from '@/components/Icon'
+import { LoadingState } from '@/components/LoadingState'
+import { Card, Label } from '@/components/Screen'
+import { SetAside } from '@/components/SetAside'
 import { Text } from '@/components/Text'
+import { addMonths, ALL_CATEGORIES } from '@/engine'
 import { money } from '@/lib/format'
-import { categoryOf, monthSpend, thisMonth } from '@/lib/money-data'
+import { haptic } from '@/lib/haptics'
+import { categoryOf, monthSpend, needOf, thisMonth, typicalBy, typicalByCategory } from '@/lib/money-data'
+import { saveCustomCategories } from '@/lib/mutations'
 import { useAccount } from '@/state/account'
+import { useAuth } from '@/state/auth'
 import { colors } from '@/theme/colors'
 
-/** The website's Budget page: one number left for the month, then each category. */
+const monthName = (ym: string) => new Date(`${ym}-01T00:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+// What has to come out of checking every month, outside the emergency fund (John, Oct 2026: "how much on food and transport").
+const DAY_TO_DAY = ['food', 'transport']
+
+/**
+ * Budget and Categories in one (Oct 16 2026, the founder): what's left this
+ * month, then one row per category with spent against its budget. Tap a row
+ * for its transactions; ••• holds the rarer budget and category actions.
+ */
 export default function Budget() {
+  const { session } = useAuth()
   const { data, loading, refresh } = useAccount()
+  const [month, setMonth] = useState(thisMonth())
+  const typical = useMemo(() => (data ? typicalByCategory(data.transactions) : new Map<string, number>()), [data])
+  const dayToDayWants = useMemo(() => (data ? typicalBy(data.transactions, t => (DAY_TO_DAY.includes(t.category) ? needOf(t) : null)).get('want') ?? 0 : 0), [data])
   if (!data) return <DetailScreen back="Money" title="Budget"><LoadingState /></DetailScreen>
 
-  const { total, categories } = monthSpend(data.transactions, thisMonth())
-  const budget = Object.values(data.budget).reduce((s, v) => s + v, 0)
+  const { total, categories } = monthSpend(data.transactions, month)
   const spent = new Map(categories.map(c => [c.key, c.usd]))
-  const rows = Object.entries(data.budget)
-    .filter(([, amount]) => amount > 0)
-    .map(([key, amount]) => ({ key, amount, spent: spent.get(key) ?? 0 }))
-    .sort((a, b) => b.spent / b.amount - a.spent / a.amount)
-  const unbudgeted = categories.filter(c => !(data.budget[c.key] > 0))
+  const budget = Object.values(data.budget).reduce((s, v) => s + v, 0)
+  const custom = new Set(data.customCategories.map(c => c.key))
+  const known = new Set([...ALL_CATEGORIES.map(c => c.key), ...custom])
+  // Your own and leftover labels (an old "Dog") stay listed at $0 so they can be managed.
+  const leftovers = data.transactions.filter(t => t.transaction_type === 'expense' && t.category && !known.has(t.category)).map(t => t.category)
+  const keys = [...new Set([...Object.keys(data.budget).filter(k => data.budget[k] > 0), ...spent.keys(), ...custom, ...leftovers])]
+  const share = (k: string) => (data.budget[k] > 0 ? (spent.get(k) ?? 0) / data.budget[k] : -1)
+  const rows = keys.sort((a, b) => share(b) - share(a) || (spent.get(b) ?? 0) - (spent.get(a) ?? 0))
+  const dayToDay = DAY_TO_DAY.reduce((s, k) => s + (typical.get(k) ?? 0), 0)
+  const isCurrent = month === thisMonth()
+  const oldest = addMonths(thisMonth(), -12)
+  const [y, m] = month.split('-').map(Number)
+  const step = (dir: -1 | 1) => { haptic.tick(); setMonth(v => addMonths(v, dir)) }
+  const used = (key: string) => data.transactions.some(t => t.category === key)
+
+  const remove = (key: string, label: string) => {
+    if (!session) return
+    haptic.warn()
+    Alert.alert(`Remove ${label}?`, used(key) ? 'Transactions already in it keep the category. To move them, use Merge instead.' : undefined, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: async () => {
+        const problem = await saveCustomCategories(session.user.id, data.customCategories.filter(c => c.key !== key))
+        if (problem) { Alert.alert(problem); return }
+        haptic.success(); refresh()
+      } },
+    ])
+  }
+  const options = (key: string, label: string) => {
+    haptic.tick()
+    Alert.alert(label, undefined, [
+      { text: data.budget[key] > 0 ? 'Change budget' : 'Set budget', onPress: () => router.push('/budget-edit') },
+      { text: 'Merge into another category', onPress: () => router.push({ pathname: '/merge-category', params: { key } }) },
+      ...(custom.has(key) ? [{ text: 'Remove', style: 'destructive' as const, onPress: () => remove(key, label) }] : []),
+      { text: 'Cancel', style: 'cancel' as const },
+    ])
+  }
 
   return (
-    <DetailScreen back="Money" title="Budget" subtitle="This month" refreshing={loading} onRefresh={refresh}>
+    <DetailScreen back="Money" title="Budget" refreshing={loading} onRefresh={refresh}>
+      <View className="flex-row items-center justify-between rounded-control border border-border bg-card px-2 py-2">
+        <Pressable accessibilityRole="button" accessibilityLabel="Previous month" hitSlop={8} disabled={month <= oldest} onPress={() => step(-1)} className="px-3">
+          <Text className={`text-[20px] ${month > oldest ? 'text-ink' : 'text-border-2'}`}>‹</Text>
+        </Pressable>
+        <Text className="text-[15px] font-bold text-ink">{monthName(month)}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel="Next month" hitSlop={8} disabled={isCurrent} onPress={() => step(1)} className="px-3">
+          <Text className={`text-[20px] ${!isCurrent ? 'text-ink' : 'text-border-2'}`}>›</Text>
+        </Pressable>
+      </View>
+
       {budget > 0 ? (
-        <Card>
-          <BudgetPace spent={total} budget={budget} />
-          <View className="mt-3"><Button small kind="quiet" label="Edit budget" onPress={() => router.push('/budget-edit')} /></View>
-        </Card>
+        <Card><BudgetPace spent={total} budget={budget} now={isCurrent ? new Date() : new Date(y, m, 0)} /></Card>
       ) : (
         <Card soft>
           <Text className="text-[15px] font-semibold text-ink">No budget yet</Text>
@@ -43,44 +97,68 @@ export default function Budget() {
         </Card>
       )}
 
-      <SetAside data={data} />
+      {isCurrent && <SetAside data={data} />}
 
-      {rows.length > 0 && (
-        <Card>
-          <Label>By category</Label>
-          <View className="mt-2 gap-4">
-            {rows.map(r => {
-              const cat = categoryOf(r.key)
-              const share = r.spent / r.amount
-              const over = share > 1
-              return (
-                <View key={r.key}>
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center gap-2"><CategoryGlyph cat={cat} size={18} /><Text className="text-[15px] text-ink">{cat.label}</Text></View>
+      <Card>
+        {rows.length === 0 && <Text className="text-[14px] text-ink-2">Nothing spent in {monthName(month)}.</Text>}
+        {rows.map((key, i) => {
+          const cat = categoryOf(key)
+          const now = spent.get(key) ?? 0
+          const limit = data.budget[key] > 0 ? data.budget[key] : 0
+          const over = limit > 0 && now > limit
+          return (
+            <View key={key} className={`flex-row items-center gap-3 py-3 ${i > 0 ? 'border-t border-border' : ''}`}>
+              <Pressable accessibilityRole="button" accessibilityLabel={`${cat.label}, ${money(now)} spent${limit ? ` of ${money(limit)}` : ''}. Show transactions`}
+                onPress={() => { haptic.tick(); router.push({ pathname: '/money/transactions', params: { category: key, month } }) }}
+                className="flex-1 flex-row items-center gap-3 active:opacity-70">
+                <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: `${cat.color}22` }}><CategoryGlyph cat={cat} size={20} /></View>
+                <View className="flex-1">
+                  <View className="flex-row items-baseline justify-between">
+                    <Text className="text-[15px] font-semibold text-ink">{cat.label}</Text>
                     <Text className="text-[13px] text-ink-2">
-                      <Text className={`font-mono text-[13px] ${over ? 'text-neg-ink' : 'text-ink'}`}>{money(r.spent)}</Text> / <Text className="font-mono text-[13px]">{money(r.amount)}</Text>
+                      <Text className={`font-mono text-[14px] ${over ? 'text-neg-ink' : 'text-ink'}`}>{money(now)}</Text>{limit ? <Text className="font-mono text-[13px] text-ink-3"> / {money(limit)}</Text> : null}
                     </Text>
                   </View>
-                  <View className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-2">
-                    <View className="h-full rounded-full" style={{ width: `${Math.min(1, share) * 100}%`, backgroundColor: over ? colors.neg : cat.color }} />
-                  </View>
-                  <Text className="mt-1 text-[12px] text-ink-3">{over ? `${money(r.spent - r.amount)} over` : `${money(r.amount - r.spent)} left`}</Text>
+                  {limit ? (
+                    <>
+                      <View className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-2">
+                        <View className="h-full rounded-full" style={{ width: `${Math.min(1, now / limit) * 100}%`, backgroundColor: over ? colors.neg : cat.color }} />
+                      </View>
+                      <Text className={`mt-1 text-[12px] ${over ? 'text-neg-ink' : 'text-ink-3'}`}>{over ? `${money(now - limit)} over` : `${money(limit - now)} left`}</Text>
+                    </>
+                  ) : (
+                    <Pressable accessibilityRole="button" hitSlop={6} onPress={() => { haptic.tick(); router.push('/budget-edit') }} className="mt-1 self-start rounded-control bg-green-50 px-2 py-1">
+                      <Text className="text-[12px] font-semibold text-green-700">+ Set budget</Text>
+                    </Pressable>
+                  )}
                 </View>
-              )
-            })}
-          </View>
-        </Card>
-      )}
-
-      {unbudgeted.length > 0 && (
-        <Card soft>
-          <Label>Spent outside your budget</Label>
-          {unbudgeted.map(c => (
-            <View key={c.key} className="mt-2 flex-row justify-between">
-              <View className="flex-row items-center gap-2"><CategoryGlyph cat={categoryOf(c.key)} size={16} /><Text className="text-[14px] text-ink">{categoryOf(c.key).label}</Text></View>
-              <Text className="font-mono text-[14px] text-ink">{money(c.usd)}</Text>
+              </Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel={`${cat.label} options`} hitSlop={8} onPress={() => options(key, cat.label)}
+                className="h-8 w-10 items-center justify-center rounded-control border border-border">
+                <Text className="text-[16px] font-bold text-ink-2">•••</Text>
+              </Pressable>
             </View>
-          ))}
+          )
+        })}
+      </Card>
+
+      <View className="flex-row gap-3">
+        <View className="flex-1"><Button kind="quiet" label="+ Category" onPress={() => { haptic.tick(); router.push('/category') }} /></View>
+        <View className="flex-1"><Button kind="quiet" label="Edit budget" onPress={() => { haptic.tick(); router.push('/budget-edit') }} /></View>
+      </View>
+
+      {dayToDay > 0 && (
+        <Card soft>
+          <Label>Day-to-day, a typical month</Label>
+          <Text className="mt-1 font-mono text-[26px] text-ink">{money(dayToDay)}</Text>
+          <Text className="mt-1 text-[14px] leading-5 text-ink-2">
+            {DAY_TO_DAY.map(k => `${categoryOf(k).label} ${money(typical.get(k) ?? 0)}`).join(' + ')}. Keep this in checking each month, apart from your emergency fund.
+          </Text>
+          {dayToDayWants >= 1 && (
+            <Text className="mt-1 text-[14px] leading-5 text-ink-2">
+              About <Text className="font-mono text-[14px] text-ink">{money(dayToDayWants)}</Text> is usually wants, the part you can trim.
+            </Text>
+          )}
         </Card>
       )}
     </DetailScreen>

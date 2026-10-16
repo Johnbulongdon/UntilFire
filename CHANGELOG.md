@@ -43,6 +43,10 @@ under today's date, creating the heading if it is not there yet.
   rules and (if the target has none) budget move across, and the old one is
   removed. Leftover labels nothing defines any more, like an old "Dog" still on
   transactions or the budget, now show under "Your own" so they can be merged.
+- Budget and Categories are one screen, Budget: a month switcher, what's
+  left, then one row per category with spent against its budget (or a "+ Set
+  budget" button). Tap a row for its transactions; ••• holds Change budget,
+  Merge and Remove. The separate Categories page is gone.
 
 ## 2026-10-15
 
