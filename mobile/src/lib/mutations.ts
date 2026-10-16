@@ -66,6 +66,12 @@ export async function markBillPaid(bill: Bill): Promise<string | null> {
   return error ? 'Couldn\'t update the bill. Please try again.' : null
 }
 
+/** Undo a tick: put the bill back as it was before markBillPaid. */
+export async function unmarkBillPaid(before: Bill): Promise<string | null> {
+  const { error } = await supabase.from('expected_payments').update({ due_date: before.due_date, completed_at: null }).eq('id', before.id)
+  return error ? 'Couldn\'t undo that. Please try again.' : null
+}
+
 /**
  * Set the monthly budget per category. Like the dashboard's save, read the row
  * first and change only the category amounts, so the FIRE profile and custom

@@ -37,6 +37,8 @@ under today's date, creating the heading if it is not there yet.
 - Fix: a bill already paid this month (a matching transaction within 3%, same
   name) is no longer set aside again in Budget's "left for everyday spending",
   "free to spend until payday", or Home's free-to-spend card.
+- Calendar: "Mark paid" and "Mark received" now offer Undo, so a mistaken tap
+  can be taken back.
 
 ## 2026-10-15
 

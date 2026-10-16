@@ -17,7 +17,7 @@ import { upcoming, type BillEvent } from '@/lib/bills'
 import { compactMoney, money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { categoryOf, dayLabel, thisMonth } from '@/lib/money-data'
-import { markBillPaid, saveBill } from '@/lib/mutations'
+import { markBillPaid, saveBill, unmarkBillPaid } from '@/lib/mutations'
 import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { colors } from '@/theme/colors'
@@ -67,6 +67,15 @@ export default function Bills() {
     setBusyId(null)
     if (problem) { haptic.warn(); Alert.alert(problem); return }
     haptic.success(); refresh()
+    // A mistaken tap is one tap to take back (Oct 16 2026: ticked by accident, with no way back).
+    Alert.alert(bill.transaction_type === 'income' ? 'Marked received' : 'Marked paid', bill.description, [
+      { text: 'Undo', style: 'destructive', onPress: async () => {
+        const failed = await unmarkBillPaid(bill)
+        if (failed) { Alert.alert(failed); return }
+        haptic.tick(); refresh()
+      } },
+      { text: 'OK', style: 'cancel' },
+    ])
   }
 
   const accept = async (s: DetectedItem) => {
