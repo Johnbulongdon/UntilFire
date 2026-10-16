@@ -5,7 +5,7 @@ import { router } from 'expo-router'
 import { useState } from 'react'
 import { Pressable, ScrollView, Share, View } from 'react-native'
 import Animated, { FadeIn, FadeInRight } from 'react-native-reanimated'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ProgressBar } from '@/components/ProgressBar'
@@ -16,10 +16,16 @@ import { haptic } from '@/lib/haptics'
 import { Events, track } from '@/lib/analytics'
 import { useAuth } from '@/state/auth'
 import { useAccount } from '@/state/account'
-import { colors } from '@/theme/colors'
+import { colors, TAB_COLOR } from '@/theme/colors'
 
-
-const SCALE: { value: QuizAnswer }[] = [{ value: 0 }, { value: 1 }, { value: 2 }, { value: 3 }, { value: 4 }]
+const SCALE: QuizAnswer[] = [0, 1, 2, 3, 4]
+/** Dot sizes down the scale: strong, slight, in between, slight, strong. */
+const DOT = [46, 36, 28, 36, 46]
+/** A picture for each side of each question, so the answers read at a glance (Oct 16 2026, the founder). */
+const ART: Record<string, [string, string]> = {
+  pa1: ['🗺️', '🧭'], pa2: ['🛠️', '🤔'], se1: ['🛡️', '🚀'], se2: ['🏦', '📈'],
+  rg1: ['✂️', '💼'], rg2: ['🔍', '💡'], bf1: ['🧱', '🕊️'], bf2: ['🎯', '🌴'],
+}
 
 /**
  * The FIRE type quiz (untilfire.com/fire-type): eight questions on a
@@ -49,38 +55,61 @@ export default function FireQuiz() {
     }
   }
 
+  const insets = useSafeAreaInsets()
+  const [leftArt, rightArt] = ART[q.id] ?? ['◀︎', '▶︎']
+  const side = (v: QuizAnswer) => (v === 2 ? 'In between' : `${v === 0 || v === 4 ? 'Very much' : 'A little'}: ${v < 2 ? q.leftLabel : q.rightLabel}`)
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.ground }}>
-      <View className="flex-row items-center gap-4 px-5 pt-3">
+    <View style={{ flex: 1, backgroundColor: colors.ground }}>
+      {/* Soft shapes behind the questions, in Profile's colour, so the screen isn't only words. */}
+      <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
+        <View style={{ position: 'absolute', width: 320, height: 320, borderRadius: 160, top: -90, right: -120, backgroundColor: TAB_COLOR.profile, opacity: 0.08 }} />
+        <View style={{ position: 'absolute', width: 260, height: 260, borderRadius: 130, bottom: -80, left: -100, backgroundColor: TAB_COLOR.profile, opacity: 0.06 }} />
+      </View>
+      {/* Below the status bar and Dynamic Island: a full-screen modal can report no top inset, so keep a floor. */}
+      <View className="flex-row items-center gap-4 px-5" style={{ paddingTop: Math.max(insets.top, 44) + 8 }}>
         <Pressable accessibilityRole="button" accessibilityLabel={answers.length && !done ? 'Previous question' : 'Close'} hitSlop={12}
           onPress={() => { haptic.tick(); if (answers.length && !done) setAnswers(a => a.slice(0, -1)); else router.back() }}>
           <Text className="text-[26px] text-ink-3">{answers.length && !done ? '‹' : '×'}</Text>
         </Pressable>
         <View className="flex-1"><ProgressBar step={done ? QUIZ_QUESTIONS.length : answers.length} steps={QUIZ_QUESTIONS.length} /></View>
+        <Text className="font-mono text-[13px] text-ink-3">{Math.min(answers.length + 1, QUIZ_QUESTIONS.length)}/{QUIZ_QUESTIONS.length}</Text>
       </View>
 
       {done ? <Result answers={answers} rewardUntil={rewardUntil} onRetake={() => setAnswers([])} /> : (
-        <Animated.View key={q.id} entering={FadeInRight.duration(220)} style={{ flex: 1, paddingHorizontal: 24, paddingBottom: 24, paddingTop: 28 }}>
-          <Text className="text-[13px] font-bold uppercase tracking-[2px] text-ink-3">Question {i + 1} of {QUIZ_QUESTIONS.length}</Text>
-          <Text className="mt-3 font-display text-[26px] font-bold leading-8 text-ink">{q.prompt}</Text>
-          {/* Five full-width answers in the lower middle, where a thumb reaches. */}
-          <View style={{ flex: 1, justifyContent: 'center', gap: 10, paddingTop: 16 }}>
-            {SCALE.map(s => {
-              const side = s.value < 2 ? q.leftLabel : s.value > 2 ? q.rightLabel : 'Somewhere in between'
-              const how = s.value === 0 || s.value === 4 ? 'Very much' : s.value === 2 ? '' : 'A little'
-              return (
-                <Bouncy key={s.value} accessibilityLabel={how ? `${how}: ${side}` : side} onPress={() => answer(s.value)}>
-                  <View className="rounded-2xl border-2 border-border bg-card px-4 py-3" style={{ borderBottomWidth: 4 }}>
-                    {how ? <Text className="text-[11px] font-bold uppercase tracking-[1.5px] text-ink-3">{how}</Text> : null}
-                    <Text numberOfLines={2} className="text-[15px] font-semibold leading-5 text-ink">{side}</Text>
+        <Animated.View key={q.id} entering={FadeInRight.duration(220)} style={{ flex: 1, paddingHorizontal: 24, paddingBottom: insets.bottom + 16, paddingTop: 20 }}>
+          <Text className="font-display text-[26px] font-bold leading-8 text-ink">{q.prompt}</Text>
+          {/* Two pictured sides and five dots between them: tap the side you lean to, bigger dots mean more. */}
+          <View style={{ flex: 1, justifyContent: 'center', gap: 12, paddingTop: 12 }}>
+            <Pole art={leftArt} label={q.leftLabel} onPress={() => answer(0)} />
+            <View className="items-center" style={{ gap: 8 }}>
+              {SCALE.map(v => (
+                <Bouncy key={v} accessibilityLabel={side(v)} onPress={() => answer(v)}>
+                  <View style={{ width: 64, height: DOT[v] + 4, alignItems: 'center', justifyContent: 'center' }}>
+                    <View style={{ width: DOT[v], height: DOT[v], borderRadius: DOT[v] / 2, borderWidth: 3, borderColor: v === 2 ? colors.border2 : TAB_COLOR.profile, backgroundColor: colors.card }} />
                   </View>
                 </Bouncy>
-              )
-            })}
+              ))}
+            </View>
+            <Pole art={rightArt} label={q.rightLabel} onPress={() => answer(4)} />
           </View>
         </Animated.View>
       )}
-    </SafeAreaView>
+    </View>
+  )
+}
+
+/** One side of a question: its picture and its words; tapping it is a strong lean. */
+function Pole({ art, label, onPress }: { art: string; label: string; onPress: () => void }) {
+  return (
+    <Bouncy accessibilityLabel={`Very much: ${label}`} onPress={onPress}>
+      <View className="flex-row items-center gap-4 rounded-2xl border-2 border-border bg-card px-4 py-3" style={{ borderBottomWidth: 4 }}>
+        <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' }}>
+          <Text className="text-[30px]">{art}</Text>
+        </View>
+        <Text numberOfLines={2} className="flex-1 text-[16px] font-semibold leading-5 text-ink">{label}</Text>
+      </View>
+    </Bouncy>
   )
 }
 

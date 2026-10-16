@@ -28,6 +28,9 @@ under today's date, creating the heading if it is not there yet.
 - Profile reordered: everyday account rows and settings first, Help, then one
   "Data and account" row (export, replay onboarding, delete account last) and
   Sign out on its own at the bottom.
+- FIRE type quiz: each question shows two pictured sides with five dots
+  between them (bigger means more) instead of five wordy answers, over soft
+  background shapes. The progress bar now sits below the iPhone status bar.
 
 ## 2026-10-15
 
