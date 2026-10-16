@@ -32,6 +32,8 @@ under today's date, creating the heading if it is not there yet.
   matching pictured rectangles (the two sides, "a little more this" either way,
   and "both equally") instead of five wordy buttons, over soft background
   panels. The progress bar now sits below the iPhone status bar.
+- FIRE type result: each strength and watch-out is its own box with a picture
+  and one short line, instead of two dense paragraphs.
 
 ## 2026-10-15
 

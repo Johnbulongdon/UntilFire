@@ -10,7 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { ProgressBar } from '@/components/ProgressBar'
 import { Text } from '@/components/Text'
-import { AXIS_STRENGTHS, AXIS_WATCH_OUTS, computeAxisLeans, FIRE_AXES, getTypeMeta, QUIZ_QUESTIONS, scoreQuiz, type AxisLetter, type QuizAnswer } from '@quiz'
+import { computeAxisLeans, FIRE_AXES, getTypeMeta, QUIZ_QUESTIONS, scoreQuiz, type AxisLetter, type QuizAnswer } from '@quiz'
 import { FIRE_QUIZ_KEY } from '@/lib/fire-quiz'
 import { haptic } from '@/lib/haptics'
 import { Events, track } from '@/lib/analytics'
@@ -150,12 +150,11 @@ function Result({ answers, rewardUntil, onRetake }: { answers: QuizAnswer[]; rew
         ))}
       </View>
 
-      <View className="mt-4 rounded-card border border-border bg-card p-5">
-        <Text className="text-[13px] text-ink-3">Strengths</Text>
-        {letters.map(l => <Text key={`s${l}`} className="mt-2 text-[14px] leading-5 text-ink">✓ {AXIS_STRENGTHS[l]}</Text>)}
-        <Text className="mt-4 text-[13px] text-ink-3">Watch out for</Text>
-        {letters.map(l => <Text key={`w${l}`} className="mt-2 text-[14px] leading-5 text-ink">○ {AXIS_WATCH_OUTS[l]}</Text>)}
-      </View>
+      {/* One short line per box, not a paragraph (Oct 16 2026, the founder): the website keeps the long versions. */}
+      <Text className="mt-6 text-[13px] font-bold uppercase tracking-[1.5px] text-ink-3">Strengths</Text>
+      <View className="mt-2 gap-2">{letters.map(l => <Trait key={`s${l}`} letter={l} line={STRENGTH[l]} />)}</View>
+      <Text className="mt-6 text-[13px] font-bold uppercase tracking-[1.5px] text-ink-3">Watch out for</Text>
+      <View className="mt-2 gap-2">{letters.map(l => <Trait key={`w${l}`} letter={l} line={WATCH[l]} />)}</View>
 
       <View className="mt-6 gap-3">
         <PrimaryButton label="Done" onPress={() => router.back()} />
@@ -163,5 +162,35 @@ function Result({ answers, rewardUntil, onRetake }: { answers: QuizAnswer[]; rew
         <Button kind="quiet" label="Take it again" onPress={onRetake} />
       </View>
     </ScrollView>
+  )
+}
+
+/** The pictures the quiz answers use, one per side of each axis. */
+const LETTER_ART: Record<AxisLetter, string> = { P: '🗺️', A: '🧭', S: '🛡️', E: '🚀', R: '✂️', G: '💼', B: '🧱', F: '🕊️' }
+const LETTER_NAME = Object.fromEntries(FIRE_AXES.flatMap(a => [[a.leftLetter, a.left], [a.rightLetter, a.right]])) as Record<AxisLetter, string>
+/** Short versions of the website's AXIS_STRENGTHS and AXIS_WATCH_OUTS, for a phone. */
+const STRENGTH: Record<AxisLetter, string> = {
+  P: 'You think in systems and milestones', A: 'You adapt fast when things change', S: 'Steady, low-regret choices that compound',
+  E: 'You find the upside and lean in', R: 'You make every dollar work harder', G: 'You grow income, the fastest lever',
+  B: 'You build something meaningful', F: 'Freedom first makes every trade-off clear',
+}
+const WATCH: Record<AxisLetter, string> = {
+  P: 'Planning too long before acting', A: 'Changing course too often', S: 'Playing it too safe',
+  E: 'Underestimating the downside', R: 'Under-investing in income growth', G: 'Under-protecting what you\'ve built',
+  B: 'One more project, never the exit', F: 'Avoiding commitments that compound',
+}
+
+/** One strength or watch-out: its picture, the side it comes from, one short line. */
+function Trait({ letter, line }: { letter: AxisLetter; line: string }) {
+  return (
+    <View className="flex-row items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3">
+      <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' }}>
+        <Text className="text-[22px]">{LETTER_ART[letter]}</Text>
+      </View>
+      <View className="flex-1">
+        <Text className="text-[11px] font-bold uppercase tracking-[1.5px] text-ink-3">{LETTER_NAME[letter]}</Text>
+        <Text className="text-[15px] font-semibold leading-5 text-ink">{line}</Text>
+      </View>
+    </View>
   )
 }
