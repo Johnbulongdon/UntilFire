@@ -17,7 +17,7 @@ import { isoDay } from '@/engine'
 import { money, moneyIn } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { categoryOf } from '@/lib/money-data'
-import { fileTransactions, resolveFlag, saveBudget } from '@/lib/mutations'
+import { deleteBill, fileTransactions, resolveFlag, saveBill, saveBudget } from '@/lib/mutations'
 import { defaultNeed } from '@/lib/review'
 import { addDays, monthCount, saveTodayProgress, todayItems, type TodayItem } from '@/lib/today'
 import { setTodayReminder } from '@/lib/today-reminder'
@@ -272,11 +272,11 @@ function cardFor(item: TodayItem, h: {
         choices: [...item.choices!.map((c, i) => ({ label: categoryOf(c).label, kind: (i ? 'quiet' : 'primary') as ButtonKind, onPress: () => h.file(item, t!, c) })),
           // Any other category: the transaction's own sheet, with every category and need or want.
           { label: 'Something else', kind: 'quiet', onPress: () => router.push({ pathname: '/transaction', params: { id: t!.id } }) }] }
-    case 'need': {
-      const order: ('need' | 'want')[] = item.suggestion!.need === 'need' ? ['need', 'want'] : ['want', 'need']
-      return { eyebrow: `${when} · ${categoryOf(t!.category).label}`, title: t!.description, amount: moneyIn(t!.amount, t!.currency), sub: 'Need or want?',
-        choices: order.map((n, i) => ({ label: n === 'need' ? 'Need' : 'Want', kind: (i ? 'quiet' : 'primary') as ButtonKind, onPress: () => h.file(item, t!, t!.category, n) })) }
-    }
+    case 'need':
+      // A bank-categorised spend, confirmed in one tap (need or want follows the category).
+      return { eyebrow: `${when} · from your bank`, title: t!.description, amount: moneyIn(t!.amount, t!.currency), sub: `Filed as ${categoryOf(t!.category).label}. Right?`,
+        choices: [{ label: `Yes, ${categoryOf(t!.category).label}`, onPress: () => h.file(item, t!, t!.category) },
+          { label: 'Change', kind: 'quiet', onPress: () => router.push({ pathname: '/transaction', params: { id: t!.id } }) }] }
     case 'flag': {
       const copy = FLAG_COPY[item.flag!]!
       return { eyebrow: `${when} · ${copy.label.toLowerCase()}`, title: t!.description, amount: moneyIn(t!.amount, t!.currency), sub: copy.tip,
@@ -299,6 +299,21 @@ function cardFor(item: TodayItem, h: {
     case 'bill':
       return { eyebrow: 'Tomorrow', title: `${item.bill!.description} is due`, amount: money(item.bill!.amount), sub: 'Just so it isn\'t a surprise.',
         choices: [{ label: 'Got it', onPress: () => h.ack(item) }] }
+    case 'billcheck': {
+      const { bill, change, amount } = item.check!
+      if (change === 'price') return { eyebrow: 'A bill changed', title: `${bill.description} is now ${moneyIn(amount!, bill.currency)}`, sub: `Your bill says ${moneyIn(Math.abs(bill.amount), bill.currency)}.`,
+        choices: [{ label: 'Update the bill', onPress: () => h.run(item, async () => {
+          const problem = await saveBill(h.userId, { ...bill, amount: Math.sign(bill.amount || 1) * amount! })
+          if (!problem) h.ack(item)
+          return problem
+        }) }, { label: 'Keep it', kind: 'quiet', onPress: () => h.ack(item) }] }
+      return { eyebrow: 'A bill went quiet', title: `Still paying ${bill.description}?`, sub: 'No payment in the last two months.',
+        choices: [{ label: 'Still paying', onPress: () => h.ack(item) }, { label: 'Stopped', kind: 'quiet', onPress: () => h.run(item, async () => {
+          const problem = await deleteBill(bill.id)
+          if (!problem) h.ack(item)
+          return problem
+        }) }] }
+    }
     case 'payday':
       return { eyebrow: 'Payday', title: 'Pay is in', amount: money(item.amount!), sub: 'is safe to put towards freedom.',
         choices: [{ label: `Invest ${money(item.amount!)}`, onPress: () => { h.ack(item); router.push('/plan/contributions') } }, { label: 'Not this time', kind: 'quiet', onPress: () => h.ack(item) }] }

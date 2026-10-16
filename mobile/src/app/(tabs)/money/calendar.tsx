@@ -13,11 +13,11 @@ import { EmptyState } from '@/components/EmptyState'
 import { LoadingState } from '@/components/LoadingState'
 import { CategoryGlyph } from '@/components/Icon'
 import { addMonths, detectRecurring, FALLBACK_RATES, isoDay, RECURRENCE_LABEL, sameMerchant, toRecurrence, type DetectedItem } from '@/engine'
-import { upcoming, type BillEvent } from '@/lib/bills'
+import { unpaid, upcoming, type BillEvent } from '@/lib/bills'
 import { compactMoney, money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { categoryOf, dayLabel, thisMonth } from '@/lib/money-data'
-import { markBillPaid, saveBill } from '@/lib/mutations'
+import { markBillPaid, saveBill, unmarkBillPaid } from '@/lib/mutations'
 import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { colors } from '@/theme/colors'
@@ -38,7 +38,8 @@ export default function Bills() {
     AsyncStorage.getItem(DISMISSED_KEY).then(raw => { if (raw) setDismissed(JSON.parse(raw)) }).catch(() => {})
   }, [])
 
-  const events = useMemo(() => (data ? upcoming(data.bills, 30) : []), [data])
+  // Bills the bank shows as paid drop off, as on Budget (lib/bills unpaid): an autopaid bill isn't overdue.
+  const events = useMemo(() => (data ? unpaid(upcoming(data.bills, 30), data.bills, data.transactions) : []), [data])
   const catOf = (billId: string) => data?.bills.find(b => b.id === billId)?.category ?? null
   // Only the next occurrence of each bill can be ticked off, as on the website.
   const firstOf = new Set<string>()
@@ -67,6 +68,15 @@ export default function Bills() {
     setBusyId(null)
     if (problem) { haptic.warn(); Alert.alert(problem); return }
     haptic.success(); refresh()
+    // A mistaken tap is one tap to take back (Oct 16 2026: ticked by accident, with no way back).
+    Alert.alert(bill.transaction_type === 'income' ? 'Marked received' : 'Marked paid', bill.description, [
+      { text: 'Undo', style: 'destructive', onPress: async () => {
+        const failed = await unmarkBillPaid(bill)
+        if (failed) { Alert.alert(failed); return }
+        haptic.tick(); refresh()
+      } },
+      { text: 'OK', style: 'cancel' },
+    ])
   }
 
   const accept = async (s: DetectedItem) => {
@@ -158,7 +168,7 @@ function MonthView({ data }: { data: AccountData }) {
   const days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate()
   const lead = (first.getDay() + 6) % 7
   const horizon = Math.ceil((new Date(first.getFullYear(), first.getMonth() + 1, 0).getTime() - Date.now()) / 864e5) + 1
-  const all = upcoming(data.bills, Math.max(horizon, 1))
+  const all = unpaid(upcoming(data.bills, Math.max(horizon, 1)), data.bills, data.transactions)
   const monthEvents = all.filter(e => e.iso.startsWith(month))
 
   const cashByDay = new Map<string, number>()

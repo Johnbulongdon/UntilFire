@@ -68,6 +68,7 @@ export const ACCOUNT_TYPE_COLORS = {
   retirement: COLOR_PALETTE[5],
   brokerage: COLOR_PALETTE[0],
   cash: COLOR_PALETTE[3],
+  home: COLOR_PALETTE[8],
 } as const;
 
 export function nearestPaletteColor(hex: string): string {

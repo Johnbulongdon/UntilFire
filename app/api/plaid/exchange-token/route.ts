@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
 import { Transaction as PlaidTransaction } from "plaid";
 import { getInstitutionBranding, getPlaidClient, mapPlaidTx } from "@/lib/plaid";
+import { applyRefunds } from "@/lib/plaid-sync";
 import { LIFECYCLE_EVENTS, recordEvent } from "@/lib/lifecycle";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -101,6 +102,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         .upsert(rows, { onConflict: "plaid_transaction_id", ignoreDuplicates: true });
       if (expErr) console.error("[plaid/exchange-token] expenses upsert:", expErr);
     }
+    // Money back from a shop reduces that purchase, rather than reading as income (lib/refunds).
+    await applyRefunds(admin, user.id, allAdded.filter((tx) => tx.amount < 0 && !tx.pending).map((tx) => tx.transaction_id));
 
     // Fetch and store account balances
     try {

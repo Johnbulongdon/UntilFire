@@ -1,4 +1,4 @@
-import { router } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { Alert, Modal, Pressable, RefreshControl, ScrollView, SectionList, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -38,9 +38,11 @@ const rangeName = (months: string[]) => months.length === 1
 /** The website's Transactions: a range, a summary against your usual, search, a category filter and the list. */
 export default function Transactions() {
   const { data, loading, refresh } = useAccount()
+  // Categories opens this on one category and month.
+  const params = useLocalSearchParams<{ category?: string; month?: string }>()
   const [preset, setPreset] = useState<RangePreset>(1)
-  const [endMonth, setEndMonth] = useState(thisMonth())
-  const [category, setCategory] = useState<string | null>(null)
+  const [endMonth, setEndMonth] = useState(params.month && params.month <= thisMonth() ? params.month : thisMonth())
+  const [category, setCategory] = useState<string | null>(params.category ?? null)
   const [query, setQuery] = useState('')
   // Select mode: tick rows, then put them all in one category.
   const [selecting, setSelecting] = useState(false)
@@ -55,22 +57,27 @@ export default function Transactions() {
   const range = useMemo(() => rangeFor(preset, endMonth), [preset, endMonth])
   const today = isoDay(new Date())
   const summary = useMemo(() => summarise(data?.transactions ?? [], range, today), [data, range, today])
+  // With a category picked, the card answers "how much on Food this month?": that category's total, usual and bars.
+  const card = useMemo(() => (category ? summarise((data?.transactions ?? []).filter(t => t.category === category), range, today) : summary),
+    [category, data, range, today, summary])
 
   const q = query.trim().toLowerCase()
   const shown = summary.inRange.filter(t =>
     (!category || t.category === category) &&
     (!q || t.description.toLowerCase().includes(q) || categoryOf(t.category).label.toLowerCase().includes(q) || (t.notes ?? '').toLowerCase().includes(q)))
   const sections = byDay(shown).map(g => ({ title: g.date, data: g.items }))
-  const categories = [...new Set(summary.inRange.filter(t => t.transaction_type === 'expense').map(t => t.category))]
+  // The picked category stays a chip when a month has none of it, so the filter is never hidden.
+  const categories = [...new Set([...(category ? [category] : []), ...summary.inRange.filter(t => t.transaction_type === 'expense').map(t => t.category)])]
 
   const canBack = range.months[0] > oldest
   const canForward = endMonth < thisMonth()
   const step = (dir: -1 | 1) => {
     if ((dir < 0 && !canBack) || (dir > 0 && !canForward)) return
-    haptic.tick(); setEndMonth(e => stepRange(preset, e, dir) > thisMonth() ? thisMonth() : stepRange(preset, e, dir)); setCategory(null)
+    haptic.tick(); setEndMonth(e => stepRange(preset, e, dir) > thisMonth() ? thisMonth() : stepRange(preset, e, dir))
   }
-  const peak = Math.max(...summary.buckets.map(b => b.usd), 1)
-  const vsUsual = summary.usual ? (summary.out - summary.usual) / summary.usual : null
+  const peak = Math.max(...card.buckets.map(b => b.usd), 1)
+  const vsUsual = card.usual ? (card.out - card.usual) / card.usual : null
+  const spentWord = category ? `spent on ${categoryOf(category).label}` : 'spent'
 
   const header = (
     <View>
@@ -87,29 +94,29 @@ export default function Transactions() {
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 10 }}>
         {PRESETS.map(p => (
-          <Chip key={String(p.key)} label={p.label} active={preset === p.key} onPress={() => { setPreset(p.key); setEndMonth(thisMonth()); setCategory(null) }} />
+          <Chip key={String(p.key)} label={p.label} active={preset === p.key} onPress={() => { setPreset(p.key); setEndMonth(thisMonth()) }} />
         ))}
       </ScrollView>
 
       {/* Summary, as the website's SpendCard: the total, against usual, as bars. */}
       <View className="rounded-card border border-border bg-card p-4">
         <View className="flex-row items-baseline justify-between">
-          <Text className="font-mono text-[26px] text-ink">{money(summary.out)}</Text>
-          {summary.inn > 0 && <Text className="text-[13px] text-ink-2">In <Text className="font-mono text-[13px] text-pos-ink">{money(summary.inn)}</Text></Text>}
+          <Text className="font-mono text-[26px] text-ink">{money(card.out)}</Text>
+          {!category && summary.inn > 0 && <Text className="text-[13px] text-ink-2">In <Text className="font-mono text-[13px] text-pos-ink">{money(summary.inn)}</Text></Text>}
         </View>
         <Text className="text-[13px] text-ink-3">
-          {vsUsual == null ? 'spent' : `spent · ${Math.abs(Math.round(vsUsual * 100))}% ${vsUsual > 0 ? 'more' : 'less'} than usual (${compactMoney(summary.usual!)})`}
+          {vsUsual == null ? spentWord : `${spentWord} · ${Math.abs(Math.round(vsUsual * 100))}% ${vsUsual > 0 ? 'more' : 'less'} than usual (${compactMoney(card.usual!)})`}
         </Text>
-        <View className="mt-3 h-20 flex-row items-end" style={{ gap: summary.buckets.length > 20 ? 1 : 3 }}>
-          {summary.buckets.map((b, i) => (
+        <View className="mt-3 h-20 flex-row items-end" style={{ gap: card.buckets.length > 20 ? 1 : 3 }}>
+          {card.buckets.map((b, i) => (
             <View key={i} className="flex-1 rounded-t bg-green" style={{ height: `${Math.max(1, (b.usd / peak) * 100)}%`, opacity: b.usd > 0 ? 1 : 0.2 }} />
           ))}
         </View>
         <View className="mt-1 flex-row justify-between">
-          <Text className="text-[11px] text-ink-3">{summary.buckets[0]?.label}</Text>
-          <Text className="text-[11px] text-ink-3">{summary.buckets[summary.buckets.length - 1]?.label}</Text>
+          <Text className="text-[11px] text-ink-3">{card.buckets[0]?.label}</Text>
+          <Text className="text-[11px] text-ink-3">{card.buckets[card.buckets.length - 1]?.label}</Text>
         </View>
-        {summary.moved.length > 0 && (
+        {!category && summary.moved.length > 0 && (
           <View className="mt-3 border-t border-border pt-3">
             {summary.moved.map(m => (
               <View key={m.key} className="flex-row justify-between py-0.5">

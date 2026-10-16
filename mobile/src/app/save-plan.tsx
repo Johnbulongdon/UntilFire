@@ -14,8 +14,9 @@ import { brand } from '@/theme/colors'
 /**
  * The last onboarding step (V2): an invitation, not a warning. Someone who
  * downloaded the app and finished onboarding wants in, so this welcomes them
- * to the daily habit. Never a wall: "Maybe later" goes straight to Home, and
- * the answers carry into an account whenever they join.
+ * to the daily habit. The freedom date came free before it; Home and the tabs
+ * need an account (Oct 16 2026, the founder: signed out shows the welcome
+ * screen), so "Maybe later" became "I already have an account".
  */
 export default function SavePlan() {
   // Joined from the sheet: on to Home.
@@ -46,7 +47,7 @@ export default function SavePlan() {
       </View>
       <View className="gap-3 px-6 pb-4">
         <Button kind="onDark" label="Create my free account" onPress={() => router.push('/sign-in')} />
-        <Button kind="onDarkQuiet" label="Maybe later" onPress={() => router.replace('/(tabs)')} />
+        <Button kind="onDarkQuiet" label="I already have an account" onPress={() => router.push('/sign-in')} />
       </View>
     </SafeAreaView>
   )

@@ -3,8 +3,8 @@ import NetInfo from '@react-native-community/netinfo'
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { setCustomCategories } from '@/lib/custom-categories'
-import { loadRates, setDisplayCurrency } from '@/lib/display-currency'
-import { addMonths, type CategoryDef, CITIES, FALLBACK_RATES, fetchAllPages, isoDay, loadMortgages, monthOf, netAmount, type Mortgage, type MortgageTerms, type PlanSettings, REAL_RETURN, type StoredPlan, type LifeVersion, normaliseLayout, type DashboardLayout, stampActive } from '@/engine'
+import { loadRates, rateFor, setDisplayCurrency } from '@/lib/display-currency'
+import { accountInUSD, addMonths, applyAccountShares, type AccountShares, readAccountShares, type CategoryDef, CITIES, fetchAllPages, isoDay, loadMortgages, monthOf, netAmount, type Mortgage, type MortgageTerms, type PlanSettings, REAL_RETURN, type StoredPlan, type LifeVersion, normaliseLayout, type DashboardLayout, stampActive } from '@/engine'
 import { effectiveBalances, effectiveDebts, type PlaidAccount } from '@/lib/balances'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/state/auth'
@@ -13,6 +13,7 @@ import { usePlan } from '@/state/plan'
 import { scheduleBillReminders } from '@/lib/bill-reminders'
 import { cancelTodayReminders, scheduleTodayReminders } from '@/lib/today-reminder'
 import { seedFromOnboarding } from '@/lib/mutations'
+import { setCategoryNeeds } from '@/lib/review'
 
 const SITE = 'https://www.untilfire.com'
 /** Months of transactions the app reads: this one and twelve before it, for ranges up to a year and "usual". */
@@ -31,6 +32,8 @@ export interface Transaction {
   notes: string | null
   tags: string[]
   source?: string | null
+  /** The connected account it is on; null for typed rows and bank rows synced before 0058. */
+  plaid_account_id?: string | null
 }
 
 /** What the signed-in account holds, read the same way app/dashboard/page.tsx reads it. */
@@ -66,14 +69,19 @@ export interface AccountData {
   income: number
   /** Monthly budget per expense category, in USD. */
   budget: Record<string, number>
+  /** The budget each month had, by YYYY-MM, from when it was saved (money logic study). */
+  budgetHistory: Record<string, Record<string, number>>
   age: number | null
   transactions: Transaction[]
+  /** Balances at your share: a joint account marked shared counts half (lib/account-share). */
   plaidAccounts: PlaidAccount[]
+  accountShares: AccountShares
   /** Bills and paydays still to come (Calendar on the website). */
   bills: Bill[]
   goals: Goal[]
   /** What was typed in on the website (or here); connected accounts override these in `balances`. */
-  typed: { k401: number; rothIRA: number; taxable: number; cashSavings: number; totalDebt: number; mortgages: Mortgage[] }
+  /** homeValue: optional, typed; in net worth only, never toward freedom (audit round 2). */
+  typed: { k401: number; rothIRA: number; taxable: number; cashSavings: number; totalDebt: number; mortgages: Mortgage[]; homeValue: number }
   /** Plan settings (salary, pension, employer money, goal) and where the person lives, from the FIRE profile. */
   profile: {
     plan: PlanSettings
@@ -98,6 +106,10 @@ export interface AccountData {
     today: TodayProgress
     /** "Always file this merchant like this", by merchantKey (Oct 2026). */
     merchantRules: Record<string, MerchantRule>
+    /** Need or want per category, when changed from the usual (money logic study, Oct 2026). */
+    categoryNeeds: Record<string, 'need' | 'want'>
+    /** Categories budgeted over the year, not each month: insurance, travel (money logic study). */
+    spreadCategories: string[]
   }
   /** From profiles: what to call you and which currency to show money in. */
   displayName: string
@@ -111,6 +123,8 @@ export interface AccountData {
   snapshots: { value: number; at: string }[]
   balances: { k401: number; rothIRA: number; taxable: number; cashSavings: number }
   debts: { otherDebt: number; mortgage: number; cards: number }
+  /** Which accounts are spending money (profiles.free_to_spend_accounts, D-29); unset means checking only. */
+  spendToggles: Record<string, boolean>
 }
 
 interface AccountContextValue {
@@ -129,15 +143,19 @@ interface AccountContextValue {
  * AccountData gains a field, so a copy saved by an older build is ignored
  * instead of rendering with that field missing.
  */
-const CACHE_VERSION = 3
+const CACHE_VERSION = 7
 const cacheKey = (userId: string) => `account-cache:v${CACHE_VERSION}:${userId}`
 
 const AccountContext = createContext<AccountContextValue | null>(null)
 
-/** A transaction's amount in USD, using the website's fallback rates. */
+/**
+ * A transaction's amount in USD at the same rate the screen converts back
+ * with (money logic study), so ¥100 shows as ¥100, not ¥98 after the
+ * fixed fallback rate and today's rate disagree.
+ */
 export function toUSD(amount: number, currency: string): number {
   if (!currency || currency === 'USD') return amount
-  const rate = FALLBACK_RATES[currency]
+  const rate = rateFor(currency)
   return rate ? amount / rate : amount
 }
 
@@ -171,6 +189,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       const cached = await AsyncStorage.getItem(cacheKey(userId)).then(r => (r ? JSON.parse(r) as { savedAt: string; data: AccountData } : null)).catch(() => null)
       if (cached?.data && !shown.current) {
         setCustomCategories(cached.data.customCategories ?? [])
+        setCategoryNeeds(cached.data.profile?.categoryNeeds ?? {})
         setDisplayCurrency(cached.data.currency ?? 'USD')
         // Belt and braces: fill anything an older copy lacks.
         const d = { ...cached.data, homeLayout: normaliseLayout(cached.data.homeLayout) }
@@ -184,10 +203,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     const today = isoDay(new Date())
     const since = `${addMonths(monthOf(today), -HISTORY_MONTHS)}-01`
 
-    const [budgetRes, txRes, plaid, billsRes, goalsRes, snapRes, profileRes, pro] = await Promise.all([
+    const [budgetRes, txRes, plaidRaw, billsRes, goalsRes, snapRes, profileRes, pro] = await Promise.all([
       supabase.from('user_budget').select('income, expenses, fire_age, fire_assets').eq('user_id', userId).maybeSingle(),
       fetchAllPages<Transaction>((from, to) => supabase.from('expenses')
-        .select('id, date, amount, refund_amount, currency, description, category, sub_category, transaction_type, notes, tags, source')
+        .select('id, date, amount, refund_amount, currency, description, category, sub_category, transaction_type, notes, tags, source, plaid_account_id')
         .eq('user_id', userId)
         .gte('date', since)
         .order('date', { ascending: false })
@@ -211,7 +230,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         .eq('user_id', userId)
         .order('captured_at', { ascending: true })
         .limit(120),
-      supabase.from('profiles').select('contribution_plan, display_name, default_currency, dashboard_layout').eq('user_id', userId).maybeSingle(),
+      supabase.from('profiles').select('contribution_plan, display_name, default_currency, dashboard_layout, free_to_spend_accounts').eq('user_id', userId).maybeSingle(),
       // Pro as the website decides it: an active Pro subscription, or a household that has one.
       (async () => {
         const { data: sub } = await supabase.from('subscriptions').select('status, plan').eq('user_id', userId).maybeSingle()
@@ -223,6 +242,11 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     // Money shows in the account's currency, at today's rate when it can be fetched.
     const currency = (profileRes.data?.default_currency as string | null) || 'USD'
     setDisplayCurrency(currency, currency === 'USD' ? undefined : (await loadRates()) ?? undefined)
+    // Banks report each balance in its own currency; every total here adds dollars (lib/account-currency, as the dashboard does).
+    const plaidUSD = plaidRaw.map(a => {
+      const cur = (a.iso_currency_code || 'USD').trim().toUpperCase()
+      return accountInUSD(a, { [cur]: rateFor(cur) ?? 0 })
+    })
 
     // A brand-new account starts from the onboarding answers, then reloads once.
     if (!budgetRes.error && !(Number(budgetRes.data?.income) > 0) && plan && plan.monthlyIncome > 0) {
@@ -233,9 +257,16 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
     const raw = (budgetRes.data?.expenses ?? {}) as Record<string, unknown>
     const fp = (raw._fire_profile ?? {}) as Record<string, any>
+    const accountShares = readAccountShares(fp.accountShares)
+    const plaid = applyAccountShares(plaidUSD, accountShares)
     const budget: Record<string, number> = {}
     for (const [key, value] of Object.entries(raw)) {
       if (!key.startsWith('_') && typeof value === 'number') budget[key] = value
+    }
+    // Typed in the account's own currency: today's rate turns it into USD, so the amount on screen never drifts.
+    const local = raw._budget_local as { currency?: string; values?: Record<string, number> } | undefined
+    if (local?.currency === currency && local.values && rateFor(currency)) {
+      for (const [key, value] of Object.entries(local.values)) if (typeof value === 'number') budget[key] = value / rateFor(currency)
     }
     const customCategories = (Array.isArray(raw._custom_cats) ? raw._custom_cats : [])
       .filter((c: any) => c && typeof c.key === 'string')
@@ -248,6 +279,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       pro,
       income: Number(budgetRes.data?.income ?? 0),
       budget,
+      budgetHistory: raw._budget_history && typeof raw._budget_history === 'object' ? raw._budget_history as Record<string, Record<string, number>> : {},
       age: budgetRes.data?.fire_age ?? null,
       transactions: (txRes.data ?? []).map(t => ({
         ...t,
@@ -258,6 +290,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         tags: t.tags ?? [],
       })),
       plaidAccounts: plaid,
+      accountShares,
       bills: ((billsRes.data ?? []) as Bill[]).map(b => ({ ...b, amount: Number(b.amount), currency: b.currency ?? 'USD' })),
       goals: ((goalsRes.data ?? []) as Goal[]).map(g => ({ ...g, target_amount: Number(g.target_amount), current_saved: Number(g.current_saved) })),
       typed: {
@@ -267,6 +300,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         cashSavings: fp.cashSavings || 0,
         totalDebt: fp.totalDebt || 0,
         mortgages,
+        homeValue: Number(fp.homeValue) > 0 ? Number(fp.homeValue) : 0,
       },
       profile: {
         plan: (fp.plan && typeof fp.plan === 'object' ? fp.plan : {}) as PlanSettings,
@@ -292,6 +326,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         },
         merchantRules: fp.merchantRules && typeof fp.merchantRules === 'object' && !Array.isArray(fp.merchantRules) ? fp.merchantRules as Record<string, MerchantRule> : {},
         onboardingSavings: Number(fp.onboardingSavings) || 0,
+        spreadCategories: Array.isArray(fp.spreadCategories) ? fp.spreadCategories.filter((k: unknown) => typeof k === 'string') : [],
+        categoryNeeds: fp.categoryNeeds && typeof fp.categoryNeeds === 'object' && !Array.isArray(fp.categoryNeeds) ? fp.categoryNeeds as Record<string, 'need' | 'want'> : {},
         comparisons: Array.isArray(fp.comparisons) ? fp.comparisons.filter((c: LifeVersion) => c && typeof c.id === 'string' && Array.isArray(c.changes)) : [],
       },
       customCategories,
@@ -309,7 +345,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         plaidAccounts: plaid,
       }),
       debts: effectiveDebts({ totalDebt: fp.totalDebt || 0, mortgageBalance, plaidAccounts: plaid }),
+      spendToggles: (profileRes.data?.free_to_spend_accounts as Record<string, boolean> | null) ?? {},
     }
+    setCategoryNeeds(next.profile.categoryNeeds)
     const stamp = new Date().toISOString()
     setData(next); setSavedAt(stamp); shown.current = true
     // Bill and payday reminders follow the latest bills (when turned on in Profile).
@@ -328,6 +366,11 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 
   refreshRef.current = refresh
   useEffect(() => { refresh() }, [refresh])
+  // Account first: onboarding finishes after sign-in, so its plan seeds the new account then.
+  useEffect(() => {
+    if (!session || !plan || !(plan.monthlyIncome > 0) || !data || data.income > 0) return
+    seedFromOnboarding(session.user.id, plan).then(ok => { if (ok) refresh() }).catch(() => {})
+  }, [session, plan, data?.income]) // eslint-disable-line react-hooks/exhaustive-deps
   // Signed out, amounts show in the currency picked in onboarding.
   // Apple purchases that land outside the Pro screen still switch Pro on (launch audit, Oct 2026).
   useEffect(() => (session ? listenForPurchases(session.access_token, () => { refresh() }) : undefined), [session?.access_token]) // eslint-disable-line react-hooks/exhaustive-deps

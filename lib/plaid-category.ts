@@ -13,21 +13,77 @@ export const PLAID_CATEGORY_MAP: Record<string, string> = {
   TRANSPORTATION:            "transport",
   TRAVEL:                    "travel",
   RENT_AND_UTILITIES:        "housing",
-  HOME_IMPROVEMENT:          "housing",
+  // Home Depot is shopping, not rent: in Housing, a rent bill hid it from everyday spending (audit round 2).
+  HOME_IMPROVEMENT:          "shopping",
   GENERAL_MERCHANDISE:       "shopping",
   ENTERTAINMENT:             "entertainment",
-  PERSONAL_CARE:             "healthcare",
+  PERSONAL_CARE:             "personal_care",
   MEDICAL:                   "healthcare",
   SUBSCRIPTION:              "subscriptions",
   INCOME:                    "salary",
 };
 
-// TRANSFER_OUT = own-account moves (skip to avoid double counting)
-// TRANSFER_IN is kept so that Wise/international bank income shows up correctly
-export const PLAID_SKIP_CATEGORIES = new Set([
-  "TRANSFER_OUT",
-  "LOAN_PAYMENTS",
-]);
+// Nothing is skipped any more: transfers are kept as transfers (see classifyPlaid).
+export const PLAID_SKIP_CATEGORIES = new Set<string>();
+
+export interface PlaidClass {
+  transaction_type: "expense" | "income" | "transfer";
+  category: string;
+  /** Overrides the prettified detailed category when set. */
+  sub_category?: string;
+  tags: string[];
+}
+
+/**
+ * What one bank transaction is (money logic audit round 2, Oct 16 2026).
+ * Every row is kept, so nothing quietly disappears from spending:
+ * - Moves between your own accounts, savings, investments and card payments
+ *   are transfers, which no budget, income or spending figure counts.
+ * - Cash withdrawals and Venmo/Zelle-style payments to people are spending
+ *   in Other, so Today asks what they were (rent paid by Zelle is real).
+ * - Loan payments are spending: mortgage in Housing (left out of the freedom
+ *   date's spending, which pays it separately), car in Transport, student in
+ *   Education.
+ * - Money back from a shop is a refund, not income: a transfer tagged
+ *   sys:refund, which sync applies to the purchase it came back to.
+ * - Income is only what Plaid calls income, plus deposits it can't place
+ *   (Wise and international payouts), never a transfer between your accounts.
+ * `amount` is Plaid's sign: positive is money out.
+ */
+export function classifyPlaid(primary: string, detailed: string, amount: number): PlaidClass {
+  const moneyIn = amount < 0;
+  const d = detailed || "";
+  if (primary === "TRANSFER_OUT") {
+    if (d === "TRANSFER_OUT_WITHDRAWAL" || d === "TRANSFER_OUT_OTHER_TRANSFER_OUT") {
+      return { transaction_type: "expense", category: "other", sub_category: d === "TRANSFER_OUT_WITHDRAWAL" ? "Cash" : "Payment to someone", tags: [] };
+    }
+    return { transaction_type: "transfer", category: "transfer", tags: [] };
+  }
+  if (primary === "TRANSFER_IN") {
+    if (d === "TRANSFER_IN_DEPOSIT" || d === "TRANSFER_IN_OTHER_TRANSFER_IN") return { transaction_type: "income", category: "other_income", tags: [] };
+    return { transaction_type: "transfer", category: "transfer", tags: [] };
+  }
+  if (primary === "LOAN_PAYMENTS") {
+    if (d === "LOAN_PAYMENTS_CREDIT_CARD_PAYMENT" || moneyIn) return { transaction_type: "transfer", category: "transfer", tags: [] };
+    if (d === "LOAN_PAYMENTS_MORTGAGE_PAYMENT") return { transaction_type: "expense", category: "housing", sub_category: "Mortgage", tags: [] };
+    if (d === "LOAN_PAYMENTS_CAR_PAYMENT") return { transaction_type: "expense", category: "transport", sub_category: "Car loan", tags: [] };
+    if (d === "LOAN_PAYMENTS_STUDENT_LOAN_PAYMENT") return { transaction_type: "expense", category: "education", sub_category: "Student loan", tags: [] };
+    return { transaction_type: "expense", category: "other", sub_category: "Loan payment", tags: [] };
+  }
+  if (primary === "INCOME" || (moneyIn && !primary)) {
+    if (!moneyIn) return { transaction_type: "expense", category: "other", tags: [] };
+    const category = d === "INCOME_WAGES" || d === "INCOME_SALARY" ? "salary"
+      : d === "INCOME_DIVIDENDS" || d === "INCOME_INTEREST_EARNED" || d === "INCOME_RETIREMENT_PENSION" ? "investment"
+      : primary === "INCOME" && !d ? "salary" : "other_income";
+    return { transaction_type: "income", category, tags: [] };
+  }
+  if (primary === "RENT_AND_UTILITIES" && !moneyIn) {
+    return { transaction_type: "expense", category: d === "RENT_AND_UTILITIES_RENT" || !d ? "housing" : "utilities", tags: [] };
+  }
+  const category = PLAID_CATEGORY_MAP[primary] ?? "other";
+  if (moneyIn) return { transaction_type: "transfer", category, tags: ["sys:refund"] };
+  return { transaction_type: "expense", category, tags: [] };
+}
 
 /**
  * Plaid's `detailed` value, made readable.

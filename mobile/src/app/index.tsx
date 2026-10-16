@@ -1,10 +1,12 @@
 import { Redirect } from 'expo-router'
 
+import { useAuth } from '@/state/auth'
 import { usePlan } from '@/state/plan'
 
-/** First launch goes to onboarding; once a plan is saved, straight to Home. */
+/** Signed out or no plan yet: the welcome screen. Signed in with a plan: straight to Home. */
 export default function Entry() {
   const { plan, ready } = usePlan()
-  if (!ready) return null
-  return <Redirect href={plan ? '/(tabs)' : '/onboarding'} />
+  const auth = useAuth()
+  if (!ready || !auth.ready) return null
+  return <Redirect href={plan && auth.session ? '/(tabs)' : '/onboarding'} />
 }

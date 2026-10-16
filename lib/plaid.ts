@@ -1,5 +1,5 @@
 import { Configuration, CountryCode, PlaidApi, PlaidEnvironments, Transaction as PlaidTransaction } from "plaid";
-import { PLAID_CATEGORY_MAP, PLAID_SKIP_CATEGORIES, prettifyPfcDetailed } from "./plaid-category";
+import { classifyPlaid, PLAID_CATEGORY_MAP, PLAID_SKIP_CATEGORIES, prettifyPfcDetailed } from "./plaid-category";
 import { plaidOccurredAt } from "./transaction-time";
 
 // Re-exported so existing importers keep working; the definitions moved to
@@ -86,12 +86,8 @@ export function mapPlaidTx(tx: PlaidTransaction, userId: string) {
   if (PLAID_SKIP_CATEGORIES.has(primary)) return null;
 
   // Plaid: positive amount = debit (money out), negative = credit (money in)
-  const isIncome = tx.amount < 0;
   const absAmount = Math.abs(tx.amount);
-  const mappedCategory = PLAID_CATEGORY_MAP[primary] ?? "other";
-  const category = isIncome
-    ? mappedCategory === "salary" ? "salary" : "other_income"
-    : mappedCategory;
+  const kind = classifyPlaid(primary, pfc?.detailed ?? "", tx.amount);
 
   return {
     user_id: userId,
@@ -99,14 +95,16 @@ export function mapPlaidTx(tx: PlaidTransaction, userId: string) {
     amount: absAmount,
     currency: tx.iso_currency_code ?? "USD",
     description: tx.merchant_name ?? tx.name,
-    category,
-    tags: [] as string[],
+    category: kind.category,
+    // A pending charge can still change (a tip, a fuel hold); marked so it can be told apart until it posts.
+    tags: [...kind.tags, ...(tx.pending ? ["sys:pending"] : [])] as string[],
     // Plaid's granular category, which used to be discarded. The user owns
     // sub_category from here; pfc_detailed below keeps what Plaid said, so
     // the two can disagree visibly.
-    sub_category: prettifyPfcDetailed(primary, pfc?.detailed ?? ""),
-    transaction_type: isIncome ? "income" : "expense",
+    sub_category: kind.sub_category ?? prettifyPfcDetailed(primary, pfc?.detailed ?? ""),
+    transaction_type: kind.transaction_type,
     plaid_transaction_id: tx.transaction_id,
+    plaid_account_id: tx.account_id ?? null,
     source: "plaid",
     // Stored unmapped so an unmapped primary is findable later. Three of the
     // first forty-three imports landed in "other" with no way to tell what

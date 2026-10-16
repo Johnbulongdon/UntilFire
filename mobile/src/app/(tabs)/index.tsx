@@ -17,7 +17,6 @@ import { Text } from '@/components/Text'
 import { isBrokerageAccount, isRetirementAccount } from '@/lib/balances'
 import { money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
-import { monthSpend, thisMonth } from '@/lib/money-data'
 import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { saveFireProfile } from '@/lib/mutations'
@@ -26,6 +25,7 @@ import { useLivePlan } from '@/state/live-plan'
 import { quickFreedom } from '@/engine'
 import { usePlan } from '@/state/plan'
 import { colors, TAB_COLOR } from '@/theme/colors'
+import { splitBudget } from '@/lib/budget-split'
 
 /**
  * Home (V2, after the October audit): the freedom date and its path, then four
@@ -148,12 +148,10 @@ function SavingsGap({ data }: { data: AccountData }) {
 /** A soft panel that shows against the page in both themes (surface in light, card in dark). */
 const panel = () => (Appearance.getColorScheme() === 'dark' ? colors.card : colors.surface)
 
-/** This month in one bar: what's left of the budget, and how far through the month you are. */
+/** This month in one bar: what's left of the everyday budget (bills set aside, lib/budget-split), and how far through the month you are. */
 function ThisMonth({ data }: { data: AccountData }) {
-  const budget = Object.values(data.budget).reduce((a, v) => a + v, 0)
+  const { everydayBudget: budget, everydaySpent: total, left } = splitBudget(data)
   if (budget <= 0) return null
-  const { total } = monthSpend(data.transactions, thisMonth())
-  const left = budget - total
   const now = new Date()
   const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
   return (
@@ -167,7 +165,7 @@ function ThisMonth({ data }: { data: AccountData }) {
         <View className={`h-full rounded-full ${left < 0 ? 'bg-neg' : total / budget > now.getDate() / days ? 'bg-warn' : 'bg-green'}`} style={{ width: `${Math.min(1, total / budget) * 100}%` }} />
       </View>
       <View className="flex-row justify-between">
-        <Text className="text-[13px] text-ink-2">Spent {money(total)} of {money(budget)}</Text>
+        <Text className="text-[13px] text-ink-2">Spent {money(total)} of {money(budget)} everyday</Text>
         <Text className="text-[13px] text-ink-2">Day {now.getDate()} of {days}</Text>
       </View>
     </Pressable>

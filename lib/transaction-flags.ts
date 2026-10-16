@@ -25,7 +25,7 @@ export type FlagTx = RangeTx & { id: string; tags?: string[] | null; source?: st
 
 export const FLAG_ORDER: FlagKind[] = ["bill", "card_payment", "duplicate", "large"];
 export const okTag = (k: FlagKind) => `ok:${k}`;
-export const isSystemTag = (tag: string) => tag.startsWith("ok:");
+export const isSystemTag = (tag: string) => tag.startsWith("ok:") || tag.startsWith("sys:");
 const LARGE_FLOOR_USD = 250;
 
 const dayNumber = (date: string) => Math.floor(Date.parse(`${date.slice(0, 10)}T00:00:00Z`) / 86_400_000);

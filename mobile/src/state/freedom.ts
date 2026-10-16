@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 
-import { CITIES, engineMortgages, moveBeforeFreedomChange, quickFreedom, retirementLocationMonthlySpend } from '@/engine'
+import { CITIES, engineMortgages, freedomDebt, moveBeforeFreedomChange, quickFreedom, retirementLocationMonthlySpend } from '@/engine'
 import { isMortgageAccount } from '@/lib/balances'
-import { addMonths } from '@/engine'
-import { monthSpend, thisMonth } from '@/lib/money-data'
+import { spendingBasis } from '@/lib/budget-split'
+import { freedomCash } from '@/lib/money-data'
 import { calcProjection, exactFreedomDateFrom } from '@/lib/projection'
 import { useAccount, type AccountData } from '@/state/account'
 import { usePlan } from '@/state/plan'
@@ -38,11 +38,11 @@ export interface Freedom {
  * ones, debts by the same rule, mortgages with their terms, and the target from
  * the retirement goal, then today's spending moved to a retirement city (D-82),
  * then today's spending; an earlier move reprices spending from its year.
+ * Spending is the 12-month average of real spending (lib/budget-split spendingBasis).
  */
 export function inputsFor(data: AccountData): Inputs {
   const p = data.profile
-  const budget = Object.values(data.budget).reduce((s, v) => s + v, 0)
-  const monthlyExpenses = budget > 0 ? budget : monthSpend(data.transactions, addMonths(thisMonth(), -1)).total
+  const monthlyExpenses = spendingBasis(data).monthly
   const currentCityCol = CITIES.find(c => c.name === p.cityName)?.col ?? 0
   const targetMonthlyExpenses = (p.plan.retirementAnnualSpend ?? 0) > 0 ? p.plan.retirementAnnualSpend! / 12
     : retirementLocationMonthlySpend({ monthlySpend: monthlyExpenses, currentCityCol, retirementCityCol: p.retirementCityCol, lifestyleMultiplier: p.lifestyleMultiplier })
@@ -57,7 +57,14 @@ export function inputsFor(data: AccountData): Inputs {
     annualIncome: data.income * 12,
     monthlyExpenses,
     ...data.balances,
-    totalDebt: data.debts.otherDebt,
+    // Only cash above the safety pot is invested (lib/money-data freedomCash).
+    cashSavings: freedomCash(data),
+    // Loans, plus cards carried at a rate, at their own rates (lib/freedom-debt), as on the website.
+    ...(({ balance, rate }) => ({ totalDebt: balance, debtRate: rate }))(freedomDebt({
+      otherDebt: data.debts.otherDebt,
+      cards: data.plaidAccounts.filter(a => a.type === 'credit').map(a => ({ name: a.name || 'Credit card', balance: a.balance_current ?? 0 })),
+      ladderDebts: data.contributionPlan?.ladder?.debts ?? [],
+    })),
     mortgageBalance: data.debts.mortgage,
     mortgageMonthly: p.mortgageMonthly,
     growthRate: p.growthRate,
@@ -102,7 +109,7 @@ export function useFreedom(): Freedom | null {
     if (data && data.income > 0) {
       const inputs = inputsFor(data)
       const { r, date, years, year, ageAtFreedom } = project(inputs, data.age)
-      const invested = data.balances.k401 + data.balances.rothIRA + data.balances.taxable + data.balances.cashSavings
+      const invested = data.balances.k401 + data.balances.rothIRA + data.balances.taxable + (inputs.cashSavings ?? 0)
       return {
         source: 'account', date, year, years, ageAtFreedom, target: r.fireTarget, invested,
         monthlyIncome: data.income, monthlySpending: inputs.monthlyExpenses,

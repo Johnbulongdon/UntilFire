@@ -1,6 +1,6 @@
 import { router } from 'expo-router'
 import { Button } from '@/components/Button'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, View } from 'react-native'
 
 import { BankBridge } from '@/components/BankBridge'
@@ -9,18 +9,18 @@ import { DetailScreen } from '@/components/DetailScreen'
 import { Card, Label } from '@/components/Screen'
 import { Text } from '@/components/Text'
 import { EmptyState } from '@/components/EmptyState'
-import { DEFAULT_MORTGAGE_RATE_PCT, payoffYear } from '@/engine'
+import { DEFAULT_MORTGAGE_RATE_PCT, payoffYear, shareOf } from '@/engine'
 import { isMortgageAccount } from '@/lib/balances'
 import { compactMoney, money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { netWorthOf } from '@/lib/net-worth'
+import { monthlyNeeds, safetyCash } from '@/lib/money-data'
 import { withdrawalsLeftLabel } from '@engine/savings-limits.ts'
 import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
 
 const KIND: Record<string, string> = { depository: 'Bank', investment: 'Investments', credit: 'Credit card', loan: 'Loan' }
 // The website's emergency-fund rule: needs are these budgets; 1.5 months is the floor, 6 the target.
-const NEED_KEYS = ['housing', 'food', 'transport', 'healthcare']
 const FLOOR_MONTHS = 1.5
 const TARGET_MONTHS = 6
 
@@ -121,10 +121,10 @@ function History({ data }: { data: AccountData }) {
 
 /** Months of essentials your cash covers, against the website's floor and target. */
 function EmergencyFund({ data }: { data: AccountData }) {
-  const needsBudget = NEED_KEYS.reduce((s, k) => s + (data.budget[k] ?? 0), 0)
-  const needs = needsBudget > 0 ? needsBudget : Object.values(data.budget).reduce((s, v) => s + v, 0) * 0.6
+  // Shared with the safety chip and Home's Safety tile, so all three agree.
+  const { needs, basis } = useMemo(() => monthlyNeeds(data.budget, data.transactions), [data.budget, data.transactions])
   if (!(needs > 0)) return null
-  const months = data.balances.cashSavings / needs
+  const months = safetyCash(data) / needs
   const state = months <= 0 ? 'Missing' : months < FLOOR_MONTHS ? 'Fragile' : months < TARGET_MONTHS ? 'Building' : 'Healthy'
   const tone = state === 'Healthy' ? 'text-pos-ink' : state === 'Building' ? 'text-warn' : 'text-neg-ink'
   return (
@@ -134,11 +134,13 @@ function EmergencyFund({ data }: { data: AccountData }) {
         <Text className={`text-[13px] font-bold ${tone}`}>{state}</Text>
       </View>
       <Text className="mt-1 font-mono text-[24px] text-ink">{months.toFixed(1)} months</Text>
-      <Text className="text-[13px] text-ink-3">of essentials ({money(needs)}/mo) covered by cash and savings</Text>
+      <Text className="text-[13px] text-ink-3">of essentials ({money(needs)}/mo) covered by savings outside your spending accounts</Text>
       <View className="mt-3 h-2 overflow-hidden rounded-full bg-surface-2">
         <View className={`h-full rounded-full ${state === 'Healthy' ? 'bg-green' : state === 'Building' ? 'bg-warn' : 'bg-neg'}`} style={{ width: `${Math.min(1, months / TARGET_MONTHS) * 100}%` }} />
       </View>
-      <Text className="mt-1.5 text-[12px] text-ink-3">Aim for {TARGET_MONTHS} months; below {FLOOR_MONTHS} is fragile.</Text>
+      <Text className="mt-1.5 text-[12px] text-ink-3">
+        Target <Text className="font-mono text-[12px] text-ink-3">{money(needs * TARGET_MONTHS)}</Text>, {TARGET_MONTHS} months of needs from {basis}. Below {FLOOR_MONTHS} months is fragile. Wants aren't counted: they'd stop if income did.
+      </Text>
     </Card>
   )
 }
@@ -180,7 +182,7 @@ function Accounts({ data }: { data: AccountData }) {
             <View className="flex-row items-center justify-between">
               <View className="flex-1 pr-3">
                 <Text numberOfLines={1} className="text-[15px] font-semibold text-ink">{a.name}{a.mask ? ` ••${a.mask}` : ''}</Text>
-                <Text className="text-[12px] text-ink-3">{isMortgageAccount(a) ? 'Mortgage' : KIND[a.type] ?? a.type}</Text>
+                <Text className="text-[12px] text-ink-3">{isMortgageAccount(a) ? 'Mortgage' : KIND[a.type] ?? a.type}{shareOf(a.plaid_account_id, data.accountShares) < 1 ? ' · Shared, your half' : ''}</Text>
                 {a.withdrawal_limit != null && (
                   <Text className={`text-[12px] ${(a.withdrawals?.length ?? 0) > a.withdrawal_limit ? 'font-semibold text-neg-ink' : 'text-ink-2'}`}>
                     {withdrawalsLeftLabel(a.withdrawal_limit, a.withdrawals?.length ?? 0)}
@@ -204,6 +206,9 @@ function Accounts({ data }: { data: AccountData }) {
           </View>
         )
       })}
+      <Pressable accessibilityRole="button" onPress={() => { haptic.tick(); router.push('/shared-accounts') }} className="mt-3 self-start rounded-control bg-surface px-3 py-2 active:opacity-70">
+        <Text className="text-[13px] font-semibold text-ink-2">Shared with a partner? ›</Text>
+      </Pressable>
       <View className="mt-3"><BankBridge another compact /></View>
     </Card>
   )

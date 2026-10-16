@@ -132,8 +132,8 @@ export function usualForRange(
 
 /**
  * Paying a credit card bill is moving money, not spending it: the purchases
- * on the card are the spending. Linked banks already drop these at import
- * (Plaid's LOAN_PAYMENTS), but CSV and statement imports cannot, so an
+ * on the card are the spending. Linked banks store these as transfers at
+ * import (lib/plaid-category classifyPlaid), but CSV and statement imports cannot, so an
  * expense whose description reads like a card payment is flagged for the
  * person to confirm. Flag only; nothing is excluded silently.
  */

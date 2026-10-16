@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
 import { adminClient } from "./supabase-admin";
+import { FALLBACK_RATES } from "./currency";
+import { fetchAllPages } from "./supabase-pages";
+import { householdSpending, type MemberSpendRow } from "./household-spending";
 
 /**
  * Household membership, server side.
@@ -430,7 +433,24 @@ export async function householdPosition(admin: Admin, userId: string): Promise<H
   const undecided = await duplicateCandidates(admin, userId);
 
   const monthlyIncome = members.reduce((s, m) => s + m.monthlyIncome, 0);
-  const monthlyExpenses = members.reduce((s, m) => s + m.monthlyExpenses, 0);
+  /* Real spending once both have three months of it, with a joint account
+     both connected counted once (lib/household-spending); adding two typed
+     budgets counted shared rent twice. Typed budgets before that. */
+  let monthlyExpenses = members.reduce((s, m) => s + m.monthlyExpenses, 0);
+  try {
+    const now = new Date();
+    const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const since = new Date(now.getFullYear(), now.getMonth() - 13, 1).toISOString().slice(0, 10);
+    const { data: spendRows } = await fetchAllPages((from, to) => admin.from("expenses")
+      .select("user_id, date, amount, refund_amount, currency, description, sub_category")
+      .in("user_id", ids).eq("transaction_type", "expense").gte("date", since)
+      .order("date").order("id").range(from, to));
+    const real = householdSpending((spendRows ?? []) as MemberSpendRow[], current,
+      (amount, currency) => (currency === "USD" ? amount : amount / (FALLBACK_RATES[currency] || 1)));
+    if (real.average != null) monthlyExpenses = real.average;
+  } catch (spendErr) {
+    console.error("[household] real spending:", spendErr);
+  }
   const portfolio = Math.max(0, members.reduce((s, m) => s + m.portfolio, 0) - dedupedBalance);
 
   return {

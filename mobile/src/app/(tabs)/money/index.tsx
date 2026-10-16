@@ -13,12 +13,13 @@ import { PrimaryButton } from '@/components/PrimaryButton'
 import { Card, Label, Screen } from '@/components/Screen'
 import { Text } from '@/components/Text'
 import { money } from '@/lib/format'
-import { monthSpend, thisMonth } from '@/lib/money-data'
+import { categoryOf, monthSpend, thisMonth } from '@/lib/money-data'
 import { reviewCounts } from '@/lib/review'
 import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { freedomFor, usePlan } from '@/state/plan'
 import { TAB_COLOR, tabInk } from '@/theme/colors'
+import { splitBudget } from '@/lib/budget-split'
 
 /**
  * Money's hub (V2): this month's spending as the headline, every Money page as
@@ -46,14 +47,25 @@ export default function Money() {
 }
 
 function Headline({ data }: { data: AccountData }) {
-  const { total } = monthSpend(data.transactions, thisMonth())
-  const budget = Object.values(data.budget).reduce((s, v) => s + v, 0)
-  const left = budget - total
+  const { total, categories } = monthSpend(data.transactions, thisMonth())
+  // The one "left": everyday budget less everyday spending, bills set aside (lib/budget-split).
+  const { everydayBudget: budget, left } = splitBudget(data)
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`Spent ${money(total)} this month. Open transactions`} onPress={() => { haptic.tick(); router.push('/money/transactions') }}>
       <Text className="text-[12px] font-bold uppercase tracking-[2px] text-ink-3">Spent this month</Text>
       <Text style={{ color: tabInk('money') }} className="font-display text-[52px] font-bold leading-[58px] tracking-tight">{money(total)}</Text>
       {budget > 0 && <Text className="text-[15px] text-ink-2">{left >= 0 ? `${money(left)} left of ${money(budget)}` : `${money(-left)} over ${money(budget)}`}</Text>}
+      {/* Where it went, so the headline isn't a bare total; the rest is in Budget. */}
+      {categories.length > 0 && (
+        <Pressable accessibilityRole="button" accessibilityLabel="Spending by category" hitSlop={4} onPress={() => { haptic.tick(); router.push('/money/budget') }} className="mt-1 active:opacity-70">
+          <Text className="text-[14px] text-ink-2">
+            {categories.slice(0, 3).map((c, i) => (
+              <Text key={c.key} className="text-[14px] text-ink-2">{i > 0 ? ' · ' : ''}{categoryOf(c.key).label} <Text className="font-mono text-[14px] text-ink">{money(c.usd)}</Text></Text>
+            ))}
+            <Text className="text-[14px] text-ink-3">  ›</Text>
+          </Text>
+        </Pressable>
+      )}
     </Pressable>
   )
 }
@@ -68,7 +80,6 @@ const TILES: { label: string; icon: SymbolName; fallback: string; to: string }[]
   { label: 'Net worth', icon: 'building.columns.fill', fallback: '▥', to: '/money/net-worth' },
   { label: 'Income', icon: 'arrow.down.circle.fill', fallback: '↓', to: '/money/income' },
   { label: 'Insights', icon: 'lightbulb.fill', fallback: '!', to: '/money/insights' },
-  { label: 'Categories', icon: 'square.grid.2x2.fill', fallback: '▤', to: '/money/categories' },
 ]
 
 /** Every Money page as a chunky icon tile, four to a row. */

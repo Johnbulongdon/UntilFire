@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { money } from '@/lib/format'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
+import { goalMonthly } from '@/lib/goals'
 
 /** Goals from the website: what you're saving for along the way to freedom. */
 export default function Goals() {
@@ -25,7 +26,7 @@ export default function Goals() {
           <View className="mt-4"><PrimaryButton label="Sign in" onPress={() => router.push('/sign-in')} /></View>
         </Card>
       ) : goals.length === 0 ? (
-        <EmptyState mood="hello" title="No goals yet" body="A house deposit, a sabbatical, an emergency cushion: name what you're saving for along the way." action={{ label: 'Add a goal', onPress: () => router.push('/goal') }} />
+        <EmptyState mood="hello" title="No goals yet" body="A house deposit, a sabbatical, a new car: name what you're saving for along the way. Your emergency fund is tracked in Net worth." action={{ label: 'Add a goal', onPress: () => router.push('/goal') }} />
       ) : goals.map(g => {
         const share = g.current_saved / Math.max(g.target_amount, 1)
         return (
@@ -44,6 +45,7 @@ export default function Goals() {
             <View className="mt-3"><ProgressTrack share={share} /></View>
             <Text className="mt-1.5 text-[13px] text-ink-2">
               <Text className="font-mono text-[13px] text-ink">{money(g.current_saved)}</Text> of <Text className="font-mono text-[13px]">{money(g.target_amount)}</Text>
+              {goalMonthly(g) != null ? <> · <Text className="font-mono text-[13px] text-ink">{money(goalMonthly(g)!)}</Text> a month to get there</> : null}
             </Text>
           </Card>
           </Pressable>

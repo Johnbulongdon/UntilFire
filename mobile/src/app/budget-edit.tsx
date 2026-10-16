@@ -9,8 +9,9 @@ import { Text } from '@/components/Text'
 import { money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { addMonths } from '@/engine'
-import { categoryOf, expenseCategories, monthSpend, thisMonth } from '@/lib/money-data'
+import { categoryOf, expenseCategories, monthSpend, thisMonth, typicalByCategory } from '@/lib/money-data'
 import { saveBudget } from '@/lib/mutations'
+import { splitBudget } from '@/lib/budget-split'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { currencySymbol, fromInput, toInput } from '@/lib/display-currency'
@@ -20,30 +21,31 @@ import { colors } from '@/theme/colors'
 export default function BudgetEdit() {
   const { session } = useAuth()
   const { data, refresh } = useAccount()
-  // Every category with a budget, the website's own keys included, so all of it can be edited here.
+  // Bills come from Calendar, so their categories aren't typed here (money logic study, Oct 16 2026).
+  const split = useMemo(() => (data ? splitBudget(data) : null), [data])
+  // Every everyday category with a budget, the website's own keys included, so all of it can be edited here.
   const [rows] = useState(() => [
     ...expenseCategories(),
     ...Object.entries(data?.budget ?? {}).filter(([k, v]) => v > 0 && !expenseCategories().some(c => c.key === k)).map(([k]) => categoryOf(k)),
-  ])
+  ].filter(c => !split?.billKeys.has(c.key)))
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(rows.map(c => [c.key, toInput(data?.budget[c.key])])))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
   const spent = new Map(monthSpend(data?.transactions ?? [], thisMonth()).categories.map(c => [c.key, c.usd]))
-  // The website's budget helper (BudgetSetupModal): each category's average over the last three full months.
+  // The same "usual" Budget's rows show (median of the last six complete months, lib/money-data typicalBy), so the two never disagree.
   const { averages, months } = useMemo(() => {
-    const now = thisMonth()
-    const prior = [1, 2, 3].map(n => addMonths(now, -n)).filter(m => (data?.transactions ?? []).some(t => t.date.startsWith(m) && t.transaction_type === 'expense'))
-    const sums = new Map<string, number>()
-    for (const m of prior) for (const c of monthSpend(data?.transactions ?? [], m).categories) sums.set(c.key, (sums.get(c.key) ?? 0) + c.usd)
-    return { averages: new Map([...sums].map(([k, v]) => [k, Math.round(v / Math.max(prior.length, 1))])), months: prior.length }
+    const all = data?.transactions ?? []
+    const typical = typicalByCategory(all)
+    const months = new Set(all.filter(t => t.transaction_type === 'expense' && t.date.slice(0, 7) < thisMonth() && t.date.slice(0, 7) >= addMonths(thisMonth(), -6)).map(t => t.date.slice(0, 7))).size
+    return { averages: new Map([...typical].map(([k, v]) => [k, Math.round(v)])), months: typical.size > 0 ? months : 0 }
   }, [data])
   const useAverages = () => {
     haptic.success()
     setValues(v => ({ ...v, ...Object.fromEntries([...averages].filter(([k]) => rows.some(c => c.key === k)).map(([k, usd]) => [k, toInput(usd)])) }))
   }
-  const total = Object.values(values).reduce((s, v) => s + fromInput(v), 0)
+  const total = Object.values(values).reduce((s, v) => s + fromInput(v), 0) + (split?.billsMonthly ?? 0)
 
   const save = async () => {
     if (!session) return
@@ -69,7 +71,7 @@ export default function BudgetEdit() {
 
         <View className="items-center px-5 pb-3 pt-4">
           <Text className="font-mono text-[34px] text-ink">{money(total)}</Text>
-          <Text className="text-[13px] text-ink-3">a month in total</Text>
+          <Text className="text-[13px] text-ink-3">{split?.billsMonthly ? `a month, with ${money(split.billsMonthly)} of bills from Calendar` : 'a month in total'}</Text>
         </View>
 
         <ScrollView contentContainerClassName="px-5 pb-6" keyboardShouldPersistTaps="handled">
@@ -78,7 +80,7 @@ export default function BudgetEdit() {
               <Icon name="sparkles" size={24} color={colors.tealDeep} />
               <View className="flex-1">
                 <Text className="text-[15px] font-semibold text-ink">Fill from what you usually spend</Text>
-                <Text className="text-[12px] text-ink-3">Your average over the last {months === 1 ? 'month' : `${months} months`}, per category. Change any before saving.</Text>
+                <Text className="text-[12px] text-ink-3">Your usual month per category, from the last {months} months. Change any before saving.</Text>
               </View>
             </Pressable>
           )}

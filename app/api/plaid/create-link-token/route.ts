@@ -34,6 +34,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       // is used only where the person picks an investment account.
       products: [Products.Transactions],
       required_if_supported_products: [Products.Investments],
+      // Two years, not Plaid's default 90 days: the freedom date runs on the last
+      // 12 complete months of real spending (D-86), so 90 days left it on the budget.
+      transactions: { days_requested: 730 },
       country_codes: plaidCountries(),
       language: "en",
     });

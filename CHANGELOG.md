@@ -6,6 +6,48 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-16
+
+### Phone app
+- Categories shows one month at a time (‹ month ›, back 12 months), each
+  category against its usual month, sorted by spend; tap one to see its
+  transactions for that month.
+- New day-to-day card: Food + Transport in a typical month, the money to keep
+  in checking apart from the emergency fund, and how much of it is usually wants.
+- Transactions: picking a category now changes the summary to that category's
+  total, usual and bars, and the filter stays on when you change month.
+- Money shows the top three categories under "Spent this month".
+- Emergency fund shows a target (six months of needs). Without need budgets,
+  needs come from what your needs usually cost instead of 60% of the budget.
+  The safety chip and Home's Safety tile now use the same figure, so they
+  match the emergency fund page they open.
+- Account first: signed out, the app opens on the welcome screen instead of
+  Home, and both its buttons go to sign-in. A new account answers the
+  onboarding questions next, and their plan saves to the account; an account
+  with a plan goes straight to Home. Signing out returns to the welcome screen.
+- Profile reordered: everyday account rows and settings first, Help, then one
+  "Data and account" row (export, replay onboarding, delete account last) and
+  Sign out on its own at the bottom.
+- FIRE type quiz: each question has its own picture, and the five answers are
+  matching pictured rectangles (the two sides, "a little more this" either way,
+  and "both equally") instead of five wordy buttons, over soft background
+  panels. The progress bar now sits below the iPhone status bar.
+- FIRE type result: each strength and watch-out is its own box with a picture
+  and one short line, instead of two dense paragraphs.
+- Fix: a bill already paid this month (a matching transaction within 3%, same
+  name) is no longer set aside again in Budget's "left for everyday spending",
+  "free to spend until payday", or Home's free-to-spend card.
+- Calendar: "Mark paid" and "Mark received" now offer Undo, so a mistaken tap
+  can be taken back.
+- Categories: merge a category into another. Its transactions, bills, merchant
+  rules and (if the target has none) budget move across, and the old one is
+  removed. Leftover labels nothing defines any more, like an old "Dog" still on
+  transactions or the budget, now show under "Your own" so they can be merged.
+- Budget and Categories are one screen, Budget: a month switcher, what's
+  left, then one row per category with spent against its budget (or a "+ Set
+  budget" button). Tap a row for its transactions; ••• holds Change budget,
+  Merge and Remove. The separate Categories page is gone.
+
 ## 2026-10-15
 
 ### Household

@@ -2235,7 +2235,9 @@ one-page plan → Save as PDF), with or without the UntilFire name.
   and the Month view shows the same thing with amounts.
 
 ### D-62 — October 10: day-to-day spending from the Budget first; Calendar shows all cash
-**Status:** Active. Authorised by the founder on 2026-10-10. **Revises
+**Status:** Active for the day-to-day estimate. The freedom date's spending
+moved to real spending in [D-86](#d-86--october-16-one-money-model-freedom-date-from-real-spending).
+Authorised by the founder on 2026-10-10. **Revises
 [D-11](#d-11--september-24-day-to-day-spending-from-last-months-needs):** the
 order of the two sources is reversed.
 - **Budget first.** The day-to-day estimate in the contribution forecast, the
@@ -2782,4 +2784,98 @@ The founder asked for it in the pre-launch household audit.
   sharing returns, if wanted, as a deliberate server-side view.
 - **Joining waits for a tap** on the invitation page, since it shares the
   invitee's numbers too.
+
+### D-85 — October 16: the phone app asks for an account first
+
+**Status:** Active. The founder chose it: someone who downloaded the app has
+already committed, so they sign in before the questions.
+**Decision:**
+- Signed out, the app opens on the welcome screen, never Home or the tabs.
+  "Get started" and "I already have an account" both open sign-in (email code,
+  Google, Apple). Signing out returns there.
+- After sign-in, an account with a plan goes to Home; a new one answers the
+  onboarding questions, and the plan they finish seeds the account
+  (`seedFromOnboarding`, now also run when the plan arrives after sign-in).
+- This applies to the phone app only. The website's calculator stays free and
+  open without login (CLAUDE.md product constraints); research in the project
+  favoured onboarding first, and the founder chose account first for the app.
+
+### D-86 — October 16: one money model; freedom date from real spending
+
+**Status:** Active. The founder approved every fix in the money logic study
+(`untilfire/money-logic-study-2026-10-16.md`, compared with Monarch, YNAB,
+Copilot), chose the 12-month average, and asked for the website to match.
+**Decision:**
+- **Freedom date spending is real spending:** the average of the last 12
+  complete months once there are three, on the website and the phone. The
+  budget is a what-if on Plan → Freedom date. *Why:* a partial or hopeful
+  budget made the date early; a median would drop trips and yearly bills,
+  which continue after freedom; older history reflects an older life. The
+  website's Manual / history switch is gone. Income stays the take-home.
+- **Mortgage payments are left out of that spending** when a mortgage is set,
+  because the engine already subtracts the payment.
+- **Phone Budget has Bills and Everyday** (Monarch's Flex shape, D-41's rule):
+  bills come from Calendar and aren't typed; "left", the pace bar, the top chip,
+  Home's This month and Today's daily figure all read everyday budget less
+  everyday spending. Yearly categories can be spread over 12 months, and each
+  month keeps the budget it had (`_budget_history`).
+- **Cash has roles:** spending accounts (checking by default, D-29's switches)
+  feed free to spend, less card balances when no card payment is a bill; the
+  rest is the safety pot behind months of safety and the emergency fund.
+- **Need or want lives on the category** (one list, changeable per category);
+  a transaction is filed once it has a category. Goals show their monthly
+  share of the saving on Budget.
+- **Only cash above the safety pot is invested** (`lib/freedom-cash.ts`, phone
+  and website): spending accounts never count; savings up to six months of
+  needs stay out of the date and earn nothing; the rest counts. *Why:* an
+  emergency fund is not invested, and counting it made the date early.
+- **Budgets keep the account's own currency:** USD stays stored for every
+  reader, beside `_budget_local` (currency and typed values), which both apps
+  convert at today's rate on load, so ¥3,000 stays ¥3,000 as rates move.
+- **Goals with a date are a rung on the contribution ladder**, after the
+  emergency target and before tax-advantaged accounts, taking what each needs a
+  month (`lib/goal-monthly.ts`).
+**Revisit when:** someone's 12-month average is skewed by a one-off they ask
+to exclude.
+
+### D-87 — October 16: bank rows, bills, debts and households follow the money model
+
+**Status:** Active. The founder asked for a second audit
+(`untilfire/money-logic-audit-2-2026-10-16.md`, compared with Monarch, YNAB,
+Copilot, Rocket Money and ProjectionLab) and said "fix all".
+**Decision:**
+- **Every bank row is kept** (`classifyPlaid`): moves between your own accounts
+  and card payments are transfers; ATM cash and Zelle/Venmo payments are
+  spending to sort; car, student and mortgage payments are spending; only
+  Plaid's income categories are income. Money back on a spending category is a
+  refund that lowers the purchase it matches (`lib/refunds.ts`), never income.
+  *Why:* dropping transfers hid rent paid by Zelle; refunds inflated pay.
+- **The bank never overwrites the user:** a category set by hand survives
+  updates, and a pending charge's category, tags and refund carry to the posted
+  row. Pending rows are tagged `sys:pending`. Plaid is asked for 730 days.
+- **Real spending ignores a partial first month** (data starting after the 3rd)
+  and matches mortgage payments by name variants (`lib/real-spending.ts`).
+- **Only payments matched to a bill count as bills** (same category, a shared
+  name word, within 15%); the rest of that category stays everyday spending.
+  *Why:* a Spotify bill hid all Entertainment. Calendar and Today use the same
+  paid check; Today asks about price changes and bills that stopped.
+- **Needs are one shared rule** (`lib/needs.ts`): the category decides, a
+  need/want tag on a row wins, both apps use the same list and overrides.
+- **Debts carry their real rate:** a card counts toward the date only when it
+  is on the ladder with a rate; the date uses the balance-weighted rate, else
+  5% (`lib/freedom-debt.ts`).
+- **Home value is optional**, in net worth only, never toward freedom.
+- **Household spending is real spending**, with rows both partners see counted
+  once; typed budgets are the fallback.
+- **Today confirms new bank rows** in one tap, and over-budget uses the month's
+  saved budget and skips spread categories.
+- **Joint accounts can be marked shared** (Net Worth on the website, Shared
+  accounts on the phone): half of the balance and of its spending counts on
+  your own date (`lib/account-share.ts`, `_fire_profile.accountShares`). The
+  household date still counts it once. Bank rows now keep their account
+  (`expenses.plaid_account_id`, migration 0058); older rows count in full.
+- **A card paid in full isn't offered as a debt** on the ladder: when its
+  balance is no more than its own charges over the last 60 days
+  (`carriedCards`). A card with no charges on record is still offered.
+**Revisit when:** the bill match misses real payments or matches the wrong ones.
 

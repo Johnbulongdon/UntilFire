@@ -1,12 +1,14 @@
 import { router } from 'expo-router'
+import { useMemo } from 'react'
 import { Platform, Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { haptic } from '@/lib/haptics'
 import { compactMoney } from '@/lib/format'
-import { monthSpend, thisMonth } from '@/lib/money-data'
+import { safetyMonths } from '@/lib/money-data'
+import { splitBudget } from '@/lib/budget-split'
 import { monthCount, todayItems } from '@/lib/today'
-import { useAccount, type AccountData } from '@/state/account'
+import { useAccount } from '@/state/account'
 import { useFreedom } from '@/state/freedom'
 import { TAB_COLOR, type TabKey } from '@/theme/colors'
 
@@ -15,15 +17,6 @@ import { Icon } from './Icon'
 import { Text } from './Text'
 
 type SymbolName = Parameters<typeof Icon>[0]['name']
-
-const NEED_KEYS = ['housing', 'food', 'transport', 'healthcare']
-
-/** Months of essential spending the cash covers, as Home's Safety tile works it out. */
-export function safetyMonths(data: AccountData): number | null {
-  const needsBudget = NEED_KEYS.reduce((s, k) => s + (data.budget[k] ?? 0), 0)
-  const needs = needsBudget > 0 ? needsBudget : Object.values(data.budget).reduce((s, v) => s + v, 0) * 0.6
-  return needs > 0 ? data.balances.cashSavings / needs : null
-}
 
 /**
  * The top bar on every tab (V2): three small bright chips, not a heavy band.
@@ -34,9 +27,9 @@ export function TopBar({ tab }: { tab: TabKey }) {
   const { data } = useAccount()
   const f = useFreedom()
   const tint = TAB_COLOR[tab]
-  const budget = data ? Object.values(data.budget).reduce((s, v) => s + v, 0) : 0
-  const left = data && budget > 0 ? budget - monthSpend(data.transactions, thisMonth()).total : null
-  const safety = data ? safetyMonths(data) : null
+  const split = useMemo(() => (data ? splitBudget(data) : null), [data])
+  const left = split && split.everydayBudget > 0 ? split.left : null
+  const safety = useMemo(() => (data ? safetyMonths(data) : null), [data])
   const date = f?.year == null ? null : f.date ? f.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : String(f.year)
   return (
     <View className="flex-row items-center gap-2 px-5 pb-2 pt-1">
