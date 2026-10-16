@@ -1,6 +1,6 @@
 import { router } from 'expo-router'
 import { Button } from '@/components/Button'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, View } from 'react-native'
 
 import { BankBridge } from '@/components/BankBridge'
@@ -14,6 +14,7 @@ import { isMortgageAccount } from '@/lib/balances'
 import { compactMoney, money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { netWorthOf } from '@/lib/net-worth'
+import { needOf, typicalBy } from '@/lib/money-data'
 import { withdrawalsLeftLabel } from '@engine/savings-limits.ts'
 import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
@@ -122,7 +123,10 @@ function History({ data }: { data: AccountData }) {
 /** Months of essentials your cash covers, against the website's floor and target. */
 function EmergencyFund({ data }: { data: AccountData }) {
   const needsBudget = NEED_KEYS.reduce((s, k) => s + (data.budget[k] ?? 0), 0)
-  const needs = needsBudget > 0 ? needsBudget : Object.values(data.budget).reduce((s, v) => s + v, 0) * 0.6
+  // Without need budgets, your actual needs in a typical month (your need/want answers) before a 60% guess.
+  const spentNeeds = useMemo(() => typicalBy(data.transactions, needOf).get('need') ?? 0, [data.transactions])
+  const needs = needsBudget > 0 ? needsBudget : spentNeeds > 0 ? spentNeeds : Object.values(data.budget).reduce((s, v) => s + v, 0) * 0.6
+  const basis = needsBudget > 0 ? 'your need budgets' : spentNeeds > 0 ? 'what your needs usually cost' : 'your budget'
   if (!(needs > 0)) return null
   const months = data.balances.cashSavings / needs
   const state = months <= 0 ? 'Missing' : months < FLOOR_MONTHS ? 'Fragile' : months < TARGET_MONTHS ? 'Building' : 'Healthy'
@@ -138,7 +142,9 @@ function EmergencyFund({ data }: { data: AccountData }) {
       <View className="mt-3 h-2 overflow-hidden rounded-full bg-surface-2">
         <View className={`h-full rounded-full ${state === 'Healthy' ? 'bg-green' : state === 'Building' ? 'bg-warn' : 'bg-neg'}`} style={{ width: `${Math.min(1, months / TARGET_MONTHS) * 100}%` }} />
       </View>
-      <Text className="mt-1.5 text-[12px] text-ink-3">Aim for {TARGET_MONTHS} months; below {FLOOR_MONTHS} is fragile.</Text>
+      <Text className="mt-1.5 text-[12px] text-ink-3">
+        Target <Text className="font-mono text-[12px] text-ink-3">{money(needs * TARGET_MONTHS)}</Text>, {TARGET_MONTHS} months of needs from {basis}. Below {FLOOR_MONTHS} months is fragile. Wants aren't counted: they'd stop if income did.
+      </Text>
     </Card>
   )
 }

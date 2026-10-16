@@ -6,6 +6,20 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-16
+
+### Phone app
+- Categories shows one month at a time (‹ month ›, back 12 months), each
+  category against its usual month, sorted by spend; tap one to see its
+  transactions for that month.
+- New day-to-day card: Food + Transport in a typical month, the money to keep
+  in checking apart from the emergency fund, and how much of it is usually wants.
+- Transactions: picking a category now changes the summary to that category's
+  total, usual and bars, and the filter stays on when you change month.
+- Money shows the top three categories under "Spent this month".
+- Emergency fund shows a target (six months of needs). Without need budgets,
+  needs come from what your needs usually cost instead of 60% of the budget.
+
 ## 2026-10-15
 
 ### Household

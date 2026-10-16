@@ -1,5 +1,6 @@
-import { ALL_CATEGORIES, isoDay, monthOf, type CategoryDef } from '@/engine'
+import { addMonths, ALL_CATEGORIES, isoDay, median, monthOf, type CategoryDef } from '@/engine'
 import { customCategories } from './custom-categories'
+import { defaultNeed } from './review'
 import { spentUSD, toUSD, type Transaction } from '@/state/account'
 
 export { expenseCategories } from './custom-categories'
@@ -34,6 +35,36 @@ export function monthSpend(transactions: Transaction[], month: string) {
   const categories = [...byCat.entries()].map(([key, usd]) => ({ key, usd })).sort((a, b) => b.usd - a.usd)
   return { total, categories }
 }
+
+/**
+ * A typical month for each key (a category, need or want): the median of the
+ * last six complete months that had any spending at all. A month with
+ * spending but none under a key counts as $0 there, so an occasional key
+ * isn't inflated. Empty below three months of history.
+ */
+export function typicalBy(transactions: Transaction[], keyOf: (t: Transaction) => string | null, current = thisMonth()): Map<string, number> {
+  const first = addMonths(current, -6)
+  const totals = new Map<string, Map<string, number>>()
+  for (const t of transactions) {
+    const m = monthOf(t.date)
+    if (!isSpend(t) || m >= current || m < first) continue
+    const month = totals.get(m) ?? new Map<string, number>()
+    totals.set(m, month)
+    const key = keyOf(t)
+    if (key != null) month.set(key, (month.get(key) ?? 0) + spentUSD(t))
+  }
+  const out = new Map<string, number>()
+  if (totals.size < 3) return out
+  const keys = new Set([...totals.values()].flatMap(m => [...m.keys()]))
+  for (const key of keys) out.set(key, median([...totals.values()].map(m => m.get(key) ?? 0)))
+  return out
+}
+
+export const typicalByCategory = (transactions: Transaction[]) => typicalBy(transactions, t => t.category)
+
+/** Need or want: your answer when you gave one, otherwise the category's usual answer. */
+export const needOf = (t: Transaction): 'need' | 'want' =>
+  t.tags.includes('need') ? 'need' : t.tags.includes('want') ? 'want' : defaultNeed(t.category)
 
 export function monthIncome(transactions: Transaction[], month: string): number {
   return transactions.filter(t => isIncome(t) && monthOf(t.date) === month).reduce((s, t) => s + toUSD(t.amount, t.currency), 0)

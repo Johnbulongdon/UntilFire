@@ -13,7 +13,7 @@ import { PrimaryButton } from '@/components/PrimaryButton'
 import { Card, Label, Screen } from '@/components/Screen'
 import { Text } from '@/components/Text'
 import { money } from '@/lib/format'
-import { monthSpend, thisMonth } from '@/lib/money-data'
+import { categoryOf, monthSpend, thisMonth } from '@/lib/money-data'
 import { reviewCounts } from '@/lib/review'
 import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
@@ -46,7 +46,7 @@ export default function Money() {
 }
 
 function Headline({ data }: { data: AccountData }) {
-  const { total } = monthSpend(data.transactions, thisMonth())
+  const { total, categories } = monthSpend(data.transactions, thisMonth())
   const budget = Object.values(data.budget).reduce((s, v) => s + v, 0)
   const left = budget - total
   return (
@@ -54,6 +54,17 @@ function Headline({ data }: { data: AccountData }) {
       <Text className="text-[12px] font-bold uppercase tracking-[2px] text-ink-3">Spent this month</Text>
       <Text style={{ color: tabInk('money') }} className="font-display text-[52px] font-bold leading-[58px] tracking-tight">{money(total)}</Text>
       {budget > 0 && <Text className="text-[15px] text-ink-2">{left >= 0 ? `${money(left)} left of ${money(budget)}` : `${money(-left)} over ${money(budget)}`}</Text>}
+      {/* Where it went, so the headline isn't a bare total; the rest is in Categories. */}
+      {categories.length > 0 && (
+        <Pressable accessibilityRole="button" accessibilityLabel="Spending by category" hitSlop={4} onPress={() => { haptic.tick(); router.push('/money/categories') }} className="mt-1 active:opacity-70">
+          <Text className="text-[14px] text-ink-2">
+            {categories.slice(0, 3).map((c, i) => (
+              <Text key={c.key} className="text-[14px] text-ink-2">{i > 0 ? ' · ' : ''}{categoryOf(c.key).label} <Text className="font-mono text-[14px] text-ink">{money(c.usd)}</Text></Text>
+            ))}
+            <Text className="text-[14px] text-ink-3">  ›</Text>
+          </Text>
+        </Pressable>
+      )}
     </Pressable>
   )
 }
