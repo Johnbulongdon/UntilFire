@@ -3,18 +3,17 @@ import { nativeBuild } from '@/lib/native-build'
 import { router, useFocusEffect } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import { useCallback, useState } from 'react'
-import { ActivityIndicator, Alert, Linking, Pressable, Switch, View } from 'react-native'
+import { Alert, Linking, Pressable, Switch, View } from 'react-native'
 
 import { Button } from '@/components/Button'
 import { replayTour } from '@/components/GuidedTour'
 import { PersonalityAvatar } from '@/components/PersonalityAvatar'
 import { PrimaryButton } from '@/components/PrimaryButton'
-import { Icon } from '@/components/Icon'
+import { Row, RowIcon } from '@/components/SettingsRow'
 import { Card, Label, Screen } from '@/components/Screen'
 import { Text } from '@/components/Text'
 import { CURRENCY_NAMES } from '@/engine'
 import { currencyFlag } from '@/lib/display-currency'
-import { exportEverything, exportTransactions } from '@/lib/export-data'
 import { money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { isLockOn, lockAvailable, setLockOn, unlock } from '@/lib/app-lock'
@@ -27,7 +26,6 @@ import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { personalityFor, usePlan } from '@/state/plan'
 import { colors, TAB_COLOR, tabInk } from '@/theme/colors'
-import { Events, track } from '@/lib/analytics'
 
 const GOAL_LABEL = { 'retire-early': 'Retire early', 'financial-freedom': 'Financial freedom', exploring: 'Just exploring' } as const
 
@@ -42,7 +40,6 @@ export default function Profile() {
   const [quiz, setQuiz] = useState<{ code: string; name: string } | null>(null)
   const [lockOn, setLockState] = useState(false)
   const [lockInfo, setLockInfo] = useState<{ ok: boolean; label: string }>({ ok: false, label: 'Face ID' })
-  const [exporting, setExporting] = useState<'csv' | 'json' | null>(null)
 
   useFocusEffect(useCallback(() => {
     billRemindersOn().then(setBillsOn)
@@ -60,17 +57,6 @@ export default function Profile() {
     haptic.select()
     if (!(await unlock().catch(() => false))) return
     await setLockOn(on); setLockState(on)
-  }
-
-  const doExport = async (kind: 'csv' | 'json') => {
-    if (!session) return
-    haptic.tick(); setExporting(kind)
-    try {
-      await (kind === 'csv' ? exportTransactions(session.user.id) : exportEverything(session.user.id))
-      track(Events.DATA_EXPORTED, { format: kind })
-    }
-    catch { Alert.alert('The export didn\'t finish', 'Check your connection and try again.') }
-    setExporting(null)
   }
 
   const open = (url: string) => { WebBrowser.openBrowserAsync(url, { controlsColor: colors.green }).catch(() => {}) }
@@ -103,13 +89,6 @@ export default function Profile() {
           {/* Its reward is a longer web trial, which App Review reads as paying outside Apple (3.1.1); hidden in the App Store build. */}
           {!nativeBuild && <Row icon="gift.fill" fallback="🎁" label="Give a month, get a month" value="" onPress={() => router.push('/give-a-month')} />}
           <Row icon="dollarsign.circle.fill" fallback="$" label="Currency" value={data ? `${currencyFlag(data.currency)}  ${CURRENCY_NAMES[data.currency] ?? data.currency}` : '…'} onPress={() => router.push('/currency')} />
-          <Row icon="rectangle.portrait.and.arrow.right" fallback="↩" label="Sign out" value="" onPress={() => {
-            haptic.warn()
-            Alert.alert('Sign out?', 'Your onboarding answers stay on this phone.', [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Sign out', style: 'destructive', onPress: () => { signOut() } },
-            ])
-          }} />
         </Card>
       ) : (
         <Card soft>
@@ -180,20 +159,10 @@ export default function Profile() {
             <Switch accessibilityLabel={`Lock with ${lockInfo.label}`} value={lockOn} onValueChange={toggleLock} trackColor={{ true: colors.green, false: colors.border2 }} />
           </View>
         )}
-        <Row icon="arrow.counterclockwise" fallback="↺" label="Replay onboarding" value="" onPress={() => editPlan(true)} />
         <Row icon="map.fill" fallback="◎" label="Show the tour" value="" onPress={async () => { await replayTour(); router.navigate('/') }} />
         {/* A design comparison, not for App Review or customers. */}
         {__DEV__ && <Row label="Character preview" value="" onPress={() => router.push('/character-lab')} />}
       </Card>
-
-      {session && (
-        <Card>
-          <Label>Your data</Label>
-          <Row icon="tablecells" fallback="▦" label="Export transactions" value={exporting === 'csv' ? '' : 'CSV'} onPress={() => doExport('csv')} first busy={exporting === 'csv'} />
-          <Row icon="square.and.arrow.up" fallback="↑" label="Export everything" value={exporting === 'json' ? '' : 'JSON'} onPress={() => doExport('json')} busy={exporting === 'json'} />
-          <Text className="mt-1 text-[12px] text-ink-3">Free, any time, whether or not you're on Pro.</Text>
-        </Card>
-      )}
 
       <Card>
         <Label>Help</Label>
@@ -203,8 +172,21 @@ export default function Profile() {
         <Row icon="doc.text.fill" fallback="≡" label="Terms of use" value="" onPress={() => open('https://www.untilfire.com/terms')} />
       </Card>
 
+      {session && (
+        <Card>
+          <Row icon="externaldrive.fill" fallback="▤" label="Data and account" value="" onPress={() => router.push('/data-account')} first />
+          <Text className="mt-1 text-[12px] text-ink-3">Export your data, replay onboarding or delete your account.</Text>
+        </Card>
+      )}
+
       {session ? (
-        <Button kind="danger" label="Delete account" onPress={() => { haptic.warn(); router.push('/delete-account') }} />
+        <Button kind="quiet" label="Sign out" onPress={() => {
+          haptic.warn()
+          Alert.alert('Sign out?', 'Your onboarding answers stay on this phone.', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Sign out', style: 'destructive', onPress: () => { signOut() } },
+          ])
+        }} />
       ) : (
         <Button kind="danger" label="Start over" onPress={() => {
           haptic.warn()
@@ -216,29 +198,4 @@ export default function Profile() {
       )}
     </Screen>
   )
-}
-
-type SymbolName = Parameters<typeof Icon>[0]['name']
-
-/** A settings row's icon: white on Profile's colour, in a small rounded square, as iOS Settings does. */
-function RowIcon({ name, fallback }: { name: SymbolName; fallback: string }) {
-  return (
-    <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: TAB_COLOR.profile, alignItems: 'center', justifyContent: 'center' }}>
-      <Icon name={name} fallback={fallback} size={17} color="#FFFFFF" />
-    </View>
-  )
-}
-
-function Row({ label, value, onPress, first, busy, icon, fallback }: { label: string; value: string; onPress?: () => void; first?: boolean; busy?: boolean; icon?: SymbolName; fallback?: string }) {
-  const body = (
-    <View className={`flex-row items-center justify-between gap-3 py-3 ${first ? '' : 'border-t border-border'}`}>
-      {icon ? <RowIcon name={icon} fallback={fallback ?? ''} /> : null}
-      <Text className="text-[15px] text-ink">{label}</Text>
-      <View className="flex-1 flex-row items-center justify-end gap-1.5">
-        {busy ? <ActivityIndicator color={colors.green} /> : <Text numberOfLines={1} className="text-[14px] text-ink-2">{value}</Text>}
-        {onPress ? <Text className="text-[16px] text-ink-3">›</Text> : null}
-      </View>
-    </View>
-  )
-  return onPress ? <Pressable accessibilityRole="button" onPress={() => { haptic.tick(); onPress() }}>{body}</Pressable> : body
 }

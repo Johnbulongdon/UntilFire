@@ -90,3 +90,26 @@ export function byDay(transactions: Transaction[]): { date: string; items: Trans
   }
   return groups
 }
+
+// The website's emergency-fund needs: these budgets (EMERGENCY_FUND_BUDGET_NEED_KEYS).
+const NEED_KEYS = ['housing', 'food', 'transport', 'healthcare']
+
+/**
+ * A month of needs, the one figure the safety chip, Home's Safety tile and
+ * Net worth's emergency fund all divide cash by: the need budgets; without
+ * them, what needs usually cost (need/want answers); a 60% guess last.
+ */
+export function monthlyNeeds(budget: Record<string, number>, transactions: Transaction[]): { needs: number; basis: string } {
+  const needsBudget = NEED_KEYS.reduce((s, k) => s + (budget[k] ?? 0), 0)
+  if (needsBudget > 0) return { needs: needsBudget, basis: 'your need budgets' }
+  const spentNeeds = typicalBy(transactions, needOf).get('need') ?? 0
+  if (spentNeeds > 0) return { needs: spentNeeds, basis: 'what your needs usually cost' }
+  return { needs: Object.values(budget).reduce((s, v) => s + v, 0) * 0.6, basis: 'your budget' }
+}
+
+/** Months of needs the cash covers, or null without a needs figure. */
+export function safetyMonths(data: { budget: Record<string, number>; transactions: Transaction[]; balances: { cashSavings: number } }): number | null {
+  const { needs } = monthlyNeeds(data.budget, data.transactions)
+  return needs > 0 ? data.balances.cashSavings / needs : null
+}
+

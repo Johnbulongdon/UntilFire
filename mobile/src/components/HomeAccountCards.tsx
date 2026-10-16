@@ -7,7 +7,7 @@ import { upcoming } from '@/lib/bills'
 import { contributionFacts, EMPTY_PLAN } from '@/lib/contribution-facts'
 import { currencySymbol, fromInput } from '@/lib/display-currency'
 import { compactMoney, money } from '@/lib/format'
-import { thisMonth } from '@/lib/money-data'
+import { safetyMonths, thisMonth } from '@/lib/money-data'
 import { haptic } from '@/lib/haptics'
 import { netWorthOf } from '@/lib/net-worth'
 import type { AccountData } from '@/state/account'
@@ -22,14 +22,10 @@ import { Ring } from './Ring'
 import { Card, Label, ProgressTrack, useFlat } from './Screen'
 import { Text } from './Text'
 
-const NEED_KEYS = ['housing', 'food', 'transport', 'healthcare']
-
 /** The glance row (net worth, emergency fund), each opening its page. Home only reads. */
 export function GlanceRow({ data }: { data: AccountData }) {
   const nw = netWorthOf(data)
-  const needsBudget = NEED_KEYS.reduce((s, k) => s + (data.budget[k] ?? 0), 0)
-  const needs = needsBudget > 0 ? needsBudget : Object.values(data.budget).reduce((s, v) => s + v, 0) * 0.6
-  const efMonths = needs > 0 ? data.balances.cashSavings / needs : null
+  const efMonths = useMemo(() => safetyMonths(data), [data])
   return (
     <View className="flex-row gap-3">
       <Tile icon="building.columns.fill" fallback="🏛️" tint={colors.teal} label="Net worth" value={compactMoney(nw.netWorth)} negative={nw.netWorth < 0} onPress={() => router.push('/money/net-worth')} />

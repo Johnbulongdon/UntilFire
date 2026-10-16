@@ -14,14 +14,13 @@ import { isMortgageAccount } from '@/lib/balances'
 import { compactMoney, money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { netWorthOf } from '@/lib/net-worth'
-import { needOf, typicalBy } from '@/lib/money-data'
+import { monthlyNeeds } from '@/lib/money-data'
 import { withdrawalsLeftLabel } from '@engine/savings-limits.ts'
 import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
 
 const KIND: Record<string, string> = { depository: 'Bank', investment: 'Investments', credit: 'Credit card', loan: 'Loan' }
 // The website's emergency-fund rule: needs are these budgets; 1.5 months is the floor, 6 the target.
-const NEED_KEYS = ['housing', 'food', 'transport', 'healthcare']
 const FLOOR_MONTHS = 1.5
 const TARGET_MONTHS = 6
 
@@ -122,11 +121,8 @@ function History({ data }: { data: AccountData }) {
 
 /** Months of essentials your cash covers, against the website's floor and target. */
 function EmergencyFund({ data }: { data: AccountData }) {
-  const needsBudget = NEED_KEYS.reduce((s, k) => s + (data.budget[k] ?? 0), 0)
-  // Without need budgets, your actual needs in a typical month (your need/want answers) before a 60% guess.
-  const spentNeeds = useMemo(() => typicalBy(data.transactions, needOf).get('need') ?? 0, [data.transactions])
-  const needs = needsBudget > 0 ? needsBudget : spentNeeds > 0 ? spentNeeds : Object.values(data.budget).reduce((s, v) => s + v, 0) * 0.6
-  const basis = needsBudget > 0 ? 'your need budgets' : spentNeeds > 0 ? 'what your needs usually cost' : 'your budget'
+  // Shared with the safety chip and Home's Safety tile, so all three agree.
+  const { needs, basis } = useMemo(() => monthlyNeeds(data.budget, data.transactions), [data.budget, data.transactions])
   if (!(needs > 0)) return null
   const months = data.balances.cashSavings / needs
   const state = months <= 0 ? 'Missing' : months < FLOOR_MONTHS ? 'Fragile' : months < TARGET_MONTHS ? 'Building' : 'Healthy'
