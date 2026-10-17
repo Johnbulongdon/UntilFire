@@ -67,7 +67,7 @@ export default function Profile() {
       <Pressable accessibilityRole="button" accessibilityLabel={`Your FIRE type: ${quiz ? quiz.name : type.name}. ${quiz ? 'Retake the quiz' : 'Take the quiz'}`} onPress={() => { haptic.tick(); router.push('/fire-quiz') }}
         className="flex-row items-center gap-4 active:opacity-70">
         {quiz ? (
-          <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: TAB_COLOR.profile, alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: 72, height: 72, borderRadius: 20, backgroundColor: TAB_COLOR.profile, alignItems: 'center', justifyContent: 'center' }}>
             <Text className="text-[36px]">{getTypeMeta(quiz.code).emoji}</Text>
           </View>
         ) : <PersonalityAvatar profile={type} size={72} />}

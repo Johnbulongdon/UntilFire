@@ -8,7 +8,9 @@ import { DetailScreen } from '@/components/DetailScreen'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { Card, Label, ProgressTrack } from '@/components/Screen'
 import { Text } from '@/components/Text'
-import { TAB_COLOR } from '@/theme/colors'
+import { colors, TAB_COLOR } from '@/theme/colors'
+import { MoneyRow } from '@/components/MoneyRow'
+import { monthlySaving } from '@/lib/saving'
 import { countdownLabel, ladderViewFromPlan, planContribution } from '@/engine'
 import { contributionFacts, EMPTY_PLAN } from '@/lib/contribution-facts'
 import { money } from '@/lib/format'
@@ -48,6 +50,7 @@ export default function Contributions() {
     ? planContribution(plan.targets.map(t => ({ symbol: t.symbol, targetPct: t.targetPct })), plan.holdings, view.investable)
     : null
   const efShare = view.efTarget > 0 ? view.efBalance / view.efTarget : 0
+  const saving = monthlySaving(data).saving
 
   return (
     <DetailScreen back="Plan" title="Contributions" refreshing={loading} onRefresh={refresh}>
@@ -56,6 +59,16 @@ export default function Contributions() {
         <Label>{a.done ? 'Made this time' : `Put in by ${a.nextDate.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}`}</Label>
         <Text className="mt-1 font-mono text-[34px] text-ink">{money(a.done ? a.done.amount : view.budget)}</Text>
         {!a.done && <Text className="text-[13px] text-ink-3">{view.budgetIsCustom ? 'Your amount' : `Safe after bills · ${countdownLabel(a.daysUntil)}`}</Text>}
+        {/* Tied to the one monthly saving (lib/saving, audit round 3), so this isn't a third number. */}
+        {!a.done && !view.budgetIsCustom && saving > 0 && view.budget > 0 && (
+          <View className="mt-2">
+            <MoneyRow first icon="arrow.up.right" fallback="↗" label="You save each month" value={money(saving)} tint={colors.teal} />
+            {Math.abs(view.budget - saving) >= 1 && (
+              <MoneyRow icon="banknote.fill" fallback="$" label={view.budget > saving ? 'Extra cash on hand' : 'Kept back for bills'}
+                value={`${view.budget > saving ? '+' : '−'}${money(Math.abs(view.budget - saving))}`} />
+            )}
+          </View>
+        )}
         {session && (a.done || view.budget > 0) && (
           <Button style={{ marginTop: 12 }} kind={a.done ? 'quiet' : 'primary'} disabled={marking} label={a.done ? 'Undo' : `Mark ${money(view.budget)} as made`}
             onPress={async () => {
@@ -82,7 +95,8 @@ export default function Contributions() {
           <Label>Where it goes</Label>
           <Button small kind="quiet" label="Edit" onPress={() => { haptic.tick(); router.push('/contribution-edit') }} />
         </View>
-        <Ladder fills={view.waterfall.fills} next={view.next?.kind} />
+        <Ladder fills={view.waterfall.fills} next={view.next?.kind}
+          met={[...(view.efBalance >= view.efFloor ? ['emergency-floor'] : []), ...(view.efBalance >= view.efTarget ? ['emergency-target'] : [])]} />
       </Card>
 
       <Card>
@@ -131,7 +145,7 @@ type Fill = { kind: string; label: string; why: string; amount: number; enabled:
  * magnitude): one bar split by rung, each funded rung's own bar sized against
  * the whole, and the rest named in one line. Rungs are numbered, so the shades are never the only cue.
  */
-function Ladder({ fills, next }: { fills: Fill[]; next?: string }) {
+function Ladder({ fills, next, met = [] }: { fills: Fill[]; next?: string; met?: string[] }) {
   const funded = fills.filter(f => f.enabled && f.amount > 0)
   const later = fills.filter(f => f.enabled && f.amount <= 0)
   const total = funded.reduce((t, f) => t + f.amount, 0)
@@ -172,7 +186,16 @@ function Ladder({ fills, next }: { fills: Fill[]; next?: string }) {
           </View>
         </View>
       ))}
-      {later.length > 0 && <Text className="text-[12px] leading-4 text-ink-3">Then: {later.map(f => f.label).join(', ')}</Text>}
+      {/* The rest of the ladder as more numbered steps, one per line, not a run-on list (audit round 3). */}
+      {later.map((f, i) => (
+        <View key={f.kind} className="flex-row items-center gap-2.5">
+          <View className="h-6 w-6 items-center justify-center rounded-full border-[1.5px]" style={{ borderColor: TAB_COLOR.plan }}>
+            <Text className="text-[12px] font-bold" style={{ color: TAB_COLOR.plan }}>{met.includes(f.kind) ? '✓' : funded.length + i + 1}</Text>
+          </View>
+          <Text className={`flex-1 text-[14px] ${met.includes(f.kind) ? 'text-ink-3 line-through' : 'text-ink-2'}`}>{f.label}</Text>
+          {met.includes(f.kind) && <Text className="text-[13px] font-semibold text-ink-3">Done</Text>}
+        </View>
+      ))}
     </View>
   )
 }

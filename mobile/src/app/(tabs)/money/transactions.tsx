@@ -105,7 +105,7 @@ export default function Transactions() {
           {!category && summary.inn > 0 && <Text className="text-[13px] text-ink-2">In <Text className="font-mono text-[13px] text-pos-ink">{money(summary.inn)}</Text></Text>}
         </View>
         <Text className="text-[13px] text-ink-3">
-          {vsUsual == null ? spentWord : `${spentWord} · ${Math.abs(Math.round(vsUsual * 100))}% ${vsUsual > 0 ? 'more' : 'less'} than usual (${compactMoney(card.usual!)})`}
+          {vsUsual == null ? spentWord : `${spentWord} · ${Math.abs(Math.round(vsUsual * 100))}% ${vsUsual > 0 ? 'more' : 'less'} than usual${range.months.includes(thisMonth()) ? ' by today' : ''} (${compactMoney(card.usual!)})`}
         </Text>
         <View className="mt-3 h-20 flex-row items-end" style={{ gap: card.buckets.length > 20 ? 1 : 3 }}>
           {card.buckets.map((b, i) => (
@@ -152,18 +152,19 @@ export default function Transactions() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-ground">
       <View className="px-5 pt-2" style={{ zIndex: 10 }}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Back" hitSlop={12} onPress={() => { haptic.tick(); router.back() }}>
-          <Text className="text-[16px] font-semibold text-pos-ink">‹ Money</Text>
-        </Pressable>
-        <View className="mt-2 flex-row items-center justify-between">
-          <Text className="font-display text-[30px] font-bold tracking-tight text-ink">Transactions</Text>
+        {/* Select and Import sit on the back row, so the title never runs into them on a 393pt iPhone (audit round 3). */}
+        <View className="flex-row items-center justify-between">
+          <Pressable accessibilityRole="button" accessibilityLabel="Back" hitSlop={12} onPress={() => { haptic.tick(); router.back() }}>
+            <Text className="text-[16px] font-semibold text-pos-ink">‹ Money</Text>
+          </Pressable>
           {data && (selecting
             ? <Button small kind="quiet" label="Cancel" onPress={() => { haptic.tick(); stopSelect() }} />
-            : <View className="flex-row gap-4">
+            : <View className="flex-row gap-2">
                 <Button small kind="quiet" label="Select" onPress={() => { haptic.tick(); startSelect() }} />
                 <Button small kind="quiet" label="Import" onPress={() => { haptic.tick(); router.push('/import') }} />
               </View>)}
         </View>
+        <Text className="mt-1 font-display text-[30px] font-bold tracking-tight text-ink">Transactions</Text>
         {selecting && (
           <SelectBar
             count={selected.size}

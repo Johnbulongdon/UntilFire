@@ -395,9 +395,10 @@ for (const row of SHEET) {
   check("following-my-savings is stored as null, not as today's account list",
     ladderToStored({ ...EMPTY_LADDER }).efAccountIds === null &&
     storedToLadder(ladderToStored({ ...EMPTY_LADDER })).efAccountIds === null);
-  check("an unknown expense source falls back to the last complete month",
-    sanitiseLadder({ expenseSource: "whenever" }).expenseSource === "last-month" &&
-    sanitiseLadder({}).expenseSource === "last-month");
+  check("an unknown expense source falls back to average needs (audit round 3)",
+    sanitiseLadder({ expenseSource: "whenever" }).expenseSource === "average" &&
+    sanitiseLadder({}).expenseSource === "average" &&
+    sanitiseLadder({ expenseSource: "last-month" }).expenseSource === "last-month");
   check("a junk account id list does not become a live selection",
     sanitiseLadder({ efAccountIds: "all" }).efAccountIds === null &&
     sanitiseLadder({ efAccountIds: ["a", 7, null] }).efAccountIds.join(",") === "a",

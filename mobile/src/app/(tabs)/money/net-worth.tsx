@@ -1,7 +1,7 @@
 import { router } from 'expo-router'
 import { Button } from '@/components/Button'
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, View } from 'react-native'
+import { Alert, Pressable, View } from 'react-native'
 
 import { BankBridge } from '@/components/BankBridge'
 import { LoadingState } from '@/components/LoadingState'
@@ -9,6 +9,7 @@ import { DetailScreen } from '@/components/DetailScreen'
 import { Card, Label } from '@/components/Screen'
 import { Text } from '@/components/Text'
 import { EmptyState } from '@/components/EmptyState'
+import { MoneyRow } from '@/components/MoneyRow'
 import { DEFAULT_MORTGAGE_RATE_PCT, payoffYear, shareOf } from '@/engine'
 import { isMortgageAccount } from '@/lib/balances'
 import { compactMoney, money } from '@/lib/format'
@@ -134,13 +135,19 @@ function EmergencyFund({ data }: { data: AccountData }) {
         <Text className={`text-[13px] font-bold ${tone}`}>{state}</Text>
       </View>
       <Text className="mt-1 font-mono text-[24px] text-ink">{months.toFixed(1)} months</Text>
-      <Text className="text-[13px] text-ink-3">of essentials ({money(needs)}/mo) covered by savings outside your spending accounts</Text>
+      <Text className="text-[13px] text-ink-3">of needs saved</Text>
       <View className="mt-3 h-2 overflow-hidden rounded-full bg-surface-2">
         <View className={`h-full rounded-full ${state === 'Healthy' ? 'bg-green' : state === 'Building' ? 'bg-warn' : 'bg-neg'}`} style={{ width: `${Math.min(1, months / TARGET_MONTHS) * 100}%` }} />
       </View>
-      <Text className="mt-1.5 text-[12px] text-ink-3">
-        Target <Text className="font-mono text-[12px] text-ink-3">{money(needs * TARGET_MONTHS)}</Text>, {TARGET_MONTHS} months of needs from {basis}. Below {FLOOR_MONTHS} months is fragile. Wants aren't counted: they'd stop if income did.
-      </Text>
+      {/* One idea per line (audit round 3); the rule behind it is one tap away. */}
+      <View className="mt-2">
+        <MoneyRow first icon="house.fill" fallback="⌂" label="Needs a month" value={money(needs)} />
+        <MoneyRow icon="shield.lefthalf.filled" fallback="◆" label={`Target, ${TARGET_MONTHS} months`} value={money(needs * TARGET_MONTHS)} />
+      </View>
+      <Pressable accessibilityRole="button" hitSlop={6} onPress={() => { haptic.tick(); Alert.alert('Emergency fund', `Savings outside your spending accounts, against ${TARGET_MONTHS} months of needs from ${basis}. Below ${FLOOR_MONTHS} months is fragile. Wants aren't counted: they'd stop if income did.`) }}
+        className="mt-1 self-start rounded-control bg-surface px-2 py-1 active:opacity-70">
+        <Text className="text-[12px] font-semibold text-ink-2">How it's worked out ›</Text>
+      </Pressable>
     </Card>
   )
 }

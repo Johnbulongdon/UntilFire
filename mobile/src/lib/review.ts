@@ -21,4 +21,4 @@ let overrides: NeedOverrides = {}
 /** The account's own need/want per category (FIRE profile categoryNeeds), set when the account loads. */
 export function setCategoryNeeds(next: NeedOverrides) { overrides = next }
 export const needOverrides = () => overrides
-export const defaultNeed = (category: string): 'need' | 'want' => categoryNeed(category, overrides)
+export const defaultNeed = (category: string, subCategory?: string | null): 'need' | 'want' => categoryNeed(category, overrides, subCategory)

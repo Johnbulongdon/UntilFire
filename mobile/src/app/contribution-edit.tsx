@@ -16,7 +16,7 @@ import { fromInput, toInput } from '@/lib/display-currency'
 import { colors } from '@/theme/colors'
 
 const EMPTY_LADDER: StoredLadder = {
-  efOverride: null, expensesOverride: null, thresholdOverride: null, efAccountIds: null, expenseSource: 'last-month',
+  efOverride: null, expensesOverride: null, thresholdOverride: null, efAccountIds: null, expenseSource: 'average',
   monthlyMatch: 0, taxRoom: 0, lowInterestExtra: 0, debts: [], disabled: [],
 }
 const str = (n: number | null | undefined) => (n ? String(n) : '')

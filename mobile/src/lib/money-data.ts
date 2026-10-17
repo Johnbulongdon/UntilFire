@@ -66,7 +66,7 @@ export const typicalByCategory = (transactions: Transaction[]) => typicalBy(tran
 
 /** Need or want: your answer when you gave one, otherwise the category's usual answer. */
 export const needOf = (t: Transaction): 'need' | 'want' =>
-  t.tags.includes('need') ? 'need' : t.tags.includes('want') ? 'want' : defaultNeed(t.category)
+  t.tags.includes('need') ? 'need' : t.tags.includes('want') ? 'want' : defaultNeed(t.category, t.sub_category)
 
 export function monthIncome(transactions: Transaction[], month: string): number {
   return transactions.filter(t => isIncome(t) && monthOf(t.date) === month).reduce((s, t) => s + toUSD(t.amount, t.currency), 0)

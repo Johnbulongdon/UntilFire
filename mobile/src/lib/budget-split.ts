@@ -61,7 +61,15 @@ export function splitBudget(data: AccountData, month = thisMonth()) {
   const billMonthlyOf = new Map(bills.map(b => [b.key, b.monthly]))
   const everydayBudget = Object.entries(budget).filter(([k, v]) => v > 0 && !spreadKeys.has(k))
     .reduce((s, [k, v]) => s + Math.max(0, v - (billMonthlyOf.get(k) ?? 0)), 0)
-  const everydaySpent = monthRows.filter(t => !spreadKeys.has(t.category) && !isBillPayment(t)).reduce((s, t) => s + spentUSD(t), 0)
+  const everydayRows = monthRows.filter(t => !spreadKeys.has(t.category) && !isBillPayment(t))
+  const everydaySpent = everydayRows.reduce((s, t) => s + spentUSD(t), 0)
+  // Per category, so Budget's Everyday rows add up to the Everyday total, a bill category's everyday part included (audit round 3).
+  const everydayBy = new Map<string, { budget: number; spent: number }>()
+  for (const [k, v] of Object.entries(budget)) if (v > 0 && !spreadKeys.has(k)) everydayBy.set(k, { budget: Math.max(0, v - (billMonthlyOf.get(k) ?? 0)), spent: 0 })
+  for (const t of everydayRows) {
+    const row = everydayBy.get(t.category) ?? { budget: 0, spent: 0 }
+    everydayBy.set(t.category, { ...row, spent: row.spent + spentUSD(t) })
+  }
   const billsMonthly = bills.reduce((s, b) => s + b.monthly, 0)
   return {
     billKeys,
@@ -72,6 +80,7 @@ export function splitBudget(data: AccountData, month = thisMonth()) {
     billsDue: bills.reduce((s, b) => s + b.due, 0),
     everydayBudget,
     everydaySpent,
+    everydayBy,
     /** Everyday budget less everyday spending: the one "left" (bills are set aside). */
     left: everydayBudget - everydaySpent,
     total: billsMonthly + everydayBudget + spread.reduce((s, c) => s + c.yearBudget / 12, 0),

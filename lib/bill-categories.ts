@@ -5,7 +5,7 @@
  */
 import { guessBillCategory } from "./spend-forecast.ts";
 
-type BillLike = { category?: string | null; description?: string | null; recurrence?: string | null; transaction_type?: string | null };
+export type BillLike = { category?: string | null; description?: string | null; recurrence?: string | null; transaction_type?: string | null };
 
 /** The budget category a bill belongs to. */
 export const billCategoryOf = (b: BillLike) => b.category || guessBillCategory(b.description ?? "") || "other";

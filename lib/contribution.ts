@@ -378,7 +378,8 @@ export interface LadderFields {
 
 export const EMPTY_LADDER: LadderFields = {
   efOverride: null, expensesOverride: null, thresholdOverride: null,
-  efAccountIds: null, expenseSource: "last-month",
+  // Average needs by default, the same six months of needs as Net worth and the safety pot (audit round 3).
+  efAccountIds: null, expenseSource: "average",
   monthlyMatch: "", taxRoom: "", lowInterestExtra: "", debts: [], disabled: [],
   allowanceExclusions: [],
 };
@@ -510,7 +511,7 @@ export function sanitiseLadder(raw: unknown): StoredLadder | undefined {
     efAccountIds: Array.isArray(l.efAccountIds)
       ? l.efAccountIds.filter((id): id is string => typeof id === "string")
       : null,
-    expenseSource: l.expenseSource === "average" ? "average" : "last-month",
+    expenseSource: l.expenseSource === "last-month" ? "last-month" : "average",
     monthlyMatch: finite(l.monthlyMatch),
     taxRoom: finite(l.taxRoom),
     lowInterestExtra: finite(l.lowInterestExtra),

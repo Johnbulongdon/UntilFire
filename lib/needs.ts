@@ -12,11 +12,15 @@ export type NeedOverrides = Record<string, Need>;
 
 const NEEDS = new Set<string>(NEED_CATEGORIES);
 
-export const categoryNeed = (category: string | null | undefined, overrides: NeedOverrides = {}): Need =>
-  (category && overrides[category]) || (category && NEEDS.has(category) ? "need" : "want");
+/** Eating out inside a need category is a want: groceries are the need (audit round 3: DoorDash and coffee aren't essential). */
+export const WANT_SUBCATEGORIES = new Set(["Restaurants", "Takeout & Delivery", "Drinks & Bars"]);
 
-export const transactionNeed = (t: { category?: string | null; tags?: string[] | null }, overrides: NeedOverrides = {}): Need =>
-  t.tags?.includes("need") ? "need" : t.tags?.includes("want") ? "want" : categoryNeed(t.category, overrides);
+/** A category's own setting wins; otherwise an eating-out sub-category is a want, then the category's default. */
+export const categoryNeed = (category: string | null | undefined, overrides: NeedOverrides = {}, subCategory?: string | null): Need =>
+  (category && overrides[category]) || (subCategory && WANT_SUBCATEGORIES.has(subCategory) ? "want" : category && NEEDS.has(category) ? "need" : "want");
+
+export const transactionNeed = (t: { category?: string | null; sub_category?: string | null; tags?: string[] | null }, overrides: NeedOverrides = {}): Need =>
+  t.tags?.includes("need") ? "need" : t.tags?.includes("want") ? "want" : categoryNeed(t.category, overrides, t.sub_category);
 
 /** The monthly budget of the need categories. */
 export const budgetNeeds = (budget: Record<string, unknown>, overrides: NeedOverrides = {}): number =>

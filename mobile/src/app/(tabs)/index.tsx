@@ -61,9 +61,9 @@ export default function Home() {
  * Option B, a sunrise scene, is kept in mind for later.
  */
 function Hero({ result }: { result: Freedom }) {
-  const yearsAway = result.years != null ? Math.ceil(result.years) : null
+  const yearsAway = result.years != null ? Math.round(result.years * 10) / 10 : null
   const date = result.year == null ? '65+ years' : result.date ? result.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : String(result.year)
-  const sub = [yearsAway != null ? (yearsAway === 0 ? 'Now' : yearsAway === 1 ? '1 year away' : `${yearsAway} years away`) : null, result.ageAtFreedom != null ? `age ${result.ageAtFreedom}` : null].filter(Boolean).join(' · ')
+  const sub = [yearsAway != null ? (yearsAway <= 0 ? 'Now' : yearsAway < 1 ? 'Under a year away' : `${yearsAway.toFixed(1)} years away`) : null, result.ageAtFreedom != null ? `age ${result.ageAtFreedom}` : null].filter(Boolean).join(' · ')
   return (
     <View {...useTourAnchor('hero')} style={{ borderRadius: 28, overflow: 'hidden', backgroundColor: TAB_COLOR.home }}>
       <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100">

@@ -54,7 +54,7 @@ function Headline({ data }: { data: AccountData }) {
     <Pressable accessibilityRole="button" accessibilityLabel={`Spent ${money(total)} this month. Open transactions`} onPress={() => { haptic.tick(); router.push('/money/transactions') }}>
       <Text className="text-[12px] font-bold uppercase tracking-[2px] text-ink-3">Spent this month</Text>
       <Text style={{ color: tabInk('money') }} className="font-display text-[52px] font-bold leading-[58px] tracking-tight">{money(total)}</Text>
-      {budget > 0 && <Text className="text-[15px] text-ink-2">{left >= 0 ? `${money(left)} left of ${money(budget)}` : `${money(-left)} over ${money(budget)}`}</Text>}
+      {budget > 0 && <Text className="text-[15px] text-ink-2">{left >= 0 ? `${money(left)} left of ${money(budget)} everyday` : `${money(-left)} over ${money(budget)} everyday`}</Text>}
       {/* Where it went, so the headline isn't a bare total; the rest is in Budget. */}
       {categories.length > 0 && (
         <Pressable accessibilityRole="button" accessibilityLabel="Spending by category" hitSlop={4} onPress={() => { haptic.tick(); router.push('/money/budget') }} className="mt-1 active:opacity-70">

@@ -9,10 +9,11 @@ import { Text } from '@/components/Text'
 import { compactMoney, money } from '@/lib/format'
 import { reportHtml, shareReport } from '@/lib/freedom-report'
 import { haptic } from '@/lib/haptics'
-import { colors } from '@/theme/colors'
+import { colors, TAB_COLOR } from '@/theme/colors'
 import { useAccount } from '@/state/account'
 import { project, useFreedom } from '@/state/freedom'
 import { spendingBasis } from '@/lib/budget-split'
+import { monthlySaving } from '@/lib/saving'
 
 /**
  * The freedom date with everything behind it. Signed in, it is the website's
@@ -141,14 +142,27 @@ function BudgetWhatIf() {
   const target = !typedTarget && i.targetMonthlyExpenses && i.monthlyExpenses > 0 ? i.targetMonthlyExpenses * (basis.budget / i.monthlyExpenses) : i.targetMonthlyExpenses
   const alt = project({ ...i, monthlyExpenses: basis.budget, targetMonthlyExpenses: target }, data.age)
   const when = alt.date ? alt.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : alt.year != null ? String(alt.year) : null
+  const now = f.date ? f.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : f.year != null ? String(f.year) : '65+ yrs'
+  // A budget above real spending pushes the date later, so it's never "stick to it" then (audit round 3).
+  const higher = basis.budget > basis.monthly
   return (
-    <Card>
-      <Label>Based on what you really spend</Label>
-      <Text className="mt-1 text-[15px] leading-6 text-ink">
-        You spend about <Text className="font-mono text-[15px]">{money(basis.monthly)}</Text> a month (the last {basis.months} months on average).
-        {when ? <> Stick to your budget of <Text className="font-mono text-[15px]">{money(basis.budget)}</Text> and you'd be free in <Text className="font-bold text-teal-deep">{when}</Text>.</> : null}
-      </Text>
-    </Card>
+    <View className="flex-row gap-3">
+      <Box label="You really spend" note={`last ${basis.months} months`} amount={money(basis.monthly)} when={now} strong />
+      <Box label={higher ? 'Full budget' : 'Stick to budget'} note="what if" amount={money(basis.budget)} when={when ?? '65+ yrs'} />
+    </View>
+  )
+}
+
+/** One spending level and the date it gives: a number, an arrow, a date. */
+function Box({ label, note, amount, when, strong }: { label: string; note: string; amount: string; when: string; strong?: boolean }) {
+  return (
+    <View className={`flex-1 rounded-card p-4 ${strong ? 'border border-border bg-card' : 'bg-surface'}`}>
+      <Text className="text-[13px] font-semibold text-ink-2">{label}</Text>
+      <Text className="text-[11px] text-ink-3">{note}</Text>
+      <Text className="mt-2 font-mono text-[18px] text-ink">{amount}</Text>
+      <Text className="text-[13px] text-ink-3">a month ↓</Text>
+      <Text className={`mt-1 font-display text-[22px] font-bold ${strong ? 'text-teal-deep' : 'text-ink-2'}`}>{when}</Text>
+    </View>
   )
 }
 
@@ -158,9 +172,13 @@ function SavingSplit() {
   const f = useFreedom()
   if (!data || !f || f.source !== 'account' || !f.inputs) return null
   const plan = data.profile.plan
-  const takeHomeSaving = Math.max(0, (f.monthlyIncome - f.monthlySpending) * 12)
+  // The same monthly saving Budget shows (lib/saving): goals take their share first.
+  const s = monthlySaving(data)
+  const toGoals = s.toGoals * 12
+  const takeHomeSaving = s.toInvest * 12
   const taxFree = Math.min(takeHomeSaving, plan.taxFreeAnnual ?? 0)
   const rows = [
+    { label: 'Your goals', value: toGoals, color: TAB_COLOR.plan },
     { label: 'Pension, before tax', value: plan.pensionAnnual ?? 0, color: '#c58a4a' },
     { label: 'Employer adds', value: plan.employerAnnual ?? 0, color: '#0E9C86' },
     { label: 'Roth IRA, first', value: taxFree, color: '#6b5bd2' },

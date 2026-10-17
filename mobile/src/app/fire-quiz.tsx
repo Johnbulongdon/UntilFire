@@ -143,7 +143,7 @@ function Result({ answers, rewardUntil, onRetake }: { answers: QuizAnswer[]; rew
               <Text className={`text-[13px] ${letters[k] === ax.leftLetter ? 'font-bold text-ink' : 'text-ink-3'}`}>{ax.left}</Text>
               <Text className={`text-[13px] ${letters[k] === ax.rightLetter ? 'font-bold text-ink' : 'text-ink-3'}`}>{ax.right}</Text>
             </View>
-            <View className="mt-1 h-2 rounded-full bg-surface-2">
+            <View className="mt-1 h-2 rounded-[3px] bg-surface-2">
               <View className="absolute h-3.5 w-2.5 -translate-y-[3px] rounded-[3px] bg-teal" style={{ left: `${Math.min(96, Math.max(0, leans[k] * 100 - 2))}%` }} />
             </View>
           </View>

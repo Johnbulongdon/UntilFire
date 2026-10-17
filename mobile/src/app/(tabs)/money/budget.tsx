@@ -10,12 +10,12 @@ import { LoadingState } from '@/components/LoadingState'
 import { Card, Label } from '@/components/Screen'
 import { SavingsLine } from '@/components/SavingsLine'
 import { SetAside } from '@/components/SetAside'
-import { budgetFor, splitBudget } from '@/lib/budget-split'
+import { splitBudget } from '@/lib/budget-split'
 import { Text } from '@/components/Text'
 import { addMonths, ALL_CATEGORIES } from '@/engine'
 import { money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
-import { categoryOf, monthSpend, needOf, thisMonth, typicalBy, typicalByCategory } from '@/lib/money-data'
+import { categoryOf, needOf, thisMonth, typicalBy, typicalByCategory } from '@/lib/money-data'
 import { saveCustomCategories, saveFireProfile } from '@/lib/mutations'
 import { defaultNeed } from '@/lib/review'
 import { useAccount } from '@/state/account'
@@ -40,19 +40,18 @@ export default function Budget() {
   const dayToDayWants = useMemo(() => (data ? typicalBy(data.transactions, t => (DAY_TO_DAY.includes(t.category) ? needOf(t) : null)).get('want') ?? 0 : 0), [data])
   if (!data) return <DetailScreen back="Money" title="Budget"><LoadingState /></DetailScreen>
 
-  const { categories } = monthSpend(data.transactions, month)
-  const spent = new Map(categories.map(c => [c.key, c.usd]))
   const split = splitBudget(data, month)
-  // A past month is judged by the budget it had (lib/budget-split budgetFor).
-  const monthBudget = budgetFor(data, month)
   const custom = new Set(data.customCategories.map(c => c.key))
   const known = new Set([...ALL_CATEGORIES.map(c => c.key), ...custom])
   // Your own and leftover labels (an old "Dog") stay listed at $0 so they can be managed.
   const leftovers = data.transactions.filter(t => t.transaction_type === 'expense' && t.category && !known.has(t.category)).map(t => t.category)
-  // Bill categories (a repeating bill in Calendar) are listed under Bills instead.
-  const keys = [...new Set([...Object.keys(monthBudget).filter(k => monthBudget[k] > 0), ...spent.keys(), ...custom, ...leftovers])].filter(k => !split.billKeys.has(k) && !split.spreadKeys.has(k))
-  const share = (k: string) => (monthBudget[k] > 0 ? (spent.get(k) ?? 0) / monthBudget[k] : -1)
-  const rows = keys.sort((a, b) => share(b) - share(a) || (spent.get(b) ?? 0) - (spent.get(a) ?? 0))
+  // Everyday rows: spending that isn't a bill's own payment, against the budget beyond the bills (lib/budget-split).
+  // A bill category shows here too when it has everyday money or spending, so the rows add up to the total (audit round 3).
+  const everyday = (k: string) => split.everydayBy.get(k) ?? { budget: 0, spent: 0 }
+  const keys = [...new Set([...split.everydayBy.keys(), ...custom, ...leftovers])]
+    .filter(k => !split.spreadKeys.has(k) && (!split.billKeys.has(k) || everyday(k).budget >= 1 || everyday(k).spent >= 1))
+  const share = (k: string) => (everyday(k).budget > 0 ? everyday(k).spent / everyday(k).budget : -1)
+  const rows = keys.sort((a, b) => share(b) - share(a) || everyday(b).spent - everyday(a).spent)
   const dayToDay = DAY_TO_DAY.reduce((s, k) => s + (typical.get(k) ?? 0), 0)
   const isCurrent = month === thisMonth()
   const oldest = addMonths(thisMonth(), -12)
@@ -112,7 +111,7 @@ export default function Budget() {
         </Pressable>
       </View>
 
-      {isCurrent && <SavingsLine data={data} budget={split.total} />}
+      {isCurrent && <SavingsLine data={data} />}
 
       {split.everydayBudget > 0 ? (
         <Card>
@@ -159,8 +158,8 @@ export default function Budget() {
         {rows.length === 0 && <Text className="text-[14px] text-ink-2">Nothing spent in {monthName(month)}.</Text>}
         {rows.map((key, i) => {
           const cat = categoryOf(key)
-          const now = spent.get(key) ?? 0
-          const limit = monthBudget[key] > 0 ? monthBudget[key] : 0
+          const now = everyday(key).spent
+          const limit = everyday(key).budget
           const over = limit > 0 && now > limit
           return (
             <View key={key} className={`flex-row items-center gap-3 py-3 ${i > 0 ? 'border-t border-border' : ''}`}>
