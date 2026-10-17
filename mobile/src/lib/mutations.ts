@@ -111,6 +111,7 @@ export interface BillDraft {
   due_date: string
   recurrence: string
   category: string | null
+  sub_category?: string | null
 }
 
 /** Add or edit a bill or payday, as ExpectedPaymentsTab's form does. */
@@ -126,11 +127,49 @@ export async function saveBill(userId: string, draft: BillDraft): Promise<string
     // A repeating bill is never finished, so switching to repeat reopens it.
     ...(draft.recurrence !== 'none' ? { completed_at: null } : {}),
     category: draft.category || null,
+    ...(draft.sub_category !== undefined ? { sub_category: draft.sub_category } : {}),
   }
   const { error } = draft.id
     ? await supabase.from('expected_payments').update(payload).eq('id', draft.id)
     : await supabase.from('expected_payments').insert(payload)
   return error ? 'Couldn\'t save it. Please try again.' : null
+}
+
+export interface LeaseDraft { ends_on: string; notice_days: number; rise_pct: number | null }
+
+/**
+ * Save the lease on a Rent bill. From a Rent transaction with no Rent bill
+ * yet, the bill is made first: monthly, same amount, due a month after it.
+ * A new end date clears the old stay-or-move answer, so Today asks again.
+ */
+export async function saveLease(userId: string, lease: LeaseDraft, target: { billId: string } | { from: { description: string; amount: number; currency: string; date: string } }): Promise<string | null> {
+  const fields = { lease_ends_on: lease.ends_on, lease_notice_days: lease.notice_days, lease_rise_pct: lease.rise_pct }
+  if ('billId' in target) {
+    const { data: row } = await supabase.from('expected_payments').select('lease_ends_on').eq('id', target.billId).maybeSingle()
+    const reset = row?.lease_ends_on !== lease.ends_on ? { lease_decision: null } : {}
+    const { error } = await supabase.from('expected_payments').update({ ...fields, ...reset }).eq('id', target.billId)
+    return error ? 'Couldn\'t save the lease. Please try again.' : null
+  }
+  const due = new Date(`${target.from.date}T00:00:00`); due.setMonth(due.getMonth() + 1)
+  const { error } = await supabase.from('expected_payments').insert({
+    user_id: userId, description: target.from.description || 'Rent', amount: target.from.amount, currency: target.from.currency,
+    transaction_type: 'expense', due_date: isoDay(due), recurrence: 'monthly', category: 'housing', sub_category: 'Rent', ...fields,
+  })
+  return error ? 'Couldn\'t save the lease. Please try again.' : null
+}
+
+/** Today's one-time "Rent or mortgage?": moves every old combined tag to the answer. */
+export async function retagRentOrMortgage(userId: string, to: 'Rent' | 'Mortgage'): Promise<string | null> {
+  const old = { category: 'housing', sub_category: 'Rent/Mortgage' }
+  const tx = await supabase.from('expenses').update({ sub_category: to }).eq('user_id', userId).match(old)
+  const bills = await supabase.from('expected_payments').update({ sub_category: to }).eq('user_id', userId).match(old)
+  return tx.error || bills.error ? 'Couldn\'t save that. Please try again.' : null
+}
+
+/** The stay-or-move answer from Today. */
+export async function answerLease(billId: string, decision: 'renew' | 'move' | 'unsure'): Promise<string | null> {
+  const { error } = await supabase.from('expected_payments').update({ lease_decision: decision }).eq('id', billId)
+  return error ? 'Couldn\'t save that. Please try again.' : null
 }
 
 export async function deleteBill(id: string): Promise<string | null> {

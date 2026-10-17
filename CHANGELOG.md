@@ -6,6 +6,21 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-17
+
+### Lease tracking
+- Housing's "Rent/Mortgage" is now two sub-categories, Rent and Mortgage.
+  Bank rent payments arrive tagged Rent; Today asks once about older
+  "Rent/Mortgage" rows.
+- A Rent bill or Rent transaction offers "When does your lease end?": end
+  date, notice to give (30/60/90 days) and the expected rise. The bill then
+  shows the days left to decide and a timeline to the lease end. The
+  website's Upcoming form has the same three fields on a Rent bill.
+- Today asks "Stay or move?" 30 days before the notice deadline, and once
+  more in the last week if the answer was "Not sure".
+- What if (phone) adds "Move, $X less rent" and "Renew at +X%" when a lease is
+  set. The freedom date itself doesn't move on a guessed rise (D-88).
+
 ## 2026-10-16
 
 ### Phone app

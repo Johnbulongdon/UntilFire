@@ -17,7 +17,7 @@ import { isoDay } from '@/engine'
 import { money, moneyIn } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { categoryOf } from '@/lib/money-data'
-import { deleteBill, fileTransactions, resolveFlag, saveBill, saveBudget } from '@/lib/mutations'
+import { answerLease, deleteBill, fileTransactions, resolveFlag, retagRentOrMortgage, saveBill, saveBudget } from '@/lib/mutations'
 import { defaultNeed } from '@/lib/review'
 import { addDays, monthCount, saveTodayProgress, todayItems, type TodayItem } from '@/lib/today'
 import { setTodayReminder } from '@/lib/today-reminder'
@@ -313,6 +313,28 @@ function cardFor(item: TodayItem, h: {
           if (!problem) h.ack(item)
           return problem
         }) }] }
+    }
+    case 'lease': {
+      // Answering saves the decision on the bill; the ack stops a second ask the same stage.
+      const { bill, deadline } = item.lease!
+      const decide = (d: 'renew' | 'move' | 'unsure') => h.run(item, async () => {
+        const problem = await answerLease(bill.id, d)
+        if (!problem) h.ack(item)
+        return problem
+      })
+      return { eyebrow: 'Your lease', title: 'Stay or move?', sub: `Notice is due ${new Date(`${deadline}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.`,
+        choices: [{ label: 'Renew', onPress: () => decide('renew') },
+          { label: 'Move', kind: 'quiet', onPress: () => { decide('move'); router.push('/plan/what-if') } },
+          { label: 'Not sure', kind: 'quiet', onPress: () => decide('unsure') }] }
+    }
+    case 'renttag': {
+      const retag = (to: 'Rent' | 'Mortgage') => h.run(item, async () => {
+        const problem = await retagRentOrMortgage(h.userId, to)
+        if (!problem) h.ack(item)
+        return problem
+      })
+      return { eyebrow: 'One quick question', title: 'Do you rent or pay a mortgage?', sub: 'So a lease is only offered if you rent.',
+        choices: [{ label: 'Rent', onPress: () => retag('Rent') }, { label: 'Mortgage', kind: 'quiet', onPress: () => retag('Mortgage') }] }
     }
     case 'payday':
       return { eyebrow: 'Payday', title: 'Pay is in', amount: money(item.amount!), sub: 'is safe to put towards freedom.',

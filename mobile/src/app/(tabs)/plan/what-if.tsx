@@ -11,6 +11,8 @@ import { Card, Label } from '@/components/Screen'
 import { Text } from '@/components/Text'
 import { money, roundNice } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
+import { isRent, rentAfterRenewal } from '@/engine'
+import { toUSD, useAccount } from '@/state/account'
 import { useLivePlan } from '@/state/live-plan'
 import { project, useFreedom } from '@/state/freedom'
 import { freedomFor, type Plan as PlanData } from '@/state/plan'
@@ -30,6 +32,8 @@ function deltaLabel(base: number | null, next: number | null): { text: string; g
 /** How can I reach freedom? (docs/design/app-structure.md) */
 export default function WhatIf() {
   const { plan } = useLivePlan()
+  const { data } = useAccount()
+  const rentBill = data?.bills.find(b => isRent(b) && b.lease_ends_on)
   const f = useFreedom()
   const full = f?.source === 'account' && f.inputs ? f.inputs : null
   // Signed in, each try runs the website's full projection with only spending or pay changed.
@@ -47,12 +51,21 @@ export default function WhatIf() {
   const delta = deltaLabel(now.year, whatIf.year)
   const changed = spending !== plan.monthlySpending || income !== plan.monthlyIncome
 
-  // The website's next moves (app/dashboard/page.tsx), each one tap to try.
-  const moves = [
-    { icon: 'banknote.fill' as const, label: `Save ${money(500)} more a month`, apply: () => { setSpending(Math.max(0, plan.monthlySpending - 500)); setIncome(plan.monthlyIncome) } },
-    { icon: 'scissors' as const, label: 'Spend 10% less', apply: () => { setSpending(roundNice(plan.monthlySpending * 0.9)); setIncome(plan.monthlyIncome) } },
-    { icon: 'chart.line.uptrend.xyaxis' as const, label: 'Earn 10% more', note: 'if the raise is saved', apply: () => { setIncome(roundNice(plan.monthlyIncome * 1.1)); setSpending(plan.monthlySpending) } },
+  // The website's next moves (app/dashboard/page.tsx), each one tap to try: the spending and pay it means.
+  type Move = { icon: Parameters<typeof Icon>[0]['name']; label: string; note?: string; spending: number; income: number }
+  const moves: Move[] = [
+    { icon: 'banknote.fill', label: `Save ${money(500)} more a month`, spending: Math.max(0, plan.monthlySpending - 500), income: plan.monthlyIncome },
+    { icon: 'scissors', label: 'Spend 10% less', spending: roundNice(plan.monthlySpending * 0.9), income: plan.monthlyIncome },
+    { icon: 'chart.line.uptrend.xyaxis', label: 'Earn 10% more', note: 'if the raise is saved', spending: plan.monthlySpending, income: roundNice(plan.monthlyIncome * 1.1) },
   ]
+  // With a lease on the Rent bill, stay or move at renewal (lib/lease.ts). A what-if only: the date above stays on real spending.
+  if (rentBill) {
+    const rent = toUSD(rentBill.amount, rentBill.currency)
+    const rise = rentAfterRenewal(rent, rentBill.lease_rise_pct) - rent
+    const cut = roundNice(rent * 0.15)
+    if (rise > 0) moves.unshift({ icon: 'arrow.triangle.2.circlepath', label: `Renew at +${rentBill.lease_rise_pct}%`, note: `${money(rise)} more rent a month`, spending: plan.monthlySpending + rise, income: plan.monthlyIncome })
+    moves.unshift({ icon: 'house', label: `Move, ${money(cut)} less rent`, note: 'a place 15% cheaper', spending: Math.max(0, plan.monthlySpending - cut), income: plan.monthlyIncome })
+  }
 
   const onSlide = (next: PlanData) => {
     const y = yearFor(next)
@@ -75,15 +88,9 @@ export default function WhatIf() {
       <View className="gap-2.5">
         <Label>Next moves</Label>
         {moves.map(m => {
-          const result = (() => {
-            const p = { ...plan }
-            if (m.label.startsWith('Earn')) p.monthlyIncome = roundNice(plan.monthlyIncome * 1.1)
-            else if (m.label.startsWith('Spend')) p.monthlySpending = roundNice(plan.monthlySpending * 0.9)
-            else p.monthlySpending = Math.max(0, plan.monthlySpending - 500)
-            return deltaLabel(now.year, yearFor(p))
-          })()
+          const result = deltaLabel(now.year, yearFor({ ...plan, monthlySpending: m.spending, monthlyIncome: m.income }))
           return (
-            <Bouncy key={m.label} accessibilityRole="button" onPress={() => { haptic.select(); m.apply() }}>
+            <Bouncy key={m.label} accessibilityRole="button" onPress={() => { haptic.select(); setSpending(m.spending); setIncome(m.income) }}>
               <View className="flex-row items-center gap-3 rounded-card border border-border bg-card px-4 py-3.5">
                 <Icon name={m.icon} size={26} color={TAB_COLOR.plan} />
                 <View className="flex-1">

@@ -1,4 +1,4 @@
-import { addMonths, buildMerchantMemory, findFlags, isoDay, ladderViewFromPlan, monthOf, netAmount, suggestFromHistory, type FlagKind } from '@/engine'
+import { addMonths, buildMerchantMemory, findFlags, isoDay, isRent, isRentOrMortgage, ladderViewFromPlan, leaseAsk, noticeDeadline, monthOf, netAmount, suggestFromHistory, type FlagKind } from '@/engine'
 import { unpaid, upcoming } from '@/lib/bills'
 import { contributionFacts, EMPTY_PLAN } from '@/lib/contribution-facts'
 import { saveFireProfile } from '@/lib/mutations'
@@ -14,7 +14,7 @@ import { billCategories, budgetFor, splitBudget } from '@/lib/budget-split'
  * is answered (filed, or a flag resolved); the rest are answered with an ack
  * saved in the FIRE profile beside the finished days.
  */
-export type TodayKind = 'big' | 'flag' | 'category' | 'need' | 'backlog' | 'bill' | 'billcheck' | 'payday' | 'goal' | 'manual' | 'setup' | 'number'
+export type TodayKind = 'big' | 'flag' | 'category' | 'need' | 'backlog' | 'bill' | 'billcheck' | 'payday' | 'goal' | 'manual' | 'setup' | 'number' | 'lease' | 'renttag'
 
 export interface Filing { category: string; sub_category: string | null; need: 'need' | 'want' }
 
@@ -37,6 +37,8 @@ export interface TodayItem {
   check?: { bill: Bill; change: 'price' | 'stale'; amount?: number }
   /** Setup: the one first-week step this item asks for. */
   setup?: 'bank' | 'goal'
+  /** Lease: the Rent bill whose notice deadline is coming, and that deadline. */
+  lease?: { bill: Bill; deadline: string }
 }
 
 /** The items a free account gets; Pro adds the money-smart ones (D-73, question 5). */
@@ -179,6 +181,18 @@ export function todayItems(data: AccountData, progress: TodayProgress, now = new
       }
     }
   }
+
+  // A lease's notice deadline (lib/lease.ts): asked 30 days out, and in the last week if "not sure".
+  for (const b of data.bills) {
+    if (!isRent(b) || !b.lease_ends_on) continue
+    const lease = { ends_on: b.lease_ends_on, notice_days: b.lease_notice_days, decision: b.lease_decision }
+    const ask = leaseAsk(lease, today)
+    const key = `lease:${b.id}:${b.lease_ends_on}:${ask}`
+    if (ask && !acked.has(key)) out.push({ key, kind: 'lease', lease: { bill: b, deadline: noticeDeadline(lease) } })
+  }
+
+  // The old "Rent/Mortgage" tag, split in two (0059): asked once, so a lease is only offered to renters.
+  if ((data.transactions.some(isRentOrMortgage) || data.bills.some(isRentOrMortgage)) && !acked.has('renttag')) out.push({ key: 'renttag', kind: 'renttag' })
 
   for (const g of data.goals) {
     if (g.target_amount > 0 && g.current_saved >= g.target_amount && !acked.has(`goal:${g.id}`)) out.push({ key: `goal:${g.id}`, kind: 'goal', goal: g })
