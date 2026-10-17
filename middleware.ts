@@ -9,6 +9,7 @@ export function middleware(request: NextRequest) {
     response.headers.set("Content-Security-Policy", "frame-ancestors *");
   } else {
     response.headers.set("X-Frame-Options", "DENY");
+    response.headers.set("Content-Security-Policy", "frame-ancestors 'none'; base-uri 'self'; object-src 'none'");
   }
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");

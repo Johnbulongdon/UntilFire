@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { callerKey, rateLimit } from "@/lib/rate-limit";
 import { adminClient } from "@/lib/supabase-admin";
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(callerKey(req, "survey"), 10);
+  if (limited) return limited;
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

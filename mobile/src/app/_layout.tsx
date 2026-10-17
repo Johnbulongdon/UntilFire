@@ -24,14 +24,17 @@ import { AuthProvider } from '@/state/auth'
 import { PlanProvider } from '@/state/plan'
 import { colors, setPalette, themeVars } from '@/theme/colors'
 import { Events, track } from '@/lib/analytics'
+import { reportError, withCrashReporting } from '@/lib/crash-reporting'
 import { AppLock } from '@/components/AppLock'
 import { NotificationTaps } from '@/components/NotificationTaps'
+import { UpdateGate } from '@/components/UpdateGate'
 import { EmptyState } from '@/components/EmptyState'
 
 SplashScreen.preventAutoHideAsync().catch(() => {})
 
 /** A screen that throws shows this and can try again, instead of closing the app (App Store readiness, Oct 2026). */
-export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  useEffect(() => { reportError(error) }, [error])
   return (
     <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.ground }}>
       <EmptyState mood="quiet" title="Something went wrong" body="Your money and plan are safe. Try again." action={{ label: 'Try again', onPress: () => { retry() } }} />
@@ -39,7 +42,7 @@ export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
   )
 }
 
-export default function RootLayout() {
+function RootLayout() {
   // The website's three faces: Fraunces display, Manrope body, DM Mono numbers.
   const [loaded, error] = useFonts({
     Fraunces_400Regular, Fraunces_500Medium, Fraunces_600SemiBold, Fraunces_700Bold,
@@ -102,6 +105,7 @@ export default function RootLayout() {
           <Stack.Screen name="character-lab" options={{ presentation: 'modal' }} />
         </Stack>
         <AppLock />
+        <UpdateGate />
         </AccountProvider>
       </PlanProvider>
       </AuthProvider>
@@ -116,3 +120,5 @@ function ScreenViews() {
   useEffect(() => { track(Events.SCREEN_VIEWED, { screen: path }) }, [path])
   return null
 }
+
+export default withCrashReporting(RootLayout)

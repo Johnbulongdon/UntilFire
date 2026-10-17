@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { callerKey, rateLimit } from "@/lib/rate-limit";
 import { adminClient } from "@/lib/supabase-admin";
 import { Products } from "plaid";
 import { getPlaidClient, plaidCountries } from "@/lib/plaid";
 
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const limited = rateLimit(callerKey(req, "plaid-create-link-token"), 10);
+  if (limited) return limited;
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -21,6 +24,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (isFree && (itemCount ?? 0) >= 1) {
     return NextResponse.json({ error: "Free plan allows 1 bank. Upgrade to Pro for unlimited." }, { status: 403 });
   }
+
+  // Banks that log in on their own site (OAuth, e.g. Chase) need a way back:
+  // iOS returns through a universal link registered in the Plaid dashboard
+  // (PLAID_IOS_REDIRECT_URI, served by app/plaid-oauth and the AASA file);
+  // Android returns to the app by package name. The website flow is unchanged.
+  const { platform } = (await req.json().catch(() => ({}))) as { platform?: string };
+  const oauth =
+    platform === "ios" && process.env.PLAID_IOS_REDIRECT_URI ? { redirect_uri: process.env.PLAID_IOS_REDIRECT_URI }
+    : platform === "android" ? { android_package_name: "com.untilfire.app.native" }
+    : {};
 
   try {
     const plaid = getPlaidClient();
@@ -39,6 +52,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       transactions: { days_requested: 730 },
       country_codes: plaidCountries(),
       language: "en",
+      ...oauth,
     });
     return NextResponse.json({ link_token: response.data.link_token });
   } catch (err: unknown) {

@@ -1,8 +1,9 @@
 import 'react-native-url-polyfill/auto'
 
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createClient } from '@supabase/supabase-js'
 import { AppState, Platform } from 'react-native'
+
+import { secureSessionStorage } from '@/lib/secure-session'
 
 // The same Supabase project as untilfire.com, so one account works in both.
 // Both values are public by design (like the website's NEXT_PUBLIC_ ones);
@@ -12,7 +13,8 @@ const SUPABASE_KEY = process.env.EXPO_PUBLIC_SUPABASE_KEY ?? 'sb_publishable_uXt
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
-    storage: AsyncStorage,
+    // Tokens live in the Keychain, not plain AsyncStorage (lib/secure-session.ts).
+    storage: secureSessionStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
