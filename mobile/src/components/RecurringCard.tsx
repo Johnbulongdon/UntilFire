@@ -17,10 +17,10 @@ interface Item { name: string; monthly: number; bill: boolean; essential: boolea
 const ESSENTIAL_NAME = /\b(rent|mortgage|landlord|child ?care|daycare|nursery|school|tuition|insurance|medical|pharmacy|electric|water|utilit)/i
 
 /** A need: tagged so, a need category, or an essential-sounding name. Needs never get a "sooner" number. */
-function isEssential(name: string, category: string | null, tags: string[] = []): boolean {
+function isEssential(name: string, category: string | null, tags: string[] = [], subCategory?: string | null): boolean {
   if (tags.includes('need')) return true
   if (tags.includes('want')) return false
-  return (!!category && defaultNeed(category) === 'need') || ESSENTIAL_NAME.test(name)
+  return (!!category && defaultNeed(category, subCategory) === 'need') || ESSENTIAL_NAME.test(name)
 }
 
 /**
@@ -38,8 +38,8 @@ export function useRecurring(data: AccountData, freedom: Freedom | null): Item[]
       .map(t => ({ id: t.id, date: t.date, amount: t.amount, currency: t.currency, description: t.description, category: t.category, transaction_type: 'expense' as const }))
     for (const d of detectRecurring(raw, FALLBACK_RATES).expenses) {
       if (d.frequency === 'irregular' || list.some(i => sameMerchant(i.name, d.description))) continue
-      const tags = data.transactions.find(t => t.transaction_type === 'expense' && sameMerchant(t.description, d.description))?.tags
-      list.push({ name: d.description, monthly: toMonthly(Math.abs(d.avgAmountUSD), d.frequency), bill: false, essential: isEssential(d.description, d.category, tags) })
+      const last = data.transactions.find(t => t.transaction_type === 'expense' && sameMerchant(t.description, d.description))
+      list.push({ name: d.description, monthly: toMonthly(Math.abs(d.avgAmountUSD), d.frequency), bill: false, essential: isEssential(d.description, d.category, last?.tags, last?.sub_category) })
     }
     const base = freedom?.inputs && freedom.years != null && freedom.years > 0 ? freedom.years : null
     return list.filter(i => i.monthly > 0).sort((a, b) => b.monthly - a.monthly).slice(0, 8).map(i => {

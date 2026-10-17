@@ -22,8 +22,8 @@ import { freedomCash, safetyPot } from "@/lib/freedom-cash";
 import { spendingAverage } from "@/lib/real-spending";
 import { carriedCards, freedomDebt } from "@/lib/freedom-debt";
 import { applyAccountShares, readAccountShares, shareOf, SHARED_PCT, type AccountShares } from "@/lib/account-share";
-import { billCategoryOf, billCategorySet, matchesBill } from "@/lib/bill-categories";
-import { recurrenceToMonthly } from "@/lib/recurring-detect";
+import { billCategorySet } from "@/lib/bill-categories";
+import { everydayLeft } from "@/lib/everyday-left";
 import { budgetNeeds, inLastTwelve, transactionNeed, type NeedOverrides } from "@/lib/needs";
 import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
@@ -710,7 +710,10 @@ function SectionLabel({ icon, text, color = "var(--uf-ink)" }: { icon: string; t
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange, plan, spendToggles = {} }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [] }: {
+  spreadCategories?: string[];
+  /** Typed on the phone; in net worth only (audit round 2). */
+  homeValue?: number;
   userId: string;
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
@@ -1198,7 +1201,17 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     : "Using manual balances";
   // Debts by the same rule as everywhere (effectiveDebts), cards included: they are owed.
   const debtsNow = effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts });
-  const currentNetWorth = investable - debtsNow.otherDebt - debtsNow.mortgage - debtsNow.cards;
+  // Net worth is everything owned less everything owed, all cash and a typed home included, the same
+  // figure as the Net worth tab and the phone (lib/net-worth). `investable` leaves out the safety pot (audit round 3).
+  const ownedNow = effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts });
+  const currentNetWorth = ownedNow.k401 + ownedNow.rothIRA + ownedNow.taxable + ownedNow.cashSavings + homeValue - debtsNow.otherDebt - debtsNow.mortgage - debtsNow.cards;
+  // The one "left", the same as Budget and the phone (lib/everyday-left, audit round 3).
+  const monthKeyNow = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  const monthLeft = everydayLeft({
+    budget: expenses as Record<string, number>, bills, spreadCategories,
+    monthRows: recentTransactions.filter((t) => t.date.startsWith(monthKeyNow))
+      .map((t) => ({ ...t, usd: toUSD(netAmt(t), t.currency ?? displayCurrency, displayRates) })),
+  });
   const spendingStatusColor = projectedSpendStatus === "Running above plan" ? "var(--uf-neg)" : projectedSpendStatus === "Running below plan" ? "var(--uf-pos)" : "var(--uf-ink-3)";
   const spendingBarColor = projectedSpendStatus === "Running above plan" ? "var(--uf-neg)" : projectedSpendStatus === "Running below plan" ? "var(--uf-pos)" : "var(--uf-green-700)";
   const spendingProgressPct = monthlyExpenses > 0 ? Math.min((actualOrPlannedExpenses / monthlyExpenses) * 100, 100) : 0;
@@ -1715,11 +1728,10 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       </DashSlot>
       <DashSlot id="month" layout={layout} editing={editing} dragging={draggingId === "month"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
         <MonthCard
-          spent={hasActuals ? actualExpenses : monthCategories.reduce((sum, c) => sum + c.usd, 0)}
-          budget={monthlyExpenses}
+          spent={monthLeft.everydaySpent}
+          budget={monthLeft.everydayBudget}
+          left={monthLeft.left}
           categories={monthCategories}
-          free={freeResult ? freeResult.free : null}
-          freeUntil={freeResult ? new Date(`${freeResult.payday.iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : null}
           fmt={(n) => fmtMoney(n)}
           onOpen={() => onTabChange?.("cashflow")}
         />
@@ -2341,16 +2353,10 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   /* The one "left" (D-86), the same as the phone's: everyday budget less
      everyday spending. Bills are set aside, and spread-over-the-year
      categories are judged over 12 months, not this one. */
-  // Only a bill's own payment is a bill (lib/bill-categories matchesBill): the rest of its category stays everyday.
-  const billMonthlyOf = (k: string) => bills.filter((b) => b.recurrence !== "none" && billCategoryOf(b) === k).reduce((t, b) => t + recurrenceToMonthly(b.usd, b.recurrence), 0);
-  const everydayCats = activeCats.filter((c) => !spreadCats.has(c.key));
-  const everydayBudget = sum(everydayCats, (k) => Math.max(0, (expenses[k] || 0) - (billCats.has(k) ? billMonthlyOf(k) : 0)));
-  const isBillPayment = (t: typeof monthTxns[number]) => billCats.has(t.category ?? "other")
-    && matchesBill({ description: t.description, usd: toUSD(netAmt(t), t.currency, displayRates), category: t.category ?? "other" }, bills);
-  const everydaySpentOf = (k: string) => monthTxns.filter((t) => (t.transaction_type ?? "expense") === "expense" && (t.category ?? "other") === k && !isBillPayment(t))
-    .reduce((t2, t) => t2 + toUSD(netAmt(t), t.currency, displayRates), 0);
-  const leftInBudget = everydayBudget - sum(everydayCats, everydaySpentOf);
-  const everydaySpent = sum(everydayCats, everydaySpentOf);
+  const { everydayBudget, everydaySpent, left: leftInBudget } = everydayLeft({
+    budget: expenses, bills, spreadCategories,
+    monthRows: monthTxns.map((t) => ({ ...t, usd: toUSD(netAmt(t), t.currency, displayRates) })),
+  });
   const billsStillDue = sum(billGroup, dueOf);
   const shortDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
@@ -6462,7 +6468,7 @@ export default function Dashboard() {
               </div>
             )}
             {tab === "overview" && (
-              <DashTab
+              <DashTab homeValue={homeValue} spreadCategories={spreadCategories}
                 plan={plan}
                 contributionFacts={contributionFacts}
                 freeResult={freeResult}

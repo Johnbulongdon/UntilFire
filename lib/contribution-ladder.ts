@@ -307,6 +307,6 @@ export function planBudgetOverride(plan: StoredPlan): number | null {
 
 const EMPTY_STORED_LADDER: StoredLadder = {
   efOverride: null, expensesOverride: null, thresholdOverride: null,
-  efAccountIds: null, expenseSource: "last-month",
+  efAccountIds: null, expenseSource: "average",
   monthlyMatch: 0, taxRoom: 0, lowInterestExtra: 0, debts: [], disabled: [],
 };

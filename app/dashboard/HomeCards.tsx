@@ -97,44 +97,45 @@ export function FreedomCard({ dateLabel, yearsAway, age, invested, target, fmt, 
 
 export interface MonthCategory { key: string; label: string; color: string; usd: number }
 
-export function MonthCard({ spent, budget, categories, free, freeUntil, fmt, onOpen }: {
+export function MonthCard({ spent, budget, left, categories, fmt, onOpen }: {
+  /** Everyday spending this month: bills set aside (lib/everyday-left). */
   spent: number;
-  /** The month's spending budget; 0 when none is set. */
+  /** The everyday budget; 0 when none is set. */
   budget: number;
-  /** Largest first; the card shows three and folds the rest into Other. */
+  /** The one "left", the same number as the phone (D-86, audit round 3). */
+  left: number;
+  /** Where this month's money went, largest first; the card shows three and folds the rest into Other. */
   categories: MonthCategory[];
-  free: number | null;
-  freeUntil: string | null;
   fmt: (n: number) => string;
   onOpen: () => void;
 }) {
   const top = categories.slice(0, 3);
   const rest = categories.slice(3).reduce((s, c) => s + c.usd, 0);
   const shown = rest > 0 ? [...top, { key: "_rest", label: "Other", color: "var(--uf-ink-3)", usd: rest }] : top;
-  const scale = Math.max(budget, spent, shown.reduce((sum, c) => sum + c.usd, 0), 1);
+  const over = left < 0;
   return (
     <Card style={{ display: "grid", gap: 10, alignContent: "start" }}>
       <div className="uf-t-small" style={{ display: "flex", justifyContent: "space-between", gap: 8, ...muted }}>
         <span>This month</span>
         <button type="button" onClick={onOpen} style={link}>Transactions →</button>
       </div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+      {budget > 0 ? (
+        <>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ ...mono, fontSize: 28, fontWeight: 600, color: over ? "var(--uf-neg-ink)" : "var(--uf-ink)" }}>{fmt(Math.abs(left))}</span>
+            <span className="uf-t-small" style={muted}>{over ? "over" : "left"} of <span style={mono}>{fmt(budget)}</span> everyday</span>
+          </div>
+          <div role="img" aria-label={`Spent ${fmt(spent)} of ${fmt(budget)} everyday`} style={{ height: 8, borderRadius: 4, overflow: "hidden", background: "var(--uf-surface-2)" }}>
+            <i style={{ display: "block", height: "100%", width: `${Math.min(1, spent / budget) * 100}%`, background: over ? "var(--uf-neg)" : "var(--uf-green)" }} />
+          </div>
+          <div className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Bills set aside</div>
+        </>
+      ) : (
         <span style={{ ...mono, fontSize: 28, fontWeight: 600 }}>{fmt(spent)}</span>
-        {budget > 0 && <span className="uf-t-small" style={muted}>of <span style={mono}>{fmt(budget)}</span> budget</span>}
-      </div>
-      <div role="img" aria-label={`Spent ${fmt(spent)}${budget > 0 ? ` of ${fmt(budget)}` : ""}: ${shown.map((c) => `${c.label} ${fmt(c.usd)}`).join(", ")}`}
-        style={{ display: "flex", height: 8, borderRadius: 4, overflow: "hidden", gap: 2, background: "var(--uf-surface-2)" }}>
-        {shown.map((c) => <i key={c.key} style={{ width: `${(c.usd / scale) * 100}%`, background: c.color }} />)}
-      </div>
+      )}
       {shown.length > 0 && (
         <div className="uf-t-small" style={{ display: "flex", gap: 12, flexWrap: "wrap", color: "var(--uf-ink-2)" }}>
-          {shown.map((c) => <span key={c.key}><i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 999, background: c.color, marginRight: 5 }} />{c.label}</span>)}
-        </div>
-      )}
-      {free != null && (
-        <div className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>
-          <b style={{ ...mono, color: free < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink)" }}>{free < 0 ? `Over by ${fmt(-free)}` : fmt(free)}</b>
-          {free >= 0 ? " free to spend" : ""}{freeUntil ? ` until ${freeUntil}` : ""}
+          {shown.map((c) => <span key={c.key}><i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: c.color, marginRight: 5 }} />{c.label} <span style={mono}>{fmt(c.usd)}</span></span>)}
         </div>
       )}
     </Card>
