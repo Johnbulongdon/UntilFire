@@ -24,6 +24,8 @@ under today's date, creating the heading if it is not there yet.
   `APPLE_TEAM_ID`), Android by package name.
 - App Review login: a fixed code for `REVIEW_LOGIN_EMAIL` only, off unless
   `REVIEW_LOGIN_EMAIL` and `REVIEW_LOGIN_CODE` are set.
+- Phone: Profile shows the app version (and any quick-fix update); tapping
+  it opens "What's new", kept in `mobile/src/lib/update-log.ts`.
 
 ### Lease tracking
 - Housing's "Rent/Mortgage" is now two sub-categories, Rent and Mortgage.

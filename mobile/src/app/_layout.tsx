@@ -90,6 +90,7 @@ function RootLayout() {
           <Stack.Screen name="assumptions" options={{ presentation: 'modal' }} />
           <Stack.Screen name="plan-goal" options={{ presentation: 'modal' }} />
           <Stack.Screen name="data-account" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="update-log" options={{ presentation: 'modal' }} />
           <Stack.Screen name="delete-account" options={{ presentation: 'modal' }} />
           <Stack.Screen name="feedback" options={{ presentation: 'modal' }} />
           <Stack.Screen name="name" options={{ presentation: 'modal' }} />
