@@ -2879,3 +2879,30 @@ Copilot, Rocket Money and ProjectionLab) and said "fix all".
   (`carriedCards`). A card with no charges on record is still offered.
 **Revisit when:** the bill match misses real payments or matches the wrong ones.
 
+### D-88 — October 17: a lease lives on the Rent bill
+
+**Status:** Active. The founder asked for a place to track the lease end
+("a big financial factor"), approved the mockup, and chose to split Housing's
+"Rent/Mortgage" sub-category into Rent and Mortgage.
+**Decision:**
+- **The lease is optional fields on the Rent bill** (`expected_payments`,
+  migration 0059): end date, notice days (default 60), expected rise at
+  renewal, and the stay-or-move answer. Not a separate tool or page.
+- **Only Housing › Rent offers it** (`lib/lease.ts` `isRent`), on the bill and
+  on a Rent transaction, which makes the monthly Rent bill when there isn't one.
+  Plaid's rent detail arrives tagged Rent; old "Rent/Mortgage" rows are asked
+  about once in Today ("Do you rent or pay a mortgage?").
+- **Today asks "Stay or move?"** 30 days before the notice deadline (end date
+  less notice), and again in the last week if the answer was "Not sure".
+  Nothing after the deadline. Move opens What if.
+- **The rise is a what-if only.** What if (phone) shows renewing at the
+  expected rise and moving somewhere 15% cheaper. The headline freedom date
+  stays on real spending (D-86) and catches up after renewal.
+**Why:** renewal is a once-a-year, high-stakes money moment. Other finance apps
+only let a bill end; lease reminders live in landlord software, so showing the
+renter whether moving is worth it, in freedom-date terms, is open ground.
+**Not:** lease documents, landlord details, deposits, or a lease prompt in
+onboarding.
+**Revisit when:** renters ask for a website What if row, or a second reminder
+time, or the 15% "cheaper place" should come from city rent data.
+

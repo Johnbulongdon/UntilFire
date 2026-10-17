@@ -47,6 +47,11 @@ export interface Bill {
   recurrence: string
   category: string | null
   sub_category: string | null
+  /** The lease on a Rent bill (0059); all null when none was added. */
+  lease_ends_on: string | null
+  lease_notice_days: number | null
+  lease_rise_pct: number | null
+  lease_decision: 'renew' | 'move' | 'unsure' | null
 }
 
 export interface Goal {
@@ -218,7 +223,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         .then(d => (Array.isArray(d?.accounts) ? (d.accounts as PlaidAccount[]) : []))
         .catch(() => [] as PlaidAccount[]),
       supabase.from('expected_payments')
-        .select('id, description, amount, currency, transaction_type, due_date, recurrence, category, sub_category')
+        .select('id, description, amount, currency, transaction_type, due_date, recurrence, category, sub_category, lease_ends_on, lease_notice_days, lease_rise_pct, lease_decision')
         .eq('user_id', userId)
         .is('completed_at', null),
       supabase.from('goals')

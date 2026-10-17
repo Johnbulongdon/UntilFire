@@ -78,7 +78,8 @@ export function classifyPlaid(primary: string, detailed: string, amount: number)
     return { transaction_type: "income", category, tags: [] };
   }
   if (primary === "RENT_AND_UTILITIES" && !moneyIn) {
-    return { transaction_type: "expense", category: d === "RENT_AND_UTILITIES_RENT" || !d ? "housing" : "utilities", tags: [] };
+    if (d === "RENT_AND_UTILITIES_RENT") return { transaction_type: "expense", category: "housing", sub_category: "Rent", tags: [] };
+    return { transaction_type: "expense", category: d ? "utilities" : "housing", tags: [] };
   }
   const category = PLAID_CATEGORY_MAP[primary] ?? "other";
   if (moneyIn) return { transaction_type: "transfer", category, tags: ["sys:refund"] };

@@ -15,6 +15,7 @@ import type { StoredPlan } from "@/lib/contribution";
 import { parseIsoDate } from "@/lib/contribution-schedule";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SUB_CATEGORIES } from "@/lib/categories";
 import { guessBillCategory, settleBill } from "@/lib/spend-forecast";
+import { DEFAULT_NOTICE_DAYS, daysUntil as leaseDaysUntil, isRent, noticeDeadline } from "@/lib/lease";
 import { useCustomCategories } from "@/lib/useCustomCategories";
 import {
   detectRecurring, toRecurrence, sameMerchant,
@@ -43,10 +44,15 @@ type ExpectedPayment = {
   sub_category: string | null;
   /** The bank's name for this bill, set when the person confirms a payment is it (Transactions, Worth a look). */
   match_merchant: string | null;
+  /** The lease on a Rent bill (0059, lib/lease.ts); null when none was added. */
+  lease_ends_on: string | null;
+  lease_notice_days: number | null;
+  lease_rise_pct: number | null;
+  lease_decision: "renew" | "move" | "unsure" | null;
 };
 
 const SELECT_COLUMNS =
-  "id, description, amount, currency, transaction_type, due_date, completed_at, recurrence, category, sub_category, match_merchant";
+  "id, description, amount, currency, transaction_type, due_date, completed_at, recurrence, category, sub_category, match_merchant, lease_ends_on, lease_notice_days, lease_rise_pct, lease_decision";
 
 function todayStr(): string {
   return new Date().toISOString().split("T")[0];
@@ -116,6 +122,13 @@ async function rescueLocalRecurring(userId: string): Promise<void> {
 }
 
 /** When it is due, in words; overdue reads in red. */
+/** "Lease: decide by Jan 30" until the notice deadline passes, then "Lease ends Mar 31". */
+function leaseNote(item: ExpectedPayment): string | null {
+  if (!item.lease_ends_on) return null;
+  const deadline = noticeDeadline({ ends_on: item.lease_ends_on, notice_days: item.lease_notice_days });
+  return leaseDaysUntil(deadline, todayStr()) >= 0 ? `Lease: decide by ${shortDay(deadline)}` : `Lease ends ${shortDay(item.lease_ends_on)}`;
+}
+
 function dueText(days: number): string {
   if (days < 0) return `${Math.abs(days)}d overdue`;
   if (days === 0) return "due today";
@@ -156,6 +169,7 @@ function PaymentRow({
     item.recurrence !== "none" ? RECURRENCE_LABEL[item.recurrence] : null,
     item.category ? `${catLabel(item.category)}${item.sub_category ? ` · ${item.sub_category}` : ""}` : null,
     item.match_merchant ? `↔ ${item.match_merchant}` : null,
+    leaseNote(item),
   ].filter(Boolean).join(" · ");
   const amount = `${isIncome ? "+" : "−"}${item.currency !== "USD" ? `${item.currency} ` : "$"}${item.amount.toLocaleString()}`;
 
@@ -247,6 +261,10 @@ export default function ExpectedPaymentsTab({
   // to its payment when it arrives. Guessed from the name until picked.
   const [formCategory, setFormCategory] = useState("");
   const [formSubCategory, setFormSubCategory] = useState("");
+  // The lease, asked only on a bill tagged Housing › Rent.
+  const [formLeaseEnds, setFormLeaseEnds] = useState("");
+  const [formNotice, setFormNotice] = useState(DEFAULT_NOTICE_DAYS);
+  const [formRise, setFormRise] = useState("0");
   const [catPicked, setCatPicked] = useState(false);
   const { customCats, customSubCats } = useCustomCategories();
   const catOptions = formType === "income" ? INCOME_CATEGORIES : [...EXPENSE_CATEGORIES, ...customCats];
@@ -305,6 +323,7 @@ export default function ExpectedPaymentsTab({
     // A day tapped on the calendar is most often a bill landing on it.
     setFormType(on ? "expense" : "income"); setFormDueDate(on ?? todayStr()); setFormRecurrence("none");
     setFormCategory(""); setFormSubCategory(""); setCatPicked(false);
+    setFormLeaseEnds(""); setFormNotice(DEFAULT_NOTICE_DAYS); setFormRise("0");
     setShowForm(true);
   }
 
@@ -315,6 +334,8 @@ export default function ExpectedPaymentsTab({
     setFormDueDate(item.due_date); setFormRecurrence(item.recurrence ?? "none");
     setFormCategory(item.category ?? (item.transaction_type === "expense" ? guessBillCategory(item.description) ?? "" : ""));
     setFormSubCategory(item.sub_category ?? ""); setCatPicked(!!item.category);
+    setFormLeaseEnds(item.lease_ends_on ?? ""); setFormNotice(item.lease_notice_days ?? DEFAULT_NOTICE_DAYS);
+    setFormRise(item.lease_ends_on ? (item.lease_rise_pct == null ? "" : String(item.lease_rise_pct)) : "0");
     setShowForm(true);
   }
 
@@ -339,6 +360,7 @@ export default function ExpectedPaymentsTab({
       ...(formRecurrence !== "none" ? { completed_at: null } : {}),
       category: formCategory || null,
       sub_category: formSubCategory || null,
+      ...leaseFields(),
     };
     if (editingId) {
       const { data } = await supabase.from("expected_payments").update(payload).eq("id", editingId).select().single();
@@ -349,6 +371,17 @@ export default function ExpectedPaymentsTab({
     }
     setSaving(false);
     closeForm();
+  }
+
+  /** Lease columns for the save: kept on a Rent bill with an end date, cleared otherwise. A new end date asks Today again. */
+  function leaseFields() {
+    const rent = formType === "expense" && isRent({ category: formCategory, sub_category: formSubCategory });
+    if (!rent || !formLeaseEnds) return { lease_ends_on: null, lease_notice_days: null, lease_rise_pct: null, lease_decision: null };
+    const before = payments.find(p => p.id === editingId);
+    return {
+      lease_ends_on: formLeaseEnds, lease_notice_days: formNotice, lease_rise_pct: formRise === "" ? null : Number(formRise),
+      ...(before?.lease_ends_on !== formLeaseEnds ? { lease_decision: null } : {}),
+    };
   }
 
   async function toggleCompleted(item: ExpectedPayment) {
@@ -582,6 +615,27 @@ export default function ExpectedPaymentsTab({
               </select>
             </div>
           </div>
+
+          {formType === "expense" && isRent({ category: formCategory, sub_category: formSubCategory }) && (
+            <div style={{ display: "grid", gridTemplateColumns: inPanel ? "minmax(0, 1fr)" : "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+              <div>
+                <label className="uf-t-small" style={labelStyle}>Lease ends</label>
+                <input type="date" value={formLeaseEnds} onChange={e => setFormLeaseEnds(e.target.value)} style={inputStyle} />
+              </div>
+              <div>
+                <label className="uf-t-small" style={labelStyle}>Notice to give</label>
+                <select value={formNotice} onChange={e => setFormNotice(Number(e.target.value))} disabled={!formLeaseEnds} style={selectStyle}>
+                  {[30, 60, 90].map(d => <option key={d} value={d}>{d} days</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="uf-t-small" style={labelStyle}>Rent rise at renewal</label>
+                <select value={formRise} onChange={e => setFormRise(e.target.value)} disabled={!formLeaseEnds} style={selectStyle}>
+                  <option value="0">None</option><option value="3">3%</option><option value="5">5%</option><option value="">Not sure</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="uf-t-small" style={labelStyle}>Repeats</label>

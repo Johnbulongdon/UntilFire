@@ -22,6 +22,7 @@
     "test:spend-range": "node --experimental-strip-types --no-warnings scripts/verify-spend-range.ts",
     "test:transaction-flags": "node --experimental-strip-types --no-warnings scripts/verify-transaction-flags.ts",
     "test:spend-forecast": "node --experimental-strip-types --no-warnings scripts/verify-spend-forecast.ts",
+    "test:lease": "node --experimental-strip-types --no-warnings scripts/verify-lease.ts",
     "test:dashboard-layout": "node --experimental-strip-types --no-warnings scripts/verify-dashboard-layout.ts",
     "test:plaid-pfc": "node --experimental-strip-types --no-warnings scripts/verify-plaid-pfc.ts",
     "test:transaction-time": "node --experimental-strip-types --no-warnings scripts/verify-transaction-time.ts",

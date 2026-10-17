@@ -7,8 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Bouncy } from '@/components/Bouncy'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { CategoryGlyph } from '@/components/Icon'
+import { LeaseCard } from '@/components/LeaseCard'
 import { Text } from '@/components/Text'
-import { INCOME_CATEGORIES, isoDay, SUB_CATEGORIES } from '@/engine'
+import { INCOME_CATEGORIES, isoDay, isRent, SUB_CATEGORIES } from '@/engine'
 import { currencySymbol, displayCurrency } from '@/lib/display-currency'
 import { haptic } from '@/lib/haptics'
 import { amountInput, moneyIn } from '@/lib/format'
@@ -187,6 +188,9 @@ export default function TransactionSheet() {
               </View>
             </>
           )}
+
+          {/* A saved Rent payment offers the lease, on the Rent bill when there is one. */}
+          {existing && isRent(existing) && <LeaseCard bill={data?.bills.find(isRent)} txId={existing.id} />}
 
           {!showMore ? (
             <View className="mt-5"><Button small kind="quiet" label={`Add a note${type === 'expense' ? ' or refund' : ''}`} onPress={() => setShowMore(true)} /></View>

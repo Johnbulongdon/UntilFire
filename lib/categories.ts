@@ -27,7 +27,7 @@ export const EXPENSE_CATEGORIES: CategoryDef[] = [
 export const SUB_CATEGORIES: Record<string, string[]> = {
   food:          ["Groceries", "Restaurants", "Takeout & Delivery", "Drinks & Bars", "Other"],
   transport:     ["Gas & Fuel", "Parking", "Public Transit", "Ride Share", "Insurance", "Maintenance", "Other"],
-  housing:       ["Rent/Mortgage", "Insurance", "Maintenance", "Furnishing", "Property Tax", "HOA", "Other"],
+  housing:       ["Rent", "Mortgage", "Insurance", "Maintenance", "Furnishing", "Property Tax", "HOA", "Other"],
   utilities:     ["Phone", "Internet", "Electricity", "Water & Gas", "TV/Cable", "Other"],
   healthcare:    ["Doctor/GP", "Pharmacy", "Dental", "Vision", "Mental Health", "Insurance", "Other"],
   shopping:      ["Clothing", "Electronics", "Home Goods", "Sports & Outdoors", "Gifts", "Other"],

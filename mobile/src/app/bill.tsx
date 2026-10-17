@@ -3,9 +3,10 @@ import { useState } from 'react'
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { LeaseCard } from '@/components/LeaseCard'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { Text } from '@/components/Text'
-import { guessBillCategory, INCOME_CATEGORIES, isoDay, RECURRENCE_LABEL, type Recurrence } from '@/engine'
+import { guessBillCategory, INCOME_CATEGORIES, isoDay, isRent, RECURRENCE_LABEL, SUB_CATEGORIES, type Recurrence } from '@/engine'
 import { currencySymbol, displayCurrency } from '@/lib/display-currency'
 import { haptic } from '@/lib/haptics'
 import { dayLabel, expenseCategories } from '@/lib/money-data'
@@ -30,6 +31,7 @@ export default function BillSheet() {
   const [due, setDue] = useState(existing?.due_date ?? on ?? isoDay(new Date()))
   const [repeat, setRepeat] = useState<Recurrence>((existing?.recurrence as Recurrence) ?? 'monthly')
   const [category, setCategory] = useState<string>(existing?.category ?? '')
+  const [subCategory, setSubCategory] = useState<string | null>(existing?.sub_category ?? null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -52,6 +54,7 @@ export default function BillSheet() {
     const problem = await saveBill(session.user.id, {
       id: existing?.id, description, amount: value, currency,
       transaction_type: type, due_date: due, recurrence: repeat, category: category || null,
+      sub_category: type === 'expense' && SUB_CATEGORIES[category] ? subCategory : null,
     })
     if (problem) { setBusy(false); haptic.warn(); setError(problem); return }
     haptic.success()
@@ -142,9 +145,23 @@ export default function BillSheet() {
           <Text className="mb-2 mt-5 text-[13px] text-ink-3">Category{type === 'expense' ? '' : ' (optional)'}</Text>
           <View className="flex-row flex-wrap" style={{ gap: 8 }}>
             {(type === 'income' ? INCOME_CATEGORIES : expenseCategories()).map(c => (
-              <Chip key={c.key} label={c.label} active={category === c.key} onPress={() => setCategory(c.key)} />
+              <Chip key={c.key} label={c.label} active={category === c.key} onPress={() => { setCategory(c.key); setSubCategory(null) }} />
             ))}
           </View>
+
+          {type === 'expense' && !!SUB_CATEGORIES[category] && (
+            <>
+              <Text className="mb-2 mt-5 text-[13px] text-ink-3">Kind (optional)</Text>
+              <View className="flex-row flex-wrap" style={{ gap: 8 }}>
+                {SUB_CATEGORIES[category].map(sc => (
+                  <Chip key={sc} label={sc} active={subCategory === sc} onPress={() => setSubCategory(subCategory === sc ? null : sc)} />
+                ))}
+              </View>
+            </>
+          )}
+
+          {/* Only a saved Rent bill offers a lease; Mortgage never does. */}
+          {existing && isRent(existing) && <LeaseCard bill={existing} />}
 
           {error ? <Text className="mt-4 text-[14px] text-neg-ink">{error}</Text> : null}
           {existing && (
