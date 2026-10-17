@@ -8,6 +8,25 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-17
 
+### Launch readiness: security, crashes, store setup
+- Phone: the sign-in session lives in the iOS Keychain / Android Keystore
+  instead of plain storage; signed-in people move over without signing out.
+- Website: per-instance rate limits on the AI, email, feedback, survey,
+  household invite and Plaid link routes (three AI routes needed no login),
+  plus a `frame-ancestors 'none'` content security policy.
+- Phone: crash reporting through Sentry, in real builds only. Reports carry
+  the account id only, mask money amounts and drop console and tap text.
+- Version check: `/api/app-version` publishes the oldest phone version the
+  website supports; older apps show "Update UntilFire".
+- iOS privacy manifest, expo-updates for quick fixes (EAS project linked).
+- Banks that log in on their own site (Plaid OAuth): iOS returns through the
+  `/plaid-oauth` universal link (needs `PLAID_IOS_REDIRECT_URI` and
+  `APPLE_TEAM_ID`), Android by package name.
+- App Review login: a fixed code for `REVIEW_LOGIN_EMAIL` only, off unless
+  `REVIEW_LOGIN_EMAIL` and `REVIEW_LOGIN_CODE` are set.
+- Phone: Profile shows the app version (and any quick-fix update); tapping
+  it opens "What's new", kept in `mobile/src/lib/update-log.ts`.
+
 ### Lease tracking
 - Housing's "Rent/Mortgage" is now two sub-categories, Rent and Mortgage.
   Bank rent payments arrive tagged Rent; Today asks once about older

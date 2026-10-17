@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { callerKey, rateLimit } from "@/lib/rate-limit";
 import { Resend } from "resend";
 import { CAMPAIGNS, sendTagged } from "@/lib/email-send";
 import { buildHouseholdInviteEmail, firstNameFor } from "@/lib/email-html";
@@ -22,6 +23,8 @@ const SITE = "https://www.untilfire.com";
  * section and changed their mind.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const limited = rateLimit(callerKey(req, "household-invite"), 5);
+  if (limited) return limited;
   const auth = await requireUser(req);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const { admin, user } = auth;

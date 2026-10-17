@@ -1,0 +1,28 @@
+import * as Application from 'expo-application'
+import * as Updates from 'expo-updates'
+
+/**
+ * What changed in each phone release, newest first, shown under Profile ›
+ * Version. Add an entry with every App Store build or quick-fix update; keep
+ * each line short and in plain words (the founder reads it to check a build).
+ */
+export const UPDATE_LOG: { version: string; date: string; changes: string[] }[] = [
+  {
+    version: '0.1.0',
+    date: '2026-10-17',
+    changes: [
+      'Sign-in kept in the iPhone Keychain',
+      'Crash reports (no money amounts)',
+      'Asks you to update when this version is too old',
+      'Banks like Chase can bring you back to the app',
+    ],
+  },
+]
+
+/** "0.1.0 (1)", plus the quick-fix update it's running, e.g. "· fix 3f9a2c1d". */
+export function versionLabel(): string {
+  const version = Application.nativeApplicationVersion ?? '—'
+  const build = Application.nativeBuildVersion
+  const fix = !Updates.isEmbeddedLaunch && Updates.updateId ? ` · fix ${Updates.updateId.slice(0, 8)}` : ''
+  return `${version}${build ? ` (${build})` : ''}${fix}`
+}

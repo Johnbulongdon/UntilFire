@@ -19,6 +19,7 @@ import { haptic } from '@/lib/haptics'
 import { isLockOn, lockAvailable, setLockOn, unlock } from '@/lib/app-lock'
 import { billRemindersOn, setBillReminders } from '@/lib/bill-reminders'
 import { setTodayReminder, todayReminderOn } from '@/lib/today-reminder'
+import { versionLabel } from '@/lib/update-log'
 import { useEditPlan } from '@/lib/useEditPlan'
 import { FIRE_QUIZ_KEY } from '@/lib/fire-quiz'
 import { getTypeMeta } from '@quiz'
@@ -196,6 +197,10 @@ export default function Profile() {
           ])
         }} />
       )}
+
+      <Pressable accessibilityRole="button" accessibilityLabel={`Version ${versionLabel()}, see what's new`} hitSlop={8} onPress={() => { haptic.tick(); router.push('/update-log') }} className="items-center py-2">
+        <Text className="font-mono text-[12px] text-ink-3">Version {versionLabel()} · What's new</Text>
+      </Pressable>
     </Screen>
   )
 }

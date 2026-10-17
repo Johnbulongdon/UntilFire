@@ -1,4 +1,5 @@
 import type { LinkSuccess } from 'react-native-plaid-link-sdk'
+import { Platform } from 'react-native'
 
 import { nativeBuild } from '@/lib/native-build'
 
@@ -23,7 +24,8 @@ export async function connectBankNative(accessToken: string): Promise<string | '
   const { createPlaidLinkSession } = require('react-native-plaid-link-sdk') as typeof import('react-native-plaid-link-sdk')
   const headers = { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
 
-  const res = await fetch(`${SITE}/api/plaid/create-link-token`, { method: 'POST', headers }).catch(() => null)
+  // The platform lets the website add the redirect banks like Chase need to send people back to the app.
+  const res = await fetch(`${SITE}/api/plaid/create-link-token`, { method: 'POST', headers, body: JSON.stringify({ platform: Platform.OS }) }).catch(() => null)
   const body = res ? await res.json().catch(() => ({})) : {}
   if (!res || !res.ok || !body.link_token) return body.error ?? "Couldn't start connecting a bank. Please try again."
 

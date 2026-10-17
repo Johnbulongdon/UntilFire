@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { callerKey, rateLimit } from "@/lib/rate-limit";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "mistralai/mistral-7b-instruct";
@@ -15,6 +16,8 @@ const FALLBACK_BY_CATEGORY: Record<string, number> = {
 };
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(callerKey(req, "estimate-goal-amount"), 20);
+  if (limited) return limited;
   const { category, description, monthlyExpenses } = await req.json() as {
     category?: string;
     description?: string;

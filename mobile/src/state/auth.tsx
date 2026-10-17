@@ -9,6 +9,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import { isFirstSignIn } from '@/engine'
 import { supabase } from '@/lib/supabase'
 import { Events, identify, track } from '@/lib/analytics'
+import { setCrashUser } from '@/lib/crash-reporting'
 
 const SITE = 'https://www.untilfire.com'
 
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setReady(true) })
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => { setSession(next); identify(next?.user.id ?? null) })
+    const { data } = supabase.auth.onAuthStateChange((_event, next) => { setSession(next); identify(next?.user.id ?? null); setCrashUser(next?.user.id ?? null) })
     return () => data.subscription.unsubscribe()
   }, [])
 
@@ -53,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     verifyCode: async (email, code) => {
       const { data, error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code, type: 'email' })
-      if (error) return friendly(error.message)
+      if (error) return (await reviewerSignIn(email, code)) ? null : friendly(error.message)
       if (data.session) welcomeIfNew(data.session)
       return null
     },
@@ -129,4 +130,17 @@ function friendly(message: string): string {
   if (m.includes('rate') || m.includes('seconds')) return 'Please wait a moment before asking for another code.'
   if (m.includes('email')) return 'Check the email address and try again.'
   return 'Something went wrong. Please try again.'
+}
+
+/** App Review's fixed-code login (app/api/auth/review-login); does nothing for anyone else. */
+async function reviewerSignIn(email: string, code: string): Promise<boolean> {
+  const res = await fetch('https://www.untilfire.com/api/auth/review-login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim(), code }),
+  }).catch(() => null)
+  const body = res?.ok ? await res.json().catch(() => null) as { token_hash?: string } | null : null
+  if (!body?.token_hash) return false
+  const { error } = await supabase.auth.verifyOtp({ token_hash: body.token_hash, type: 'magiclink' })
+  return !error
 }
