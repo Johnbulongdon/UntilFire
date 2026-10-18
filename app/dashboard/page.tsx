@@ -30,11 +30,12 @@ import { isSnoozed, pickNextMove, snooze } from "@/lib/next-move";
 import { budgetNeeds, inLastTwelve, transactionNeed, type NeedOverrides } from "@/lib/needs";
 import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
-import { freeToSpend, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
+import { freeToSpend, untilPayday, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
+import { paydayLine } from "@/lib/payday-line";
 import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, occurrences, presumePaid, rateSoFar, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
 import FreeToSpendRunway from "./FreeToSpendRunway";
 import FreeToSpendHome from "./FreeToSpendHome";
-import { FreedomCard, MonthCard, GlanceRow, NextMoveCard, type MonthCategory } from "./HomeCards";
+import { FreedomCard, MonthCard, GlanceRow, NextMoveCard, UntilPaydayCard, type MonthCategory } from "./HomeCards";
 import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, MoneyTrack, Fig, StackBar, PaceBar, MonthCalendar, BankLogo } from "./MoneyCards";
 import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
 import { accountInUSD, daysSinceSync, STALE_AFTER_DAYS, type ConvertedFields } from "@/lib/account-currency";
@@ -731,7 +732,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   retirementCityCol?: number; retirementCityName?: string; lifestyleMultiplier?: number;
   fireAge?: number;
   nwSnapshots?: { portfolio_value: number; captured_at: string }[];
-  recentTransactions?: { date: string; amount: number; refund_amount?: number; currency: string; transaction_type?: string; tags?: string[]; description?: string; category?: string }[];
+  recentTransactions?: { date: string; amount: number; refund_amount?: number; currency: string; transaction_type?: string; tags?: string[]; description?: string; category?: string; plaid_account_id?: string | null }[];
   /** Upcoming expense bills (USD), which date this month's forecast and plan line, as on Transactions. */
   bills?: Bill[];
   /** What the contribution ladder reads: balances, measured needs, the
@@ -1251,6 +1252,32 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     }
     return [...byMonth.values()].slice(-12);
   }, [nwSnapshots]);
+  // Home's "Until payday" (D-90): cash less bills before payday, the phone's rule; the budget card stands in without one.
+  const paydayView = untilPayday(freeResult, bills.map((b) => b.description));
+  // Its line (lib/payday-line): the counted accounts' rows since last pay, then the bills ahead.
+  const paydayLineView = useMemo(() => {
+    if (!paydayView || !freeResult?.cash) return null;
+    // Rows carry Plaid's own account id, so map the counted accounts to it.
+    const counted = new Set(freeResult.cash.accounts.map((a) => a.id));
+    const ids = new Set(plaidAccounts.filter((a) => counted.has(a.id)).map((a) => a.plaid_account_id).filter((v): v is string => !!v));
+    const linked = recentTransactions.some((t) => t.plaid_account_id && ids.has(t.plaid_account_id));
+    const rows = recentTransactions
+      .filter((t) => (linked ? !!t.plaid_account_id && ids.has(t.plaid_account_id) : !t.plaid_account_id))
+      .filter((t) => t.transaction_type === "expense" || t.transaction_type === "income")
+      .map((t) => {
+        const usd = toUSD(t.transaction_type === "expense" ? netAmt(t) : t.amount, t.currency ?? displayCurrency, displayRates);
+        return { date: t.date.slice(0, 10), out: t.transaction_type === "expense" ? usd : -usd, category: t.category ?? null };
+      });
+    const biggestPay = Math.max(0, ...rows.filter((r) => r.out < 0).map((r) => -r.out));
+    const ahead = paydayView.bills.map((b) => ({ iso: b.iso, usd: Math.abs(b.amount), description: b.description, category: b.category ?? guessBillCategory(b.description) }));
+    if (paydayView.cardsOwed > 0) ahead.unshift({ iso: todayIso, usd: paydayView.cardsOwed, description: "Card balance", category: "credit_card" });
+    return paydayLine({ today: now, cash: paydayView.cash, paydayIso: paydayView.payday.iso, bills: ahead, rows, payMin: biggestPay * 0.5 });
+  }, [paydayView, freeResult, plaidAccounts, recentTransactions, displayCurrency, displayRates, todayIso, now]);
+  const categoryIcon = (category: string | null, description?: string) => {
+    const key = category ?? guessBillCategory(description ?? null);
+    const def = EXPENSE_CATEGORIES.find((c) => c.key === key);
+    return key ? resolveDisplay({ color: def?.color ?? "#8a7c68", emoji: def?.emoji ?? "🧾" }, loadCatCustomizations(), key).emoji : "🧾";
+  };
   // Home's pace line: everyday spend so far, day by day, by the same rule as "left".
   const paceSoFar = everydayByDay({ bills, spreadCategories, monthRows: monthRowsNow, days: now.getDate() });
   // The next three bills from today, for the date chips under the pace line.
@@ -1662,7 +1689,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
                 if (!b) return null;
                 return (
                   <div className="uf-t-small" style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "8px 10px", boxShadow: "var(--uf-e2)" }}>
-                    <div style={{ color: "var(--uf-ink-2)" }}>{b.year}{b.actual ? "" : " · projected"}{moveYear != null && b.year >= moveYear ? ` · in ${retireCity.split(",")[0]}` : ""}</div>
+                    <div style={{ color: "var(--uf-ink-2)" }}>{b.year}{b.year === thisYear ? " · counts toward freedom" : b.actual ? "" : " · projected"}{moveYear != null && b.year >= moveYear ? ` · in ${retireCity.split(",")[0]}` : ""}</div>
                     <b style={{ fontFamily: "var(--uf-font-mono)", color: "var(--uf-ink)" }}>{fmtMoney(b.value, true)}</b>
                   </div>
                 );
@@ -1687,7 +1714,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
               dot={false} activeDot={{ r: 5, fill: "var(--uf-teal)", stroke: "var(--uf-card)", strokeWidth: 2 }} />
             {todayPoint && (
               <ReferenceDot x={todayPoint.label} y={todayPoint.value} r={7} fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2}
-                label={{ value: `You · ${fmtMoney(todayPoint.value, true)}`, position: "right", offset: 12, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
+                label={{ value: `You · ${fmtMoney(todayPoint.value, true)}`, position: "top", offset: 12, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
             )}
             {milestones.map((m) => (
               <ReferenceDot key={m.label} x={String(m.year)} y={m.value} r={6} fill="var(--uf-card)" stroke="var(--uf-teal)" strokeWidth={3}
@@ -1797,7 +1824,17 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 
       </DashSlot>
       <DashSlot id="month" layout={layout} editing={editing} dragging={draggingId === "month"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
-        <MonthCard
+        {paydayView && paydayLineView ? (
+          <UntilPaydayCard
+            line={paydayLineView}
+            paydayIso={paydayView.payday.iso}
+            billCount={paydayView.bills.length}
+            billTotal={paydayView.bills.reduce((t, b) => t + Math.abs(b.amount), 0)}
+            icon={categoryIcon}
+            fmt={(n) => fmtMoney(n)}
+            onOpen={() => onTabChange?.("cashflow")}
+          />
+        ) : <MonthCard
           spent={monthLeft.everydaySpent}
           budget={monthLeft.everydayBudget}
           left={monthLeft.left}
@@ -1806,13 +1843,13 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           nextBills={nextBills}
           fmt={(n) => fmtMoney(n)}
           onOpen={() => onTabChange?.("cashflow")}
-        />
+        />}
       </DashSlot>
       <DashSlot id="today" layout={layout} editing={editing} dragging={draggingId === "today"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
         <TodayStrip
           userId={userId}
           bills={bills}
-          perDay={monthLeft.everydayBudget > 0 ? Math.max(0, monthLeft.left / (monthDays - now.getDate() + 1)) : null}
+          perDay={paydayView ? paydayView.perDay : monthLeft.everydayBudget > 0 ? Math.max(0, monthLeft.left / (monthDays - now.getDate() + 1)) : null}
           fmt={(n) => fmtMoney(n)}
           toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}
           onOpen={() => onTabChange?.("cashflow")}
@@ -1823,7 +1860,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           netWorth={currentNetWorth}
           invested={investedByMonth}
           safety={efMonthlyBase > 0 ? { months: emergencyFundPlan.coverageMonths, target: EMERGENCY_FUND_TARGET_MONTHS } : null}
-          savingsRate={actualOrPlannedIncome > 0 ? (actualOrPlannedSavings / actualOrPlannedIncome) * 100 : null}
+          savingsRate={income > 0 ? (annualSavings / (income * 12)) * 100 : null}
           fmt={(n) => fmtMoney(n)}
           onNetWorth={() => onTabChange?.("assets")}
           onSafety={() => onTabChange?.("assets")}
@@ -2519,8 +2556,8 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
         label={`Left to spend in ${monthName}`}
         value={<span style={{ fontSize: 44, color: leftInBudget < 0 ? "var(--uf-neg-ink)" : undefined }}>{leftInBudget < 0 ? `Over by ${fmtMoney(-leftInBudget)}` : fmtMoney(leftInBudget)}</span>}
         sub={leftInBudget > 0
-          ? <>About <Fig>{fmtMoney(leftInBudget / daysLeftInMonth)}</Fig> a day for {daysLeftInMonth} {daysLeftInMonth === 1 ? "day" : "days"} · of your <Fig>{fmtMoney(everydayBudget)}</Fig> everyday budget, bills set aside</>
-          : <>of your <Fig>{fmtMoney(everydayBudget)}</Fig> everyday budget, bills set aside</>}
+          ? <>About <Fig>{fmtMoney(leftInBudget / daysLeftInMonth)}</Fig> a day for {daysLeftInMonth} {daysLeftInMonth === 1 ? "day" : "days"} · of your <Fig>{fmtMoney(everydayBudget)}</Fig> day-to-day budget, bills set aside</>
+          : <>of your <Fig>{fmtMoney(everydayBudget)}</Fig> day-to-day budget, bills set aside</>}
       >
         {cashTight && (
           <div className="uf-t-small" style={{ color: "var(--uf-warn-ink)" }}>

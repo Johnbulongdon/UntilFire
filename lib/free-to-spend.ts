@@ -24,6 +24,7 @@
 
 import { startOfDay } from "./contribution-schedule.ts";
 import { expandExpected, isoDay, type ExpectedItem, type ForecastEvent } from "./cashflow-forecast.ts";
+import { looksLikeCardPayment } from "./spend-range.ts";
 
 export interface SpendAccount {
   id: string;
@@ -131,4 +132,22 @@ export function freeToSpend(input: {
     .map((a) => ({ name: a.name, owedUSD: Math.abs(a.balanceUSD) }));
 
   return { free, perDay: free > 0 ? Math.floor(free / days) : 0, days, payday, limitedBy, cash, budget, cards };
+}
+
+const CARD_WORD = /card|credit|amex|discover|capital one|visa|mastercard|信用卡/i;
+
+/**
+ * Home's "Until payday" (D-90): cash only, so a big spend is felt once and the
+ * number starts over when pay lands, instead of a blown budget staying red all
+ * month. Cash in the spending accounts, less bills before payday, less card
+ * balances unless a card payment is itself one of the bills. The phone's
+ * lib/bills freeUntilPayday is the same rule. Null without a linked or typed
+ * balance or a paycheck in Upcoming; Home then shows the budget card.
+ */
+export function untilPayday(r: FreeToSpend | null, billNames: (string | null)[]) {
+  if (!r?.cash || r.payday.source !== "paycheck") return null;
+  const cardBill = billNames.some((n) => !!n && looksLikeCardPayment({ description: n, transaction_type: "expense" }) && CARD_WORD.test(n));
+  const cardsOwed = cardBill ? 0 : r.cards.reduce((s, c) => s + c.owedUSD, 0);
+  const free = r.cash.free - cardsOwed;
+  return { free, perDay: free > 0 ? Math.floor(free / r.days) : 0, days: r.days, payday: r.payday, cash: r.cash.balance, cardsOwed, bills: r.cash.bills };
 }

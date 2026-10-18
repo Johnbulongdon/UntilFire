@@ -54,7 +54,7 @@ function useTodayData(userId: string | undefined, toUsd: (amount: number, curren
 export default function TodayStrip({ userId, bills, perDay, fmt, toUsd, onOpen }: {
   userId?: string;
   bills: Bill[];
-  /** Safe to spend each day for the rest of the month: "left" over the days left. Null without a budget. */
+  /** Safe to spend each day: Until payday over the days to payday (D-90), else the budget left over the days left. Null with neither. */
   perDay: number | null;
   fmt: (n: number) => string;
   toUsd: (amount: number, currency: string) => number;

@@ -117,7 +117,7 @@ export default function DashboardBackdrop({ prefill }: { prefill: CalculatorPref
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
               <Donut />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {['Housing', 'Everyday', 'Bills'].map((t, i) => (
+                {['Housing', 'Day-to-day', 'Bills'].map((t, i) => (
                   <span key={t} className="uf-t-small" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ width: 10, height: 10, borderRadius: 3, background: `var(--uf-chart-${i + 1})` }} />{t}
                   </span>

@@ -115,13 +115,13 @@ export default function Budget() {
 
       {split.everydayBudget > 0 ? (
         <Card>
-          <Label>Everyday</Label>
+          <Label>Day-to-day</Label>
           <BudgetPace spent={split.everydaySpent} budget={split.everydayBudget} now={isCurrent ? new Date() : new Date(y, m, 0)} />
         </Card>
       ) : (
         <Card soft>
           <Text className="text-[15px] font-semibold text-ink">No budget yet</Text>
-          <Text className="mt-1 text-[14px] leading-5 text-ink-2">Give each everyday category a monthly amount and see what's left as you spend. Bills come from Calendar.</Text>
+          <Text className="mt-1 text-[14px] leading-5 text-ink-2">Give each day-to-day category a monthly amount and see what's left as you spend. Bills come from Calendar.</Text>
           <View className="mt-3"><Button small kind="quiet" label="Set a budget" onPress={() => router.push('/budget-edit')} /></View>
         </Card>
       )}
@@ -149,12 +149,12 @@ export default function Budget() {
               </Pressable>
             )
           })}
-          <Text className="mt-1 text-[12px] text-ink-3">From your bills in Calendar, set aside before everyday spending.</Text>
+          <Text className="mt-1 text-[12px] text-ink-3">From your bills in Calendar, set aside before day-to-day spending.</Text>
         </Card>
       )}
 
       <Card>
-        {split.bills.length > 0 && <Label>Everyday</Label>}
+        {split.bills.length > 0 && <Label>Day-to-day</Label>}
         {rows.length === 0 && <Text className="text-[14px] text-ink-2">Nothing spent in {monthName(month)}.</Text>}
         {rows.map((key, i) => {
           const cat = categoryOf(key)

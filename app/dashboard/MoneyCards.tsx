@@ -232,7 +232,7 @@ export function PaceBar({ spent, budget, day, daysInMonth, fmt }: {
         <i title="Where an even pace would be today" style={{ position: "absolute", top: -5, bottom: -5, left: `calc(${pace * 100}% - 1px)`, width: 2, background: "var(--uf-ink)" }} />
       </div>
       <div className="uf-t-small" style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", color: "var(--uf-ink-2)" }}>
-        <span>Everyday <b style={{ ...moneyMono, color: "var(--uf-ink)" }}>{fmt(spent)}</b> of <span style={moneyMono}>{fmt(budget)}</span></span>
+        <span>Day-to-day <b style={{ ...moneyMono, color: "var(--uf-ink)" }}>{fmt(spent)}</b> of <span style={moneyMono}>{fmt(budget)}</span></span>
         {judge && (gap > 0
           ? <b style={{ color: "var(--uf-warn-ink)" }}>▲ {fmt(gap)} ahead of pace</b>
           : <b style={{ color: "var(--uf-pos-ink)" }}>▼ {fmt(-gap)} under pace</b>)}
@@ -284,7 +284,7 @@ export function MonthCalendar({ today, spentByDay, bills, perDay, fmt }: {
         })}
       </div>
       <div className="uf-t-small" style={{ display: "flex", gap: 14, flexWrap: "wrap", color: "var(--uf-ink-3)" }}>
-        <span>Darker = more everyday spending</span>
+        <span>Darker = more day-to-day spending</span>
         <span>Days ahead ≈ <b style={{ ...moneyMono, color: "var(--uf-ink-2)" }}>{fmt(Math.max(0, perDay))}</b> each</span>
         <span>Dot = bill due</span>
       </div>

@@ -104,6 +104,8 @@ export interface ForecastEvent {
    * amount still accounts exactly for the change in the running balance.
    */
   estimate?: { days: number; perDay: number };
+  /** The item's spending category, when it has one (Home's Until payday draws its icon). */
+  category?: string | null;
 }
 
 /**
@@ -352,14 +354,14 @@ export function expandExpected(items: ExpectedItem[], from: Date, to: Date): For
     if (due.getTime() < start) {
       events.push({
         iso: isoDay(from), description: item.description, amount: sign * item.amountUSD,
-        type: item.type, recurring, overdue: true, counted: item.type === "expense",
+        type: item.type, recurring, overdue: true, counted: item.type === "expense", category: item.category,
       });
     }
     if (!recurring) {
       if (due.getTime() >= start && due.getTime() <= end) {
         events.push({
           iso: isoDay(due), description: item.description, amount: sign * item.amountUSD,
-          type: item.type, recurring, overdue: false, counted: true,
+          type: item.type, recurring, overdue: false, counted: true, category: item.category,
         });
       }
       continue;
@@ -372,7 +374,7 @@ export function expandExpected(items: ExpectedItem[], from: Date, to: Date): For
       if (t < start) continue;         // before today: covered by the overdue entry
       events.push({
         iso: isoDay(occ), description: item.description, amount: sign * item.amountUSD,
-        type: item.type, recurring, overdue: false, counted: true,
+        type: item.type, recurring, overdue: false, counted: true, category: item.category,
       });
     }
   }
