@@ -177,9 +177,10 @@ browser.
 - **Free to spend lives in Money, with a sentence on Home** (D-29). Money →
   Cashflow → Budget holds the runway, the bills behind it and which accounts
   count; Home's "Free to spend" card only reads that result and links to it.
-- **Home leads with three cards and one row** (D-39): the freedom date, this
-  month's contribution, this month's spending, then net worth, safety runway and
-  months on plan. The other cards are hidden by default and restored from Edit.
+- **Home leads with one next move, and every card is a door** (D-89, after
+  D-39): the freedom date curve, your next move, left this month, Today, then
+  net worth, safety pot and savings rate. Each card's chip opens Money or Plan.
+  The other cards are hidden by default and restored from Edit.
 - **Money pages share one calm shape** (D-40): a headline card, then rows
   (`app/dashboard/MoneyCards.tsx`). What a debt started at is a fact about the
   debt, so it is set on Debts, not in Plan.

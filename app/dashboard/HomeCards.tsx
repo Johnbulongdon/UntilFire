@@ -9,42 +9,38 @@
  * every figure is computed by the dashboard and passed in.
  */
 
-import { Card } from "@/components/ui";
+import { Button, Card, Icon } from "@/components/ui";
+import type { NextMove } from "@/lib/next-move";
 
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
 const muted: React.CSSProperties = { color: "var(--uf-ink-3)" };
-const trackStyle: React.CSSProperties = { position: "relative", borderRadius: 999, background: "var(--uf-surface-2)", overflow: "hidden" };
-const link: React.CSSProperties = { background: "none", border: "none", padding: 0, font: "inherit", color: "var(--uf-pos-ink)", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" };
-
-/** A teal bar filled to `share` (0–1). */
-export function ProgressTrack({ share, height = 8, label }: { share: number; height?: number; label: string }) {
-  const pct = Math.max(0, Math.min(1, share)) * 100;
+/**
+ * Where a card leads: the tab's own icon and name, top right, so Home teaches
+ * the navigation by picture. The whole chip is the button.
+ */
+export function DoorChip({ to, onClick }: { to: "plan" | "money"; onClick: () => void }) {
+  const name = to === "plan" ? "Plan" : "Money";
   return (
-    <div role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)} style={{ ...trackStyle, height }}>
-      <i style={{ position: "absolute", inset: 0, width: `${pct}%`, background: "var(--uf-teal)", borderRadius: 999 }} />
-    </div>
+    <button type="button" onClick={onClick} aria-label={`Open ${name}`}
+      style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: 999, padding: "5px 11px",
+        background: "var(--uf-green-50)", color: "var(--uf-green)", font: "inherit", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+      <Icon name={to} size={14} />{name}
+    </button>
   );
 }
 
-const PERIODS = ["5Y", "15Y", "All"] as const;
-export type ChartPeriod = typeof PERIODS[number];
-
-export function FreedomCard({ dateLabel, yearsAway, age, invested, target, fmt, period, onPeriod, route, children }: {
+export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, children }: {
   /** "March 2041"; null until the plan has enough to project. */
   dateLabel: string | null;
   yearsAway: number | null;
   age: number | null;
-  invested: number;
-  target: number;
-  fmt: (n: number, compact?: boolean) => string;
-  period: ChartPeriod;
-  onPeriod: (p: ChartPeriod) => void;
+  /** Opens Plan → Freedom Date. */
+  onOpen: () => void;
   /** A planned move to the retirement city (D-82), shown under the date so the number says what it assumes. */
   route?: { from: string; to: string; when: string; onOpen: () => void };
-  /** The chart, drawn by the dashboard from the same projection as the date. */
+  /** The curve, drawn by the dashboard from the same projection as the date. */
   children: React.ReactNode;
 }) {
-  const share = target > 0 ? invested / target : 0;
   return (
     <Card style={{ display: "grid", gap: 14 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
@@ -71,114 +67,233 @@ export function FreedomCard({ dateLabel, yearsAway, age, invested, target, fmt, 
             <div className="uf-t-body" style={{ color: "var(--uf-ink-2)" }}>Finish your setup to see your freedom date.</div>
           )}
         </div>
-        <div role="group" aria-label="Chart range" style={{ display: "inline-flex", background: "var(--uf-surface-2)", borderRadius: 999, padding: 3 }}>
-          {PERIODS.map((p) => (
-            <button key={p} type="button" aria-pressed={p === period} onClick={() => onPeriod(p)}
-              style={{ border: "none", borderRadius: 999, padding: "4px 11px", font: "inherit", fontSize: 12, fontWeight: 700, cursor: "pointer",
-                background: p === period ? "var(--uf-card)" : "transparent", color: p === period ? "var(--uf-ink)" : "var(--uf-ink-3)", boxShadow: p === period ? "var(--uf-e1)" : "none" }}>
-              {p}
-            </button>
-          ))}
-        </div>
+        <DoorChip to="plan" onClick={onOpen} />
       </div>
-      {target > 0 && (
+      {children}
+    </Card>
+  );
+}
+
+/**
+ * The one next move (lib/next-move): a sentence, what it is worth, and one
+ * green button to where it is done. "Not now" hides it for a week and the
+ * next rule takes its place, so the card never nags.
+ */
+export function NextMoveCard({ move, fmt, onOpen, onSnooze }: {
+  move: NextMove;
+  fmt: (n: number) => string;
+  onOpen: () => void;
+  onSnooze: () => void;
+}) {
+  const split = move.split && move.split.length > 1 ? move.split : null;
+  return (
+    <Card style={{ display: "grid", gap: 12, alignContent: "start" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <span className="uf-t-label" style={muted}>Your next move</span>
+        <DoorChip to={move.door} onClick={onOpen} />
+      </div>
+      <div className="uf-t-h3" style={{ margin: 0 }}>{move.title}</div>
+      {move.payoff && (
+        <span style={{ justifySelf: "start", borderRadius: 999, padding: "4px 10px", background: "var(--uf-teal-soft)", color: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }}>
+          {move.payoff}
+        </span>
+      )}
+      {split && (
         <div style={{ display: "grid", gap: 6 }}>
-          <ProgressTrack share={share} height={10} label="Progress to your FIRE number" />
-          <div className="uf-t-small" style={{ display: "flex", justifyContent: "space-between", gap: 8, color: "var(--uf-ink-2)" }}>
-            <span><b style={{ ...mono, color: "var(--uf-ink)" }}>{fmt(invested, true)}</b> of <span style={mono}>{fmt(target, true)}</span> FIRE number</span>
-            <b style={mono}>{Math.min(100, Math.round(share * 100))}%</b>
+          <div role="img" aria-label={split.map((f) => `${f.label} ${fmt(f.amount)}`).join(", ")} style={{ display: "flex", gap: 3 }}>
+            {split.map((f, i) => (
+              <i key={f.label} style={{ flex: `${Math.max(f.amount, 1)} 1 0`, height: 8, borderRadius: 4, background: "var(--uf-teal)", opacity: i === 0 ? 1 : 0.35 }} />
+            ))}
+          </div>
+          <div className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>
+            This month: {split.map((f) => f.label.split(" — ")[0]).join(" · ")}
           </div>
         </div>
       )}
-      {children}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+        <Button variant="primary" onClick={onOpen} style={{ flex: 1 }}>{move.button}</Button>
+        <Button variant="ghost" size="sm" onClick={onSnooze}>Not now</Button>
+      </div>
     </Card>
   );
 }
 
 export interface MonthCategory { key: string; label: string; color: string; usd: number }
 
-export function MonthCard({ spent, budget, left, categories, fmt, onOpen }: {
+export interface UpcomingBill { label: string; date: string; usd: number }
+
+/** "Nov 1" from an ISO date, read as a local day. */
+const dayChip = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+/**
+ * The pace line: everyday spend so far (solid) against an even pace to the
+ * budget by month end (dotted). Spending under the dotted line is ahead.
+ */
+function PaceLine({ soFar, days, budget }: { soFar: number[]; days: number; budget: number }) {
+  const w = 300, h = 64;
+  const top = Math.max(budget, soFar.at(-1) ?? 0) * 1.05 || 1;
+  const x = (i: number) => (days > 1 ? (i / (days - 1)) * w : 0);
+  const y = (v: number) => h - (v / top) * h;
+  const path = soFar.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+  const last = soFar.length - 1;
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden style={{ width: "100%", height: h, display: "block", overflow: "visible" }}>
+      <line x1={0} y1={h} x2={w} y2={y(budget)} stroke="var(--uf-border-2)" strokeWidth={2} strokeDasharray="4 5" vectorEffect="non-scaling-stroke" />
+      {last >= 0 && <path d={path} fill="none" stroke="var(--uf-ink)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />}
+      {last >= 0 && <circle cx={x(last)} cy={y(soFar[last])} r={4} fill="var(--uf-ink)" />}
+    </svg>
+  );
+}
+
+export function MonthCard({ spent, budget, left, paceSoFar, monthDays, nextBills, fmt, onOpen }: {
   /** Everyday spending this month: bills set aside (lib/everyday-left). */
   spent: number;
   /** The everyday budget; 0 when none is set. */
   budget: number;
   /** The one "left", the same number as the phone (D-86, audit round 3). */
   left: number;
-  /** Where this month's money went, largest first; the card shows three and folds the rest into Other. */
-  categories: MonthCategory[];
+  /** Everyday spend so far, summed day by day (lib/everyday-left everydayByDay). */
+  paceSoFar: number[];
+  monthDays: number;
+  /** The next bills from today, soonest first; the card shows up to three. */
+  nextBills: UpcomingBill[];
   fmt: (n: number) => string;
   onOpen: () => void;
 }) {
-  const top = categories.slice(0, 3);
-  const rest = categories.slice(3).reduce((s, c) => s + c.usd, 0);
-  const shown = rest > 0 ? [...top, { key: "_rest", label: "Other", color: "var(--uf-ink-3)", usd: rest }] : top;
   const over = left < 0;
+  const evenSoFar = budget * (paceSoFar.length / Math.max(1, monthDays));
+  // Within 5% of the budget either side of even pace reads as "on pace".
+  const gap = spent - evenSoFar;
+  const pace = Math.abs(gap) <= budget * 0.05 ? "On pace" : gap < 0 ? "A bit ahead of pace" : "Spending faster than pace";
   return (
     <Card style={{ display: "grid", gap: 10, alignContent: "start" }}>
-      <div className="uf-t-small" style={{ display: "flex", justifyContent: "space-between", gap: 8, ...muted }}>
-        <span>This month</span>
-        <button type="button" onClick={onOpen} style={link}>Transactions →</button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <span className="uf-t-label" style={muted}>Left this month</span>
+        <DoorChip to="money" onClick={onOpen} />
       </div>
       {budget > 0 ? (
         <>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ ...mono, fontSize: 28, fontWeight: 600, color: over ? "var(--uf-neg-ink)" : "var(--uf-ink)" }}>{fmt(Math.abs(left))}</span>
-            <span className="uf-t-small" style={muted}>{over ? "over" : "left"} of <span style={mono}>{fmt(budget)}</span> everyday</span>
+            <span style={{ ...mono, fontSize: 32, fontWeight: 600, color: over ? "var(--uf-neg-ink)" : "var(--uf-ink)" }}>{fmt(Math.abs(left))}</span>
+            <span className="uf-t-small" style={muted}>{over ? "over" : "left"} of <span style={mono}>{fmt(budget)}</span></span>
           </div>
-          <div role="img" aria-label={`Spent ${fmt(spent)} of ${fmt(budget)} everyday`} style={{ height: 8, borderRadius: 4, overflow: "hidden", background: "var(--uf-surface-2)" }}>
-            <i style={{ display: "block", height: "100%", width: `${Math.min(1, spent / budget) * 100}%`, background: over ? "var(--uf-neg)" : "var(--uf-green)" }} />
+          <div role="img" aria-label={`${pace}: spent ${fmt(spent)} so far, even pace would be ${fmt(evenSoFar)}`}>
+            <PaceLine soFar={paceSoFar} days={monthDays} budget={budget} />
           </div>
-          <div className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Bills set aside</div>
+          <div className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>{pace}</div>
         </>
       ) : (
-        <span style={{ ...mono, fontSize: 28, fontWeight: 600 }}>{fmt(spent)}</span>
+        <>
+          <span style={{ ...mono, fontSize: 32, fontWeight: 600 }}>{fmt(spent)}</span>
+          <span className="uf-t-small" style={muted}>spent so far. Set a budget to see what&apos;s left.</span>
+        </>
       )}
-      {shown.length > 0 && (
-        <div className="uf-t-small" style={{ display: "flex", gap: 12, flexWrap: "wrap", color: "var(--uf-ink-2)" }}>
-          {shown.map((c) => <span key={c.key}><i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: c.color, marginRight: 5 }} />{c.label} <span style={mono}>{fmt(c.usd)}</span></span>)}
+      {nextBills.length > 0 && (
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {nextBills.slice(0, 3).map((b) => (
+            <span key={`${b.label}-${b.date}`} className="uf-t-small" style={{ display: "inline-flex", gap: 6, padding: "4px 10px", borderRadius: 999, background: "var(--uf-surface-2)", color: "var(--uf-ink-2)" }}>
+              <span style={{ fontWeight: 700, color: "var(--uf-ink)" }}>{dayChip(b.date)}</span>{b.label} <span style={mono}>{fmt(b.usd)}</span>
+            </span>
+          ))}
         </div>
       )}
     </Card>
   );
 }
 
-const cell: React.CSSProperties = { display: "grid", gap: 8, padding: "14px 18px", background: "var(--uf-card)", color: "inherit", textAlign: "left", border: "none", font: "inherit", cursor: "pointer" };
-const head: React.CSSProperties = { display: "flex", justifyContent: "space-between", gap: 8, color: "var(--uf-ink-2)" };
+const cell: React.CSSProperties = { display: "grid", gap: 10, alignContent: "start", padding: "16px 18px", background: "var(--uf-card)", color: "inherit", textAlign: "left", border: "none", font: "inherit", cursor: "pointer" };
+const head: React.CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 };
 
-export function GlanceRow({ netWorth, runway, onPlan, fmt, onNetWorth, onRunway, onMonths }: {
+/** The reveal's comparison (RevealFlow): a common FIRE target, and the US personal saving rate (BEA/FRED), rounded. */
+const FIRE_SAVER_RATE = 25;
+const US_SAVING_RATE = 5;
+
+function Sparkline({ values }: { values: number[] }) {
+  const w = 120, h = 32;
+  const lo = Math.min(...values), hi = Math.max(...values);
+  const x = (i: number) => (i / Math.max(1, values.length - 1)) * w;
+  const y = (v: number) => (hi > lo ? h - ((v - lo) / (hi - lo)) * h : h / 2);
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} aria-hidden style={{ width: w, height: h, overflow: "visible" }}>
+      <path d={values.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ")} fill="none" stroke="var(--uf-teal)" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+/** A tile's label and the tab it opens, one line. */
+function TileHead({ label, to }: { label: string; to: "money" | "plan" }) {
+  return (
+    <span style={head}>
+      <span className="uf-t-label" style={muted}>{label}</span>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--uf-green)", fontSize: 12, fontWeight: 700 }}><Icon name={to} size={14} />{to === "plan" ? "Plan" : "Money"}</span>
+    </span>
+  );
+}
+
+export function GlanceRow({ netWorth, invested, safety, savingsRate, fmt, onNetWorth, onSafety, onSavings }: {
   netWorth: number;
-  /** Months covered, the floor and the target, in months; null without spending to measure. */
-  runway: { months: number; floor: number; target: number } | null;
-  /** Finished months, oldest first; null before any finished month. */
-  onPlan: boolean[] | null;
+  /** Invested at each month end, oldest first, up to 12 (the snapshots behind the curve); fewer than 2 draws no line. */
+  invested: number[];
+  /** Months of needs in the safety pot, and the target; null without spending to measure. */
+  safety: { months: number; target: number } | null;
+  /** Saved as a share of income this month, in percent; null without income. */
+  savingsRate: number | null;
   fmt: (n: number) => string;
   onNetWorth: () => void;
-  onRunway: () => void;
-  onMonths: () => void;
+  onSafety: () => void;
+  onSavings: () => void;
 }) {
-  const on = onPlan?.filter(Boolean).length ?? 0;
+  const change = invested.length >= 2 ? invested[invested.length - 1] - invested[invested.length - 2] : null;
+  const full = safety ? safety.months >= safety.target : false;
+  const rates = savingsRate != null ? [
+    { label: "You", pct: savingsRate, you: true },
+    { label: "FIRE saver", pct: FIRE_SAVER_RATE, you: false },
+    { label: "US", pct: US_SAVING_RATE, you: false },
+  ] : [];
+  const maxRate = Math.max(1, ...rates.map((r) => r.pct));
   return (
     <Card style={{ padding: 0, overflow: "hidden" }}>
       {/* A 1px gap over a border-coloured grid draws the dividers in one row or three. */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 1, background: "var(--uf-border)" }}>
-        <button type="button" onClick={onNetWorth} style={cell}>
-          <span className="uf-t-small" style={head}>Net worth <span style={muted}>›</span></span>
-          <b style={{ ...mono, fontSize: 18, color: netWorth < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink)" }}>{fmt(netWorth)}</b>
+        <button type="button" onClick={onNetWorth} aria-label="Net worth, open Money" style={cell}>
+          <TileHead label="Net worth" to="money" />
+          <b style={{ ...mono, fontSize: 22, color: netWorth < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink)" }}>{fmt(netWorth)}</b>
+          <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            {change != null && (
+              <span className="uf-t-small" style={{ ...mono, color: change >= 0 ? "var(--uf-pos-ink)" : "var(--uf-neg-ink)" }}>
+                {change >= 0 ? "▲" : "▼"} {fmt(Math.abs(change))} invested
+              </span>
+            )}
+            {invested.length >= 2 && <Sparkline values={invested} />}
+          </span>
         </button>
-        {runway && (
-          <button type="button" onClick={onRunway} style={cell}>
-            <span className="uf-t-small" style={head}>Safety runway <span style={mono}>{runway.months.toFixed(1)} of {runway.target} mo</span></span>
-            <div style={{ position: "relative" }}>
-              <ProgressTrack share={runway.months / runway.target} label={`Safety runway: ${runway.months.toFixed(1)} of ${runway.target} months`} />
-              <i title={`Floor: ${runway.floor} months`} style={{ position: "absolute", top: -3, bottom: -3, left: `${Math.min(100, (runway.floor / runway.target) * 100)}%`, width: 2, background: "var(--uf-ink)" }} />
+        {safety && (
+          <button type="button" onClick={onSafety} aria-label="Safety pot, open Money" style={cell}>
+            <TileHead label="Safety pot" to="money" />
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <b style={{ ...mono, fontSize: 22 }}>{Math.min(safety.months, 99).toFixed(1)}</b>
+              <span className="uf-t-small" style={muted}>of {safety.target} months</span>
+              {full && <span style={{ color: "var(--uf-teal)" }}><Icon name="positive" size={18} /></span>}
+            </span>
+            <div role="img" aria-label={`${safety.months.toFixed(1)} of ${safety.target} months of needs saved`} style={{ display: "flex", gap: 3 }}>
+              {Array.from({ length: safety.target }, (_, i) => {
+                const fill = Math.max(0, Math.min(1, safety.months - i));
+                return <i key={i} style={{ flex: 1, height: 8, borderRadius: 4, background: `linear-gradient(90deg, var(--uf-teal) ${fill * 100}%, var(--uf-surface-2) ${fill * 100}%)` }} />;
+              })}
             </div>
           </button>
         )}
-        {onPlan && (
-          <button type="button" onClick={onMonths} style={cell}>
-            <span className="uf-t-small" style={head}>Months on plan <span style={mono}>{on} of {onPlan.length}</span></span>
-            <div role="img" aria-label={`${on} of ${onPlan.length} finished months on plan`} style={{ display: "flex", gap: 3 }}>
-              {onPlan.map((ok, i) => <i key={i} style={{ flex: 1, height: 8, borderRadius: 4, background: ok ? "var(--uf-teal)" : "var(--uf-surface-2)" }} />)}
+        {savingsRate != null && (
+          <button type="button" onClick={onSavings} aria-label="Savings rate, open Plan" style={cell}>
+            <TileHead label="Savings rate" to="plan" />
+            <b style={{ ...mono, fontSize: 22 }}>{Math.round(savingsRate)}%</b>
+            <div role="img" aria-label={`You ${Math.round(savingsRate)}%, typical FIRE saver ${FIRE_SAVER_RATE}%, US ${US_SAVING_RATE}%`} style={{ display: "grid", gap: 4 }}>
+              {rates.map((r) => (
+                <span key={r.label} className="uf-t-small" style={{ display: "grid", gridTemplateColumns: "70px 1fr", alignItems: "center", gap: 8, color: "var(--uf-ink-2)" }}>
+                  {r.label}
+                  <i style={{ height: 6, borderRadius: 3, width: `${Math.max(2, (Math.max(0, r.pct) / maxRate) * 100)}%`, background: r.you ? "var(--uf-teal)" : "var(--uf-border-2)" }} />
+                </span>
+              ))}
             </div>
           </button>
         )}

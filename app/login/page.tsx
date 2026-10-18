@@ -7,10 +7,11 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { getAcquisitionSource } from '@/lib/acquisition'
 import { trackSignupStarted } from '@/lib/analytics'
-import { peekCalculatorPrefill } from '@/lib/journey'
+import { peekCalculatorPrefill, type CalculatorPrefill } from '@/lib/journey'
 import { afterSignInPath, finishSignIn } from '@/lib/auth-finish'
 import { isPlausibleEmail, normaliseCode } from '@/lib/auth-user'
 import { Button, Field, Input } from '@/components/ui'
+import DashboardBackdrop from './DashboardBackdrop'
 
 // Email sign-in stays off until Supabase can send the code: custom SMTP
 // (its built-in sender is for testing only) and a template that includes
@@ -27,10 +28,22 @@ function sendErrorMessage(error: { status?: number; message?: string }): string 
   return "We couldn't send a code just now. Try again, or continue with Google."
 }
 
+const GOOGLE_G = (size: number) => (
+  <svg aria-hidden width={size} height={size} viewBox="0 0 24 24">
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+  </svg>
+)
+
 export default function LoginPage() {
   const router = useRouter()
-  const [hasPrefill, setHasPrefill] = useState(false)
-  const [prefillYear, setPrefillYear] = useState<number | null>(null)
+  const [prefill, setPrefill] = useState<CalculatorPrefill | null>(null)
+  const hasPrefill = Boolean(prefill)
+  const prefillYear = prefill?.retireYear ?? null
+  // Visitors arriving from a result get one green button; email waits behind a link.
+  const [showEmail, setShowEmail] = useState(false)
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [stage, setStage] = useState<'email' | 'code'>('email')
@@ -43,11 +56,7 @@ export default function LoginPage() {
   const finishingWithCode = useRef(false)
 
   useEffect(() => {
-    const prefill = peekCalculatorPrefill()
-    if (prefill) {
-      setHasPrefill(true)
-      if (prefill.retireYear) setPrefillYear(prefill.retireYear)
-    }
+    setPrefill(peekCalculatorPrefill())
   }, [])
 
   const getOAuthRedirectTo = () => {
@@ -163,7 +172,17 @@ export default function LoginPage() {
       justifyContent: 'center',
       background: 'var(--uf-ground)',
       fontFamily: "'Manrope', sans-serif",
+      position: 'relative',
     }}>
+      {prefill && <DashboardBackdrop prefill={prefill} />}
+
+      <Link href="/" aria-label="Back to calculator" style={{
+        position: 'absolute', top: 20, left: 20, zIndex: 2,
+        fontSize: 13, color: 'var(--uf-ink-2)', textDecoration: 'none',
+      }}>
+        ← Back
+      </Link>
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
         .login-btn {
@@ -189,19 +208,19 @@ export default function LoginPage() {
         }
       `}</style>
 
-      <div style={{ width: '100%', maxWidth: 400, padding: '0 24px' }}>
+      <div style={{ width: '100%', maxWidth: 400, padding: '0 24px', position: 'relative', zIndex: 1 }}>
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{ marginBottom: 10 }}>
             <Logo variant="auto" size={28} />
           </div>
           {hasPrefill ? (
-            <div style={{ fontSize: 15, color: 'var(--uf-ink)', lineHeight: 1.5, fontWeight: 700 }}>
+            <h1 className="uf-t-h1" style={{ margin: 0, color: 'var(--uf-ink)', textWrap: 'balance' }}>
               {prefillYear
-                ? <>Your freedom year is <span style={{ color: 'var(--uf-green)' }}>{prefillYear}</span>.<br />Save your starting point to track your progress.</>
-                : <>Your starting point is ready.<br /><span style={{ color: 'var(--uf-ink-2)', fontWeight: 400 }}>Sign in to save and track it.</span></>
+                ? <><span style={{ color: 'var(--uf-teal)' }}>{prefillYear}</span> is just your starting point</>
+                : <>Your starting point is ready</>
               }
-            </div>
+            </h1>
           ) : (
             <div style={{ fontSize: 15, color: 'var(--uf-ink-2)', lineHeight: 1.5 }}>
               Sign in to track your progress<br />toward financial independence
@@ -215,19 +234,33 @@ export default function LoginPage() {
           border: '1px solid var(--uf-border)',
           borderRadius: 16,
           padding: '32px 28px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04)',
+          boxShadow: 'var(--uf-e2)',
         }}>
+          {hasPrefill ? (
+            <>
+              <Button variant="primary" size="lg" fullWidth onClick={signInWithGoogle} style={{ fontSize: 16, padding: '16px 28px' }}>
+                Start your journey to freedom
+              </Button>
+              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: 12, color: 'var(--uf-ink-3)' }}>
+                {GOOGLE_G(14)} Continues with Google
+              </div>
+            </>
+          ) : (
           <button className="login-btn" onClick={signInWithGoogle}>
-            <svg width="18" height="18" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
+            {GOOGLE_G(18)}
             Continue with Google
           </button>
+          )}
 
-          {EMAIL_SIGNIN && (
+          {EMAIL_SIGNIN && hasPrefill && !showEmail && stage === 'email' && (
+            <div style={{ textAlign: 'center', marginTop: 12 }}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setShowEmail(true)}>
+                Use email instead
+              </Button>
+            </div>
+          )}
+
+          {EMAIL_SIGNIN && (!hasPrefill || showEmail || stage === 'code') && (
             <>
               <div role="separator" aria-label="or" style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0', color: 'var(--uf-ink-3)', fontSize: 12 }}>
                 <span aria-hidden style={{ flex: 1, height: 1, background: 'var(--uf-border)' }} />
@@ -306,17 +339,12 @@ export default function LoginPage() {
             lineHeight: 1.6,
             fontFamily: "'Manrope', sans-serif",
           }}>
-            No credit card required. Free forever for the core calculator.<br />
-            Export or delete your data anytime.<br />
-            By signing in you agree to our Terms &amp; Privacy Policy.
+            By continuing you agree to our{' '}
+            <Link href="/terms" style={{ color: 'inherit' }}>Terms</Link> &amp;{' '}
+            <Link href="/privacy" style={{ color: 'inherit' }}>Privacy Policy</Link>.
           </div>
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: 24 }}>
-          <Link href="/" style={{ fontSize: 13, color: 'var(--uf-ink-2)', textDecoration: 'none' }}>
-            ← Back to calculator
-          </Link>
-        </div>
       </div>
     </div>
   )
