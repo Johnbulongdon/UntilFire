@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
   XAxis, YAxis, Tooltip,
-  ResponsiveContainer, ReferenceLine, BarChart, Bar, Cell,
+  ResponsiveContainer, ReferenceLine, ReferenceDot, AreaChart, Area,
 } from "recharts";
 import TransactionsTab from "./TransactionsTab";
 import PlaidConnect, { type PlaidItem } from "./PlaidConnect";
@@ -16,6 +16,7 @@ import LearnTab from "./LearnTab";
 import ContributionsTab from "./ContributionsTab";
 import CompareCard from "./CompareCard";
 import NextContributionCard, { useContributionPlan } from "./NextContributionCard";
+import TodayStrip from "./TodayStrip";
 import { emergencyFundFromPlan, measuredEmergencyFund, type AccountFacts } from "@/lib/contribution-ladder";
 import { goalMonthly, goalRungs, type GoalLike } from "@/lib/goal-monthly";
 import { freedomCash, safetyPot } from "@/lib/freedom-cash";
@@ -23,7 +24,9 @@ import { spendingAverage } from "@/lib/real-spending";
 import { carriedCards, freedomDebt } from "@/lib/freedom-debt";
 import { applyAccountShares, readAccountShares, shareOf, SHARED_PCT, type AccountShares } from "@/lib/account-share";
 import { billCategorySet } from "@/lib/bill-categories";
-import { everydayLeft } from "@/lib/everyday-left";
+import { everydayByDay, everydayLeft } from "@/lib/everyday-left";
+import { ladderViewFromPlan } from "@/lib/contribution-ladder";
+import { isSnoozed, pickNextMove, snooze } from "@/lib/next-move";
 import { budgetNeeds, inLastTwelve, transactionNeed, type NeedOverrides } from "@/lib/needs";
 import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
@@ -31,7 +34,7 @@ import { freeToSpend, type FreeToSpend, type SpendAccount } from "@/lib/free-to-
 import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, occurrences, presumePaid, rateSoFar, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
 import FreeToSpendRunway from "./FreeToSpendRunway";
 import FreeToSpendHome from "./FreeToSpendHome";
-import { FreedomCard, MonthCard, GlanceRow, type MonthCategory } from "./HomeCards";
+import { FreedomCard, MonthCard, GlanceRow, NextMoveCard, type MonthCategory } from "./HomeCards";
 import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, MoneyTrack, Fig, StackBar, PaceBar, MonthCalendar, BankLogo } from "./MoneyCards";
 import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
 import { accountInUSD, daysSinceSync, STALE_AFTER_DAYS, type ConvertedFields } from "@/lib/account-currency";
@@ -63,7 +66,7 @@ import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened, trackFreedomReportExported, trackPlanCompare } from "@/lib/analytics";
 import WhatIf from "./WhatIf";
-import type { EngineChange, LifeVersion } from "@/lib/life-changes";
+import { coastYear, type EngineChange, type LifeVersion } from "@/lib/life-changes";
 import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
@@ -711,10 +714,12 @@ function SectionLabel({ icon, text, color = "var(--uf-ink)" }: { icon: string; t
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [] }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60 }: {
   spreadCategories?: string[];
   /** Typed on the phone; in net worth only (audit round 2). */
   homeValue?: number;
+  /** The age Coast FIRE counts to: pension access, as in Plan → Compare. */
+  coastRetireAge?: number;
   userId: string;
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
@@ -751,7 +756,6 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   /** Plan settings (D-59), so Home's date is Plan's. */
   plan?: PlanSettings;
 }) {
-  const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("5Y");
 
   // Home's arrangement. Loaded once per user; saved on every change rather
   // than behind a Save button, because there is nothing to lose by saving and
@@ -1097,16 +1101,10 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     ? `${DAY_NAMES[now.getDay()]} · ${MONTH_NAMES[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`
     : null;
 
-  // Chart period filter
-  const periodData = useMemo(() => {
-    const limit = chartPeriod === "5Y" ? 5 : chartPeriod === "15Y" ? 15 : Number.POSITIVE_INFINITY;
-    return chartData.filter(entry => entry.phase !== "projection" || ((entry.yearsOut ?? 0) <= limit));
-  }, [chartData, chartPeriod]);
-
-  // One bar a year, as on the phone (Oct 2026): the last reading of each
-  // calendar year, actual where it has happened and projected after. A move to
-  // the retirement city (D-82) is marked with its flag, and the years lived
-  // there are striped so the change does not rest on colour alone.
+  // One point a year on the freedom curve: the last reading of each calendar
+  // year, actual where it has happened and projected after, ending at the
+  // freedom year so the line finishes on the FIRE number. A move to the
+  // retirement city (D-82) is marked with its flag.
   const thisYear = new Date().getFullYear();
   const freeYear = exactFreedomDate ? exactFreedomDate.getFullYear() : null;
   const retireCity = retirementCityName && retirementCityName !== cityName ? retirementCityName : "";
@@ -1116,15 +1114,48 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const moveFlagUri = retireCity ? flagUri(CITIES.find((c) => c.name === retireCity)?.flag ?? "") : null;
   const yearBars = useMemo(() => {
     const byYear = new Map<number, { year: number; value: number; actual: boolean }>();
-    for (const e of periodData) {
+    for (const e of chartData) {
       const year = e.phase === "today" ? thisYear : Number(e.label.slice(-4));
       const value = e.actual ?? e.projected;
       if (!Number.isFinite(year) || value == null) continue;
       if (year === thisYear && e.phase !== "today" && byYear.get(year)?.actual) continue;
+      if (freeYear != null && year > freeYear) continue;
       byYear.set(year, { year, value, actual: e.phase !== "projection" });
     }
     return Array.from(byYear.values()).map((b) => ({ ...b, label: String(b.year) }));
-  }, [periodData, thisYear]);
+  }, [chartData, thisYear, freeYear]);
+  const todayPoint = yearBars.find((b) => b.year === thisYear) ?? yearBars[0];
+
+  // Milestones drawn on the curve, so a far-off date still shows the steps
+  // between here and there: the first year past a quarter and a half of the
+  // FIRE number, and Coast FIRE, the first year the pot would reach the number
+  // by pension age with no more saving (lib/life-changes coastYear, as in
+  // Compare). Coast needs an age, so it is skipped without one.
+  const milestones = useMemo(() => {
+    if (!(fireTarget > 0) || yearBars.length < 2) return [];
+    const out: { year: number; value: number; label: string }[] = [];
+    const firstAt = (share: number) => yearBars.find((b) => b.value >= fireTarget * share);
+    const startValue = yearBars[0].value;
+    for (const [share, label] of [[0.25, "25%"], [0.5, "50%"]] as const) {
+      const b = firstAt(share);
+      if (b && startValue < fireTarget * share && b.year !== freeYear) out.push({ year: b.year, value: b.value, label });
+    }
+    const ahead = yearBars.filter((b) => b.year >= thisYear);
+    const coast = coastYear(ahead.map((b) => b.value), fireTarget, growthRate, fireAge, coastRetireAge);
+    const coastBar = coast != null && coast > 0 ? ahead[coast] : undefined;
+    if (coastBar && coastBar.year !== freeYear) out.push({ year: coastBar.year, value: coastBar.value, label: "Coast FIRE" });
+    // Labels sit above their dots, so two milestones a year or two apart would
+    // print over each other (and over "You" on a phone). Keep the earliest of
+    // any crowded pair: a fifth of the path apart, never closer than two years.
+    const span = (freeYear ?? yearBars[yearBars.length - 1].year) - thisYear;
+    const minGap = Math.max(2, Math.ceil(span / 5));
+    let last = thisYear;
+    return out.sort((a, b) => a.year - b.year).filter((m) => {
+      if (m.year - last < minGap) return false;
+      last = m.year;
+      return true;
+    });
+  }, [yearBars, fireTarget, fireAge, growthRate, thisYear, freeYear, coastRetireAge]);
 
   // KPI trends — cashflow transactions only
   const hasActuals       = actualIncome > 0 || actualExpenses > 0;
@@ -1209,11 +1240,44 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const currentNetWorth = ownedNow.k401 + ownedNow.rothIRA + ownedNow.taxable + ownedNow.cashSavings + homeValue - debtsNow.otherDebt - debtsNow.mortgage - debtsNow.cards;
   // The one "left", the same as Budget and the phone (lib/everyday-left, audit round 3).
   const monthKeyNow = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
-  const monthLeft = everydayLeft({
-    budget: expenses as Record<string, number>, bills, spreadCategories,
-    monthRows: recentTransactions.filter((t) => t.date.startsWith(monthKeyNow))
-      .map((t) => ({ ...t, usd: toUSD(netAmt(t), t.currency ?? displayCurrency, displayRates) })),
-  });
+  const monthRowsNow = recentTransactions.filter((t) => t.date.startsWith(monthKeyNow))
+    .map((t) => ({ ...t, usd: toUSD(netAmt(t), t.currency ?? displayCurrency, displayRates) }));
+  const monthLeft = everydayLeft({ budget: expenses as Record<string, number>, bills, spreadCategories, monthRows: monthRowsNow });
+  // The net worth tile's line: invested at each of the last 12 month ends (the snapshots behind the curve).
+  const investedByMonth = useMemo(() => {
+    const byMonth = new Map<string, number>();
+    for (const snap of [...nwSnapshots].sort((x, y) => x.captured_at.localeCompare(y.captured_at))) {
+      if (snap.portfolio_value > 0) byMonth.set(snap.captured_at.slice(0, 7), snap.portfolio_value);
+    }
+    return [...byMonth.values()].slice(-12);
+  }, [nwSnapshots]);
+  // Home's pace line: everyday spend so far, day by day, by the same rule as "left".
+  const paceSoFar = everydayByDay({ bills, spreadCategories, monthRows: monthRowsNow, days: now.getDate() });
+  // The next three bills from today, for the date chips under the pace line.
+  const in45 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 45);
+  const in45Iso = `${in45.getFullYear()}-${String(in45.getMonth() + 1).padStart(2, "0")}-${String(in45.getDate()).padStart(2, "0")}`;
+  const nextBills = bills
+    .flatMap((b) => occurrences(b, todayIso, in45Iso).slice(0, 1).map((date) => ({ label: b.description || "Bill", date, usd: b.usd })))
+    .sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
+  // Home's one next move (D-89): over-budget categories first, then a missing
+  // budget, then the contribution ladder's first step, then the best what-if.
+  // Bill and spread (yearly) categories are left out of "over": a bill landing is not overspending.
+  const [snoozeTick, setSnoozeTick] = useState(0);
+  const nextMove = useMemo(() => {
+    void snoozeTick;
+    const billKeys = new Set([...billCategorySet(bills), ...(spreadCategories ?? [])]);
+    const budgetMap = expenses as Record<string, number>;
+    const ladder = contributionFacts ? ladderViewFromPlan(contributionPlan, contributionFacts) : null;
+    return pickNextMove({
+      categories: monthCategories.filter((c) => !billKeys.has(c.key))
+        .map((c) => ({ key: c.key, label: c.label, budget: budgetMap[c.key] ?? 0, spent: c.usd })),
+      hasBudget: Object.entries(budgetMap).some(([k, v]) => !k.startsWith("_") && v > 0),
+      ladder: ladder ? ladder.waterfall.fills : null,
+      fallback: bestMove,
+      fmt: (n) => fmt(n, displayCurrency, displayRates),
+      snoozed: (key) => isSnoozed(key),
+    });
+  }, [snoozeTick, bills, spreadCategories, expenses, contributionFacts, contributionPlan, monthCategories, bestMove, displayCurrency, displayRates]);
   const spendingStatusColor = projectedSpendStatus === "Running above plan" ? "var(--uf-neg)" : projectedSpendStatus === "Running below plan" ? "var(--uf-pos)" : "var(--uf-ink-3)";
   const spendingBarColor = projectedSpendStatus === "Running above plan" ? "var(--uf-neg)" : projectedSpendStatus === "Running below plan" ? "var(--uf-pos)" : "var(--uf-green-700)";
   const spendingProgressPct = monthlyExpenses > 0 ? Math.min((actualOrPlannedExpenses / monthlyExpenses) * 100, 100) : 0;
@@ -1576,11 +1640,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         dateLabel={exactFreedomDate ? exactFreedomDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : retireYear ? String(retireYear) : null}
         yearsAway={fireYear}
         age={fireAge > 0 && fireYear ? fireAge + fireYear : null}
-        invested={investable}
-        target={fireTarget}
-        fmt={fmtMoney}
-        period={chartPeriod}
-        onPeriod={setChartPeriod}
+        onOpen={() => onTabChange?.("fire-calculator")}
         route={retireCity ? {
           from: cityName ? cityName.split(",")[0] : "",
           fromFlag: cityName ? CITIES.find((c) => c.name === cityName)?.flag ?? "\u{1F3E0}" : "",
@@ -1590,19 +1650,13 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           onOpen: () => onTabChange?.("fire-calculator"),
         } : undefined}
       >
-        <ResponsiveContainer width="100%" height={180}>
-          <BarChart data={yearBars} margin={{ top: 34, right: 18, bottom: 0, left: 18 }} barCategoryGap="22%">
-            <defs>
-              <pattern id="uf-moved" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <rect width="6" height="6" fill="var(--uf-teal)" fillOpacity={0.45} />
-                <line x1="0" y1="0" x2="0" y2="6" stroke="var(--uf-teal)" strokeWidth={2.5} />
-              </pattern>
-            </defs>
+        <ResponsiveContainer width="100%" height={220}>
+          <AreaChart data={yearBars} margin={{ top: 34, right: 24, bottom: 0, left: 24 }}>
             <XAxis dataKey="label" tick={{ fill: "var(--uf-ink-3)", fontSize: 12, fontFamily: "var(--uf-font-mono)" }} axisLine={{ stroke: "var(--uf-border)" }} tickLine={false} interval="preserveStartEnd" minTickGap={28} />
             <YAxis hide domain={[0, "auto"]} />
             <Tooltip
               animationDuration={150}
-              cursor={{ fill: "var(--uf-surface-2)", fillOpacity: 0.4 }}
+              cursor={{ stroke: "var(--uf-border-2)" }}
               content={({ active, payload }) => {
                 const b = active ? payload?.[0]?.payload as { year: number; value: number; actual: boolean } | undefined : undefined;
                 if (!b) return null;
@@ -1629,14 +1683,20 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
                   );
                 }} />
             )}
-            <Bar dataKey="value" radius={[3, 3, 0, 0]} isAnimationActive={false}>
-              {yearBars.map((b) => (
-                <Cell key={b.year}
-                  fill={moveYear != null && b.year >= moveYear && !b.actual ? "url(#uf-moved)" : "var(--uf-teal)"}
-                  fillOpacity={b.actual || (freeYear != null && b.year >= freeYear) ? 1 : 0.5} />
-              ))}
-            </Bar>
-          </BarChart>
+            <Area type="monotone" dataKey="value" stroke="var(--uf-teal)" strokeWidth={3} fill="var(--uf-teal-soft)" fillOpacity={1} isAnimationActive={false}
+              dot={false} activeDot={{ r: 5, fill: "var(--uf-teal)", stroke: "var(--uf-card)", strokeWidth: 2 }} />
+            {todayPoint && (
+              <ReferenceDot x={todayPoint.label} y={todayPoint.value} r={7} fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2}
+                label={{ value: `You · ${fmtMoney(todayPoint.value, true)}`, position: "right", offset: 12, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
+            )}
+            {milestones.map((m) => (
+              <ReferenceDot key={m.label} x={String(m.year)} y={m.value} r={6} fill="var(--uf-card)" stroke="var(--uf-teal)" strokeWidth={3}
+                label={{ value: m.label, position: "top", offset: 10, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
+            ))}
+            {freeYear != null && yearBars.length > 1 && (
+              <ReferenceDot x={yearBars[yearBars.length - 1].label} y={yearBars[yearBars.length - 1].value} r={8} fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2} />
+            )}
+          </AreaChart>
         </ResponsiveContainer>
       </FreedomCard>
 
@@ -1727,7 +1787,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       </DashSlot>
       {/* ── Freedom date + best move ─────────────────────────────────────── */}
       <DashSlot id="contribution" layout={layout} editing={editing} dragging={draggingId === "contribution"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
-      {contributionFacts && (
+      {nextMove ? (
+        <NextMoveCard move={nextMove} fmt={(n) => fmtMoney(n)}
+          onOpen={() => onTabChange?.(nextMove.tab)}
+          onSnooze={() => { snooze(nextMove.key); setSnoozeTick((t) => t + 1); }} />
+      ) : contributionFacts && (
         <NextContributionCard facts={contributionFacts} onOpenPlan={() => onTabChange?.("contributions")} />
       )}
 
@@ -1737,20 +1801,33 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           spent={monthLeft.everydaySpent}
           budget={monthLeft.everydayBudget}
           left={monthLeft.left}
-          categories={monthCategories}
+          paceSoFar={paceSoFar}
+          monthDays={monthDays}
+          nextBills={nextBills}
           fmt={(n) => fmtMoney(n)}
+          onOpen={() => onTabChange?.("cashflow")}
+        />
+      </DashSlot>
+      <DashSlot id="today" layout={layout} editing={editing} dragging={draggingId === "today"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+        <TodayStrip
+          userId={userId}
+          bills={bills}
+          perDay={monthLeft.everydayBudget > 0 ? Math.max(0, monthLeft.left / (monthDays - now.getDate() + 1)) : null}
+          fmt={(n) => fmtMoney(n)}
+          toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}
           onOpen={() => onTabChange?.("cashflow")}
         />
       </DashSlot>
       <DashSlot id="glance" layout={layout} editing={editing} dragging={draggingId === "glance"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
         <GlanceRow
           netWorth={currentNetWorth}
-          runway={efMonthlyBase > 0 ? { months: emergencyFundPlan.coverageMonths, floor: EMERGENCY_FUND_FLOOR_MONTHS, target: EMERGENCY_FUND_TARGET_MONTHS } : null}
-          onPlan={trackedMonths > 0 ? [...consistencyMonths].reverse().map((m) => m.onTrack) : null}
+          invested={investedByMonth}
+          safety={efMonthlyBase > 0 ? { months: emergencyFundPlan.coverageMonths, target: EMERGENCY_FUND_TARGET_MONTHS } : null}
+          savingsRate={actualOrPlannedIncome > 0 ? (actualOrPlannedSavings / actualOrPlannedIncome) * 100 : null}
           fmt={(n) => fmtMoney(n)}
           onNetWorth={() => onTabChange?.("assets")}
-          onRunway={() => onTabChange?.("assets")}
-          onMonths={() => onTabChange?.("reports")}
+          onSafety={() => onTabChange?.("assets")}
+          onSavings={() => onTabChange?.("contributions")}
         />
       </DashSlot>
       <DashSlot id="freedom" layout={layout} editing={editing} dragging={draggingId === "freedom"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
@@ -6474,7 +6551,7 @@ export default function Dashboard() {
               </div>
             )}
             {tab === "overview" && (
-              <DashTab homeValue={homeValue} spreadCategories={spreadCategories}
+              <DashTab homeValue={homeValue} spreadCategories={spreadCategories} coastRetireAge={compareRetireAge}
                 plan={plan}
                 contributionFacts={contributionFacts}
                 freeResult={freeResult}

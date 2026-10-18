@@ -671,10 +671,15 @@ html[data-splash="1"] #uf-splash {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 }
 
-.uf-dash-slot { min-width: 0; }
+/* Side-by-side cards share the row's height (D-89), so a short card never
+   leaves a ragged gap under it. The content wrapper is the slot's last child;
+   the edit tools, when shown, sit above it. */
+.uf-dash-slot { min-width: 0; display: flex; flex-direction: column; }
+.uf-dash-slot > div:last-child { flex: 1; display: flex; flex-direction: column; }
+.uf-dash-slot > div:last-child > * { flex: 1; }
 .uf-dash-slot[data-span="full"] { grid-column: span 2; }
 .uf-dash-slot[data-span="half"] { grid-column: span 1; }
 .uf-dash-slot:empty { display: none; }

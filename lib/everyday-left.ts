@@ -28,9 +28,35 @@ export function everydayLeft({ budget, bills, monthRows, spreadCategories = [] }
   const everydayBudget = Object.entries(budget)
     .filter(([k, v]) => v > 0 && !k.startsWith("_") && !spread.has(k))
     .reduce((t, [k, v]) => t + Math.max(0, v - (billKeys.has(k) ? billMonthlyOf(k) : 0)), 0);
-  const everydaySpent = monthRows
-    .filter((t) => (t.transaction_type ?? "expense") === "expense" && !spread.has(t.category ?? "other"))
-    .filter((t) => !(billKeys.has(t.category ?? "other") && matchesBill({ description: t.description, usd: t.usd, category: t.category ?? "other" }, bills)))
-    .reduce((t, r) => t + r.usd, 0);
+  const everydaySpent = monthRows.filter(isEveryday(bills, spread)).reduce((t, r) => t + r.usd, 0);
   return { everydayBudget, everydaySpent, left: everydayBudget - everydaySpent };
+}
+
+/** Is this row everyday spending: an expense, not spread over the year, and not a bill's own payment. */
+function isEveryday(bills: (BillLike & { usd: number })[], spread: Set<string>) {
+  const billKeys = billCategorySet(bills);
+  return (t: EverydayRow) => (t.transaction_type ?? "expense") === "expense" && !spread.has(t.category ?? "other")
+    && !(billKeys.has(t.category ?? "other") && matchesBill({ description: t.description, usd: t.usd, category: t.category ?? "other" }, bills));
+}
+
+/**
+ * Everyday spending so far, summed day by day (index 0 is the 1st) up to
+ * `days`, by the same rule as everydayLeft, so the last point is its
+ * everydaySpent. Home's pace line draws this against an even pace.
+ */
+export function everydayByDay({ bills, monthRows, spreadCategories = [], days }: {
+  bills: (BillLike & { usd: number })[];
+  monthRows: (EverydayRow & { date: string })[];
+  spreadCategories?: string[];
+  days: number;
+}): number[] {
+  const billKeys = billCategorySet(bills);
+  const keep = isEveryday(bills, new Set(spreadCategories.filter((k) => !billKeys.has(k))));
+  const perDay = new Array<number>(days).fill(0);
+  for (const r of monthRows) {
+    const d = Number(r.date.slice(8, 10)) - 1;
+    if (d >= 0 && d < days && keep(r)) perDay[d] += r.usd;
+  }
+  for (let i = 1; i < days; i++) perDay[i] += perDay[i - 1];
+  return perDay;
 }

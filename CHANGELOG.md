@@ -8,6 +8,25 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-18
 
+### Sign-up page
+- After the calculator, sign-up reads "{year} is just your starting point"
+  over a blurred dashboard drawn from the visitor's own numbers, with one
+  button, "Start your journey to freedom" (Google). Email sits behind "Use
+  email instead". "Free, no card, delete anytime" is gone.
+
+### Home: one next move, and every card is a door (D-89)
+- Freedom date: a curve to the FIRE number with 25%, 50% and Coast FIRE marks,
+  replacing the 5-year bars.
+- Your next move: over-budget categories, then a budget, then the contribution
+  ladder's first step, then the best what-if. "Not now" hides it for a week.
+- Left this month: a pace line against an even pace and the next three bills.
+- Today on the website: need or want, bills due tomorrow and safe to spend
+  today, sharing progress with the phone.
+- Net worth, safety pot (6 segments) and savings rate tiles replace the
+  glance row; "Months on plan" is gone.
+- Phone: the freedom chart becomes a curve with 25% and 50% marks, Home shows
+  your next move, and Left this month adds a pace line and the next big bill.
+
 ### Flags on Windows
 - Website: country flags are drawn as images everywhere (FIRE number pages,
   geo-arbitrage, landing city picker, Plan assumptions, Home's move chip),

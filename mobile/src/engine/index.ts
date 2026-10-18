@@ -24,6 +24,8 @@ export { learnArticles, learnStages, getLearnArticle, getStageArticles, getRelat
 export { CITIZENSHIP_SCORES, CITIZENSHIP_TAX_RATE_LABEL, CITIZENSHIP_CGT_LABEL, CITIZENSHIP_ACCOUNT_LABEL, citizenshipScore, citizenshipBand, type CitizenshipScore } from '@engine/citizenship-data.ts'
 export { EXPLORE_CITIES, freedomIn, freedomBadges, bestBadge, MEDAL, type ExploreCity, type ExplorePlan, type Badges } from '@engine/explore.ts'
 export { ladderViewFromPlan, emergencyFundFromPlan, type AccountFacts, type LadderView } from '@engine/contribution-ladder.ts'
+export { pickNextMove, type NextMove } from '@engine/next-move.ts'
+export { everydayByDay } from '@engine/everyday-left.ts'
 export { planContribution, type StoredPlan, type StoredLadder } from '@engine/contribution.ts'
 export { toCashAccounts } from '@engine/emergency-fund-accounts.ts'
 export { goalMonthly, goalsMonthly, goalRungs } from '@engine/goal-monthly.ts'

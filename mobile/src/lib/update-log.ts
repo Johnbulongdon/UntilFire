@@ -9,8 +9,11 @@ import * as Updates from 'expo-updates'
 export const UPDATE_LOG: { version: string; date: string; changes: string[] }[] = [
   {
     version: '0.1.0',
-    date: '2026-10-17',
+    date: '2026-10-18',
     changes: [
+      'Home shows your one next move',
+      'Freedom chart is a curve with 25% and 50% marks',
+      'Left this month shows your pace and next big bill',
       'Sign-in kept in the iPhone Keychain',
       'Crash reports (no money amounts)',
       'Asks you to update when this version is too old',

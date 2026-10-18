@@ -1545,7 +1545,8 @@ for.
 
 ### D-39 — October 7: A calm Home that shows progress
 
-**Status:** Active. From a Home redesign the founder approved after three mocks.
+**Status:** Superseded in part by D-89 (October 18): the card set, the chart and
+"months on plan". The colour rules and "no months sooner line" still hold.
 
 **Decision:**
 - **Three answers and one row.** A fresh Home shows the freedom date with its
@@ -2906,3 +2907,41 @@ onboarding.
 **Revisit when:** renters ask for a website What if row, or a second reminder
 time, or the 15% "cheaper place" should come from city rent data.
 
+### D-89 — October 18: Home leads with one next move, and every card is a door
+
+**Status:** Active. The founder liked the dashboard behind the new sign-up page
+as a Home, asked for each card to lead into Money or Plan, approved the
+card-by-card spec and mocks, and asked for next moves about saving and budgets,
+not only "invest more". Supersedes D-39's card set.
+**Decision:**
+- **Each card answers one question and opens Money or Plan.** A chip with the
+  tab's icon and name sits top right, so Home teaches the navigation.
+- **Freedom date:** one curve from today to the FIRE number (the same
+  projection as Plan), a dot for you, rings at 25% and 50% and at Coast FIRE
+  (website; the phone has no Coast age yet), and a dot at the freedom year.
+  Replaces the 5-year bars and the period switcher.
+- **Your next move** (`lib/next-move.ts`), first match wins: a category $25 and
+  10% over budget (never bill or spread categories), no budget yet, the
+  contribution ladder's first step (safety pot, employer match, expensive
+  debt, safety target, goals, sheltered accounts, a cheap loan, investing),
+  then the best what-if. "Not now" skips a move for a week. Absorbs "This
+  month's contribution"; the old card shows only when there's no move.
+- **Left this month:** the one "left" (D-86), a pace line of everyday spend
+  against an even pace (`everydayByDay`, the same rule), and the next three
+  bills as date chips. Category colours stay on Money.
+- **Today on the website:** need or want on recent spends, a bill due tomorrow,
+  and safe to spend today, with "X of Y days" counted (D-73). Same keys and
+  saved progress as the phone (`lib/today-web.ts`), so a day counts once.
+  Replaces "Months on plan".
+- **Three tiles:** net worth with last month's invested change and a 12-month
+  line; safety pot "4.2 of 6 months" in six segments (renamed from runway);
+  savings rate against a typical FIRE saver (25%) and the US (5%).
+- **Phone:** keeps its own layout (D-85 chips, hero, round actions) and gains
+  the curve, the next-move card and the pace line with the next big bill.
+**Why:** the product promise is one useful next move, and Home had none. Most
+people need a budget or saving step before an investing one. Cards that open
+their tab make Home the way in, not a dead end.
+**Not:** named investment products (legal open item), subscription spotting,
+price-rise or earn-more moves, a lease row on the website.
+**Revisit when:** next-move taps show people skip a kind, or the phone gets a
+retirement age for Coast FIRE.

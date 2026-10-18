@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { PanResponder, Pressable, View, type LayoutChangeEvent } from 'react-native'
-import Svg, { Circle, Defs, Line, Pattern, Rect } from 'react-native-svg'
+import Svg, { Circle, Line, Path, Text as SvgText } from 'react-native-svg'
 
 import { freedomPath } from '@/engine'
 import { compactMoney } from '@/lib/format'
@@ -15,13 +15,13 @@ const HEIGHT = 168
 const PAD_TOP = 26
 
 /**
- * Home's freedom chart: invested money as one bar per year against the dashed
- * target (Oct 2026 QA: was a line; a bar a year makes each year's step
- * visible). Bars short of the target are paler; from the freedom year they
- * are full. Drag a finger along it to read any year, with a haptic tick as
- * each year passes; 5Y / 15Y / All below. A planned move (D-82) puts the
- * new city's flag on its year and stripes the years lived there, so the move
- * reads without relying on colour.
+ * Home's freedom chart (D-89): invested money as one curve to the dashed
+ * target, with a dot for you today, small rings where you pass 25% and 50%
+ * of the target, and a big dot at the freedom year, so even a far date reads
+ * as progress. It was a bar a year (Oct 2026 QA) so each year's step showed;
+ * dragging still reads any year, with a haptic tick as each year passes, and
+ * 5Y / 15Y / All sit below. A planned move (D-82) puts the new city's flag
+ * and a dashed line on its year, so the move reads without relying on colour.
  */
 /** `onDark` draws it in white and aqua for the teal hero card on Home. */
 export function FreedomLineChart({ f, onDark }: { f: Freedom; onDark?: boolean }) {
@@ -44,12 +44,15 @@ export function FreedomLineChart({ f, onDark }: { f: Freedom; onDark?: boolean }
   const thisYear = new Date().getFullYear()
 
   const slot = width / Math.max(pts.length, 1)
-  const barW = Math.max(2, Math.min(18, slot * 0.68))
   const x = (i: number) => slot * (i + 0.5)
   const y = (v: number) => PAD_TOP + (1 - v / peak) * (HEIGHT - PAD_TOP - 4)
   const targetY = f.target <= peak ? y(f.target) : null
   const freeAt = pts.findIndex(p => p.invested >= f.target)
   const moveAt = f.move ? pts.findIndex(p => thisYear + p.year >= f.move!.year) : -1
+  // Milestones on the way, skipped when already passed today or too close to the finish to label.
+  const marks = ([0.25, 0.5] as const).map(share => ({ share, i: pts.findIndex(p => p.invested >= f.target * share) }))
+    .filter(m => m.i > 0 && (freeAt < 0 || freeAt - m.i >= 2))
+  const curve = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${Math.min(y(p.invested), HEIGHT - 2).toFixed(1)}`).join(' ')
 
   // Dragging: the nearest year to the finger, a tick each time it changes.
   const indexAt = (px: number) => Math.max(0, Math.min(pts.length - 1, Math.floor(px / Math.max(slot, 1))))
@@ -79,22 +82,20 @@ export function FreedomLineChart({ f, onDark }: { f: Freedom; onDark?: boolean }
         accessible accessibilityLabel={`Invested money over ${end} years, reaching ${compactMoney(f.target)}.${f.move ? ` Moving to ${f.move.city} in ${f.move.year}.` : ''} Drag to read a year.`}>
         {width > 0 && pts.length > 1 && (
           <Svg width={width} height={HEIGHT}>
-            <Defs>
-              <Pattern id="moved" patternUnits="userSpaceOnUse" width={6} height={6} patternTransform="rotate(45)">
-                <Rect width={6} height={6} fill={c.line} />
-                <Rect width={2.5} height={6} fill={c.ring} opacity={0.45} />
-              </Pattern>
-            </Defs>
-            {pts.map((p, i) => {
-              const top = Math.min(y(p.invested), HEIGHT - 2)
-              const free = freeAt >= 0 && i >= freeAt
-              return <Rect key={p.year} x={x(i) - barW / 2} y={top} width={barW} height={HEIGHT - top} rx={Math.min(3, barW / 2)}
-                fill={scrub === i ? c.scrub : moveAt >= 0 && i >= moveAt ? 'url(#moved)' : c.line} opacity={scrub === i || free ? 1 : 0.45} />
-            })}
+            <Path d={`${curve} L${x(pts.length - 1)},${HEIGHT} L${x(0)},${HEIGHT} Z`} fill={c.line} opacity={0.18} />
+            <Path d={curve} fill="none" stroke={c.line} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
             {moveAt >= 0 && <Line x1={x(moveAt) - slot / 2} x2={x(moveAt) - slot / 2} y1={PAD_TOP + 12} y2={HEIGHT} stroke={c.target} strokeDasharray="2 3" strokeWidth={1} />}
             {targetY != null && <Line x1={0} x2={width} y1={targetY} y2={targetY} stroke={c.target} strokeDasharray="4 4" strokeWidth={1} />}
-            {/* The first bar to reach the target: the freedom year. */}
-            {freeAt >= 0 && !s && <Circle cx={x(freeAt)} cy={y(pts[freeAt].invested) - 7} r={4} fill={c.line} stroke={c.ring} strokeWidth={2} />}
+            {!s && <Circle cx={x(0)} cy={Math.min(y(pts[0].invested), HEIGHT - 6)} r={5} fill={c.line} />}
+            {!s && marks.map(m => (
+              <Circle key={m.share} cx={x(m.i)} cy={y(pts[m.i].invested)} r={4.5} fill={c.ring} stroke={c.line} strokeWidth={2.5} />
+            ))}
+            {!s && marks.map(m => (
+              <SvgText key={`l${m.share}`} x={x(m.i)} y={y(pts[m.i].invested) - 10} fontSize={11} fontWeight="700" fill={c.label} textAnchor="middle">{m.share * 100}%</SvgText>
+            ))}
+            {/* The first year to reach the target: the freedom year. */}
+            {freeAt >= 0 && !s && <Circle cx={x(freeAt)} cy={y(pts[freeAt].invested)} r={7} fill={c.line} stroke={c.ring} strokeWidth={2} />}
+            {s && <Circle cx={x(scrub!)} cy={Math.min(y(s.invested), HEIGHT - 4)} r={5} fill={c.scrub} />}
           </Svg>
         )}
         {s && (
