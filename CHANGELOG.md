@@ -27,6 +27,12 @@ under today's date, creating the heading if it is not there yet.
 - Phone: the freedom chart becomes a curve with 25% and 50% marks, Home shows
   your next move, and Left this month adds a pace line and the next big bill.
 
+### Flags on Windows
+- Website: country flags are drawn as images everywhere (FIRE number pages,
+  geo-arbitrage, landing city picker, Plan assumptions, Home's move chip),
+  not emoji, which Windows shows as letters like "AU". The tax-country
+  dropdown drops its flags, since a dropdown can only hold text.
+
 ## 2026-10-17
 
 ### Launch readiness: security, crashes, store setup

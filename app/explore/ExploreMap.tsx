@@ -15,7 +15,7 @@ import type { Topology, GeometryCollection, GeometryObject } from "topojson-spec
 import type { FeatureCollection, Geometry, MultiLineString, Position } from "geojson";
 import stateTopology from "@/lib/geo/us-states.json";
 import countryTopology from "@/lib/geo/countries-110m.json";
-import Flag from "./Flag";
+import Flag from "@/app/components/Flag";
 import { countryPins, pinText, pinWidth, placePins, type Badges, type ExploreCity, type Freedom, type PinMode } from "@/lib/explore";
 
 type Named = { name: string };

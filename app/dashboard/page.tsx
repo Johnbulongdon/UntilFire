@@ -71,6 +71,7 @@ import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
 import { Alert, Button, ICON_PATHS, Input } from "@/components/ui";
+import Flag, { flagUri } from "@/app/components/Flag";
 import { stampActive } from "@/lib/last-active";
 import { knownWithdrawalLimit, parseWithdrawalLimit, withdrawalsLeftLabel } from "@/lib/savings-limits";
 
@@ -1110,6 +1111,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   // An earlier move counts only where the maths can price it (both cities listed), as in moveBeforeFreedomChange.
   const earlyMove = plan?.moveYear && currentCityCol > 0 && retirementCityCol > 0 && (freeYear == null || plan.moveYear < freeYear) ? plan.moveYear : null;
   const moveYear = retireCity ? earlyMove ?? freeYear : null;
+  const moveFlagUri = retireCity ? flagUri(CITIES.find((c) => c.name === retireCity)?.flag ?? "") : null;
   const yearBars = useMemo(() => {
     const byYear = new Map<number, { year: number; value: number; actual: boolean }>();
     for (const e of chartData) {
@@ -1640,8 +1642,10 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         age={fireAge > 0 && fireYear ? fireAge + fireYear : null}
         onOpen={() => onTabChange?.("fire-calculator")}
         route={retireCity ? {
-          from: cityName ? `${CITIES.find((c) => c.name === cityName)?.flag ?? "\u{1F3E0}"} ${cityName.split(",")[0]}` : "",
-          to: `${CITIES.find((c) => c.name === retireCity)?.flag ?? "\u{1F4CD}"} ${retireCity.split(",")[0]}`,
+          from: cityName ? cityName.split(",")[0] : "",
+          fromFlag: cityName ? CITIES.find((c) => c.name === cityName)?.flag ?? "\u{1F3E0}" : "",
+          to: retireCity.split(",")[0],
+          toFlag: CITIES.find((c) => c.name === retireCity)?.flag ?? "\u{1F4CD}",
           when: moveYear != null && moveYear !== freeYear ? `from ${moveYear}` : "when you're free",
           onOpen: () => onTabChange?.("fire-calculator"),
         } : undefined}
@@ -1672,7 +1676,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
                   return (
                     <g aria-label={`Move to ${retireCity} in ${moveYear}`}>
                       <circle cx={x} cy={y} r={14} fill="var(--uf-card)" stroke="var(--uf-teal)" strokeWidth={1.5} />
-                      <text x={x} y={y + 5} textAnchor="middle" fontSize={14}>{CITIES.find((c) => c.name === retireCity)?.flag ?? "\u{1F4CD}"}</text>
+                      {moveFlagUri
+                        ? <image href={moveFlagUri} x={x - 9} y={y - 6} width={18} height={12} preserveAspectRatio="xMidYMid slice" />
+                        : <text x={x} y={y + 5} textAnchor="middle" fontSize={14}>{"\u{1F4CD}"}</text>}
                     </g>
                   );
                 }} />
@@ -2879,7 +2885,7 @@ function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
           >
             <option value="">Select country / region…</option>
             {TAX_COUNTRIES.map(c => (
-              <option key={c.value} value={c.value}>{c.flag} {c.label}</option>
+              <option key={c.value} value={c.value}>{c.label}</option>
             ))}
           </select>
           {taxCountry === "us" && (
@@ -4710,7 +4716,7 @@ function TaxProfileCard({
             Tax Profile
           </div>
           <div style={{ fontSize: 14, color: "var(--uf-text-2)", marginTop: 2, fontFamily: "Manrope, sans-serif" }}>
-            {city?.flag ?? "🌍"} {jurisdictionLabel}
+            {city?.flag ? <Flag emoji={city.flag} size={11} /> : "🌍"} {jurisdictionLabel}
           </div>
         </div>
         <button
