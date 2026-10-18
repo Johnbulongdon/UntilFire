@@ -14,7 +14,7 @@ import type { Feature, FeatureCollection, Geometry } from "geojson";
 import stateTopology from "@/lib/geo/us-states.json";
 import countryTopology from "@/lib/geo/countries-110m.json";
 import { STATE_NAMES } from "@/lib/state-pages";
-import Flag from "./Flag";
+import Flag from "@/app/components/Flag";
 import { pinText, type Badges, type ExploreCity, type Freedom, type Metal, type PinMode } from "@/lib/explore";
 import { MedalRow, METAL_MEANS, METAL_NAME, STAR_LIFE } from "./Medal";
 

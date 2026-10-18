@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { countryPages, getCountryPage } from '@/lib/country-pages'
+import Flag from '@/app/components/Flag'
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -57,7 +58,7 @@ export default async function CountryPage({ params }: Props) {
           </nav>
 
           <h1 className="uf-t-h1" style={{ margin: '0 0 var(--uf-s3)' }}>
-            {page.flag} {page.heroTitle}
+            <Flag emoji={page.flag} size={22} /> {page.heroTitle}
           </h1>
 
           <p className="uf-t-lead" style={{ margin: '0 0 var(--uf-s5)', color: 'var(--uf-ink-2)', lineHeight: 1.6 }}>
@@ -215,7 +216,7 @@ export default async function CountryPage({ params }: Props) {
                       padding: 'var(--uf-s1) var(--uf-s3)',
                     }}
                   >
-                    {other.flag} {other.shortName}
+                    <Flag emoji={other.flag} size={11} /> {other.shortName}
                   </Link>
                 ))}
             </div>

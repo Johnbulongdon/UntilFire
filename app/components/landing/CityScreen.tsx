@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CITIES } from "@/lib/fire-data";
 import { formatMoney } from "@/lib/money";
+import Flag from "@/app/components/Flag";
 
 export interface CityState {
   name: string;
@@ -53,7 +54,7 @@ export default function CityScreen({
     return (
       <button key={c.key} type="button" className="uf-tile" aria-pressed={on} style={{ display: "flex", alignItems: "center", gap: 12 }}
         onClick={() => { setSelected({ name: c.name, col: c.col, stateKey: c.state, isCustom: false }); setQuery(""); }}>
-        <span aria-hidden="true" style={{ fontSize: 20 }}>{c.flag}</span>
+        <Flag emoji={c.flag} size={15} />
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: "block", fontWeight: 600 }}>{c.name}</span>
           <span className="uf-tile-sub">Living costs about {formatMoney(c.col / 12)} a month</span>

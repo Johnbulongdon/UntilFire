@@ -5,6 +5,7 @@ import { getStatePage, statePages } from '@/lib/state-pages'
 import { formatMoney } from "@/lib/money";
 import { cityPagePath } from "@/lib/city-pages";
 import { getRegionForState } from '@/lib/regions'
+import Flag from '@/app/components/Flag'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -136,7 +137,7 @@ export default async function StateFireNumberPage({ params }: Props) {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <span style={{ fontSize: 24 }}>{city.flag}</span>
+                  <Flag emoji={city.flag} size={18} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--uf-green-900)' }}>{city.name}</div>
                   </div>

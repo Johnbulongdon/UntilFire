@@ -5,6 +5,7 @@ import { formatMoney } from "@/lib/money";
 import { countriesByCost } from "@/lib/country-pages";
 import { cityPagePath } from "@/lib/city-pages";
 import { STATE_NAMES } from "@/lib/state-pages";
+import Flag from "@/app/components/Flag";
 
 
 const US_CITIES = CITIES.filter((c) => isUS(c.state));
@@ -113,7 +114,7 @@ export default function FireNumberHubPage() {
                 }}
               >
                 <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-green-900)", marginBottom: 4 }}>
-                  {c.flag} {c.shortName} →
+                  <Flag emoji={c.flag} size={11} /> {c.shortName} →
                 </div>
                 <div style={{ fontSize: 12, color: "var(--uf-ink-3)", lineHeight: 1.5, fontVariantNumeric: "tabular-nums" }}>
                   ${c.avgCol.toLocaleString("en-US")}/yr · {c.noIncomeTax ? "no income tax" : `~${Math.round(c.taxRate * 100)}% tax`}
@@ -185,7 +186,7 @@ export default function FireNumberHubPage() {
                     transition: "border-color 0.15s, background 0.15s",
                   }}
                 >
-                  <span style={{ fontSize: 22, flexShrink: 0 }}>{city.flag}</span>
+                  <Flag emoji={city.flag} size={16} />
                   <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-green-900)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{city.name}</div>
                     <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 2 }}>

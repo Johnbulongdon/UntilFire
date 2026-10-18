@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { CITIES } from '@/lib/fire-data';
 import { calcFIRE } from '@/lib/fire';
 import { formatMoney } from "@/lib/money";
+import Flag from '@/app/components/Flag';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -278,7 +279,7 @@ export default function GeoArbitragePage() {
             margin: '0 0 4px',
           }}
         >
-          {targetCity!.flag} {targetCity!.name}
+          <Flag emoji={targetCity!.flag} size={14} /> {targetCity!.name}
         </h1>
         <div style={{ marginBottom: 24 }}>{readinessPill(targetCol, portfolioBalance)}</div>
 
@@ -394,7 +395,7 @@ export default function GeoArbitragePage() {
               Current
             </div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#22d3a5', textAlign: 'center' }}>
-              {targetCity!.flag} Target
+              <Flag emoji={targetCity!.flag} size={11} /> Target
             </div>
           </div>
 
@@ -471,7 +472,7 @@ export default function GeoArbitragePage() {
                 : `Moving costs $${Math.abs(monthlyDiff).toLocaleString()}/mo more`}
             </div>
           </div>
-          <div style={{ fontSize: 28 }}>{targetCity!.flag}</div>
+          <div><Flag emoji={targetCity!.flag} size={21} /></div>
         </div>
 
         {/* Actions */}
