@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import Flag from '@/app/components/Flag'
 import { getLearnArticle } from '@/lib/learn'
 import { cityLandingPages, getCityLandingPage, cityPagePath } from '@/lib/city-pages'
 import type { CityLandingPage } from '@/lib/city-pages'
@@ -856,7 +857,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
                     transition: "border-color 0.15s",
                   }}
                 >
-                  <span style={{ fontSize: 20 }}>{c.flag}</span>
+                  <Flag emoji={c.flag} size={15} />
                   <div>
                     <div>{c.name}</div>
                     <div style={{ fontSize: 12, color: "var(--uf-ink-3)", fontWeight: 400 }}>{formatMoney(c.col * 25)} target</div>

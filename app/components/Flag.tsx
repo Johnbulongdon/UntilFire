@@ -1,9 +1,8 @@
-"use client";
-
 /**
- * Drawn flags for Explore. Windows has no flag emoji: 🇺🇸 shows as the
+ * Drawn flags for every web page. Windows has no flag emoji: 🇺🇸 shows as the
  * letters "US", so the city data's emoji flags are turned into SVGs from
  * country-flag-icons (MIT), one import per country the city list uses.
+ * No hooks, so server pages can render it too.
  */
 import AE from "country-flag-icons/string/3x2/AE";
 import AR from "country-flag-icons/string/3x2/AR";
@@ -77,9 +76,15 @@ const SVG: Record<string, string> = { AE, AR, AT, AU, BE, BG, BR, CA, CH, CL, CN
 /** "🇵🇹" → "PT". */
 const codeOf = (emoji: string) => [...emoji].map(ch => ch.codePointAt(0)!).filter(cp => cp >= 0x1f1e6 && cp <= 0x1f1ff).map(cp => String.fromCharCode(cp - 0x1f1e6 + 65)).join("");
 
-export default function Flag({ emoji, size = 14 }: { emoji: string; size?: number }) {
+/** The flag as an SVG data URI, for places a span can't go (inside an <svg>); null for non-flag emoji. */
+export function flagUri(emoji: string): string | null {
   const svg = SVG[codeOf(emoji)];
-  if (!svg) return null;
-  return <span aria-hidden style={{ display: "inline-block", width: Math.round(size * 1.5), height: size, verticalAlign: "-2px", borderRadius: 2,
-    boxShadow: "0 0 0 0.5px #0003", background: `center / cover no-repeat url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}")` }} />;
+  return svg ? `data:image/svg+xml;utf8,${encodeURIComponent(svg)}` : null;
+}
+
+export default function Flag({ emoji, size = 14 }: { emoji: string; size?: number }) {
+  const uri = flagUri(emoji);
+  if (!uri) return null;
+  return <span aria-hidden style={{ display: "inline-block", flexShrink: 0, width: Math.round(size * 1.5), height: size, verticalAlign: "-2px", borderRadius: 2,
+    boxShadow: "0 0 0 0.5px #0003", background: `center / cover no-repeat url("${uri}")` }} />;
 }

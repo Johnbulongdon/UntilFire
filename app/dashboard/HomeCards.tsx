@@ -10,6 +10,13 @@
  */
 
 import { Card } from "@/components/ui";
+import Flag, { flagUri } from "@/app/components/Flag";
+
+/** A drawn flag, or the emoji as-is when it is a pin or a house rather than a country. */
+function RouteFlag({ emoji }: { emoji?: string }) {
+  if (!emoji) return null;
+  return flagUri(emoji) ? <Flag emoji={emoji} size={10} /> : <span aria-hidden>{emoji}</span>;
+}
 
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
 const muted: React.CSSProperties = { color: "var(--uf-ink-3)" };
@@ -40,7 +47,7 @@ export function FreedomCard({ dateLabel, yearsAway, age, invested, target, fmt, 
   period: ChartPeriod;
   onPeriod: (p: ChartPeriod) => void;
   /** A planned move to the retirement city (D-82), shown under the date so the number says what it assumes. */
-  route?: { from: string; to: string; when: string; onOpen: () => void };
+  route?: { from: string; fromFlag?: string; to: string; toFlag?: string; when: string; onOpen: () => void };
   /** The chart, drawn by the dashboard from the same projection as the date. */
   children: React.ReactNode;
 }) {
@@ -61,8 +68,8 @@ export function FreedomCard({ dateLabel, yearsAway, age, invested, target, fmt, 
               {route && (
                 <button type="button" onClick={route.onOpen} aria-label={`Planned move to ${route.to} ${route.when}. Change it in Plan`}
                   style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--uf-border)", background: "var(--uf-surface-2)", borderRadius: 999, padding: "5px 12px", font: "inherit", fontSize: 13, fontWeight: 700, color: "var(--uf-ink)", cursor: "pointer" }}>
-                  {route.from && <><span>{route.from}</span><span aria-hidden style={{ color: "var(--uf-ink-3)" }}>→</span></>}
-                  <span>{route.to}</span>
+                  {route.from && <><span><RouteFlag emoji={route.fromFlag} /> {route.from}</span><span aria-hidden style={{ color: "var(--uf-ink-3)" }}>→</span></>}
+                  <span><RouteFlag emoji={route.toFlag} /> {route.to}</span>
                   <span style={{ color: "var(--uf-ink-3)", fontWeight: 500 }}>· {route.when} ›</span>
                 </button>
               )}

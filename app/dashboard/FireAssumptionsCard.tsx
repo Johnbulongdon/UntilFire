@@ -6,6 +6,7 @@ import { formatMoney } from "@/lib/money";
 import { suggestPayByRank } from "@/lib/fire";
 import GrowthSetting from "@/app/components/GrowthSetting";
 import { MoneyList, MoneyRow } from "./MoneyCards";
+import Flag from "@/app/components/Flag";
 
 /**
  * The assumptions a freedom date is computed from: age, where freedom gets
@@ -139,7 +140,7 @@ function CityPicker({ label, placeholder, initial, onPick }: {
                 style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, borderBottom: "1px solid var(--uf-border)" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "")}>
-                {c.flag} {c.name}
+                <Flag emoji={c.flag} size={11} /> {c.name}
               </div>
             ))}
             {canUseTyped && (
@@ -347,7 +348,7 @@ export default function FireAssumptionsCard({
                         style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, borderBottom: "1px solid var(--uf-border)" }}
                         onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
                         onMouseLeave={(e) => (e.currentTarget.style.background = "")}>
-                        {c.flag} {c.name}
+                        <Flag emoji={c.flag} size={11} /> {c.name}
                         <span style={{ fontSize: 12, color: "var(--uf-text-2)", marginLeft: 6 }}>&middot; {STATE_TAX[c.state]?.label}</span>
                       </div>
                     ))}

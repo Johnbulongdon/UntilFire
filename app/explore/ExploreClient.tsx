@@ -17,7 +17,7 @@ import { formatUSDInCurrency } from "@/lib/money";
 import { trackExploreCityOpened, trackExploreModeChanged, trackExplorePlanStarted, trackExploreStarred, trackExploreViewed } from "@/lib/analytics";
 import ExploreMap from "./ExploreMap";
 import ExploreCard from "./ExploreCard";
-import Flag from "./Flag";
+import Flag from "@/app/components/Flag";
 import "./explore.css";
 
 const STARS_KEY = "uf_explore_stars";

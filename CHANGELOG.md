@@ -6,6 +6,14 @@ The site deploys to production on every merge to `main`, so there is no
 unreleased queue: each section is the day its changes shipped. Add new entries
 under today's date, creating the heading if it is not there yet.
 
+## 2026-10-18
+
+### Flags on Windows
+- Website: country flags are drawn as images everywhere (FIRE number pages,
+  geo-arbitrage, landing city picker, Plan assumptions, Home's move chip),
+  not emoji, which Windows shows as letters like "AU". The tax-country
+  dropdown drops its flags, since a dropdown can only hold text.
+
 ## 2026-10-17
 
 ### Launch readiness: security, crashes, store setup
