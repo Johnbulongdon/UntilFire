@@ -147,9 +147,9 @@ function PaceLine({ soFar, days, budget }: { soFar: number[]; days: number; budg
   return (
     <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" aria-hidden style={{ width: "100%", height: h, display: "block", overflow: "visible" }}>
       <line x1={0} y1={h} x2={w} y2={y(budget)} stroke="var(--uf-border-2)" strokeWidth={2} strokeDasharray="4 5" vectorEffect="non-scaling-stroke" />
-      {last >= 0 && <path d={path} fill="none" stroke="var(--uf-ink)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />}
+      {last >= 0 && <path d={path} fill="none" stroke="var(--uf-teal)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />}
       {/* A zero-length round-capped stroke, not a circle: the stretched viewBox would draw a circle as an oval. */}
-      {last >= 0 && <path d={`M${x(last).toFixed(1)},${y(soFar[last]).toFixed(1)}h0`} stroke="var(--uf-ink)" strokeWidth={8} strokeLinecap="round" vectorEffect="non-scaling-stroke" />}
+      {last >= 0 && <path d={`M${x(last).toFixed(1)},${y(soFar[last]).toFixed(1)}h0`} stroke="var(--uf-teal-deep)" strokeWidth={8} strokeLinecap="round" vectorEffect="non-scaling-stroke" />}
     </svg>
   );
 }
@@ -287,8 +287,8 @@ export function UntilPaydayCard({ line, paydayIso, billCount, billTotal, icon, f
           {short && <>
             <line x1={0} x2={100} y1={zero} y2={zero} stroke="var(--uf-neg)" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
           </>}
-          <path d={pastPath} fill="none" stroke="var(--uf-border-2)" strokeWidth={2.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-          <path d={futPath} fill="none" stroke="var(--uf-ink)" strokeWidth={2.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          <path d={pastPath} fill="none" stroke="var(--uf-teal)" strokeOpacity={0.35} strokeWidth={2.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          <path d={futPath} fill="none" stroke="var(--uf-teal)" strokeWidth={2.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
           <line x1={x(today)} x2={x(today)} y1={y(past[today])} y2={CHART_H} stroke="var(--uf-teal)" strokeWidth={1.5} strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />
         </svg>
         {dips.map((d) => pin(x(d.day - 1), y(past[d.day - 1]) - 4, icon(d.category), `dip-${d.day}`, true))}
@@ -298,7 +298,7 @@ export function UntilPaydayCard({ line, paydayIso, billCount, billTotal, icon, f
             {signed(-m.usd, fmt)}
           </span>
         ))}
-        <span aria-hidden style={{ position: "absolute", left: `${x(today)}%`, top: y(past[today]), transform: "translate(-50%, -50%)", width: 12, height: 12, borderRadius: 6, background: "var(--uf-teal)", boxShadow: "0 0 0 2.5px var(--uf-card)" }} />
+        <span aria-hidden style={{ position: "absolute", left: `${x(today)}%`, top: y(past[today]), transform: "translate(-50%, -50%)", width: 12, height: 12, borderRadius: 6, background: "var(--uf-teal-deep)", boxShadow: "0 0 0 2.5px var(--uf-card)" }} />
         <span aria-hidden style={{ position: "absolute", left: "100%", top: y(end), transform: "translate(-50%, -50%)", width: 26, height: 26, borderRadius: 13,
           display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "var(--uf-card)", background: short ? "var(--uf-neg)" : "var(--uf-green)", boxShadow: "0 0 0 2.5px var(--uf-card)" }}>$</span>
         <span style={{ ...axis, left: 0 }}>{shortDay(line.startIso)}</span>
