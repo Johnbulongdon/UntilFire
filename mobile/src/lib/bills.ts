@@ -63,7 +63,8 @@ export function freeUntilPayday(data: AccountData, now = new Date()) {
   const events = unpaid(upcoming(data.bills, 62, now), data.bills, data.transactions)
   const payday = events.find(e => e.type === 'income' && e.counted)
   if (!payday) return null
-  const billsBefore = events.filter(e => e.type === 'expense' && e.iso < payday.iso).reduce((s, e) => s - e.amount, 0)
+  const before = events.filter(e => e.type === 'expense' && e.iso < payday.iso)
+  const billsBefore = before.reduce((s, e) => s - e.amount, 0)
   // A card bill names a card: "Comcast autopay" reads like a card payment but isn't one (audit round 2).
   const cardBill = data.bills.some(b => looksLikeCardPayment({ description: b.description, transaction_type: b.transaction_type })
     && /card|credit|amex|discover|capital one|visa|mastercard|信用卡/i.test(b.description))
@@ -71,5 +72,5 @@ export function freeUntilPayday(data: AccountData, now = new Date()) {
   const { spending } = cashByRole(data.plaidAccounts, data.spendToggles ?? {}, data.balances.cashSavings)
   if (spending == null) return null
   const days = Math.max(1, Math.round((new Date(`${payday.iso}T00:00:00`).getTime() - now.getTime()) / 864e5))
-  return { free: spending - billsBefore - cardsOwed, spending, billsBefore, cardsOwed, payday, days }
+  return { free: spending - billsBefore - cardsOwed, spending, billsBefore, cardsOwed, payday, days, bills: before }
 }

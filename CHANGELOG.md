@@ -8,6 +8,18 @@ under today's date, creating the heading if it is not there yet.
 
 ## 2026-10-18
 
+### Home: Until payday (D-90)
+- The month card is now "Until payday": cash in your spending accounts less
+  bills before your next paycheck, drawn as a line from your last paycheck to
+  the next, dropping at each bill with its icon. A shortfall reads "−$164" in
+  red with the area under zero striped. Without a bank balance or a paycheck,
+  the card shows day-to-day spending against the budget instead.
+- Safe to spend today uses the same until-payday number.
+- "Everyday" is now "Day-to-day" in Budget and on Home.
+- Fixes: the "You" label no longer sits on the freedom curve, the pace dot is
+  round again, the next move's split no longer repeats "Emergency fund", and
+  the savings rate is the plan's (it ran high mid-month).
+
 ### Profile (website)
 - Sign out now sits at the bottom of Profile and asks before signing out,
   like the phone. Export and Delete account are folded into one "Data and

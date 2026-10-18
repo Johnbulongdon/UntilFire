@@ -38,6 +38,7 @@ export { billCategorySet, billCategoryOf, matchesBill, BILL_MATCH_TOLERANCE } fr
 export { carriedCards, freedomDebt } from '@engine/freedom-debt.ts'
 export { applyAccountShares, readAccountShares, shareOf, SHARED_PCT, type AccountShares } from '@engine/account-share.ts'
 export { isCounted } from '@engine/free-to-spend.ts'
+export { paydayLine, type PaydayLine } from '@engine/payday-line.ts'
 export { countdownLabel, DEFAULT_SCHEDULE } from '@engine/contribution-schedule.ts'
 export { REAL_RETURN } from '@engine/fire/strategies/traditional.ts'
 export { moveBeforeFreedomChange, retirementLocationMonthlySpend } from '@engine/fire/retirement-location.ts'

@@ -2945,3 +2945,30 @@ their tab make Home the way in, not a dead end.
 price-rise or earn-more moves, a lease row on the website.
 **Revisit when:** next-move taps show people skip a kind, or the phone gets a
 retirement age for Coast FIRE.
+
+### D-90 — October 18: Home's month card is "Until payday"
+
+**Status:** Active. The founder found "$16 over of $404" confusing, asked that
+"left" mean one thing, and chose cash until payday over budget progress: one
+big unexpected spend should not keep the card red for the rest of the month.
+Amends D-89's "Left this month" card; D-86's budget rule is unchanged.
+**Decision:**
+- **Until payday** (`lib/free-to-spend.ts` `untilPayday`; phone
+  `lib/bills.ts` `freeUntilPayday`, the same rule): cash in the spending
+  accounts, less bills before the next paycheck, less card balances unless a
+  card payment is itself a bill. Cash only, unlike Money's Free to spend
+  (lower of cash and budget, D-41), so a big spend is felt once and the number
+  starts over when pay lands.
+- **The card is a line** (`lib/payday-line.ts`, chosen from five mocks):
+  faded from the last paycheck to today (the balance worked back through the
+  counted accounts' rows, big spends marked), then flat but for the bills
+  ahead, each as its category icon at the start of its drop, ending on a
+  round $ at payday on the card's number. Short reads "−$164" in red, with the
+  area under zero striped red. Under it, one pill: bills total and count.
+- **Fallback:** without a balance or a paycheck in Upcoming, the card is
+  "This month": day-to-day spent of the day-to-day budget, with the pace line.
+- **Safe to spend today** on the Today strip is Until payday over the days to
+  payday when it exists, else the budget left over the days left.
+- **"Everyday" reads "Day-to-day"** in the interface; it read like "per day".
+- Names in the "Until …" family (Until payday, UntilFire) are welcome where
+  they fit other pages.

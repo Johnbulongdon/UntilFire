@@ -58,6 +58,18 @@ const LADDER_TITLE: Record<RungKind, (amount: string) => string> = {
   "taxable": (a) => `Invest ${a} this month`,
 };
 
+/** A few words per step for the split under the bar: the ladder's own labels repeat ("Emergency fund — …" twice). */
+const SPLIT_LABEL: Record<RungKind, string> = {
+  "emergency-floor": "Safety pot",
+  "employer-match": "Employer match",
+  "high-interest-debt": "Expensive debt",
+  "emergency-target": "Safety pot top-up",
+  "goals": "Goals",
+  "tax-advantaged": "Tax-sheltered",
+  "low-interest-debt": "Loan overpayment",
+  "taxable": "Invest",
+};
+
 const LADDER_PAYOFF: Partial<Record<RungKind, string>> = {
   "emergency-floor": "A buffer before anything else",
   "employer-match": "Free money from your employer",
@@ -94,7 +106,7 @@ export function pickNextMove(i: NextMoveInputs): NextMove | null {
       key: `ladder:${first.kind}`, door: "plan", tab: "contributions", button: "Open your plan",
       title: LADDER_TITLE[first.kind](i.fmt(first.amount)),
       payoff: LADDER_PAYOFF[first.kind] ?? null,
-      split: steps.map((f) => ({ label: f.label, amount: f.amount })),
+      split: steps.map((f) => ({ label: SPLIT_LABEL[f.kind], amount: f.amount })),
     };
   }
 

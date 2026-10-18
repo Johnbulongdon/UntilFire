@@ -1,5 +1,5 @@
 import { addMonths, buildMerchantMemory, findFlags, isoDay, isRent, isRentOrMortgage, ladderViewFromPlan, leaseAsk, noticeDeadline, monthOf, netAmount, suggestFromHistory, type FlagKind } from '@/engine'
-import { unpaid, upcoming } from '@/lib/bills'
+import { freeUntilPayday, unpaid, upcoming } from '@/lib/bills'
 import { contributionFacts, EMPTY_PLAN } from '@/lib/contribution-facts'
 import { saveFireProfile } from '@/lib/mutations'
 import { monthSpend } from '@/lib/money-data'
@@ -64,8 +64,14 @@ export function listDay(done: string[], now = new Date()): string {
   return now.getHours() < 12 && !done.includes(yesterday) && !done.includes(today) ? yesterday : today
 }
 
-/** What's left to spend each day for the rest of this month: the one "left" (bills set aside, lib/budget-split) over the days left. Null without an everyday budget. */
+/**
+ * What's safe to spend each day: Until payday over the days to payday (D-90,
+ * the Home card), else the budget left over the days left in the month. Null
+ * with neither a balance and paycheck nor a day-to-day budget.
+ */
 export function safeToSpendToday(data: AccountData, now = new Date()): number | null {
+  const f = freeUntilPayday(data, now)
+  if (f) return Math.max(0, Math.floor(f.free / f.days))
   const { everydayBudget, left } = splitBudget(data)
   if (everydayBudget <= 0) return null
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()

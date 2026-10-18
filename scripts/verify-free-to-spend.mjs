@@ -11,7 +11,8 @@
  *
  * Run: npm run test:free-to-spend
  */
-import { freeToSpend, nextPayday, isCounted } from "../lib/free-to-spend.ts";
+import { freeToSpend, nextPayday, isCounted, untilPayday } from "../lib/free-to-spend.ts";
+import { paydayLine } from "../lib/payday-line.ts";
 
 const checks = [];
 const check = (name, ok, detail = "") => checks.push({ name, ok, detail });
@@ -86,6 +87,36 @@ check("a credit card never counts, even toggled on", !isCounted(visa, { visa: tr
   check("neither: nothing to show", freeToSpend({ today: d(2026, 10, 1), accounts: [], expected: [] }) === null);
   const short = freeToSpend({ today: d(2026, 10, 1), accounts: [{ ...checking, balanceUSD: 1500 }], expected: [pay("2026-10-10", "monthly"), ...bills] });
   check("bills over the balance: negative, and no per-day figure", short.free === -470 && short.perDay === 0);
+}
+
+// ── Home's Until payday (D-90): cash only, so a blown budget never holds it down
+{
+  const tight = freeToSpend({ today: d(2026, 10, 1), accounts: [checking], expected: [pay("2026-10-10", "monthly"), ...bills], budget: [{ key: "fun", label: "Fun", budget: 100, left: -300 }] });
+  const home = untilPayday(tight, bills.map((b) => b.description));
+  check("Until payday ignores an over budget: cash less bills", tight.free === -300 && home.free === 430, `${tight.free} ${home?.free}`);
+  const withCard = freeToSpend({ today: d(2026, 10, 1), accounts: [checking, visa], expected: [pay("2026-10-10", "monthly"), bill("Rent", "2026-10-01", 1450)] });
+  check("a card with no payment bill: its balance is set aside", untilPayday(withCard, ["Rent"]).free === 2400 - 1450 - 640);
+  check("a card payment that is a bill: not counted twice", untilPayday(withCard, ["Rent", "Visa card payment"]).cardsOwed === 0);
+  const noPay = freeToSpend({ today: d(2026, 10, 1), accounts: [checking], expected: bills });
+  check("no paycheck: no Until payday, Home shows the budget card", untilPayday(noPay, []) === null);
+  check("no bank: no Until payday", untilPayday(freeToSpend({ today: d(2026, 10, 1), accounts: [], expected: [pay("2026-10-10", "monthly")], budget }), []) === null);
+}
+
+// ── Its line: back from today's balance to the last paycheck, then bills to payday
+{
+  const rows = [
+    { date: "2026-10-01", out: -4000 }, { date: "2026-10-05", out: 120, category: "groceries" },
+    { date: "2026-10-10", out: 1800, category: "transport" }, { date: "2026-10-12", out: 30 },
+  ];
+  const line = paydayLine({ today: d(2026, 10, 18), cash: 1450, paydayIso: "2026-11-01", payMin: 2000, rows,
+    bills: [{ iso: "2026-10-31", usd: 1450, description: "Rent" }, { iso: "2026-10-19", usd: 6, description: "X Pro" }] });
+  check("the line starts on the last paycheck", line.startIso === "2026-10-01" && line.today === 17 && line.span === 31, `${line.startIso} ${line.today} ${line.span}`);
+  check("walking back: the day before the car repair held it", line.past[8] === 1450 + 30 + 1800 && line.past[0] === 1450 + 30 + 1800 + 120);
+  check("the big spend is marked, the small ones are not", line.dips.length === 1 && line.dips[0].usd === 1800 && line.dips[0].day === 9);
+  check("bills in date order, each with the balance before it", line.bills[0].usd === 6 && line.bills[1].before === 1444);
+  check("it ends on the card's number", line.end === -6);
+  const fresh = paydayLine({ today: d(2026, 10, 18), cash: 900, paydayIso: "2026-10-24", payMin: 2000, rows: [], bills: [] });
+  check("no paycheck seen: two weeks of history, flat", fresh.today === 14 && fresh.past.every((v) => v === 900) && fresh.end === 900);
 }
 
 const failed = checks.filter((c) => !c.ok);
