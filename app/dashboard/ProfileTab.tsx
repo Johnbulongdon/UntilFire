@@ -74,6 +74,8 @@ export default function ProfileTab({
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [showDelete, setShowDelete] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [openRow, setOpenRow] = useState<string | null>(null);
   const [householdSummary, setHouseholdSummary] = useState("Set up");
 
@@ -185,6 +187,11 @@ export default function ProfileTab({
       return;
     }
 
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  }
+
+  async function handleSignOut() {
     await supabase.auth.signOut();
     window.location.href = "/";
   }
@@ -316,27 +323,44 @@ export default function ProfileTab({
           after={openRow === "creator" && <CreatorCard cardStyle={{}} bare />} />
       </MoneyList>
 
-      <Section t="Your data" />
+      {/* Matches the phone (D-48): export and delete sit folded behind one row,
+          and Sign out closes the page. */}
+      <Section t="Data and account" />
       <MoneyList>
-        <MoneyRow dot="#1baf7a" icon="📦" name="Export your data" meta="Free, anytime, whether or not you're on Pro" value="Export ›" onClick={() => toggle("export")}
-          after={openRow === "export" && <ExportData userId={userId} />} />
-      </MoneyList>
-
-      <Section t="Account removal" />
-      <MoneyList>
-        <MoneyRow dot="#e34948" icon="🗑️" name="Delete account" meta="Removes your account, transactions and plan for good" value="Delete…" valueTone="var(--uf-neg-ink)" onClick={() => toggle("delete")}
-          after={openRow === "delete" && (
-            <div style={{ display: "grid", gap: 8 }}>
-              <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>First cancel Pro (if it renews) and disconnect your banks in Money. Then type <b>{userEmail}</b> to confirm. This can&apos;t be undone.</span>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <input aria-label="Confirm your email" type="email" style={{ ...inputStyle, borderColor: deleteConfirm && deleteConfirm !== userEmail ? "var(--uf-neg)" : "var(--uf-border-2)" }}
-                  value={deleteConfirm} onChange={(e) => { setDeleteConfirm(e.target.value); setDeleteError(""); }} placeholder={userEmail} />
-                <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleting || deleteConfirm !== userEmail}>{deleting ? "Deleting…" : "Delete account"}</Button>
+        <MoneyRow dot="#1baf7a" icon="📦" name="Data and account" meta="Export your data or delete your account" value="Open ›" onClick={() => toggle("data")}
+          after={openRow === "data" && (
+            <div style={{ display: "grid", gap: 16 }}>
+              <ExportData userId={userId} />
+              <div style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 12 }}>
+                {!showDelete ? (
+                  <Button variant="ghost" size="sm" onClick={() => setShowDelete(true)}>Delete account…</Button>
+                ) : (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>First cancel Pro (if it renews) and disconnect your banks in Money. Then type <b>{userEmail}</b> to confirm. This can&apos;t be undone.</span>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <input aria-label="Confirm your email" type="email" style={{ ...inputStyle, borderColor: deleteConfirm && deleteConfirm !== userEmail ? "var(--uf-neg)" : "var(--uf-border-2)" }}
+                        value={deleteConfirm} onChange={(e) => { setDeleteConfirm(e.target.value); setDeleteError(""); }} placeholder={userEmail} />
+                      <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleting || deleteConfirm !== userEmail}>{deleting ? "Deleting…" : "Delete account"}</Button>
+                      <Button variant="ghost" size="sm" onClick={() => { setShowDelete(false); setDeleteConfirm(""); setDeleteError(""); }}>Cancel</Button>
+                    </div>
+                    {deleteError && <span role="alert" className="uf-t-small" style={{ color: "var(--uf-neg-ink)" }}>{deleteError}</span>}
+                  </div>
+                )}
               </div>
-              {deleteError && <span role="alert" className="uf-t-small" style={{ color: "var(--uf-neg-ink)" }}>{deleteError}</span>}
             </div>
           )} />
       </MoneyList>
+
+      <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap", marginTop: 16 }}>
+        {!confirmSignOut ? (
+          <Button variant="secondary" onClick={() => setConfirmSignOut(true)}>Sign out</Button>
+        ) : (
+          <>
+            <Button variant="ghost" onClick={() => setConfirmSignOut(false)}>Cancel</Button>
+            <Button variant="danger" onClick={handleSignOut}>Sign out</Button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
