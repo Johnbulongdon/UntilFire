@@ -257,10 +257,10 @@ function UntilPayday({ data }: { data: AccountData }) {
               <Path d={`${fut} L${w},${Math.min(zero, H)} L${x(today)},${Math.min(zero, H)} Z`} fill="url(#payfill)" />
               {short && <Rect x={0} y={zero} width={w} height={H - zero} fill="url(#payshort)" />}
               {short && <Line x1={0} x2={w} y1={zero} y2={zero} stroke={colors.neg} strokeWidth={1.5} />}
-              <Path d={pastPath} fill="none" stroke={colors.border2} strokeWidth={2.5} strokeLinejoin="round" />
-              <Path d={fut} fill="none" stroke={colors.ink} strokeWidth={2.5} strokeLinejoin="round" />
+              <Path d={pastPath} fill="none" stroke={colors.teal} strokeOpacity={0.35} strokeWidth={2.5} strokeLinejoin="round" />
+              <Path d={fut} fill="none" stroke={colors.teal} strokeWidth={2.5} strokeLinejoin="round" />
               <Line x1={x(today)} x2={x(today)} y1={y(past[today])} y2={H} stroke={colors.teal} strokeWidth={1.5} strokeDasharray="2 3" />
-              <Circle cx={x(today)} cy={y(past[today])} r={6} fill={colors.teal} stroke={panel()} strokeWidth={2.5} />
+              <Circle cx={x(today)} cy={y(past[today])} r={6} fill={colors.tealDeep} stroke={panel()} strokeWidth={2.5} />
             </Svg>
             {dips.map(d => <Pin key={`d${d.day}`} left={x(d.day - 1)} top={y(past[d.day - 1])} category={d.category} faded />)}
             {marks.map(m => <Pin key={`b${m.day}`} left={x(m.day)} top={y(m.before)} category={m.category} more={m.more} />)}
@@ -320,8 +320,8 @@ function ThisMonth({ data }: { data: AccountData }) {
           {w > 0 && (
             <Svg width={w} height={H} style={{ overflow: 'visible' }}>
               <Line x1={0} y1={H} x2={w} y2={py(budget)} stroke={colors.border} strokeWidth={2} strokeDasharray="4 5" />
-              {soFar.length > 0 && <Path d={path} fill="none" stroke={colors.ink} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />}
-              {soFar.length > 0 && <Circle cx={px(soFar.length - 1)} cy={py(soFar[soFar.length - 1])} r={4} fill={colors.ink} />}
+              {soFar.length > 0 && <Path d={path} fill="none" stroke={colors.teal} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />}
+              {soFar.length > 0 && <Circle cx={px(soFar.length - 1)} cy={py(soFar[soFar.length - 1])} r={4} fill={colors.tealDeep} />}
             </Svg>
           )}
         </View>
