@@ -3538,7 +3538,6 @@ function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => vo
   // that is theirs rather than the same outline as everybody else.
   const initials = (name ?? email ?? "")
     .split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
-  const handleSignOut = async () => { await supabase.auth.signOut(); window.location.href = "/"; };
 
   if (!email) return (
     <Link href="/login" style={{ background: "#064E3B", color: "#fff", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Sign in</Link>
@@ -3585,9 +3584,6 @@ function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => vo
           </span>
           <span style={{ fontSize: 11, fontWeight: 400, color: "#94A3B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{email}</span>
         </div>
-      </button>
-      <button onClick={handleSignOut} style={{ background: "transparent", border: "none", color: "#94A3B8", fontSize: 12, fontWeight: 500, cursor: "pointer", textAlign: "left", padding: "4px 14px", fontFamily: "Manrope, sans-serif" }}>
-        Sign out
       </button>
     </div>
   );

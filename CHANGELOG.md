@@ -12,6 +12,7 @@ under today's date, creating the heading if it is not there yet.
 - Sign out now sits at the bottom of Profile and asks before signing out,
   like the phone. Export and Delete account are folded into one "Data and
   account" row; the delete confirmation shows only after "Delete account…".
+- The sidebar no longer has its own Sign out link; Sign out lives in Profile.
 
 ### Sign-up page
 - After the calculator, sign-up reads "{year} is just your starting point"
