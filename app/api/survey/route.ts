@@ -3,7 +3,7 @@ import { callerKey, rateLimit } from "@/lib/rate-limit";
 import { adminClient } from "@/lib/supabase-admin";
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimit(callerKey(req, "survey"), 10);
+  const limited = rateLimit(callerKey(req, "survey-ip"), 100);
   if (limited) return limited;
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -11,6 +11,8 @@ export async function POST(req: NextRequest) {
   const admin = adminClient();
   const { data: { user }, error: authError } = await admin.auth.getUser(token);
   if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const accountLimit = rateLimit(callerKey(req, "survey", user.id), 10);
+  if (accountLimit) return accountLimit;
 
   const { satisfaction, featuresUsed, missing, missingOther, recommend, notes } =
     await req.json() as {

@@ -35,6 +35,13 @@ const exports = {};
 vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2020 } }).outputText,
   { exports, Math, Date, Object, React, freedomCash, safetyPot, freedomDebt, REAL_RETURN: 0.069, freedomAgeAt: (age, years) => Math.round(age + years) });
 const { freedomProjection, calcProjection, PlanFreedomDate, effectiveBalances, effectiveDebts } = exports;
+const mobileExports = {};
+vm.runInNewContext(ts.transpileModule(readFileSync('mobile/src/lib/projection.ts', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+}).outputText, { exports: mobileExports, Math, Date, require: id => {
+  assert.equal(id, '@/engine');
+  return { REAL_RETURN: 0.069 };
+} });
 
 // A person: $8k/month take-home, $5k spending, $60k invested, $10k in a linked savings account (no needs set, so all of it counts).
 const base = {
@@ -72,7 +79,16 @@ assert.equal(withDebt.firstYearInvested, 36000 - 10800, "Plan's tools are told t
 
 // Plan's tools take the freedom date's own numbers (D-33).
 assert.match(source, /<PurchaseImpactPanel\s+currentSavings=\{planFacts\.invested\}\s+monthlyContribution=\{planFacts\.monthlySavings\}\s+fireTarget=\{planFacts\.fireTarget\}/, 'purchase impact uses the freedom date numbers');
-assert.match(source, /<TaxProfileCard[\s\S]{0,120}monthlyExpenses=\{planFacts\.retirementMonthly\}/, 'the tax card works on the retirement target');
+let taxInput;
+function inspectTaxCard(node) {
+  if ((ts.isJsxSelfClosingElement(node) || ts.isJsxOpeningElement(node)) && node.tagName.getText(ast) === 'TaxProfileCard') {
+    const prop = node.attributes.properties.find(p => ts.isJsxAttribute(p) && p.name.getText(ast) === 'monthlyExpenses');
+    taxInput = prop?.initializer && ts.isJsxExpression(prop.initializer) ? prop.initializer.expression?.getText(ast) : undefined;
+  }
+  ts.forEachChild(node, inspectTaxCard);
+}
+inspectTaxCard(ast);
+assert.equal(taxInput, 'planFacts.retirementMonthly', 'the tax card works on the retirement target');
 // Explore in Plan (D-58, replacing Expat FIRE) takes the freedom date's balances, savings, growth and target multiple.
 assert.match(source, /saved: planFacts\.invested, monthlySaving: planFacts\.monthlySavings[\s\S]{0,120}realReturn: growthRate, targetMultiple: lifestyleMultiplier \* planFacts\.targetPerDollar/, 'Explore uses the freedom date numbers and target multiple');
 assert.match(source, /<ExploreClient appPlan=\{explorePlan\}/, 'Plan → Explore gets the plan numbers');
@@ -243,6 +259,39 @@ assert.ok(rateMatters(0.03) > rateMatters(0.07), 'each mortgage is paid down at 
   // Work shares multiply, and a set take-home or spending overrides today's.
   const half = calcProjection({ ...life, changes: [{ startYear: 0, endYear: 1, workShare: 0.5 }, { startYear: 0, endYear: 1, workShare: 0.5 }, { startYear: 0, endYear: 1, annualSpend: spend }] });
   assert.ok(Math.abs(half.flows[0].saved - calcProjection({ ...life, change: { startYear: 0, endYear: 1, workShare: 0.25 } }).flows[0].saved) < 1, 'two halves of the week are a quarter of it');
+}
+
+// Independent zero-return examples: no compound-growth formula to mirror.
+// All figures are today's USD; pensionAnnual is a contribution, not a benefit.
+{
+  const cash = { annualIncome: 0, monthlyExpenses: 1000, k401: 0, rothIRA: 0, taxable: 30000,
+    cashSavings: 0, totalDebt: 0, mortgageBalance: 0, mortgageMonthly: 0,
+    growthRate: 0, taxFreeAnnual: 0, currentAge: 35, accessAge: 60, years: 3 };
+  const deficit = calcProjection(cash);
+  assert.equal(deficit.data[1].Investable, 18000, '$30k minus one $12k year is $18k');
+  assert.equal(deficit.data[2].Investable, 6000, 'two years leave $6k');
+  assert.equal(deficit.broke.year, 2, 'the third spending year runs out');
+  assert.equal(deficit.broke.short, 6000, 'the third year is $6k short');
+  assert.equal(deficit.fireYear, null, 'depletion is not a reachable freedom date');
+  const locked = calcProjection({ ...cash, taxable: 0, k401: 30000 });
+  assert.equal(locked.broke.short, 12000, 'locked pension money cannot cover this year');
+  assert.equal(locked.data[1]['401(k)'], 30000, 'no silent pension withdrawal');
+  const laterPay = calcProjection({ ...cash, taxable: 24000, changes: [{ startYear: 2, addIncome: 12000 }] });
+  assert.equal(laterPay.data[2].Investable, 0, 'two years use the $24k bridge');
+  assert.equal(laterPay.flows[2].withdrawn, 0, 'typed income covers costs starting in year two');
+  assert.equal(laterPay.broke, null, 'the bridge exactly covers the delay');
+  const breakBase = { ...cash, taxable: 18000, annualIncome: 24000 };
+  const off = { startYear: 0, endYear: 2, workShare: 0 };
+  assert.equal(calcProjection({ ...breakBase, changes: [off] }).broke.short, 6000, 'a two-year break costs $24k and is $6k short');
+  const moved = calcProjection({ ...breakBase, changes: [off, { startYear: 0, endYear: 2, annualSpend: 6000 }] });
+  assert.equal(moved.data[2].Investable, 6000, 'a hypothetical spending reduction makes the same break cost $12k');
+  assert.equal(moved.broke, null, 'combined changes recalculate the funding gap');
+  assert.equal(moved.flows[2].saved, 12000, 'pay and normal spending return after the break');
+  for (const fixture of [cash, { ...cash, taxable: 0, k401: 30000 },
+    { ...cash, taxable: 24000, changes: [{ startYear: 2, addIncome: 12000 }] },
+    { ...breakBase, changes: [off, { startYear: 0, endYear: 2, annualSpend: 6000 }] }]) {
+    assert.equal(JSON.stringify(mobileExports.calcProjection(fixture)), JSON.stringify(calcProjection(fixture)), 'web and mobile use identical cash flows and gaps');
+  }
 }
 
 if (process.env.SHOW) for (const g of [0.05, 0.069, 0.081]) console.log(g, at(g).exactDate.toISOString().slice(0, 7));

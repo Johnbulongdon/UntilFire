@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
 import { getStripe } from "@/lib/stripe";
 import Stripe from "stripe";
+import { stripeSubscriptionState } from "@/lib/stripe-subscription";
 
 
 export async function POST(req: NextRequest) {
@@ -25,24 +26,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    if (!session.subscription || session.payment_status !== "paid") {
+    if (!session.subscription || !["paid", "no_payment_required"].includes(session.payment_status)) {
       return NextResponse.json({ error: "No active subscription found" }, { status: 400 });
     }
 
     const sub = session.subscription as Stripe.Subscription;
     const customerId = typeof session.customer === "string" ? session.customer : session.customer!.id;
 
-    await admin.from("subscriptions").upsert({
+    const state = stripeSubscriptionState(sub);
+    if (state.plan !== "pro") return NextResponse.json({ error: "Subscription is not active" }, { status: 409 });
+
+    const { error: writeError } = await admin.from("subscriptions").upsert({
       source: "stripe",
       user_id: user.id,
       stripe_customer_id: customerId,
       stripe_subscription_id: sub.id,
-      status: "active",
-      plan: "pro",
-      current_period_end: new Date((sub as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
+      ...state,
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id" });
 
+    if (writeError) throw new Error("Subscription save failed");
     return NextResponse.json({ ok: true });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Sync failed";

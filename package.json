@@ -8,6 +8,7 @@
     "start": "next start",
     "typecheck": "next build && tsc --noEmit",
     "lint": "eslint .",
+    "test:audit-repairs": "node scripts/verify-audit-repairs.mjs",
     "test:seo": "node scripts/verify-seo-config.mjs",
     "audit:seo-index": "node scripts/audit-indexable-pages.mjs",
     "test:calm-startup": "node scripts/verify-calm-startup.mjs",

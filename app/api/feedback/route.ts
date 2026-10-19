@@ -6,7 +6,7 @@ import { Resend } from "resend";
 
 
 export async function POST(req: NextRequest) {
-  const limited = rateLimit(callerKey(req, "feedback"), 5);
+  const limited = rateLimit(callerKey(req, "feedback-ip"), 100);
   if (limited) return limited;
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -14,6 +14,8 @@ export async function POST(req: NextRequest) {
   const admin = adminClient();
   const { data: { user }, error: authError } = await admin.auth.getUser(token);
   if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const accountLimit = rateLimit(callerKey(req, "feedback", user.id), 5);
+  if (accountLimit) return accountLimit;
 
   const { type, message } = await req.json() as { type: string; message: string };
   // Must match the CHECK constraint in supabase/migrations/0003_feedback_table.sql

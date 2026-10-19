@@ -1,39 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callerKey, rateLimit } from "@/lib/rate-limit";
+import { AIRequestError, readAIRequest, boundedText } from "@/lib/ai-request";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "mistralai/mistral-7b-instruct";
 
-// Same rough defaults GoalsPageTab's PERMA prompts used to seed by hand —
-// kept as the fallback so the flow still works with no API key (dev/sandbox)
-// or if the model call fails, matching app/api/categorise/route.ts's pattern.
-const FALLBACK_BY_CATEGORY: Record<string, number> = {
-  emotion: 15000,
-  engagement: 15000,
-  relationships: 8000,
-  meaning: 20000,
-  accomplishment: 500000,
-};
+const GOAL_CATEGORIES = ["emotion", "engagement", "relationships", "meaning", "accomplishment"];
 
 export async function POST(req: NextRequest) {
   const limited = rateLimit(callerKey(req, "estimate-goal-amount"), 20);
   if (limited) return limited;
-  const { category, description, monthlyExpenses } = await req.json() as {
-    category?: string;
-    description?: string;
-    monthlyExpenses?: number;
-  };
-  const safeCategory = String(category ?? "");
-  const safeDescription = String(description ?? "").slice(0, 300);
-  const fallback = FALLBACK_BY_CATEGORY[safeCategory] ?? 15000;
-
-  if (!process.env.OPENROUTER_API_KEY || !safeDescription.trim()) {
-    return NextResponse.json({ amount: fallback });
-  }
-
   try {
+    const { category, description, monthlyExpenses } = await readAIRequest(req, 4096);
+    const safeCategory = boundedText(category, "category", 40);
+    const safeDescription = boundedText(description, "description", 300);
+    if (!GOAL_CATEGORIES.includes(safeCategory)) throw new AIRequestError("Unknown goal category");
+    if (monthlyExpenses !== undefined && (typeof monthlyExpenses !== "number" || !Number.isFinite(monthlyExpenses) || monthlyExpenses < 0 || monthlyExpenses > 100_000_000)) {
+      throw new AIRequestError("monthlyExpenses must be a valid non-negative amount");
+    }
+    if (!process.env.OPENROUTER_API_KEY) return NextResponse.json({ error: "Goal estimate is unavailable" }, { status: 503 });
+
     const res = await fetch(OPENROUTER_API_URL, {
       method: "POST",
+      signal: AbortSignal.timeout(15_000),
       headers: {
         "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
@@ -53,7 +42,7 @@ Format: {"amount": <number>}`,
     });
 
     if (!res.ok) {
-      return NextResponse.json({ amount: fallback });
+      return NextResponse.json({ error: "Goal estimate provider failed" }, { status: 502 });
     }
 
     const data = await res.json() as { choices: { message: { content: string } }[] };
@@ -61,10 +50,11 @@ Format: {"amount": <number>}`,
     const parsed = JSON.parse(text) as { amount: number };
     const amount = Number(parsed.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
-      return NextResponse.json({ amount: fallback });
+      return NextResponse.json({ error: "Goal estimate provider failed" }, { status: 502 });
     }
     return NextResponse.json({ amount: Math.round(amount) });
-  } catch {
-    return NextResponse.json({ amount: fallback });
+  } catch (error) {
+    if (error instanceof AIRequestError) return NextResponse.json({ error: error.message }, { status: error.status });
+    return NextResponse.json({ error: "Goal estimate is unavailable" }, { status: 502 });
   }
 }

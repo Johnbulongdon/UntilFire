@@ -1867,13 +1867,17 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         forAi.map((t) => [t.description.toLowerCase(), { description: t.description, category: t.category }])
       ).values()];
 
-      const res = await fetch("/api/classify-needs-wants", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
-      });
-      if (!res.ok) throw new Error("classification failed");
-      const { results } = await res.json() as { results: { description: string; needOrWant: string }[] };
+      const results: { description: string; needOrWant: string }[] = [];
+      for (let start = 0; start < items.length; start += 50) {
+        const res = await fetch("/api/classify-needs-wants", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: items.slice(start, start + 50) }),
+        });
+        if (!res.ok) throw new Error("classification failed");
+        const batch = await res.json() as { results: { description: string; needOrWant: string }[] };
+        results.push(...batch.results);
+      }
       const classMap = new Map(results.map((r) => [r.description.toLowerCase(), r.needOrWant]));
 
       const aiIds = new Set(forAi.map((t) => t.id));

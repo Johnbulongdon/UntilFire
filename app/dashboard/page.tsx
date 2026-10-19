@@ -531,8 +531,11 @@ function calcProjection({
     const changeNet      = inChange
       ? (setIncome ?? annualIncome * pay * share) - (setSpend ?? annualExpenses) + added + once - annualMortgage + freed - debtPayment
       : 0;
-    const toInvest       = inChange ? Math.max(changeNet, 0) : Math.max(annualSavings + raises + freed - debtPayment, 0);
-    let need             = inChange ? Math.max(-changeNet, 0) : 0;
+    // An ordinary deficit draws on accessible money too. Clamping a negative
+    // baseline to zero silently let a jobless person's portfolio grow unspent.
+    const netCashflow    = inChange ? changeNet : annualSavings + raises + freed - debtPayment;
+    const toInvest       = Math.max(netCashflow, 0);
+    let need             = Math.max(-netCashflow, 0);
     if (need > 0) {
       const take = (v: number) => { const t = Math.min(Math.max(v, 0), need); need -= t; return v - t; };
       curCash = take(curCash);
@@ -541,7 +544,7 @@ function calcProjection({
       if (open || !taxFreeGainsLocked) { curRoth = take(curRoth); rothBasis = Math.min(rothBasis, curRoth); }
       else { const t = Math.min(Math.max(Math.min(rothBasis, curRoth), 0), need); curRoth -= t; rothBasis -= t; need -= t; }
       if (open) cur401k = take(cur401k);
-      withdrawn += Math.max(-changeNet, 0) - need;
+      withdrawn += Math.max(-netCashflow, 0) - need;
       if (need > 0.5 && !broke) broke = { year: y, short: need };
     }
     const ownSplit       = taxFreeAnnual != null || pensionAnnual > 0;
@@ -549,7 +552,7 @@ function calcProjection({
     const rothContrib    = ownSplit ? Math.min(toInvest, taxFreeAnnual ?? 0) : Math.min(toInvest * 0.2, 7000);
     const taxableContrib = toInvest - k401Contrib - rothContrib;
     const pension        = (pensionAnnual + employerAnnual * pay) * share;
-    flows.push({ year: y, saved: toInvest + pension, withdrawn: inChange ? Math.max(-changeNet, 0) - need : 0 });
+    flows.push({ year: y, saved: toInvest + pension, withdrawn: Math.max(-netCashflow, 0) - need });
     if (y === 0) firstYearInvested = toInvest + pension;
     totalContributed += toInvest + pension;
     rothBasis += rothContrib;
@@ -3125,6 +3128,7 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ category: p.id, description: card.description, monthlyExpenses }),
       });
+      if (!res.ok) throw new Error("Goal estimate failed");
       const data = await res.json() as { amount: number };
       updatePermaCard(p.id, { estimate: data.amount, estimating: false });
     } catch {

@@ -23,11 +23,13 @@ const SITE = "https://www.untilfire.com";
  * section and changed their mind.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const limited = rateLimit(callerKey(req, "household-invite"), 5);
+  const limited = rateLimit(callerKey(req, "household-invite-ip"), 100);
   if (limited) return limited;
   const auth = await requireUser(req);
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const { admin, user } = auth;
+  const accountLimit = rateLimit(callerKey(req, "household-invite", user.id), 5);
+  if (accountLimit) return accountLimit;
 
   let email = "";
   try {
