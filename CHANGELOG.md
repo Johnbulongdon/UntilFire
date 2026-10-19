@@ -51,6 +51,28 @@ under today's date, creating the heading if it is not there yet.
   not emoji, which Windows shows as letters like "AU". The tax-country
   dropdown drops its flags, since a dropdown can only hold text.
 
+## 2026-10-19
+
+### Audit repairs prepared for review
+- Stripe checkout activation and return-page sync read billing periods from
+  subscription items. Trials activate without an immediate charge, inactive
+  subscriptions do not reactivate, and failed subscription writes return errors
+  so webhooks can retry.
+- Public rate limits ignore unverified Authorization values. Routes that already
+  authenticate apply their account limit to the verified user, with an IP
+  prefilter before authentication. Limits remain per server instance.
+- AI routes bound streamed request bytes, input lengths and classification batch
+  sizes, validate provider output, and report provider failures. Bulk transaction
+  review sends batches; a failed estimate does not become a saved amount.
+- The age wheel synchronizes when its step becomes visible and ignores hidden
+  scroll events. Income examples no longer claim to be typical local incomes.
+- Ordinary plans whose Expenses exceed Income now withdraw the deficit from
+  accessible savings, just as scenarios already did. Funding gaps cannot be
+  hidden by clamping savings to zero. Zero-return examples check delayed income,
+  locked pensions and a break combined with lower spending.
+- The Plan regression checks the tax-card input through the JSX tree instead of
+  a fragile character-distance rule.
+
 ## 2026-10-17
 
 ### Launch readiness: security, crashes, store setup

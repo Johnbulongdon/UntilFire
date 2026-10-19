@@ -5,11 +5,12 @@ import { NextRequest, NextResponse } from "next/server";
 // email routes), not a distributed attack; Vercel Firewall rules cover that.
 const hits = new Map<string, number[]>();
 
-export function callerKey(req: NextRequest, route: string): string {
-  const token = req.headers.get("authorization")?.replace("Bearer ", "");
+/** verifiedUserId may only come from a successful server-side auth.getUser. */
+export function callerKey(req: NextRequest, route: string, verifiedUserId?: string): string {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
-  // A signed-in caller is limited per token, so people behind one office IP don't share a limit.
-  return `${route}:${token ? `t:${token.slice(-24)}` : `ip:${ip}`}`;
+  // Authorization text is untrusted. Rotating invented tokens must not mint
+  // fresh allowances. A verified account retains its limit across token refresh.
+  return `${route}:${verifiedUserId ? `u:${verifiedUserId}` : `ip:${ip}`}`;
 }
 
 /** Returns a 429 response when `key` has made `max` calls in the last `windowMs`, else null. */

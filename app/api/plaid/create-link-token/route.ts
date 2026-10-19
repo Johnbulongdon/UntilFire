@@ -6,7 +6,7 @@ import { getPlaidClient, plaidCountries } from "@/lib/plaid";
 
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  const limited = rateLimit(callerKey(req, "plaid-create-link-token"), 10);
+  const limited = rateLimit(callerKey(req, "plaid-create-link-token-ip"), 100);
   if (limited) return limited;
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -14,6 +14,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const admin = adminClient();
   const { data: { user }, error: authError } = await admin.auth.getUser(token);
   if (authError || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const accountLimit = rateLimit(callerKey(req, "plaid-create-link-token", user.id), 10);
+  if (accountLimit) return accountLimit;
 
   // Server-side paywall: free users limited to 1 bank
   const [{ data: sub }, { count: itemCount }] = await Promise.all([

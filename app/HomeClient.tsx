@@ -270,10 +270,11 @@ function IncomeScreen({ stateKey, cityName, cityCol, currency = "USD", onCurrenc
   // comfortable, high (D-50). Gross pay is grossed up roughly a third.
   const monthlyCost = cityCol && cityCol > 0 ? cityCol / 12 : 4000;
   const periodFactor = mode === "annual" ? 12 : mode === "biweekly" ? 12 / 26 : mode === "hourly" ? 12 / 2080 : 1;
-  const incomeOptions = [1.1, 1.4, 1.9, 2.6].map((m, i) => ({
+  const incomeOptions = [1.1, 1.4, 1.9, 2.6].map((m) => ({
     value: niceAmount(monthlyCost * m * fxRate * (mode === "takehome" ? 1 : 1.3) * periodFactor),
-    sub: ["Tight", "Typical here", "Comfortable", "High"][i],
-    tag: i === 1 ? "Common" : undefined,
+    sub: cityCol && cityCol > 0
+      ? "Living-cost example"
+      : "Example amount",
   }));
   useEffect(() => {
     onAnswer?.(canContinue ? `${localMoney(displayMonthly)} a month` : "");
@@ -609,7 +610,8 @@ function PortfolioScreen({ currency = "USD", income, initialPortfolioBalance = 0
 }
 
 /** Age gets its own step and a wheel (D-50). Optional: Skip continues without it. */
-function AgeScreen({ initialAge, onNext, onAnswer }: {
+function AgeScreen({ initialAge, onNext, onAnswer, active }: {
+  active: boolean;
   initialAge?: number;
   onNext: (age?: number) => void;
   onAnswer?: (text: string) => void;
@@ -620,7 +622,7 @@ function AgeScreen({ initialAge, onNext, onAnswer }: {
     <div className="uf-screen" style={{ paddingTop: 16 }}>
       <h2 className="uf-ob-q">How old are you?</h2>
       <p className="uf-ob-hint">So we can tell you how old you&apos;ll be when work becomes optional.</p>
-      <AgeWheel value={age} onChange={setAge} />
+      <AgeWheel value={age} onChange={setAge} active={active} />
       <div className="uf-ob-foot">
         <button data-primary-next className="uf-btn uf-btn-primary" onClick={() => onNext(age)}>
           Show my freedom date
@@ -3332,6 +3334,7 @@ export default function HomeClient() {
         {(screen === "age" || visited.includes("age")) && (
           <div data-onboarding-step="age" hidden={screen !== "age"} inert={screen !== "age"}>
           <AgeScreen
+            active={screen === "age"}
             initialAge={currentAge}
             onAnswer={reportAnswer.age}
             onNext={age => { setCurrentAge(age); setScreen("reveal"); }}

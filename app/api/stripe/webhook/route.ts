@@ -3,6 +3,7 @@ import { adminClient } from "@/lib/supabase-admin";
 import { CAMPAIGNS, sendTagged } from "@/lib/email-send";
 import { getStripe } from "@/lib/stripe";
 import Stripe from "stripe";
+import { stripeSubscriptionState } from "@/lib/stripe-subscription";
 import { trackCheckoutSucceededServer } from "@/lib/analytics-server";
 import { Resend } from "resend";
 import { buildTrialReminderEmail } from "@/lib/email-html";
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
 
   const supabaseAdmin = adminClient();
 
+  try {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -43,16 +45,15 @@ export async function POST(req: NextRequest) {
 
       const sub = await stripe.subscriptions.retrieve(subscriptionId);
 
-      await supabaseAdmin.from("subscriptions").upsert({
+      const { error: writeError } = await supabaseAdmin.from("subscriptions").upsert({
         source: "stripe",
         user_id: userId,
         stripe_customer_id: customerId,
         stripe_subscription_id: subscriptionId,
-        status: "active",
-        plan: "pro",
-        current_period_end: new Date((sub as any).current_period_end * 1000).toISOString(),
+        ...stripeSubscriptionState(sub),
         updated_at: new Date().toISOString(),
       }, { onConflict: "user_id" });
+      if (writeError) throw new Error("Subscription save failed");
 
       // Funnel: server-confirmed checkout success. distinct_id = supabase
       // user id so this stitches to the client funnel (identify is called on
@@ -74,25 +75,25 @@ export async function POST(req: NextRequest) {
       const sub = event.data.object as Stripe.Subscription;
       const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
 
-      const { data: existing } = await supabaseAdmin
+      const { data: existing, error: lookupError } = await supabaseAdmin
         .from("subscriptions")
         .select("user_id")
         .eq("stripe_customer_id", customerId)
-        .single();
+        .maybeSingle();
+      if (lookupError) throw new Error("Subscription lookup failed");
 
       if (!existing) break;
 
       const isActive = ["active", "trialing"].includes(sub.status);
-      await supabaseAdmin.from("subscriptions").upsert({
+      const { error: writeError } = await supabaseAdmin.from("subscriptions").upsert({
         source: "stripe",
         user_id: existing.user_id,
         stripe_customer_id: customerId,
         stripe_subscription_id: sub.id,
-        status: isActive ? "active" : sub.status,
-        plan: isActive ? "pro" : "free",
-        current_period_end: new Date((sub as any).current_period_end * 1000).toISOString(),
+        ...stripeSubscriptionState(sub),
         updated_at: new Date().toISOString(),
       }, { onConflict: "user_id" });
+      if (writeError) throw new Error("Subscription save failed");
 
       // subscriptions has no created_at, so without this the funnel could only
       // ever see "is subscribed", never when they became one.
@@ -106,10 +107,11 @@ export async function POST(req: NextRequest) {
       const sub = event.data.object as Stripe.Subscription;
       const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
 
-      await supabaseAdmin
+      const { error: writeError } = await supabaseAdmin
         .from("subscriptions")
         .update({ status: "inactive", plan: "free", updated_at: new Date().toISOString() })
         .eq("stripe_customer_id", customerId);
+      if (writeError) throw new Error("Subscription cancellation save failed");
       break;
     }
 
@@ -118,11 +120,12 @@ export async function POST(req: NextRequest) {
       const sub = event.data.object as Stripe.Subscription;
       const customerId = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
 
-      const { data: existing } = await supabaseAdmin
+      const { data: existing, error: lookupError } = await supabaseAdmin
         .from("subscriptions")
         .select("user_id")
         .eq("stripe_customer_id", customerId)
-        .single();
+        .maybeSingle();
+      if (lookupError) throw new Error("Subscription lookup failed");
 
       if (!existing) break;
 
@@ -193,6 +196,11 @@ export async function POST(req: NextRequest) {
       }
       break;
     }
+  }
+
+  } catch {
+    // Non-2xx lets Stripe retry a failed activation or database write.
+    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });

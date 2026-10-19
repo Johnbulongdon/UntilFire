@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 
 const ROW = 46, MIN_AGE = 16, MAX_AGE = 85;
 const AGES = Array.from({ length: MAX_AGE - MIN_AGE + 1 }, (_, i) => MIN_AGE + i);
@@ -10,25 +10,33 @@ const clamp = (n: number) => Math.min(MAX_AGE, Math.max(MIN_AGE, n));
  * trackpad turns it, a click picks a number, and the arrow keys or two typed
  * digits work too. Scroll snapping keeps one age in the band.
  */
-export default function AgeWheel({ value, onChange }: { value: number; onChange: (age: number) => void }) {
+export default function AgeWheel({ value, onChange, active = true }: { value: number; onChange: (age: number) => void; active?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  const ready = useRef(false);
   const typed = useRef({ s: '', t: 0 });
   const latest = useRef({ value, onChange });
   latest.current = { value, onChange };
   const go = (n: number, smooth = true) => ref.current?.scrollTo({ top: (clamp(n) - MIN_AGE) * ROW, behavior: smooth ? 'smooth' : 'auto' });
 
   // Land on the starting age, including when the step first becomes visible.
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    const observer = new ResizeObserver(() => { if (el.clientHeight > 0) go(latest.current.value, false); });
+    ready.current = false;
+    if (!el || !active) return;
+    const position = () => {
+      if (el.clientHeight === 0) { ready.current = false; return; }
+      go(latest.current.value, false);
+      ready.current = true;
+    };
+    position();
+    const observer = new ResizeObserver(position);
     observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+    return () => { ready.current = false; observer.disconnect(); };
+  }, [active]);
 
   const onScroll = () => {
     const el = ref.current;
-    if (!el || el.clientHeight === 0) return;
+    if (!active || !ready.current || !el || el.clientHeight === 0) return;
     const n = clamp(MIN_AGE + Math.round(el.scrollTop / ROW));
     if (n !== latest.current.value) latest.current.onChange(n);
   };
@@ -52,7 +60,7 @@ export default function AgeWheel({ value, onChange }: { value: number; onChange:
         background: 'color-mix(in srgb, var(--uf-green) 9%, transparent)', border: '1px solid color-mix(in srgb, var(--uf-green) 30%, transparent)' }} />
       <div ref={ref} role="spinbutton" tabIndex={0} aria-label="Your age" aria-valuemin={MIN_AGE} aria-valuemax={MAX_AGE} aria-valuenow={value}
         aria-valuetext={`${value} years old`} onScroll={onScroll} onKeyDown={onKey} className="uf-wheel"
-        style={{ position: 'relative', height: '100%', overflowY: 'scroll', scrollSnapType: 'y mandatory', outline: 'none', scrollbarWidth: 'none', maskImage: fade, WebkitMaskImage: fade }}>
+        style={{ position: 'relative', height: '100%', overflowY: 'scroll', scrollSnapType: 'y mandatory', scrollbarWidth: 'none', maskImage: fade, WebkitMaskImage: fade }}>
         <div style={{ height: ROW * 2 }} />
         {AGES.map(n => {
           const d = Math.abs(n - value);
