@@ -9,7 +9,7 @@ Sources and both vault branch snapshots are recorded in
 
 ### D-15 — September 24: flexible tasks, Claude integrates ready handoffs
 
-**Status:** Active workflow direction, as authorized by the user; publication of
+**Status:** Superseded by D-91 (whoever codes it merges it). Was active workflow direction, as authorized by the user; publication of
 this instruction change is itself a PR handoff.
 **Decision:** Either agent can work on any task, using separate worktrees and
 branches during concurrent work. Codex prepares explicit ready PR handoffs;
@@ -2972,3 +2972,17 @@ Amends D-89's "Left this month" card; D-86's budget rule is unchanged.
 - **"Everyday" reads "Day-to-day"** in the interface; it read like "per day".
 - Names in the "Until …" family (Until payday, UntilFire) are welcome where
   they fit other pages.
+
+### D-91 — October 19: whoever codes it merges it
+
+**Status:** Active. Supersedes D-15's fixed integration owner (Claude); D-15's
+flexible tasks and one-at-a-time integration remain.
+**Decision:** Whoever coded a task merges its PR, only when John says "merge".
+John may also merge himself or tell either agent to merge. Both agents work on
+their own branch in the main project folder, with no extra worktrees, and
+follow the same "Working with John" rules in [AGENTS.md](../AGENTS.md).
+**Why:** John did not want merges to wait on one agent's usage limits, or
+work spread across extra folders.
+**Trade-off:** With one folder, two agents must not edit it locally at the same
+moment; their own branches and open-PR checks keep the work apart.
+**Source:** John, in the project thread on October 19.
