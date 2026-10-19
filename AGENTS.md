@@ -1,7 +1,26 @@
 # UntilFire Agent Rules
 
 Shared engineering, verification, collaboration, and publishing rules for all
-agents. Claude's product entry point is [CLAUDE.md](CLAUDE.md).
+agents. Every agent, Codex included, must also read [CLAUDE.md](CLAUDE.md): its
+product constraints, navigation, design and working map apply to all agents.
+
+## Working with John (same rules for every agent)
+
+- **Git:** push only to your own task branch (`claude/*` or `codex/*`) and open
+  a draft PR. Merge only when John says "merge": merging deploys the website.
+- **One agent per task.** Check open PRs first; never edit a feature another
+  agent's open PR is changing.
+- **Phone and website match on money logic.** Follow the active money decisions
+  in [docs/DECISIONS.md](docs/DECISIONS.md) (Until payday D-90, freedom date,
+  safety pot). A money change ships on both or is flagged as a gap.
+- **Phone releases** add one plain-language line to `mobile/src/lib/update-log.ts`.
+- **Design taste:** no dense text. Icons and pictures, short labels, one idea
+  per box, generous spacing, rounded rectangles, consistent shapes per screen.
+- **Flags:** the website uses SVG flag images (Windows can't draw flag emoji);
+  the phone app keeps emoji.
+- **Supabase:** show every migration as full SQL in a ```sql block, never only
+  a file name.
+- **Phone app work** in `mobile/` also follows [mobile/AGENTS.md](mobile/AGENTS.md).
 
 ## Authority and evidence
 
