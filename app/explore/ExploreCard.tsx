@@ -7,6 +7,8 @@
  * The card is a picture surface, like a photo: deep green with white text in
  * both themes, so the theme tokens (which flip in dark mode) are not used here.
  */
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import { geoMercator, geoPath } from "d3-geo";
 import { feature } from "topojson-client";
 import type { Topology, GeometryCollection } from "topojson-specification";
@@ -79,7 +81,7 @@ export default function ExploreCard({ city, rank, mode, money, freedom, badges =
 }) {
   const badge = mode === "monthly" ? money(city.monthlyUSD) : mode === "badge" ? pinText(city, mode, freedom, undefined, badges) : `${mode === "year" ? "🏁" : "🎂"} ${pinText(city, mode, freedom)}`;
   const other = mode === "monthly" ? (freedom ? `🏁 ${Math.floor(freedom.at)}` : null) : `${money(city.monthlyUSD)}/mo`;
-  const fact = taxFact(city);
+  const fact = TAX_ESTIMATES_AVAILABLE ? taxFact(city) : null;
   // Compact (D-58): name and badge on one line, the facts on the next, so a column shows six or seven places.
   return <div className="uf-explore-card" data-city={city.key} style={{ position: "relative", borderRadius: 14, overflow: "hidden", color: "#fff",
     background: "linear-gradient(150deg, #2B5A41, #15291F)", boxShadow: selected ? "0 0 0 3px var(--uf-teal)" : "0 1px 4px #203e3022" }}>

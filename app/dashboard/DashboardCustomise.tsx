@@ -429,7 +429,7 @@ export function CardInventory({
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "var(--uf-s2)", flexWrap: "wrap", marginBottom: "var(--uf-s3)" }}>
         <span className="uf-t-label" style={{ color: "var(--uf-ink-3)" }}>YOUR CARDS</span>
         <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>
-          {on} of {layout.cards.length} showing
+          {on} of {layout.cards.length} selected
         </span>
       </div>
 
@@ -453,7 +453,7 @@ export function CardInventory({
       </div>
 
       <p className="uf-t-small" style={{ color: "var(--uf-ink-3)", margin: "var(--uf-s3) 0 0" }}>
-        Drag a card by its {GRIP} handle to move it. Nothing is deleted &mdash; anything
+        Some selected cards appear only when they have something to show. Drag a card by its {GRIP} handle to move it. Nothing is deleted &mdash; anything
         you turn off comes back from here.
       </p>
     </div>

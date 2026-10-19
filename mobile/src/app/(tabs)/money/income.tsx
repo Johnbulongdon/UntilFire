@@ -1,4 +1,6 @@
 import { router } from 'expo-router'
+import { TAX_ESTIMATES_AVAILABLE } from "@engine/release-gates.ts";
+
 import { Pressable, View } from 'react-native'
 
 import { LoadingState } from '@/components/LoadingState'
@@ -25,7 +27,7 @@ export default function Income() {
 
   const { plan, taxKey } = data.profile
   const gross = plan.grossAnnual ?? 0, pension = plan.pensionAnnual ?? 0, employer = plan.employerAnnual ?? 0
-  const pay = gross > 0 ? paycheck(gross, pension, taxKey) : null
+  const pay = TAX_ESTIMATES_AVAILABLE && gross > 0 ? paycheck(gross, pension, taxKey) : null
   const yearTakeHome = pay && Math.abs(pay.takeHome / 12 - data.income) < 1 ? pay.takeHome : data.income * 12
   const pensionName = pensionFor(data.currency, !!STATE_TAX[taxKey] || data.currency === 'USD').payroll
   const taxLabel = STATE_TAX[taxKey]?.label ?? pay?.label ?? ''
@@ -42,12 +44,12 @@ export default function Income() {
       </Card>
 
       <Card>
-        <Line icon="briefcase.fill" name="Salary" meta="Before tax, a year" value={gross > 0 ? money(gross) : 'Add'} onPress={edit} first />
+        {TAX_ESTIMATES_AVAILABLE && <Line icon="briefcase.fill" name="Salary" meta="Before tax, a year" value={gross > 0 ? money(gross) : 'Add'} onPress={edit} first />}
         <Line icon="lock.fill" name={`${pensionName}, before tax`} meta="Taken from pay before tax, so it is saving" value={pension > 0 ? `−${money(pension)}` : 'Add'} onPress={edit} />
         {pay && !pay.unknown && <Line icon="building.columns.fill" name="Income tax" meta={taxLabel} value={`−${money(pay.incomeTax)}`} />}
         {pay && pay.us && <Line icon="doc.text.fill" name="Social Security and Medicare" meta="On the full salary" value={`−${money(pay.socialSecurity)}`} />}
         <Line icon="banknote.fill" name="Take-home" strong
-          meta={pay ? (pay.unknown ? 'Set where you live to work out tax' : 'Worked out from your salary') : 'After tax, a month. Add a salary to work it out'}
+          meta={pay ? (pay.unknown ? 'Set where you live to work out tax' : 'Worked out from your salary') : 'The amount that reaches your account each month'}
           value={pay ? money(yearTakeHome) : `${money(data.income)}/mo`} onPress={pay ? undefined : edit} />
         <Line icon="gift.fill" name="Employer adds" meta="Into your pension, on top of your pay" value={employer > 0 ? `+${money(employer)}` : 'Add'} onPress={edit} positive={employer > 0} />
       </Card>

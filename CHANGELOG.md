@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-19 — Replay repairs and tax-estimate pause (review branch)
+
+- Pause tax estimators, retirement-tax adjustments, passport tax comparisons, and public tax-derived examples pending QA. Preserve saved tax settings.
+- Ask for take-home income; keep onboarding inputs mounted while typing and support decimal entry and Enter to submit.
+- Home derives its duration and age from the same exact freedom date as Plan, including already-reached targets.
+- Give dashboard edit controls their own row and 44px targets; label selected conditional cards honestly and offer Add cards / Restore default dashboard.
+- Wait for saved profile/layout data before showing financial or setup results; serialize layout writes and show retryable save errors.
+- City search selects existing text on focus, offers Clear search, and supports keyboard/click selection. State-page Start opens the calculator; suppress duplicate landing-entry events.
+- Local verification is recorded in docs/handoffs/2026-10-19-replay-repairs.md. Not merged or deployed.
+
 All notable changes to UntilFire are documented here.
 
 The site deploys to production on every merge to `main`, so there is no

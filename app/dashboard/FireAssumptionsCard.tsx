@@ -1,5 +1,7 @@
 "use client";
 
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import { useState } from "react";
 import { CITIES, STATE_TAX } from "@/lib/fire-data";
 import { formatMoney } from "@/lib/money";
@@ -130,29 +132,31 @@ function CityPicker({ label, placeholder, initial, onPick }: {
           aria-label={label}
           value={citySearch}
           onChange={(e) => { setCitySearch(e.target.value); setShowCityDropdown(true); }}
-          onFocus={() => setShowCityDropdown(true)}
+          onFocus={(e) => { e.currentTarget.select(); setShowCityDropdown(true); }}
+          onKeyDown={(e) => { if (e.key === "Escape") setShowCityDropdown(false); }}
           placeholder={placeholder}
         />
+        {citySearch && <button type="button" aria-label={`Clear ${label} search`} onClick={() => { setCitySearch(""); setShowCityDropdown(true); }} style={{ minHeight: 44, padding: "8px 12px", color: "var(--uf-green)", background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12 }}>Clear search</button>}
         {showCityDropdown && trimmed.length >= 2 && (matches.length > 0 || canUseTyped) && (
           <div style={dropdownStyle}>
             {matches.map((c) => (
-              <div key={c.key} onMouseDown={() => pickCity(c.name, c.col)}
-                style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, borderBottom: "1px solid var(--uf-border)" }}
+              <button type="button" key={c.key} onClick={() => pickCity(c.name, c.col)}
+                style={{ padding: "12px 14px", minHeight: 44, width: "100%", textAlign: "left", background: "var(--uf-card)", color: "var(--uf-ink)", border: "none", cursor: "pointer", fontSize: 14, borderBottom: "1px solid var(--uf-border)" }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "")}>
                 <Flag emoji={c.flag} size={11} /> {c.name}
-              </div>
+              </button>
             ))}
             {canUseTyped && (
-              <div onMouseDown={() => pickCity(trimmed, 0)}
-                style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, color: "var(--uf-pos-ink)", fontWeight: 700 }}
+              <button type="button" onClick={() => pickCity(trimmed, 0)}
+                style={{ padding: "12px 14px", minHeight: 44, width: "100%", textAlign: "left", background: "var(--uf-card)", color: "var(--uf-ink)", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700 }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "")}>
                 &#128205; Use &quot;{trimmed}&quot;
                 <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 500, marginTop: 2 }}>
                   Not in our list? We&apos;ll still save it.
                 </div>
-              </div>
+              </button>
             )}
           </div>
         )}
@@ -202,7 +206,7 @@ export default function FireAssumptionsCard({
   // Pay at the same income rank in the new city (D-82), only where Census measured both.
   const homeCity = CITIES.find((c) => c.name === currentCityName);
   const retireCity = CITIES.find((c) => c.name === retirementCityName);
-  const byRank = homeCity && retireCity ? suggestPayByRank({ takeHomeMonthly, fromKey: homeCity.key, toKey: retireCity.key, fromState: homeCity.state, toState: retireCity.state }) : null;
+  const byRank = TAX_ESTIMATES_AVAILABLE && homeCity && retireCity ? suggestPayByRank({ takeHomeMonthly, fromKey: homeCity.key, toKey: retireCity.key, fromState: homeCity.state, toState: retireCity.state }) : null;
   const usingRank = !!byRank && movePayMonthly === byRank.takeHomeMonthly;
   const retireMeta = spendGoalSet ? "Not used: your goal sets the spending"
     : !retirementCityName ? "Same as now: your own spending sets the target"
@@ -235,7 +239,7 @@ export default function FireAssumptionsCard({
     <div style={{ display: "grid", gap: 8 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 8 }}>
         <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700 }}>Your assumptions · every date here comes from these</span>
-        {saved && <span className="uf-t-small" style={{ color: "var(--uf-pos-ink)", fontWeight: 700 }}>Saved ✓</span>}
+        {saved && <span className="uf-t-small" style={{ color: "var(--uf-pos-ink)", fontWeight: 700 }}>Updated ✓</span>}
       </div>
       <MoneyList>
         <MoneyRow dot="var(--uf-ink-3)" icon="🎂" name="Age" meta="Turns the date into an age" value={fireAge ? `${fireAge} ›` : "Add ›"} onClick={() => toggle("age")}
@@ -321,7 +325,7 @@ export default function FireAssumptionsCard({
               })}
             </div>
           )} />
-        <MoneyRow dot="#e34948" icon="🏛️" name="Tax home" meta="Where income tax is worked out" value={taxKey && STATE_TAX[taxKey] ? `${STATE_TAX[taxKey].label} ›` : "Choose ›"} onClick={() => toggle("taxhome")}
+        {TAX_ESTIMATES_AVAILABLE && <MoneyRow dot="#e34948" icon="🏛️" name="Tax home" meta="Where income tax is worked out" value={taxKey && STATE_TAX[taxKey] ? `${STATE_TAX[taxKey].label} ›` : "Choose ›"} onClick={() => toggle("taxhome")}
           after={open === "taxhome" && (
             <div style={{ position: "relative" }}>
               <input
@@ -345,7 +349,7 @@ export default function FireAssumptionsCard({
                     {unique.map((c) => (
                       <div key={c.state}
                         onMouseDown={() => { onTaxKeyChange(c.state); setTaxSearch(""); setShowTaxDropdown(false); flash(); }}
-                        style={{ padding: "10px 14px", cursor: "pointer", fontSize: 14, borderBottom: "1px solid var(--uf-border)" }}
+                        style={{ padding: "12px 14px", minHeight: 44, width: "100%", textAlign: "left", background: "var(--uf-card)", color: "var(--uf-ink)", border: "none", cursor: "pointer", fontSize: 14, borderBottom: "1px solid var(--uf-border)" }}
                         onMouseEnter={(e) => (e.currentTarget.style.background = "var(--uf-surface)")}
                         onMouseLeave={(e) => (e.currentTarget.style.background = "")}>
                         <Flag emoji={c.flag} size={11} /> {c.name}
@@ -356,11 +360,11 @@ export default function FireAssumptionsCard({
                 );
               })()}
             </div>
-          )} />
+          )} />}
         {/* Growth after inflation (D-24): the assumption that moves the date most. */}
         <MoneyRow dot="#008300" icon="📊" name="Growth after inflation" meta="The assumption that moves the date most" value={`${returnPct.toFixed(1)}% ›`} onClick={() => toggle("growth")}
           after={open === "growth" && growthEditor} />
-        {taxRow && (
+        {TAX_ESTIMATES_AVAILABLE && taxRow && (
           <MoneyRow dot="var(--uf-ink-3)" icon="🧾" name="Tax in retirement" meta={taxRow.summary} value={taxRow.on ? "On ›" : "Off ›"} onClick={() => toggle("tax")}
             after={open === "tax" && taxRow.editor} />
         )}

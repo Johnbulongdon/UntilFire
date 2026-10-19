@@ -1,7 +1,7 @@
 import { router } from 'expo-router'
 import { Button } from '@/components/Button'
 import { useMemo, useState } from 'react'
-import { Pressable, Switch, TextInput, View } from 'react-native'
+import { Pressable, TextInput, View } from 'react-native'
 
 import { MoneyRow, SheetFrame } from '@/components/SheetFrame'
 import { Text } from '@/components/Text'
@@ -28,9 +28,6 @@ export default function Assumptions() {
   const [lifestyle, setLifestyle] = useState(p?.lifestyleMultiplier ?? 1)
   const [growth, setGrowth] = useState(p?.growthRate ?? REAL_RETURN)
   const [withdrawal, setWithdrawal] = useState(p?.withdrawalRate ?? 0.04)
-  const [taxOn, setTaxOn] = useState(p?.taxEnabled ?? false)
-  const [taxRate, setTaxRate] = useState(String(Math.round((p?.retirementTaxRate ?? 0.15) * 100)))
-  const [rothPct, setRothPct] = useState(String(p?.rothPct ?? 0))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -45,9 +42,7 @@ export default function Assumptions() {
       lifestyleMultiplier: lifestyle,
       growthRate: growth,
       withdrawalRate: withdrawal,
-      taxEnabled: taxOn,
-      retirementTaxRate: Math.min(60, Math.max(0, Number(taxRate) || 0)) / 100,
-      rothPct: Math.min(100, Math.max(0, Number(rothPct) || 0)),
+
     })) ?? (Number(age) > 0 ? await saveAge(session.user.id, Number(age)) : null)
     if (problem) { setBusy(false); haptic.warn(); setError(problem); return }
     haptic.success(); await refresh(); router.back()
@@ -59,7 +54,7 @@ export default function Assumptions() {
         <MoneyRow first label="Your age" value={age} onChange={setAge} suffix=" " />
       </View>
 
-      <Section title="Where you live" note="Sets your tax while working.">
+      <Section title="Where you live" note="The baseline for comparing living costs.">
         <CityPicker value={home} onChange={setHome} placeholder="Search your city" />
       </Section>
 
@@ -81,18 +76,7 @@ export default function Assumptions() {
         <Chips options={WITHDRAWALS.map(w => ({ label: `${(w * 100).toFixed(1).replace('.0', '')}%`, on: withdrawal === w, pick: () => setWithdrawal(w) }))} />
       </Section>
 
-      <Section title="Tax on withdrawals">
-        <View className="flex-row items-center justify-between rounded-card border border-border bg-card px-4 py-3">
-          <Text className="text-[15px] font-semibold text-ink">Count tax in retirement</Text>
-          <Switch value={taxOn} onValueChange={v => { haptic.select(); setTaxOn(v) }} trackColor={{ true: colors.green, false: colors.border2 }} />
-        </View>
-        {taxOn && (
-          <View className="mt-2 rounded-card border border-border bg-card px-4">
-            <MoneyRow first label="Tax rate on withdrawals" value={taxRate} onChange={setTaxRate} suffix="%" />
-            <MoneyRow label="Share in Roth (tax-free)" value={rothPct} onChange={setRothPct} suffix="%" />
-          </View>
-        )}
-      </Section>
+
     </SheetFrame>
   )
 }

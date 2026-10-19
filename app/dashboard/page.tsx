@@ -1,5 +1,7 @@
 "use client";
 
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
@@ -12,6 +14,9 @@ import PlaidConnect, { type PlaidItem } from "./PlaidConnect";
 import UpgradeModal from "./UpgradeModal";
 import TourModal from "./TourModal";
 import CitizenshipTab from "./CitizenshipTab";
+import OnboardingModal from "./OnboardingModal";
+import DashboardRecovery, { SavedPlanLoading } from "./DashboardRecovery";
+import { CITIES, STATE_TAX, TAX_US_STATES } from "@/lib/fire-data";
 import LearnTab from "./LearnTab";
 import ContributionsTab from "./ContributionsTab";
 import CompareCard from "./CompareCard";
@@ -64,7 +69,6 @@ import HouseholdCard from "./HouseholdCard";
 import { CardInventory, DashSlot, useCardSort } from "./DashboardCustomise";
 import { defaultLayout, normaliseLayout, setCard, type DashboardLayout } from "@/lib/dashboard-layout";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
-import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened, trackFreedomReportExported, trackPlanCompare } from "@/lib/analytics";
 import WhatIf from "./WhatIf";
 import { coastYear, type EngineChange, type LifeVersion } from "@/lib/life-changes";
@@ -440,7 +444,7 @@ function calcProjection({
   const annualSavings  = annualIncome - annualExpenses - annualMortgage;
   // When tax is enabled, gross up the withdrawal needed to cover retirement taxes.
   // Roth / tax-free portion needs no grossing; traditional portion does.
-  const taxGrossup = (taxEnabled && retirementTaxRate > 0)
+  const taxGrossup = (TAX_ESTIMATES_AVAILABLE && taxEnabled && retirementTaxRate > 0)
     ? ((1 - rothPct / 100) / (1 - Math.min(retirementTaxRate, 0.6)) + rothPct / 100)
     : 1;
   const fireTarget     = targetAnnualExpenses * taxGrossup / withdrawalRate;
@@ -764,8 +768,12 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   // not move. A failed save leaves the on-screen layout alone — the next
   // change retries it.
   const [layout, setLayout] = useState<DashboardLayout>(() => defaultLayout());
+  const [layoutLoading, setLayoutLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [savingLayout, setSavingLayout] = useState(false);
+  const [layoutError, setLayoutError] = useState("");
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
+  const saveRevision = useRef(0);
 
   useEffect(() => {
     if (!userId) return;
@@ -774,20 +782,28 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       .select("dashboard_layout")
       .eq("user_id", userId)
       .maybeSingle()
-      .then(({ data }) => setLayout(normaliseLayout(data?.dashboard_layout)));
+      .then(({ data }) => { setLayout(normaliseLayout(data?.dashboard_layout)); setLayoutLoading(false); });
   }, [userId]);
 
   const persistLayout = useCallback(async (next: DashboardLayout) => {
     setLayout(next);
     if (!userId) return;
+    const revision = ++saveRevision.current;
     setSavingLayout(true);
+    const job = saveQueue.current.catch(() => {}).then(async () => {
+      const { error } = await supabase.from("profiles").update({ dashboard_layout: next }).eq("user_id", userId);
+      if (error) throw error;
+    });
+    saveQueue.current = job;
     try {
-      await supabase.from("profiles").update({ dashboard_layout: next }).eq("user_id", userId);
+      await job;
+      if (revision === saveRevision.current) setLayoutError("");
     } catch {
+      if (revision === saveRevision.current) setLayoutError("Your layout has not saved. Try again.");
       // Keep what is on screen. A lost preference is a small thing; a card
       // jumping back under the user's cursor is not.
     } finally {
-      setSavingLayout(false);
+      if (revision === saveRevision.current) setSavingLayout(false);
     }
   }, [userId]);
 
@@ -1608,8 +1624,14 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     });
   }, [userId]);
 
+  if (layoutLoading) return <div role="status">Loading your dashboard…</div>;
+
   return (
     <>
+      {layoutError && <div role="alert">{layoutError} <button onClick={() => persistLayout(layout)}>Retry</button></div>}
+      {!editing && !layout.cards.some(c => c.visible && !["greeting", "setup", "contribution"].includes(c.id)) && (
+        <DashboardRecovery onAdd={() => setEditing(true)} onRestore={() => persistLayout(defaultLayout())} />
+      )}
       <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginBottom: editing ? 24 : 12 }}>
         {editing && (
           <button className="uf-dash-nudge" style={{ width: "auto", padding: "0 12px", height: 28 }}
@@ -1665,8 +1687,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       <DashSlot id="hero" layout={layout} editing={editing} dragging={draggingId === "hero"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
       <FreedomCard
         dateLabel={exactFreedomDate ? exactFreedomDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : retireYear ? String(retireYear) : null}
-        yearsAway={fireYear}
-        age={fireAge > 0 && fireYear ? fireAge + fireYear : null}
+        yearsAway={exactFreedomDate ? Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5)) : fireYear}
+        age={fireAge > 0 && exactFreedomDate ? Math.round(fireAge + Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5))) : null}
         onOpen={() => onTabChange?.("fire-calculator")}
         route={retireCity ? {
           from: cityName ? cityName.split(",")[0] : "",
@@ -2807,161 +2829,7 @@ function SurveyModal({ onSubmit, onDismiss }: {
 }
 
 // ─── Onboarding Modal ─────────────────────────────────────────────────────────
-function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
-  defaultCurrency: string;
-  onComplete: (income: number, spending: number, savings: number, taxKey: string) => void;
-  onDismiss: () => void;
-}) {
-  const [incomeMode, setIncomeMode] = useState<"monthly" | "annual">("monthly");
-  const [inc, setInc] = useState("");
-  const [spend, setSpend] = useState("");
-  const [save, setSave] = useState("");
-  const [taxCountry, setTaxCountry] = useState("");
-  const [taxSub, setTaxSub] = useState("");
 
-  const toNum = (s: string) => parseFloat(s.replace(/,/g, "")) || 0;
-  const fmtNum = (s: string) => {
-    const n = parseFloat(s.replace(/,/g, ""));
-    return isNaN(n) ? s : n.toLocaleString();
-  };
-
-  const monthlyIncome = incomeMode === "annual" ? Math.round(toNum(inc) / 12) : toNum(inc);
-
-  // Resolve STATE_TAX key from country + sub-picker
-  const resolvedTaxKey = taxCountry === "us" ? taxSub
-    : taxCountry === "ca" ? (taxSub || "ca_on")
-    : taxCountry || "";
-
-  const handleSubmit = () => {
-    onComplete(monthlyIncome, toNum(spend), toNum(save), resolvedTaxKey);
-  };
-
-  const selectStyle: React.CSSProperties = {
-    width: "100%", padding: "11px 14px", border: "1.5px solid #E5E7EB", borderRadius: 10,
-    fontSize: 14, fontWeight: 600, fontFamily: "Manrope, sans-serif", color: "#111827",
-    background: "#fff", outline: "none", cursor: "pointer", appearance: "auto",
-  };
-
-  const Field = ({ label, hint, value, onChange }: { label: string; hint: string; value: string; onChange: (v: string) => void }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label style={{ fontSize: 12, fontWeight: 700, color: "#374151", fontFamily: "Manrope, sans-serif", letterSpacing: "0.02em" }}>{label}</label>
-      <div style={{ position: "relative" }}>
-        <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 600, color: "#6B7280", fontFamily: "Manrope, sans-serif" }}>{defaultCurrency}</span>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={value}
-          onChange={e => onChange(e.target.value.replace(/[^0-9.,]/g, ""))}
-          onBlur={e => onChange(fmtNum(e.target.value))}
-          placeholder="0"
-          style={{ width: "100%", paddingLeft: 52, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 16, fontWeight: 600, fontFamily: "Manrope, sans-serif", outline: "none", boxSizing: "border-box", color: "#111827" }}
-          onFocus={e => { e.target.style.borderColor = "#064E3B"; }}
-        />
-      </div>
-      <span style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "Manrope, sans-serif" }}>{hint}</span>
-    </div>
-  );
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" }}>
-      <div style={{ background: "#fff", borderRadius: 20, padding: "36px 32px 28px", maxWidth: 440, width: "100%", boxShadow: "0 24px 64px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 24, margin: "auto" }}>
-        {/* Header */}
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#20D4BF", marginBottom: 8, fontFamily: "Manrope, sans-serif" }}>Welcome to UntilFire</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px", lineHeight: 1.25 }}>
-            Let&apos;s find your FIRE number
-          </div>
-          <div style={{ fontSize: 13, color: "#6B7280", marginTop: 6, fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>
-            Income, spending, and current savings are enough to get started. You can refine everything later.
-          </div>
-        </div>
-
-        {/* Financial fields */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            <button
-              type="button"
-              onClick={() => setIncomeMode("monthly")}
-              style={{ border: `1.5px solid ${incomeMode === "monthly" ? "#064E3B" : "#E5E7EB"}`, background: incomeMode === "monthly" ? "#F0FDF4" : "#fff", color: incomeMode === "monthly" ? "#064E3B" : "#6B7280", borderRadius: 10, padding: "10px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
-            >
-              Monthly take-home
-            </button>
-            <button
-              type="button"
-              onClick={() => setIncomeMode("annual")}
-              style={{ border: `1.5px solid ${incomeMode === "annual" ? "#064E3B" : "#E5E7EB"}`, background: incomeMode === "annual" ? "#F0FDF4" : "#fff", color: incomeMode === "annual" ? "#064E3B" : "#6B7280", borderRadius: 10, padding: "10px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
-            >
-              Gross annual
-            </button>
-          </div>
-          <Field
-            label={incomeMode === "annual" ? "Gross annual income" : "Monthly take-home pay"}
-            hint={incomeMode === "annual" ? "Before tax, per year — we’ll use a rough monthly estimate" : "After tax, per month"}
-            value={inc}
-            onChange={setInc}
-          />
-          <Field label="Monthly expenses" hint="Rent, food, everything — rough total is fine" value={spend} onChange={setSpend} />
-          <Field label="Current savings / net worth" hint="Total across accounts and investments — 0 is okay" value={save} onChange={setSave} />
-        </div>
-
-        {/* Tax identity */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4, borderTop: "1px solid #F1F5F9" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", fontFamily: "Manrope, sans-serif", letterSpacing: "0.02em" }}>
-              Where do you pay taxes?
-            </div>
-            <span style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "Manrope, sans-serif" }}>optional</span>
-          </div>
-          <div style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "Manrope, sans-serif", marginTop: -4, lineHeight: 1.5 }}>
-            Helps us estimate your real FIRE number — taxes change what you actually need to save.
-          </div>
-          <select
-            value={taxCountry}
-            onChange={e => { setTaxCountry(e.target.value); setTaxSub(""); }}
-            style={selectStyle}
-          >
-            <option value="">Select country / region…</option>
-            {TAX_COUNTRIES.map(c => (
-              <option key={c.value} value={c.value}>{c.label}</option>
-            ))}
-          </select>
-          {taxCountry === "us" && (
-            <select value={taxSub} onChange={e => setTaxSub(e.target.value)} style={selectStyle}>
-              <option value="">Select state…</option>
-              {TAX_US_STATES.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          )}
-          {taxCountry === "ca" && (
-            <select value={taxSub} onChange={e => setTaxSub(e.target.value)} style={selectStyle}>
-              <option value="">Select province…</option>
-              {TAX_CA_PROVINCES.map(p => (
-                <option key={p.value} value={p.value}>{p.label}</option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
-          <button
-            onClick={handleSubmit}
-            disabled={!inc}
-            style={{ background: inc ? "#064E3B" : "#E5E7EB", color: inc ? "#fff" : "#9CA3AF", border: "none", borderRadius: 10, padding: "13px 20px", fontSize: 15, fontWeight: 700, cursor: inc ? "pointer" : "not-allowed", fontFamily: "Manrope, sans-serif", transition: "background 0.15s" }}
-          >
-            Get my FIRE number →
-          </button>
-          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: "4px 0" }}>
-            Skip for now
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Setup Checklist ──────────────────────────────────────────────────────────
 function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings, cityName, plaidAccounts = [], onTabChange, onOpenOnboarding }: {
   income: number; expenses: Record<string, number | undefined>;
   k401: number; rothIRA: number; taxable: number; cashSavings: number;
@@ -5588,7 +5456,7 @@ export default function Dashboard() {
       conservative: [usTaxHome ? "No Social Security counted" : "No state pension counted",
         ...((planSettings.payGrowth ?? 0) > 0 ? [] : [`No raises: saving stays at ${fmt(total, defaultCurrency, rates, true)} a year`]),
         "Your home is not counted", `${+(withdrawalRate * 100).toFixed(1)}% a year withdrawal, a common long-run rule`],
-      notIncluded: [...(taxEnabled ? [] : ["Tax on withdrawals in retirement"]), ...(usTaxHome ? ["Health insurance before 65"] : []), "Year-to-year market swings"],
+      notIncluded: [...(TAX_ESTIMATES_AVAILABLE && taxEnabled ? [] : ["Tax on withdrawals in retirement"]), ...(usTaxHome ? ["Health insurance before 65"] : []), "Year-to-year market swings"],
     });
   }, [planFreedom, planFacts, fireAge, growthRate, planFreedomInputs, plan, planSettings, defaultCurrency, usTaxHome, cityName, withdrawalRate, effectiveIncome, taxEnabled, rates]);
   // Plan → Explore (D-58): every city at your plan's numbers, with the same
@@ -6354,25 +6222,10 @@ export default function Dashboard() {
       {onboardingOpen && (
         <OnboardingModal
           defaultCurrency={defaultCurrency}
-          onComplete={(inc, spend, save, taxKey) => {
-            setIncome(inc);
-            setExpenses(prev => ({ ...prev, other: spend }));
-            setTaxable(save);
-            if (taxKey) {
-              // Find a representative city for this tax jurisdiction and set it as the current city
-              const repCity = CITIES.find(c => c.state === taxKey);
-              if (repCity) setCityName(repCity.name);
-              // Pre-seed retirement tax rate from jurisdiction (user can override in Plan tab)
-              const taxInfo = STATE_TAX[taxKey];
-              if (taxInfo) {
-                const isUS = taxKey.length <= 5 && !taxKey.startsWith("ca_");
-                const stateRate = taxInfo.rate;
-                const suggested = isUS
-                  ? Math.max(0.05, Math.min(stateRate + 0.12, 0.35))
-                  : Math.max(0.05, Math.min(stateRate * 0.75, 0.40));
-                setRetirementTaxRate(suggested);
-              }
-            }
+          onComplete={(inc, spend, save) => {
+            setIncome(toUSD(inc, defaultCurrency, rates));
+            setExpenses(prev => ({ ...prev, other: toUSD(spend, defaultCurrency, rates) }));
+            setTaxable(toUSD(save, defaultCurrency, rates));
             localStorage.setItem('uf_onboarding_dismissed', '1');
             setOnboardingOpen(false);
           }}
@@ -6560,7 +6413,7 @@ export default function Dashboard() {
             )}
             {PLAN_SECTIONS.some(s => s.tab === tab) && (
               <nav className="uf-section-switch uf-plan-section-switch" aria-label="Plan sections">
-                {PLAN_SECTIONS.map(item => (
+                {PLAN_SECTIONS.filter(item => TAX_ESTIMATES_AVAILABLE || item.tab !== "citizenship").map(item => (
                   <button
                     key={item.label}
                     className={`uf-section-button ${
@@ -6578,12 +6431,13 @@ export default function Dashboard() {
             )}
             {/* Household, on Home: it interprets both people's Money and Plan,
                 which is rule 3. Renders nothing without a household. */}
-            {tab === "overview" && (
+            {tab === "overview" && !profileLoading && (
               <div style={{ marginBottom: 24 }}>
                 <HouseholdCard displayCurrency={defaultCurrency} />
               </div>
             )}
-            {tab === "overview" && (
+            {profileLoading && <SavedPlanLoading />}
+            {tab === "overview" && !profileLoading && (
               <DashTab homeValue={homeValue} spreadCategories={spreadCategories} coastRetireAge={compareRetireAge}
                 plan={plan}
                 contributionFacts={contributionFacts}
@@ -6627,7 +6481,7 @@ export default function Dashboard() {
                 onFreedomDateChange={setFreedomDate}
               />
             )}
-            {tab === "cashflow" && (
+            {tab === "cashflow" && !profileLoading && (
               <div>
                 {/* Cashflow sub-pages as pills, as on Home (D-40). */}
                 <div className="uf-cashflow-subtab-switch" style={{ marginBottom: 24 }}>
@@ -6713,7 +6567,7 @@ export default function Dashboard() {
                 planDebts={sharedPlan?.ladder?.debts ?? []}
               />
             )}
-            {tab === "fire-calculator" && (
+            {tab === "fire-calculator" && !profileLoading && (
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
                 {fireCalcSubTab === "menu" && (
                   <>
@@ -6841,7 +6695,7 @@ export default function Dashboard() {
                 <ContributionsTab {...contributionFacts} onChooseAccounts={() => setTab("assets")} />
               </div>
             )}
-            {tab === "citizenship" && <CitizenshipTab onOpenExpat={() => openDashboardTab("expat-fire")} />}
+            {tab === "citizenship" && (TAX_ESTIMATES_AVAILABLE ? <CitizenshipTab onOpenExpat={() => openDashboardTab("expat-fire")} /> : <div className="uf-card" style={{ padding: 24 }}>Passport tax comparisons are unavailable while we test them.</div>)}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar} />}
             {tab === "offers" && <OffersTab />}
             {tab === "learning-hub" && <LearnTab recommendedStageId={learnPlace.stage} progress={learnPlace.progress} yearsToGo={learnPlace.years} onOpenTab={openDashboardTab} />}

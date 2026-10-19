@@ -1,5 +1,7 @@
 "use client";
 
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import { useState } from "react";
 import MoneyField from "@/components/ui/MoneyField";
 import { convertUSDAmount } from "@/lib/currency";
@@ -34,7 +36,7 @@ export default function IncomeTab({ income, setIncome, plan, onPlanChange, taxKe
   const toggle = (k: NonNullable<typeof open>) => setOpen((o) => (o === k ? null : k));
 
   const gross = plan.grossAnnual ?? 0, pension = plan.pensionAnnual ?? 0, employer = plan.employerAnnual ?? 0;
-  const pay = gross > 0 ? paycheck(gross, pension, taxKey) : null;
+  const pay = TAX_ESTIMATES_AVAILABLE && gross > 0 ? paycheck(gross, pension, taxKey) : null;
   const pensionName = pensionFor(displayCurrency, usTaxHome).payroll;
   // Worked out from salary, show it exactly; set by hand (or changed in Budget since), show what the plan uses.
   const yearTakeHome = pay && Math.abs(pay.takeHome / 12 - income) < 1 ? pay.takeHome : income * 12;
@@ -42,7 +44,7 @@ export default function IncomeTab({ income, setIncome, plan, onPlanChange, taxKe
   const update = (patch: Partial<PlanSettings>) => {
     const next = { ...plan, ...patch };
     onPlanChange(next);
-    if ((next.grossAnnual ?? 0) > 0) setIncome(Math.round(paycheck(next.grossAnnual!, next.pensionAnnual ?? 0, taxKey).takeHome / 12));
+    if (TAX_ESTIMATES_AVAILABLE && (next.grossAnnual ?? 0) > 0) setIncome(Math.round(paycheck(next.grossAnnual!, next.pensionAnnual ?? 0, taxKey).takeHome / 12));
   };
   const field = (label: string, usd: number, onUsd: (v: number | undefined) => void) => (
     <div style={{ maxWidth: 320 }}>
@@ -56,15 +58,15 @@ export default function IncomeTab({ income, setIncome, plan, onPlanChange, taxKe
       <MoneyHead label="Take-home a year" value={money(yearTakeHome)}
         sub={`${money(income)} a month${employer > 0 ? ` · plus ${money(employer)} from your employer` : ""}`} />
       <MoneyList>
-        <MoneyRow dot="var(--uf-green)" icon="💼" name="Salary" meta="Before tax, a year" value={gross > 0 ? `${money(gross)} ›` : "Add ›"}
-          onClick={() => toggle("gross")} after={open === "gross" && field("Salary a year", gross, (v) => update({ grossAnnual: v }))} />
+        {TAX_ESTIMATES_AVAILABLE && <MoneyRow dot="var(--uf-green)" icon="💼" name="Salary" meta="Before tax, a year" value={gross > 0 ? `${money(gross)} ›` : "Add ›"}
+          onClick={() => toggle("gross")} after={open === "gross" && field("Salary a year", gross, (v) => update({ grossAnnual: v }))} />}
         <MoneyRow dot="#c58a4a" icon="🔒" name={`${pensionName}, before tax`} meta="Taken from pay before tax, so it is saving"
           value={pension > 0 ? `−${money(pension)} ›` : "Add ›"}
           onClick={() => toggle("pension")} after={open === "pension" && field("Before tax a year", pension, (v) => update({ pensionAnnual: v }))} />
         {pay && !pay.unknown && <MoneyRow dot="#e34948" icon="🏛️" name="Income tax" meta={taxLabel || pay.label} value={`−${money(pay.incomeTax)}`} />}
         {pay && pay.us && <MoneyRow dot="#8a6fd1" icon="🧾" name="Social Security and Medicare" meta="On the full salary" value={`−${money(pay.socialSecurity)}`} />}
         <MoneyRow dot="var(--uf-ink-3)" icon="💵" name="Take-home" strong
-          meta={pay ? (pay.unknown ? "Set your tax home in Plan to work out tax" : "Worked out from your salary") : "After tax, a month. Add a salary to work it out"}
+          meta={pay ? (pay.unknown ? "Set your tax home in Plan to work out tax" : "Worked out from your salary") : "The amount that reaches your account each month"}
           value={pay ? money(yearTakeHome) : `${money(income)} a month ›`}
           onClick={pay ? undefined : () => toggle("takehome")}
           after={open === "takehome" && !pay && field("Take-home a month", income, (v) => setIncome(Math.round(v ?? 0)))} />

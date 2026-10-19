@@ -59,7 +59,7 @@ export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, children
               <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(32px, 6vw, 40px)", fontWeight: 700, color: "var(--uf-teal)", lineHeight: 1.1 }}>{dateLabel}</div>
               {yearsAway != null && (
                 <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 2 }}>
-                  In {yearsAway} {yearsAway === 1 ? "year" : "years"}{age ? `, at ${age}` : ""}
+                  {yearsAway === 0 ? "Target reached today" : yearsAway < 1 ? `In ${Math.max(1, Math.round(yearsAway * 12))} months` : `In ${Math.round(yearsAway * 10) / 10} ${Math.round(yearsAway * 10) / 10 === 1 ? "year" : "years"}`}{age ? `, at ${age}` : ""}
                 </div>
               )}
               {route && (

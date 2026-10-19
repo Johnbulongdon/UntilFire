@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import Link from "next/link";
 import { CITIES, STATE_TAX, isUS } from "@/lib/fire-data";
 import { formatMoney } from "@/lib/money";
@@ -117,7 +119,7 @@ export default function FireNumberHubPage() {
                   <Flag emoji={c.flag} size={11} /> {c.shortName} →
                 </div>
                 <div style={{ fontSize: 12, color: "var(--uf-ink-3)", lineHeight: 1.5, fontVariantNumeric: "tabular-nums" }}>
-                  ${c.avgCol.toLocaleString("en-US")}/yr · {c.noIncomeTax ? "no income tax" : `~${Math.round(c.taxRate * 100)}% tax`}
+                  ${c.avgCol.toLocaleString("en-US")}/yr · {TAX_ESTIMATES_AVAILABLE ? (c.noIncomeTax ? "no income tax" : `~${Math.round(c.taxRate * 100)}% tax`) : "spending baseline"}
                 </div>
               </Link>
             ))}
@@ -162,7 +164,7 @@ export default function FireNumberHubPage() {
           <div key={stateName} style={{ marginBottom: 40 }}>
             <h2 style={{ fontSize: 16, fontWeight: 800, color: "var(--uf-green-900)", margin: "0 0 14px", letterSpacing: "-0.2px" }}>
               {stateName}
-              {byState[stateName][0] && STATE_TAX[byState[stateName][0].state]?.rate === 0 && (
+              {TAX_ESTIMATES_AVAILABLE && byState[stateName][0] && STATE_TAX[byState[stateName][0].state]?.rate === 0 && (
                 <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, background: "var(--uf-green-100)", color: "var(--uf-green-900)", borderRadius: 4, padding: "2px 7px", letterSpacing: "0.05em", textTransform: "uppercase" }}>
                   No income tax
                 </span>

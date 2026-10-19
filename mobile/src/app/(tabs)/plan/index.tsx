@@ -21,7 +21,6 @@ const TILES: { label: string; note: string; icon: SymbolName; fallback: string; 
   { label: 'Contributions', note: 'Where saving goes', icon: 'arrow.up.right.circle.fill', fallback: '↗', to: '/plan/contributions' },
   { label: 'Scenarios', note: 'Investment mixes', icon: 'chart.bar.fill', fallback: '▤', to: '/plan/scenarios' },
   { label: 'Explore', note: 'Cities worldwide', icon: 'globe.americas.fill', fallback: '◍', to: '/plan/explore' },
-  { label: 'Citizenship', note: 'Tax by passport', icon: 'person.text.rectangle.fill', fallback: '▭', to: '/plan/citizenship' },
   { label: 'Learn', note: 'Short reads', icon: 'book.fill', fallback: '▯', to: '/plan/learn' },
 ]
 

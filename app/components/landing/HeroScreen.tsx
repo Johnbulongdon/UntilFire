@@ -11,7 +11,7 @@ import {
 const HERO_STATS = [
   { v: "Free", l: "No login required" },
   { v: "60s", l: "To your FIRE number" },
-  { v: `${CITIES.length}`, l: "City tax rates included" },
+  { v: `${CITIES.length}`, l: "Cities to explore" },
   { v: "0", l: "Data stored without login" },
 ];
 

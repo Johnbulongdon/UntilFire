@@ -749,10 +749,10 @@ html[data-splash="1"] #uf-splash {
 .uf-dash-slot.is-dragging { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--uf-green) 55%, transparent); }
 
 .uf-dash-tools {
-  position: absolute;
-  top: -12px;
-  left: 8px;
-  right: 8px;
+  position: relative;
+  min-height: 52px;
+  padding: 4px 8px;
+  flex: 0 0 auto;
   z-index: 5;
   display: flex;
   align-items: center;
@@ -762,8 +762,9 @@ html[data-splash="1"] #uf-splash {
 .uf-dash-tools > * { pointer-events: auto; }
 
 .uf-dash-tool {
-  width: 34px;
-  height: 34px;
+  min-width: 44px;
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
   border: 1px solid var(--uf-border);
   background: var(--uf-card);
@@ -847,3 +848,8 @@ html[data-splash="1"] #uf-splash {
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
+
+/* Empty conditional cards must remain legible while arranging Home. */
+.uf-dash-slot.is-editing { min-height: 112px; }
+.uf-dash-tools + .uf-dash-inert:empty::after { content: "No items right now"; display: block; padding: 16px; color: var(--uf-ink-2); }
+.uf-dash-tool:focus-visible, .uf-dash-chip:focus-visible { outline: 2px solid var(--uf-green); outline-offset: 3px; }

@@ -5,6 +5,8 @@
  * the dashboard's. If the website moves it into lib/, import it through
  * src/engine instead and delete this file.
  */
+import { TAX_ESTIMATES_AVAILABLE } from "@engine/release-gates.ts";
+
 import { REAL_RETURN } from '@/engine'
 
 export function calcProjection({
@@ -73,7 +75,7 @@ export function calcProjection({
   const annualSavings  = annualIncome - annualExpenses - annualMortgage;
   // When tax is enabled, gross up the withdrawal needed to cover retirement taxes.
   // Roth / tax-free portion needs no grossing; traditional portion does.
-  const taxGrossup = (taxEnabled && retirementTaxRate > 0)
+  const taxGrossup = (TAX_ESTIMATES_AVAILABLE && taxEnabled && retirementTaxRate > 0)
     ? ((1 - rothPct / 100) / (1 - Math.min(retirementTaxRate, 0.6)) + rothPct / 100)
     : 1;
   const fireTarget     = targetAnnualExpenses * taxGrossup / withdrawalRate;

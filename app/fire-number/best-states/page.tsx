@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import Link from 'next/link'
 import { statePages } from '@/lib/state-pages'
 import { formatMoney } from "@/lib/money";
@@ -6,14 +8,14 @@ import UsFireGuideLinks from '../UsFireGuideLinks'
 
 
 export const metadata: Metadata = {
-  title: 'Best States for FIRE: Early Retirement Tax & Cost Guide | UntilFire',
+  title: 'Best States for FIRE: Living Cost Guide | UntilFire',
   description:
-    'Which US states are best for FIRE? Compare tax rates, cost of living, and retirement timelines. Find states that combine low taxes, affordable living, and FIRE-friendly policies.',
+    'Which US states are best for FIRE? Compare annual living costs and spending-based retirement targets.',
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://www.untilfire.com/fire-number/best-states' },
   openGraph: {
     title: 'Best States for FIRE | UntilFire',
-    description: 'Compare US states by tax efficiency and cost of living for early retirement planning.',
+    description: 'Compare US states by living costs and spending-based retirement targets.',
     type: 'website',
     images: [
       {
@@ -37,7 +39,7 @@ export default function BestStatesPage() {
       // Score: lower cost + lower tax = higher score
       // Normalize: lower avg cost is better, lower tax rate is better
       const costScore = 100 - Math.min(avgCol / 1000, 100) // 0-100 scale
-      const taxScore = (1 - taxRate) * 100 // 0-100 scale
+      const taxScore = TAX_ESTIMATES_AVAILABLE ? (1 - taxRate) * 100 : costScore // 0-100 scale
       const overallScore = Math.round((costScore * 0.4 + taxScore * 0.6) * 100) / 100
 
       return {
@@ -86,10 +88,10 @@ export default function BestStatesPage() {
         {/* Hero */}
         <div className="ranking-hero" style={{ marginBottom: 48, padding: '32px 0' }}>
           <h1 style={{ fontSize: 44, fontWeight: 800, color: 'var(--uf-green-900)', letterSpacing: '-0.8px', margin: '0 0 16px', lineHeight: 1.1 }}>
-            Best States for FIRE: Tax Efficiency + Affordability
+            Best States for FIRE: Living Costs
           </h1>
           <p style={{ fontSize: 17, color: 'var(--uf-ink-2)', margin: '0 0 28px', lineHeight: 1.65, maxWidth: 700 }}>
-            The best states for early retirement combine affordable living with low tax rates. Texas, Florida, Nevada, and Washington top the list with zero state income tax. But affordability matters too. Find the perfect blend of low cost and low taxes to maximize your FIRE timeline.
+            Compare annual living costs and spending-based FIRE targets. Tax estimates are unavailable while we test them.
           </p>
 
           <div style={{ background: 'var(--uf-green-50)', border: '1px solid var(--uf-green-100)', borderRadius: 12, padding: '20px', maxWidth: 600 }}>
@@ -97,7 +99,7 @@ export default function BestStatesPage() {
               🎯 How we score states
             </div>
             <div style={{ fontSize: 13, color: 'var(--uf-green-900)', lineHeight: 1.6, margin: 0 }}>
-              Overall score combines tax efficiency (60%) and affordability (40%). Higher score = better for FIRE.
+              The score uses average annual living costs in the cities we track. Tax estimates are not counted.
             </div>
           </div>
         </div>
@@ -142,6 +144,7 @@ export default function BestStatesPage() {
                     <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--uf-ink)' }}>{formatMoney(state.avgCol)}</div>
                   </div>
 
+                  {TAX_ESTIMATES_AVAILABLE && <>
                   <div style={{ padding: '10px', background: 'var(--uf-surface)', borderRadius: 8 }}>
                     <div style={{ fontSize: 11, color: 'var(--uf-ink-2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
                       State tax rate
@@ -150,6 +153,7 @@ export default function BestStatesPage() {
                       {state.taxRate === 0 ? '0% — No tax' : `${(state.taxRate * 100).toFixed(1)}%`}
                     </div>
                   </div>
+                  </>}
 
                   <div style={{ padding: '10px', background: 'var(--uf-surface)', borderRadius: 8 }}>
                     <div style={{ fontSize: 11, color: 'var(--uf-ink-2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
@@ -175,16 +179,16 @@ export default function BestStatesPage() {
           <div style={{ display: 'grid', gap: 14 }}>
             {[
               {
-                title: 'Tax efficiency',
-                desc: 'States with zero or low income tax keep more of your earnings invested. A 5% tax difference on a $100k income compounds to $500k+ over 30 years.',
+                title: 'Spending target',
+                desc: 'Each spending-based target is 25 times the annual living-cost estimate, using a 4% withdrawal assumption.',
               },
               {
                 title: 'Affordable living',
                 desc: 'Lower cost of living means your portfolio can sustain you longer. Every $10k/year in spending reduction lowers your FIRE target by $250k.',
               },
               {
-                title: 'Combination effect',
-                desc: 'The best states for FIRE do both: low taxes AND affordable living. This compounds the advantage significantly.',
+                title: 'Your own budget',
+                desc: 'City averages are a starting point. Use your own spending and take-home pay for a personal plan.',
               },
             ].map((item) => (
               <div key={item.title} style={{ paddingBottom: 14, borderBottom: '1px solid var(--uf-border)' }}>
@@ -203,11 +207,11 @@ export default function BestStatesPage() {
             Find your best-fit FIRE state
           </h2>
           <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.75)', margin: '0 0 24px' }}>
-            Explore the top 10 and all 50 states with detailed cost, tax, and retirement timeline data. Then log in to start tracking.
+            Explore living costs and spending-based targets, then start your personal plan.
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
             <Link
-              href="/?source=best-states"
+              href="/?source=best-states&start=onboarding"
               style={{
                 display: 'inline-block',
                 background: 'var(--uf-teal)',

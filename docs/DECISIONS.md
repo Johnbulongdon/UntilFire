@@ -2986,3 +2986,25 @@ work spread across extra folders.
 **Trade-off:** With one folder, two agents must not edit it locally at the same
 moment; their own branches and open-PR checks keep the work apart.
 **Source:** John, in the project thread on October 19.
+
+### D-93 — October 19: pause tax estimators until QA is complete
+
+**Status:** active, user requested; implementation on a review branch.
+
+The user explicitly requested removal of the unfinished tax parts while fixing
+the recorded mobile-web flow. This temporarily overrides the tax-editor and
+salary-to-take-home portions of D-59 and the tax-derived pay suggestion in D-82.
+It does not remove retirement accounts, pension contributions or account-access
+rules. Those are different from estimating a tax bill.
+
+`lib/release-gates.ts` keeps tax estimators unavailable on web and phone. Income
+entry uses take-home pay. Saved tax choices are preserved, but cannot silently
+affect targets while their controls are unavailable. Public tax-derived examples
+and passport tax comparisons are paused as well. Exclusions still state that tax
+is not modeled; absence of an estimate is not a zero-tax assumption.
+
+Do not replace the paused estimator with another unverified model. Revisit only
+after supported-jurisdiction calculations, gross/net/period handling, UI, saved
+profiles, web/phone parity and end-to-end QA are reviewed and explicitly approved.
+Existing saved income values have no reliable historical gross/net provenance;
+do not silently rewrite them during this pause.

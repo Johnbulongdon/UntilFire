@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import Link from 'next/link'
 import { getMostExpensiveCities } from '@/lib/ranking-pages'
 import { formatMoney } from "@/lib/money";
@@ -131,7 +133,7 @@ export default function MostExpensiveCitiesPage() {
                     <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: 'var(--uf-green-900)' }}>{formatMoney(city.col)}</td>
                     <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: 'var(--uf-neg)' }}>{formatMoney(city.col * 25)}</td>
                     <td style={{ padding: '14px 16px', fontSize: 12, color: 'var(--uf-ink-2)' }}>
-                      {taxInfo?.rate === 0 ? '0%' : `${(taxInfo?.rate * 100).toFixed(1)}%`}
+                      {TAX_ESTIMATES_AVAILABLE ? (taxInfo?.rate === 0 ? '0%' : `${(taxInfo?.rate * 100).toFixed(1)}%`) : 'Unavailable'}
                     </td>
                   </tr>
                 )

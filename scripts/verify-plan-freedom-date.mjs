@@ -10,6 +10,7 @@
  * Run: npm run test:plan-freedom-date
  */
 import assert from 'node:assert/strict';
+import { TAX_ESTIMATES_AVAILABLE } from '../lib/release-gates.ts';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
@@ -33,7 +34,7 @@ const code = locationSource + '\n' + ['calcProjection', 'freedomProjection', 'pr
   + '\nexports.freedomProjection = freedomProjection; exports.calcProjection = calcProjection; exports.PlanFreedomDate = PlanFreedomDate; exports.effectiveBalances = effectiveBalances; exports.effectiveDebts = effectiveDebts;';
 const exports = {};
 vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2020 } }).outputText,
-  { exports, Math, Date, Object, React, freedomCash, safetyPot, freedomDebt, REAL_RETURN: 0.069, freedomAgeAt: (age, years) => Math.round(age + years) });
+  { exports, TAX_ESTIMATES_AVAILABLE, Math, Date, Object, React, freedomCash, safetyPot, freedomDebt, REAL_RETURN: 0.069, freedomAgeAt: (age, years) => Math.round(age + years) });
 const { freedomProjection, calcProjection, PlanFreedomDate, effectiveBalances, effectiveDebts } = exports;
 
 // A person: $8k/month take-home, $5k spending, $60k invested, $10k in a linked savings account (no needs set, so all of it counts).
@@ -72,12 +73,20 @@ assert.equal(withDebt.firstYearInvested, 36000 - 10800, "Plan's tools are told t
 
 // Plan's tools take the freedom date's own numbers (D-33).
 assert.match(source, /<PurchaseImpactPanel\s+currentSavings=\{planFacts\.invested\}\s+monthlyContribution=\{planFacts\.monthlySavings\}\s+fireTarget=\{planFacts\.fireTarget\}/, 'purchase impact uses the freedom date numbers');
-assert.match(source, /<TaxProfileCard[\s\S]{0,120}monthlyExpenses=\{planFacts\.retirementMonthly\}/, 'the tax card works on the retirement target');
+let taxTarget;
+const inspectTaxTarget = node => {
+  if (ts.isJsxSelfClosingElement(node) && node.tagName.getText(ast) === 'TaxProfileCard') {
+    taxTarget = node.attributes.properties.find(a => ts.isJsxAttribute(a) && a.name.getText(ast) === 'monthlyExpenses')?.initializer?.getText(ast);
+  }
+  ts.forEachChild(node, inspectTaxTarget);
+};
+inspectTaxTarget(ast);
+assert.equal(taxTarget, '{planFacts.retirementMonthly}', 'the retained tax editor is wired to the retirement target');
 // Explore in Plan (D-58, replacing Expat FIRE) takes the freedom date's balances, savings, growth and target multiple.
 assert.match(source, /saved: planFacts\.invested, monthlySaving: planFacts\.monthlySavings[\s\S]{0,120}realReturn: growthRate, targetMultiple: lifestyleMultiplier \* planFacts\.targetPerDollar/, 'Explore uses the freedom date numbers and target multiple');
 assert.match(source, /<ExploreClient appPlan=\{explorePlan\}/, 'Plan → Explore gets the plan numbers');
 const taxed = calcProjection({ annualIncome: 96000, monthlyExpenses: 5000, k401: 0, rothIRA: 0, taxable: 0, cashSavings: 0, totalDebt: 0, mortgageBalance: 0, mortgageMonthly: 0, growthRate: 0.069, withdrawalRate: 0.04, taxEnabled: true, retirementTaxRate: 0.2, rothPct: 0 });
-assert.equal(Math.round(taxed.fireTarget / 60000 * 1000) / 1000, 31.25, 'target per dollar of spending is 1 ÷ 4% × the tax gross-up (Explore multiplies city costs by it)');
+assert.equal(Math.round(taxed.fireTarget / 60000 * 1000) / 1000, TAX_ESTIMATES_AVAILABLE ? 31.25 : 25, 'target uses the tax gross-up only after the release gate opens');
 
 // A connected account replaces the typed balance of the same kind (D-32).
 const typedAndLinked = effectiveBalances({ k401: 40000, rothIRA: 10000, taxable: 10000, cashSavings: 5000,
@@ -247,3 +256,8 @@ assert.ok(rateMatters(0.03) > rateMatters(0.07), 'each mortgage is paid down at 
 
 if (process.env.SHOW) for (const g of [0.05, 0.069, 0.081]) console.log(g, at(g).exactDate.toISOString().slice(0, 7));
 console.log('Plan freedom date checks passed.');
+
+assert.equal(TAX_ESTIMATES_AVAILABLE, false, 'tax estimates stay paused until QA');
+assert.equal(freedomProjection({ ...base, growthRate: 0.069, taxEnabled: true, retirementTaxRate: 0.4 }).fireTarget,
+  freedomProjection({ ...base, growthRate: 0.069, taxEnabled: false }).fireTarget,
+  'saved tax settings cannot silently change the target during the pause');
