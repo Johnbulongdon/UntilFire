@@ -10,15 +10,14 @@ when useful; gstack and another agent's local tool paths are not prerequisites.
 ## Integration responsibility
 
 Follow the [shared handoff SOP](AGENTS.md#codex-and-claude-handoff-sop).
-Codex is the integration owner and does all merging to main; Claude does not
-merge (John's choice, 2026-10-19). Either agent can implement any task. Use
-separate worktrees and task branches during concurrent work.
+Whoever codes a task merges it, only when John says "merge"; John may also
+merge himself (D-91). Either agent can implement any task. Work on a task
+branch in the main project folder, without extra worktrees.
 
-Check open PRs for overlap before starting. Push verified work to a `claude/*`
-branch, open a PR, and when it is done mark it non-draft with
-`Handoff: ready for Codex` in the body. Give John the PR link and tell him to
-ask Codex to merge it. Never merge or force-push main. If GitHub access is
-missing, report the limitation instead of claiming a PR was opened.
+Check open PRs for overlap before starting and before merging. Never
+force-push main. Report what merged and confirm the resulting production
+deployment before telling John to test the live site. If GitHub access is
+missing, report the limitation instead of claiming the queue was checked.
 
 ## Product constraints
 
