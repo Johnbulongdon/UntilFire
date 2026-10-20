@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { JOURNEYS, SHOT_BUCKET, shotFile, type JourneyStep, type Platform, type ShotDevice, type Visitor } from "@/lib/journeys";
+import { JOURNEYS, SHOT_BUCKET, shotDevice, shotFile, type JourneyStep, type Platform, type ShotDevice, type Visitor } from "@/lib/journeys";
 
 const SHOTS = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${SHOT_BUCKET}`;
 
@@ -10,7 +10,8 @@ interface ShotRun { sha: string; takenAt: string }
 /**
  * Every journey as a row of screens with arrows between them, screenshotted
  * after the last deploy (signed-in pages as the journeys test account).
- * Google, Stripe and phone app steps are labelled boxes. The steps come from
+ * Phone steps come from the phone app's web build. Google and Stripe steps
+ * are labelled boxes. The steps come from
  * lib/journeys.ts, which `npm run test:journeys` checks against the code.
  */
 export default function JourneysTab() {
@@ -62,10 +63,13 @@ export default function JourneysTab() {
 
 function Step({ step, n, device }: { step: JourneyStep; n: number; device: ShotDevice }) {
   const [broken, setBroken] = useState(false);
-  const width = device === "phone" ? 120 : 200;
-  const height = device === "phone" ? 220 : 125;
-  const src = step.shot ? `${SHOTS}/${shotFile(step.shot, device, step.click)}` : null;
-  const href = step.shot?.replace(/^user:/, "").startsWith("/") ? step.shot.replace(/^user:/, "") : step.route.includes("[") ? undefined : step.route;
+  const size = step.shot ? shotDevice(step.shot, device) : device;
+  const width = size === "phone" ? 120 : 200;
+  const height = size === "phone" ? 220 : 125;
+  const src = step.shot ? `${SHOTS}/${shotFile(step.shot, size, step.click)}` : null;
+  // Phone app screens have no web address to open.
+  const href = step.shot?.startsWith("app") ? undefined
+    : step.shot?.replace(/^user:/, "").startsWith("/") ? step.shot.replace(/^user:/, "") : step.route.includes("[") ? undefined : step.route;
   return (
     <figure style={{ width, margin: 0 }}>
       {src && !broken ? (

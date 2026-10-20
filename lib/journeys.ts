@@ -4,7 +4,7 @@
  * Every web step names the page it happens on, and every phone step names its
  * screen file, so `npm run test:journeys` can fail when a step's page is moved
  * or deleted. Screenshots are taken from the `shot` values (see JourneyStep);
- * steps without one (Google, Stripe, the phone app) are drawn as labelled boxes.
+ * steps without one (Google, Stripe) are drawn as labelled boxes.
  */
 
 export type Platform = 'web' | 'phone'
@@ -21,7 +21,10 @@ export interface JourneyStep {
    * How the screenshot script reaches this step:
    * - `/path` — open it signed out;
    * - `calc:<name>` — answer the calculator with sample numbers and stop here;
-   * - `user:/path` — open it signed in as the journeys test account.
+   * - `login:code` — ask for an email code on /login (the request is stubbed, so no email is sent);
+   * - `user:/path` — open it signed in as the journeys test account;
+   * - `app:/path`, `app-user:/path` — the same in the phone app's web build, at phone size.
+   *   `app:/onboarding/<screen>` shots are taken in one walk with sample answers.
    */
   shot?: string
   /** Signed-in steps only: buttons whose text contains these are pressed, in order, before the screenshot. */
@@ -67,7 +70,7 @@ const WEB_SIGN_UP: JourneyStep[] = [
 const PHONE_ONBOARDING: JourneyStep[] = [
   'goal', 'city', 'pay', 'income', 'know', 'spending', 'invested', 'age',
   'reveal', 'life', 'number', 'standing', 'abroad', 'reminder',
-].map((screen) => ({ label: screen[0].toUpperCase() + screen.slice(1), route: `onboarding/${screen}.tsx` }))
+].map((screen) => ({ label: screen[0].toUpperCase() + screen.slice(1), route: `onboarding/${screen}.tsx`, shot: `app:/onboarding/${screen}` }))
 
 export const JOURNEYS: Journey[] = [
   {
@@ -102,7 +105,7 @@ export const JOURNEYS: Journey[] = [
   {
     id: 'web-returning', title: 'Coming back', platform: 'web', visitor: 'returning',
     steps: [
-      { label: 'Landing', action: 'Signed in: sent on', route: '/' },
+      { label: 'Landing', action: 'Signed in: sent on', route: '/', shot: '/' },
       { label: 'Home', route: '/dashboard', shot: 'user:/dashboard' },
     ],
   },
@@ -110,7 +113,7 @@ export const JOURNEYS: Journey[] = [
     id: 'web-email-login', title: 'Log in with email', platform: 'web', visitor: 'returning',
     steps: [
       { label: 'Log in', action: 'Tap Use email instead', route: '/login', shot: '/login' },
-      { label: 'Code', action: 'Enter the 6-digit code', route: '/login' },
+      { label: 'Code', action: 'Enter the 6-digit code', route: '/login', shot: 'login:code' },
       { label: 'Home', route: '/dashboard', shot: 'user:/dashboard' },
     ],
   },
@@ -138,39 +141,41 @@ export const JOURNEYS: Journey[] = [
       { label: 'Data and account', action: 'Tap Delete account…', route: '/dashboard', shot: 'user:/dashboard?tab=profile', click: ['Data and account'] },
       // Only opens the confirm box: the script never types the email or deletes.
       { label: 'Confirm', action: 'Type email, delete', route: '/dashboard', shot: 'user:/dashboard?tab=profile', click: ['Data and account', 'Delete account'] },
-      { label: 'Landing', route: '/' },
+      { label: 'Landing', route: '/', shot: '/' },
     ],
   },
   {
     id: 'phone-new', title: 'Phone: sign in, then onboarding', platform: 'phone', visitor: 'new',
     steps: [
-      { label: 'Welcome', action: 'Tap Get started', route: 'onboarding/index.tsx' },
-      { label: 'Sign in', action: 'Google or email', route: 'sign-in.tsx' },
+      { label: 'Welcome', action: 'Tap Get started', route: 'onboarding/index.tsx', shot: 'app:/onboarding' },
+      { label: 'Sign in', action: 'Google or email', route: 'sign-in.tsx', shot: 'app:/sign-in' },
       ...PHONE_ONBOARDING,
-      { label: 'Home', route: '(tabs)/index.tsx' },
+      { label: 'Home', route: '(tabs)/index.tsx', shot: 'app-user:/' },
     ],
   },
   {
     id: 'phone-returning', title: 'Phone: coming back', platform: 'phone', visitor: 'returning',
     steps: [
+      // index.tsx draws nothing: it only sends the person on.
       { label: 'Open app', action: 'Plan saved: sent on', route: 'index.tsx' },
-      { label: 'Home', route: '(tabs)/index.tsx' },
+      { label: 'Home', route: '(tabs)/index.tsx', shot: 'app-user:/' },
     ],
   },
   {
     id: 'phone-pro', title: 'Phone: Pro', platform: 'phone', visitor: 'returning',
     steps: [
-      { label: 'Profile', action: 'Tap UntilFire Pro', route: '(tabs)/profile.tsx' },
-      { label: 'Pro', action: 'Subscribe or manage', route: 'pro.tsx' },
+      { label: 'Profile', action: 'Tap UntilFire Pro', route: '(tabs)/profile.tsx', shot: 'app-user:/profile' },
+      { label: 'Pro', action: 'Subscribe or manage', route: 'pro.tsx', shot: 'app-user:/pro' },
     ],
   },
   {
     id: 'phone-delete', title: 'Phone: delete account', platform: 'phone', visitor: 'returning',
     steps: [
-      { label: 'Profile', action: 'Tap Data and account', route: '(tabs)/profile.tsx' },
-      { label: 'Data and account', action: 'Tap Delete account', route: 'data-account.tsx' },
-      { label: 'Delete', action: 'Confirm', route: 'delete-account.tsx' },
-      { label: 'Welcome', route: 'onboarding/index.tsx' },
+      { label: 'Profile', action: 'Tap Data and account', route: '(tabs)/profile.tsx', shot: 'app-user:/profile' },
+      { label: 'Data and account', action: 'Tap Delete account', route: 'data-account.tsx', shot: 'app-user:/data-account' },
+      // Opening the screen deletes nothing: it waits for the email to be typed.
+      { label: 'Delete', action: 'Confirm', route: 'delete-account.tsx', shot: 'app-user:/delete-account' },
+      { label: 'Welcome', route: 'onboarding/index.tsx', shot: 'app:/onboarding' },
     ],
   },
 ]
@@ -185,6 +190,9 @@ export const SHOT_VIEWPORTS: Record<ShotDevice, { width: number; height: number 
 
 /** Public Supabase Storage bucket the screenshots are uploaded to. */
 export const SHOT_BUCKET = 'journeys'
+
+/** Phone app shots exist only at phone size. */
+export const shotDevice = (shot: string, device: ShotDevice): ShotDevice => (shot.startsWith('app') ? 'phone' : device)
 
 /** One file per URL and size, so a step shared by several journeys is taken once. */
 export function shotFile(shot: string, device: ShotDevice, click?: string[]): string {

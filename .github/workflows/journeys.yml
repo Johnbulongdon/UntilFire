@@ -38,9 +38,13 @@ jobs:
       - if: steps.changed.outputs.journeys != '0'
         run: npm install --no-save --no-audit --no-fund playwright@1.56.1 && npx playwright install --with-deps chromium
       - if: steps.changed.outputs.journeys != '0'
+        run: npm ci --no-audit --no-fund && npx expo export --platform web --output-dir ../journey-app
+        working-directory: mobile
+      - if: steps.changed.outputs.journeys != '0'
         run: npm run journeys:capture
         env:
           JOURNEY_DRY_RUN: '1'
+          JOURNEY_APP_DIR: journey-app
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
@@ -59,8 +63,12 @@ jobs:
           node-version: 22
       # Playwright stays out of package.json so Vercel builds don't carry it.
       - run: npm install --no-save --no-audit --no-fund playwright@1.56.1 && npx playwright install --with-deps chromium
+      # The phone app's screens come from its web build (no analytics keys, so no events).
+      - run: npm ci --no-audit --no-fund && npx expo export --platform web --output-dir ../journey-app
+        working-directory: mobile
       - run: npm run journeys:capture
         env:
+          JOURNEY_APP_DIR: journey-app
           JOURNEY_BASE_URL: https://www.untilfire.com
           GITHUB_SHA: ${{ github.event.deployment.sha }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
