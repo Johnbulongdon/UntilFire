@@ -87,6 +87,8 @@ free. Documentation edits alone do not authorize a redesign.
 - [Cost of living](docs/cost-of-living.md) — read before changing city pricing or
   Census/BEA/housing imports.
 - [Analytics contract](docs/analytics/EVENTS.md), `lib/analytics-events.ts` — events.
+- `lib/journeys.ts` — the admin Journeys map; update it when a sign-up,
+  onboarding, billing or account flow changes (`npm run test:journeys`).
 - [Search Console](docs/search-console.md) — source setup and analysis caveats.
 - [Roadmap](docs/ROADMAP.md) — planning and implementation notes, not proof of
   missing features or live correctness; [changelog](CHANGELOG.md) and code provide

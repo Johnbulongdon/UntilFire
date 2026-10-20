@@ -169,7 +169,7 @@ export default function MostExpensiveCitiesPage() {
               Calculate your FIRE date
             </Link>
             <Link
-              href="/dashboard"
+              href="/?source=most-expensive-cities-bottom&start=onboarding"
               style={{
                 display: 'inline-block',
                 background: 'rgba(255,255,255,0.15)',

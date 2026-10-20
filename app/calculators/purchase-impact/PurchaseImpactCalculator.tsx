@@ -147,7 +147,7 @@ export default function PurchaseImpactCalculator() {
                   <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.7 }}>
                     <strong style={{ color: C.text }}>Want a personalised calculation?</strong> Log in to UntilFire and this tool fills from your real savings, contribution, and FIRE target automatically.
                   </div>
-                  <Link href="/dashboard" style={{ display: 'inline-block', marginTop: 12, background: C.accent, color: 'var(--uf-card)', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
+                  <Link href="/?source=purchase-impact&start=onboarding" style={{ display: 'inline-block', marginTop: 12, background: C.accent, color: 'var(--uf-card)', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
                     Use with my profile →
                   </Link>
                 </div>

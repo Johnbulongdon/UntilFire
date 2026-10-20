@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-20 — Start buttons open the calculator
+
+- "Start free" on the FIRE number pages, "Get started free" on Pricing and "Use with my profile" on Purchase Impact now open the calculator. They went to the dashboard or sign-up, so signed-out visitors landed on an empty Home and skipped onboarding. Signed-in visitors still go straight to the dashboard. Guarded by `npm run test:start-ctas`.
+
+## 2026-10-20 — Admin Journeys tab
+
+- New admin tab maps 14 user journeys (website and phone app, new and returning), with arrows, step labels and what to tap. Desktop and phone sizes.
+- Steps live in `lib/journeys.ts`; `npm run test:journeys` fails when a step's page or the phone onboarding order changes. Signed-out pages are re-screenshotted after each production deploy (`.github/workflows/journeys.yml`); signed-in, Google, Stripe and phone app steps are labelled boxes for now.
+
 ## 2026-10-20 — Safety cash in retirement progress
 
 - Include the safety pot in web and phone freedom progress; spending cash stays separate.
