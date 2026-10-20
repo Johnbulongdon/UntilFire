@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-20 — More Journeys screenshots
+
+- The screenshot run now answers the calculator with sample numbers, capturing every question and result page, and signs in as a test account (`journeys-bot@untilfire.com`, unsubscribed from emails) for Home, Profile, the upgrade box and the delete-account confirm box. It never pays or deletes.
+- PRs that change the journeys run the capture as a dry run first.
+
 ## 2026-10-20 — Start buttons open the calculator
 
 - "Start free" on the FIRE number pages, "Get started free" on Pricing and "Use with my profile" on Purchase Impact now open the calculator. They went to the dashboard or sign-up, so signed-out visitors landed on an empty Home and skipped onboarding. Signed-in visitors still go straight to the dashboard. Guarded by `npm run test:start-ctas`.
