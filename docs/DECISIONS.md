@@ -2986,3 +2986,47 @@ work spread across extra folders.
 **Trade-off:** With one folder, two agents must not edit it locally at the same
 moment; their own branches and open-PR checks keep the work apart.
 **Source:** John, in the project thread on October 19.
+
+### D-93 — October 19: pause tax estimators until QA is complete
+
+**Status:** active, user requested; implementation on a review branch.
+
+The user explicitly requested removal of the unfinished tax parts while fixing
+the recorded mobile-web flow. This temporarily overrides the tax-editor and
+salary-to-take-home portions of D-59 and the tax-derived pay suggestion in D-82.
+It does not remove retirement accounts, pension contributions or account-access
+rules. Those are different from estimating a tax bill.
+
+`lib/release-gates.ts` keeps tax estimators unavailable on web and phone. Income
+entry uses take-home pay. Saved tax choices are preserved, but cannot silently
+affect targets while their controls are unavailable. Public tax-derived examples
+and passport tax comparisons are paused as well. Exclusions still state that tax
+is not modeled; absence of an estimate is not a zero-tax assumption.
+
+Do not replace the paused estimator with another unverified model. Revisit only
+after supported-jurisdiction calculations, gross/net/period handling, UI, saved
+profiles, web/phone parity and end-to-end QA are reviewed and explicitly approved.
+Existing saved income values have no reliable historical gross/net provenance;
+do not silently rewrite them during this pause.
+
+### D-94 — October 20: Remove dashboard arrangement controls
+
+**Status:** Active. Replaces the layout-customisation permission in the app
+structure and the Edit/hidden-card behavior in D-39 and D-89; their standard
+Home content, money logic and visual direction remain.
+
+**Decision:** Home uses its standard card set and order. Remove reorder, resize,
+hide/restore, inventory, reset and editor-recovery controls. Ignore old saved
+layout preferences, including hidden-card settings, without deleting them.
+Retire the native editor route with a redirect to Home.
+
+**Why / source:** The founder's October 20 review explicitly removed proposed
+repairs 6 and 7 and asked to remove reorganization itself. Improving toolbars
+and adding recovery controls would preserve the feature they no longer want.
+
+**Trade-off:** Optional cards formerly available only through the inventory are
+no longer exposed there. Existing Money/Plan destinations remain available.
+Revisit only with explicit product direction, not as a replay bug repair.
+
+The previous component-only screenshots were not faithful full-screen previews.
+Recapture the actual dashboard route and keep review notes outside app imagery.

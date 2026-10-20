@@ -17,12 +17,12 @@ const rankings: Record<string, { title: string; subtitle: string; color: string 
   },
   'no-income-tax-states': {
     title: 'No-Income-Tax States',
-    subtitle: 'Keep more of your income invested',
+    subtitle: 'Tax comparisons unavailable during testing',
     color: '#c4b5fd',
   },
   'best-states': {
     title: 'Best States for FIRE',
-    subtitle: 'Ranked by tax efficiency + cost',
+    subtitle: 'Ranked by living costs',
     color: '#22d3a5',
   },
   'fire-by-state': {
@@ -31,9 +31,9 @@ const rankings: Record<string, { title: string; subtitle: string; color: string 
     color: '#22d3a5',
   },
   'region-northeast': { title: 'FIRE in the Northeast', subtitle: 'High cost, high income — can FIRE happen here?', color: '#c4b5fd' },
-  'region-southeast': { title: 'FIRE in the Southeast', subtitle: 'Lower taxes, lower costs, warmer weather', color: '#22d3a5' },
+  'region-southeast': { title: 'FIRE in the Southeast', subtitle: 'Living costs and warmer weather', color: '#22d3a5' },
   'region-midwest': { title: 'FIRE in the Midwest', subtitle: 'Underrated value. Quiet wealth-building.', color: '#22d3a5' },
-  'region-southwest': { title: 'FIRE in the Southwest', subtitle: 'Sun, sprawl, and no-tax momentum.', color: '#f97316' },
+  'region-southwest': { title: 'FIRE in the Southwest', subtitle: 'Sun, space, and living costs.', color: '#f97316' },
   'region-mountain-west': { title: 'FIRE in the Mountain West', subtitle: 'Outdoor lifestyle, moderate cost, growing hubs.', color: '#22d3a5' },
   'region-west-coast': { title: 'FIRE on the West Coast', subtitle: 'High cost, but high income potential too.', color: '#f97316' },
 };

@@ -1,5 +1,7 @@
 "use client";
 
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
@@ -12,6 +14,9 @@ import PlaidConnect, { type PlaidItem } from "./PlaidConnect";
 import UpgradeModal from "./UpgradeModal";
 import TourModal from "./TourModal";
 import CitizenshipTab from "./CitizenshipTab";
+import OnboardingModal from "./OnboardingModal";
+import SavedPlanLoading from "./SavedPlanLoading";
+import { CITIES, STATE_TAX, TAX_US_STATES } from "@/lib/fire-data";
 import LearnTab from "./LearnTab";
 import ContributionsTab from "./ContributionsTab";
 import CompareCard from "./CompareCard";
@@ -61,10 +66,8 @@ import FreedomReport, { type ReportData } from "./FreedomReport";
 import { ageLabel, freedomAgeAt, pensionFor, taxFreeFor, type PlanSettings } from "@/lib/plan-settings";
 import { DEFAULT_MORTGAGE_RATE_PCT, engineMortgages, loadMortgages, newMortgageId, payoffYear, type Mortgage, type MortgageTerms } from "@/lib/mortgages";
 import HouseholdCard from "./HouseholdCard";
-import { CardInventory, DashSlot, useCardSort } from "./DashboardCustomise";
-import { defaultLayout, normaliseLayout, setCard, type DashboardLayout } from "@/lib/dashboard-layout";
+import HomeSlot from "./HomeSlot";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
-import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
 import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened, trackFreedomReportExported, trackPlanCompare } from "@/lib/analytics";
 import WhatIf from "./WhatIf";
 import { coastYear, type EngineChange, type LifeVersion } from "@/lib/life-changes";
@@ -440,7 +443,7 @@ function calcProjection({
   const annualSavings  = annualIncome - annualExpenses - annualMortgage;
   // When tax is enabled, gross up the withdrawal needed to cover retirement taxes.
   // Roth / tax-free portion needs no grossing; traditional portion does.
-  const taxGrossup = (taxEnabled && retirementTaxRate > 0)
+  const taxGrossup = (TAX_ESTIMATES_AVAILABLE && taxEnabled && retirementTaxRate > 0)
     ? ((1 - rothPct / 100) / (1 - Math.min(retirementTaxRate, 0.6)) + rothPct / 100)
     : 1;
   const fireTarget     = targetAnnualExpenses * taxGrossup / withdrawalRate;
@@ -757,42 +760,6 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   /** Plan settings (D-59), so Home's date is Plan's. */
   plan?: PlanSettings;
 }) {
-
-  // Home's arrangement. Loaded once per user; saved on every change rather
-  // than behind a Save button, because there is nothing to lose by saving and
-  // an arrangement that silently reverted would be worse than one that did
-  // not move. A failed save leaves the on-screen layout alone — the next
-  // change retries it.
-  const [layout, setLayout] = useState<DashboardLayout>(() => defaultLayout());
-  const [editing, setEditing] = useState(false);
-  const [savingLayout, setSavingLayout] = useState(false);
-
-  useEffect(() => {
-    if (!userId) return;
-    supabase
-      .from("profiles")
-      .select("dashboard_layout")
-      .eq("user_id", userId)
-      .maybeSingle()
-      .then(({ data }) => setLayout(normaliseLayout(data?.dashboard_layout)));
-  }, [userId]);
-
-  const persistLayout = useCallback(async (next: DashboardLayout) => {
-    setLayout(next);
-    if (!userId) return;
-    setSavingLayout(true);
-    try {
-      await supabase.from("profiles").update({ dashboard_layout: next }).eq("user_id", userId);
-    } catch {
-      // Keep what is on screen. A lost preference is a small thing; a card
-      // jumping back under the user's cursor is not.
-    } finally {
-      setSavingLayout(false);
-    }
-  }, [userId]);
-
-  // Live updates stay local while dragging; the save happens once on drop.
-  const { draggingId, register, begin } = useCardSort(layout, setLayout, persistLayout);
 
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
   const chartMonthTickFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit" }), []);
@@ -1610,26 +1577,10 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginBottom: editing ? 24 : 12 }}>
-        {editing && (
-          <button className="uf-dash-nudge" style={{ width: "auto", padding: "0 12px", height: 28 }}
-            onClick={() => persistLayout(defaultLayout())}>
-            Reset
-          </button>
-        )}
-        <button
-          className="uf-dash-nudge"
-          style={{ width: "auto", padding: "0 12px", height: 28 }}
-          onClick={() => setEditing((v) => !v)}
-        >
-          {editing ? (savingLayout ? "Saving\u2026" : "Done") : "Edit"}
-        </button>
-      </div>
-
     <div className="uf-dash-grid">
 
       {/* ── Greeting header ─────────────────────────────────────────────── */}
-      <DashSlot id="greeting" layout={layout} editing={editing} dragging={draggingId === "greeting"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="greeting">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <div>
           <div className="uf-t-h2" style={{ margin: 0 }}>
@@ -1641,9 +1592,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Setup checklist (hidden once all 4 steps done) ─────────────── */}
-      <DashSlot id="setup" layout={layout} editing={editing} dragging={draggingId === "setup"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="setup">
       <SetupChecklist
         income={income}
         expenses={expenses}
@@ -1657,16 +1608,16 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         onOpenOnboarding={onOpenOnboarding}
       />
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Hero: chart-led progress card. Fixed dark treatment regardless of
           the dashboard's light/dark setting — a deliberate hero moment, same
           idea as the free-calculator reveal — so it forces the `.dark` token
           scope rather than following the ambient theme. ─────────────────── */}
-      <DashSlot id="hero" layout={layout} editing={editing} dragging={draggingId === "hero"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="hero">
       <FreedomCard
         dateLabel={exactFreedomDate ? exactFreedomDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : retireYear ? String(retireYear) : null}
-        yearsAway={fireYear}
-        age={fireAge > 0 && fireYear ? fireAge + fireYear : null}
+        yearsAway={exactFreedomDate ? Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5)) : fireYear}
+        age={fireAge > 0 && exactFreedomDate ? Math.round(fireAge + Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5))) : null}
         onOpen={() => onTabChange?.("fire-calculator")}
         route={retireCity ? {
           from: cityName ? cityName.split(",")[0] : "",
@@ -1727,11 +1678,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </ResponsiveContainer>
       </FreedomCard>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── On-track score: not how independent you are (the freedom date
           answers that) — how well you're keeping up the habits that get you
           there. ─────────────────────────────────────────────────────────── */}
-      <DashSlot id="ontrack" layout={layout} editing={editing} dragging={draggingId === "ontrack"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="ontrack">
       <div className="uf-card" style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
         <div style={{ position: "relative", width: 96, height: 96, flexShrink: 0 }}>
           {(() => {
@@ -1773,11 +1724,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Your month: closes last month's loop and points at this month's
           move. Dismissible per calendar month (uf_checkin_dismissed_YYYY-MM)
           so it reads as a check-in ritual, not a permanent fixture. ────── */}
-      <DashSlot id="yourmonth" layout={layout} editing={editing} dragging={draggingId === "yourmonth"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="yourmonth">
       {!checkinDismissed && topTasks.length > 0 && (
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
@@ -1808,12 +1759,12 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       )}
 
-      </DashSlot>
-      <DashSlot id="free" layout={layout} editing={editing} dragging={draggingId === "free"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      </HomeSlot>
+      <HomeSlot id="free">
       {freeResult && <FreeToSpendHome result={freeResult} fmt={(n) => fmtMoney(n)} onOpen={onOpenFreeToSpend} />}
-      </DashSlot>
+      </HomeSlot>
       {/* ── Freedom date + best move ─────────────────────────────────────── */}
-      <DashSlot id="contribution" layout={layout} editing={editing} dragging={draggingId === "contribution"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="contribution">
       {nextMove ? (
         <NextMoveCard move={nextMove} fmt={(n) => fmtMoney(n)}
           onOpen={() => onTabChange?.(nextMove.tab)}
@@ -1822,8 +1773,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         <NextContributionCard facts={contributionFacts} onOpenPlan={() => onTabChange?.("contributions")} />
       )}
 
-      </DashSlot>
-      <DashSlot id="month" layout={layout} editing={editing} dragging={draggingId === "month"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      </HomeSlot>
+      <HomeSlot id="month">
         {paydayView && paydayLineView ? (
           <UntilPaydayCard
             line={paydayLineView}
@@ -1844,8 +1795,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           fmt={(n) => fmtMoney(n)}
           onOpen={() => onTabChange?.("cashflow")}
         />}
-      </DashSlot>
-      <DashSlot id="today" layout={layout} editing={editing} dragging={draggingId === "today"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      </HomeSlot>
+      <HomeSlot id="today">
         <TodayStrip
           userId={userId}
           bills={bills}
@@ -1854,8 +1805,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}
           onOpen={() => onTabChange?.("cashflow")}
         />
-      </DashSlot>
-      <DashSlot id="glance" layout={layout} editing={editing} dragging={draggingId === "glance"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      </HomeSlot>
+      <HomeSlot id="glance">
         <GlanceRow
           netWorth={currentNetWorth}
           invested={investedByMonth}
@@ -1866,8 +1817,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           onSafety={() => onTabChange?.("assets")}
           onSavings={() => onTabChange?.("contributions")}
         />
-      </DashSlot>
-      <DashSlot id="freedom" layout={layout} editing={editing} dragging={draggingId === "freedom"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      </HomeSlot>
+      <HomeSlot id="freedom">
       {efMonthlyBase > 0 && (
         <div className="uf-card" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 16, alignItems: "center" }}>
           <div>
@@ -2055,14 +2006,14 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Your goals: the measurable targets set via the PERMA intro flow
           or added by hand in Plan -> Goals. Read-only here — Home never
           gets its own inputs, per docs/design/app-structure.md. ───────── */}
-      <DashSlot id="compare" layout={layout} editing={editing} dragging={draggingId === "compare"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="compare">
         <CompareCard netWorthUsd={currentNetWorth} age={fireAge} currency={displayCurrency} onOpenAssumptions={() => onTabChange?.("fire-calculator")} />
-      </DashSlot>
-      <DashSlot id="goals" layout={layout} editing={editing} dragging={draggingId === "goals"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      </HomeSlot>
+      <HomeSlot id="goals">
       <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
@@ -2104,9 +2055,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         )}
       </div>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Monthly operating row ────────────────────────────────────────── */}
-      <DashSlot id="operating" layout={layout} editing={editing} dragging={draggingId === "operating"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="operating">
       <div className="uf-overview-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s investing</div>
@@ -2198,9 +2149,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Lower support row ────────────────────────────────────────────── */}
-      <DashSlot id="support" layout={layout} editing={editing} dragging={draggingId === "support"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="support">
       <div>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Where your money is</div>
@@ -2240,14 +2191,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
-      </DashSlot>
+      </HomeSlot>
     </div>
-      {editing && (
-        <CardInventory
-          layout={layout}
-          onToggle={(id, visible) => persistLayout(setCard(layout, id, { visible }))}
-        />
-      )}
     </>
   );
 }
@@ -2807,161 +2752,7 @@ function SurveyModal({ onSubmit, onDismiss }: {
 }
 
 // ─── Onboarding Modal ─────────────────────────────────────────────────────────
-function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
-  defaultCurrency: string;
-  onComplete: (income: number, spending: number, savings: number, taxKey: string) => void;
-  onDismiss: () => void;
-}) {
-  const [incomeMode, setIncomeMode] = useState<"monthly" | "annual">("monthly");
-  const [inc, setInc] = useState("");
-  const [spend, setSpend] = useState("");
-  const [save, setSave] = useState("");
-  const [taxCountry, setTaxCountry] = useState("");
-  const [taxSub, setTaxSub] = useState("");
 
-  const toNum = (s: string) => parseFloat(s.replace(/,/g, "")) || 0;
-  const fmtNum = (s: string) => {
-    const n = parseFloat(s.replace(/,/g, ""));
-    return isNaN(n) ? s : n.toLocaleString();
-  };
-
-  const monthlyIncome = incomeMode === "annual" ? Math.round(toNum(inc) / 12) : toNum(inc);
-
-  // Resolve STATE_TAX key from country + sub-picker
-  const resolvedTaxKey = taxCountry === "us" ? taxSub
-    : taxCountry === "ca" ? (taxSub || "ca_on")
-    : taxCountry || "";
-
-  const handleSubmit = () => {
-    onComplete(monthlyIncome, toNum(spend), toNum(save), resolvedTaxKey);
-  };
-
-  const selectStyle: React.CSSProperties = {
-    width: "100%", padding: "11px 14px", border: "1.5px solid #E5E7EB", borderRadius: 10,
-    fontSize: 14, fontWeight: 600, fontFamily: "Manrope, sans-serif", color: "#111827",
-    background: "#fff", outline: "none", cursor: "pointer", appearance: "auto",
-  };
-
-  const Field = ({ label, hint, value, onChange }: { label: string; hint: string; value: string; onChange: (v: string) => void }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label style={{ fontSize: 12, fontWeight: 700, color: "#374151", fontFamily: "Manrope, sans-serif", letterSpacing: "0.02em" }}>{label}</label>
-      <div style={{ position: "relative" }}>
-        <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 600, color: "#6B7280", fontFamily: "Manrope, sans-serif" }}>{defaultCurrency}</span>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={value}
-          onChange={e => onChange(e.target.value.replace(/[^0-9.,]/g, ""))}
-          onBlur={e => onChange(fmtNum(e.target.value))}
-          placeholder="0"
-          style={{ width: "100%", paddingLeft: 52, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 16, fontWeight: 600, fontFamily: "Manrope, sans-serif", outline: "none", boxSizing: "border-box", color: "#111827" }}
-          onFocus={e => { e.target.style.borderColor = "#064E3B"; }}
-        />
-      </div>
-      <span style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "Manrope, sans-serif" }}>{hint}</span>
-    </div>
-  );
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" }}>
-      <div style={{ background: "#fff", borderRadius: 20, padding: "36px 32px 28px", maxWidth: 440, width: "100%", boxShadow: "0 24px 64px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 24, margin: "auto" }}>
-        {/* Header */}
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#20D4BF", marginBottom: 8, fontFamily: "Manrope, sans-serif" }}>Welcome to UntilFire</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px", lineHeight: 1.25 }}>
-            Let&apos;s find your FIRE number
-          </div>
-          <div style={{ fontSize: 13, color: "#6B7280", marginTop: 6, fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>
-            Income, spending, and current savings are enough to get started. You can refine everything later.
-          </div>
-        </div>
-
-        {/* Financial fields */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            <button
-              type="button"
-              onClick={() => setIncomeMode("monthly")}
-              style={{ border: `1.5px solid ${incomeMode === "monthly" ? "#064E3B" : "#E5E7EB"}`, background: incomeMode === "monthly" ? "#F0FDF4" : "#fff", color: incomeMode === "monthly" ? "#064E3B" : "#6B7280", borderRadius: 10, padding: "10px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
-            >
-              Monthly take-home
-            </button>
-            <button
-              type="button"
-              onClick={() => setIncomeMode("annual")}
-              style={{ border: `1.5px solid ${incomeMode === "annual" ? "#064E3B" : "#E5E7EB"}`, background: incomeMode === "annual" ? "#F0FDF4" : "#fff", color: incomeMode === "annual" ? "#064E3B" : "#6B7280", borderRadius: 10, padding: "10px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
-            >
-              Gross annual
-            </button>
-          </div>
-          <Field
-            label={incomeMode === "annual" ? "Gross annual income" : "Monthly take-home pay"}
-            hint={incomeMode === "annual" ? "Before tax, per year — we’ll use a rough monthly estimate" : "After tax, per month"}
-            value={inc}
-            onChange={setInc}
-          />
-          <Field label="Monthly expenses" hint="Rent, food, everything — rough total is fine" value={spend} onChange={setSpend} />
-          <Field label="Current savings / net worth" hint="Total across accounts and investments — 0 is okay" value={save} onChange={setSave} />
-        </div>
-
-        {/* Tax identity */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4, borderTop: "1px solid #F1F5F9" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", fontFamily: "Manrope, sans-serif", letterSpacing: "0.02em" }}>
-              Where do you pay taxes?
-            </div>
-            <span style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "Manrope, sans-serif" }}>optional</span>
-          </div>
-          <div style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "Manrope, sans-serif", marginTop: -4, lineHeight: 1.5 }}>
-            Helps us estimate your real FIRE number — taxes change what you actually need to save.
-          </div>
-          <select
-            value={taxCountry}
-            onChange={e => { setTaxCountry(e.target.value); setTaxSub(""); }}
-            style={selectStyle}
-          >
-            <option value="">Select country / region…</option>
-            {TAX_COUNTRIES.map(c => (
-              <option key={c.value} value={c.value}>{c.label}</option>
-            ))}
-          </select>
-          {taxCountry === "us" && (
-            <select value={taxSub} onChange={e => setTaxSub(e.target.value)} style={selectStyle}>
-              <option value="">Select state…</option>
-              {TAX_US_STATES.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          )}
-          {taxCountry === "ca" && (
-            <select value={taxSub} onChange={e => setTaxSub(e.target.value)} style={selectStyle}>
-              <option value="">Select province…</option>
-              {TAX_CA_PROVINCES.map(p => (
-                <option key={p.value} value={p.value}>{p.label}</option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
-          <button
-            onClick={handleSubmit}
-            disabled={!inc}
-            style={{ background: inc ? "#064E3B" : "#E5E7EB", color: inc ? "#fff" : "#9CA3AF", border: "none", borderRadius: 10, padding: "13px 20px", fontSize: 15, fontWeight: 700, cursor: inc ? "pointer" : "not-allowed", fontFamily: "Manrope, sans-serif", transition: "background 0.15s" }}
-          >
-            Get my FIRE number →
-          </button>
-          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: "4px 0" }}>
-            Skip for now
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Setup Checklist ──────────────────────────────────────────────────────────
 function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings, cityName, plaidAccounts = [], onTabChange, onOpenOnboarding }: {
   income: number; expenses: Record<string, number | undefined>;
   k401: number; rothIRA: number; taxable: number; cashSavings: number;
@@ -5588,7 +5379,7 @@ export default function Dashboard() {
       conservative: [usTaxHome ? "No Social Security counted" : "No state pension counted",
         ...((planSettings.payGrowth ?? 0) > 0 ? [] : [`No raises: saving stays at ${fmt(total, defaultCurrency, rates, true)} a year`]),
         "Your home is not counted", `${+(withdrawalRate * 100).toFixed(1)}% a year withdrawal, a common long-run rule`],
-      notIncluded: [...(taxEnabled ? [] : ["Tax on withdrawals in retirement"]), ...(usTaxHome ? ["Health insurance before 65"] : []), "Year-to-year market swings"],
+      notIncluded: [...(TAX_ESTIMATES_AVAILABLE && taxEnabled ? [] : ["Tax on withdrawals in retirement"]), ...(usTaxHome ? ["Health insurance before 65"] : []), "Year-to-year market swings"],
     });
   }, [planFreedom, planFacts, fireAge, growthRate, planFreedomInputs, plan, planSettings, defaultCurrency, usTaxHome, cityName, withdrawalRate, effectiveIncome, taxEnabled, rates]);
   // Plan → Explore (D-58): every city at your plan's numbers, with the same
@@ -6354,25 +6145,10 @@ export default function Dashboard() {
       {onboardingOpen && (
         <OnboardingModal
           defaultCurrency={defaultCurrency}
-          onComplete={(inc, spend, save, taxKey) => {
-            setIncome(inc);
-            setExpenses(prev => ({ ...prev, other: spend }));
-            setTaxable(save);
-            if (taxKey) {
-              // Find a representative city for this tax jurisdiction and set it as the current city
-              const repCity = CITIES.find(c => c.state === taxKey);
-              if (repCity) setCityName(repCity.name);
-              // Pre-seed retirement tax rate from jurisdiction (user can override in Plan tab)
-              const taxInfo = STATE_TAX[taxKey];
-              if (taxInfo) {
-                const isUS = taxKey.length <= 5 && !taxKey.startsWith("ca_");
-                const stateRate = taxInfo.rate;
-                const suggested = isUS
-                  ? Math.max(0.05, Math.min(stateRate + 0.12, 0.35))
-                  : Math.max(0.05, Math.min(stateRate * 0.75, 0.40));
-                setRetirementTaxRate(suggested);
-              }
-            }
+          onComplete={(inc, spend, save) => {
+            setIncome(toUSD(inc, defaultCurrency, rates));
+            setExpenses(prev => ({ ...prev, other: toUSD(spend, defaultCurrency, rates) }));
+            setTaxable(toUSD(save, defaultCurrency, rates));
             localStorage.setItem('uf_onboarding_dismissed', '1');
             setOnboardingOpen(false);
           }}
@@ -6560,7 +6336,7 @@ export default function Dashboard() {
             )}
             {PLAN_SECTIONS.some(s => s.tab === tab) && (
               <nav className="uf-section-switch uf-plan-section-switch" aria-label="Plan sections">
-                {PLAN_SECTIONS.map(item => (
+                {PLAN_SECTIONS.filter(item => TAX_ESTIMATES_AVAILABLE || item.tab !== "citizenship").map(item => (
                   <button
                     key={item.label}
                     className={`uf-section-button ${
@@ -6578,12 +6354,13 @@ export default function Dashboard() {
             )}
             {/* Household, on Home: it interprets both people's Money and Plan,
                 which is rule 3. Renders nothing without a household. */}
-            {tab === "overview" && (
+            {tab === "overview" && !profileLoading && (
               <div style={{ marginBottom: 24 }}>
                 <HouseholdCard displayCurrency={defaultCurrency} />
               </div>
             )}
-            {tab === "overview" && (
+            {profileLoading && <SavedPlanLoading />}
+            {tab === "overview" && !profileLoading && (
               <DashTab homeValue={homeValue} spreadCategories={spreadCategories} coastRetireAge={compareRetireAge}
                 plan={plan}
                 contributionFacts={contributionFacts}
@@ -6627,7 +6404,7 @@ export default function Dashboard() {
                 onFreedomDateChange={setFreedomDate}
               />
             )}
-            {tab === "cashflow" && (
+            {tab === "cashflow" && !profileLoading && (
               <div>
                 {/* Cashflow sub-pages as pills, as on Home (D-40). */}
                 <div className="uf-cashflow-subtab-switch" style={{ marginBottom: 24 }}>
@@ -6713,7 +6490,7 @@ export default function Dashboard() {
                 planDebts={sharedPlan?.ladder?.debts ?? []}
               />
             )}
-            {tab === "fire-calculator" && (
+            {tab === "fire-calculator" && !profileLoading && (
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
                 {fireCalcSubTab === "menu" && (
                   <>
@@ -6841,7 +6618,7 @@ export default function Dashboard() {
                 <ContributionsTab {...contributionFacts} onChooseAccounts={() => setTab("assets")} />
               </div>
             )}
-            {tab === "citizenship" && <CitizenshipTab onOpenExpat={() => openDashboardTab("expat-fire")} />}
+            {tab === "citizenship" && (TAX_ESTIMATES_AVAILABLE ? <CitizenshipTab onOpenExpat={() => openDashboardTab("expat-fire")} /> : <div className="uf-card" style={{ padding: 24 }}>Passport tax comparisons are unavailable while we test them.</div>)}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar} />}
             {tab === "offers" && <OffersTab />}
             {tab === "learning-hub" && <LearnTab recommendedStageId={learnPlace.stage} progress={learnPlace.progress} yearsToGo={learnPlace.years} onOpenTab={openDashboardTab} />}

@@ -190,7 +190,7 @@ tooling rather than assuming fixed browser installation paths.
 Navigation follows `docs/design/app-structure.md`: Money includes operational
 budgets and upcoming payments as well as recorded finances; Plan handles
 long-term projections and scenarios. Home owns no independent financial inputs,
-but its card layout can be customised.
+and its card layout is fixed (D-94).
 
 ## Migration
 

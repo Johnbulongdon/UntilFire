@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { TAX_ESTIMATES_AVAILABLE } from "@engine/release-gates.ts";
+
 import { Pressable, ScrollView, TextInput, View } from 'react-native'
 
 import { DetailScreen } from '@/components/DetailScreen'
@@ -13,7 +15,7 @@ import { colors } from '@/theme/colors'
 
 type Filter = 'all' | 'us' | 'abroad' | 'notax'
 const FILTERS: { key: Filter; label: string }[] = [
-  { key: 'all', label: 'Everywhere' }, { key: 'us', label: 'US' }, { key: 'abroad', label: 'Abroad' }, { key: 'notax', label: 'No income tax' },
+  { key: 'all', label: 'Everywhere' }, { key: 'us', label: 'US' }, { key: 'abroad', label: 'Abroad' },
 ]
 
 /**
@@ -108,7 +110,7 @@ export default function Explore() {
       )}
 
       <Text className="text-[12px] leading-5 text-ink-3">
-        Your year in each city keeps your savings and monthly saving as they are and prices freedom at that city's typical cost. It isn't a claim your pay would stay the same if you moved.
+        Your year in each city keeps your savings and monthly saving as they are and prices freedom at the typical cost of that city. It is not a claim your pay would stay the same if you moved.
       </Text>
     </DetailScreen>
   )
@@ -141,7 +143,7 @@ function CityCard({ city, plan, onClose }: { city: ExploreCity; plan: ExplorePla
           <Text className="text-[13px] text-ink-2">a month</Text>
         </View>
       </View>
-      {city.tax && (
+      {TAX_ESTIMATES_AVAILABLE && city.tax && (
         <Text className="mt-3 text-[13px] text-ink-2">
           Income tax while working: {city.noIncomeTax && !city.us ? 'none' : city.tax.low === city.tax.high ? `about ${Math.round(city.tax.low)}%` : `${Math.round(city.tax.low)}–${Math.round(city.tax.high)}% on $50k–$150k`}
         </Text>

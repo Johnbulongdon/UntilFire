@@ -7,6 +7,15 @@ import * as Updates from 'expo-updates'
  * each line short and in plain words (the founder reads it to check a build).
  */
 export const UPDATE_LOG: { version: string; date: string; changes: string[] }[] = [
+  { version: '0.1.0', date: '2026-10-20', changes: ['Home uses a fixed layout; dashboard editing has been removed'] },
+  {
+    version: '0.1.0',
+    date: '2026-10-19',
+    changes: [
+      'Tax estimates are paused while we test them; enter your take-home pay',
+      'Freedom date says when the target is already reached',
+    ],
+  },
   {
     version: '0.1.0',
     date: '2026-10-18',

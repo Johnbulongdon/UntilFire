@@ -5,6 +5,7 @@ import Flag from '@/app/components/Flag'
 import { getLearnArticle } from '@/lib/learn'
 import { cityLandingPages, getCityLandingPage, cityPagePath } from '@/lib/city-pages'
 import type { CityLandingPage } from '@/lib/city-pages'
+import { TAX_ESTIMATES_AVAILABLE } from '@/lib/release-gates';
 import { CITIES, STATE_TAX, US_CITY_COST_DATA_UPDATED, isUS } from '@/lib/fire-data'
 import type { City } from '@/lib/fire-data'
 import { getStatePageSlug, STATE_NAMES } from '@/lib/state-pages'
@@ -457,7 +458,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
   const SAVINGS_RATE = 0.20;
   const START_AGE = 30;
 
-  const scenarios = SCENARIOS.map((gross) => {
+  const scenarios = (TAX_ESTIMATES_AVAILABLE ? SCENARIOS : []).map((gross) => {
     const { takeHome } = calcTakeHome(gross, data.state);
     const monthlySavings = (takeHome * SAVINGS_RATE) / 12;
     const result = calcFIRE(monthlySavings, data.col, START_AGE, 0);
@@ -523,7 +524,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
     {
       question: `How do taxes affect FIRE in ${data.name}?`,
       answer:
-        taxRate === 0
+        !TAX_ESTIMATES_AVAILABLE ? "Tax estimates are unavailable while we test them. Use your take-home pay." : taxRate === 0
           ? `${data.name} benefits from a state with no income tax, so more of each raise can turn into invested savings. That does not remove lifestyle risk, but it can shorten the path to FIRE if spending stays disciplined.`
           : `${data.name} uses ${taxLabel}, so pre-tax contributions and realistic take-home assumptions matter. Taxes do not change the 25x rule directly, but they do change how quickly you can fund it.`,
     },
@@ -576,7 +577,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
           <summary>Example timelines, FIRE options & methodology</summary>
           <div className="city-guide-details-content">
         {/* Scenarios table */}
-        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, overflow: "hidden", marginBottom: 32 }}>
+        {TAX_ESTIMATES_AVAILABLE && <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, overflow: "hidden", marginBottom: 32 }}>
           <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--uf-border)" }}>
             <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-green-900)", margin: 0 }}>
               Sample retirement timelines in {data.name}
@@ -607,7 +608,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </div>}
 
         {/* Interactive calc */}
 
@@ -634,7 +635,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
                     : `${data.name} lands in the lower-cost end of UntilFire's US city range, which can make FIRE more reachable if income remains stable and lifestyle creep stays under control.`}
             </p>
             <p style={{ margin: 0 }}>
-              {taxRate === 0
+              {!TAX_ESTIMATES_AVAILABLE ? "Tax estimates are unavailable while we test them. Use your take-home pay." : taxRate === 0
                 ? `${data.name} is in a no-state-income-tax environment, so more of each raise can become invested cash. That advantage compounds only if spending does not rise just as fast.`
                 : `${data.name} residents face ${taxLabel}, so pre-tax contributions and a realistic take-home estimate matter. FIRE math breaks when people plan from gross salary instead of the amount they can actually invest.`}
             </p>

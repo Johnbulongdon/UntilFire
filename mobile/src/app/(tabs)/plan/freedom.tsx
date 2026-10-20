@@ -39,7 +39,7 @@ export default function Freedom() {
           {f.date ? f.date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : f.year ?? '65+ yrs'}
         </Text>
         {f.years != null && (
-          <Text className="text-[15px] text-ink-2">In {f.years < 1 ? 'under a year' : `${f.years.toFixed(1)} years`}{f.ageAtFreedom != null ? `, at ${f.ageAtFreedom}` : ''}</Text>
+          <Text className="text-[15px] text-ink-2">{f.years === 0 ? 'Target reached today' : f.years < 1 ? 'In under a year' : `In ${f.years.toFixed(1)} years`}{f.ageAtFreedom != null ? `, at ${f.ageAtFreedom}` : ''}</Text>
         )}
         <View className="mt-4"><ProgressTrack share={share} height={10} /></View>
         <Text className="mt-1.5 text-[13px] text-ink-2">
@@ -99,7 +99,6 @@ export default function Freedom() {
             <Row label="Freedom priced at" value={p.retirementCityName ? `${p.retirementCityName.split(',')[0]} · ${p.lifestyleMultiplier < 1 ? 'frugal' : p.lifestyleMultiplier > 1 ? 'comfortable' : 'typical'}` : 'Today\'s spending'} />
             <Row label="Growth after inflation" value={`${(p.growthRate * 100).toFixed(1)}%`} />
             <Row label="Withdrawal rate" value={`${(p.withdrawalRate * 100).toFixed(1)}%`} />
-            <Row label="Tax on withdrawals" value={p.taxEnabled ? `${Math.round(p.retirementTaxRate * 100)}%${p.rothPct ? `, ${p.rothPct}% Roth` : ''}` : 'Not counted'} />
           </Card>
 
           <Card>

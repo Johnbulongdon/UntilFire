@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 import { setCustomCategories } from '@/lib/custom-categories'
 import { loadRates, rateFor, setDisplayCurrency } from '@/lib/display-currency'
-import { accountInUSD, addMonths, applyAccountShares, type AccountShares, readAccountShares, type CategoryDef, CITIES, fetchAllPages, isoDay, loadMortgages, monthOf, netAmount, type Mortgage, type MortgageTerms, type PlanSettings, REAL_RETURN, type StoredPlan, type LifeVersion, normaliseLayout, type DashboardLayout, stampActive } from '@/engine'
+import { accountInUSD, addMonths, applyAccountShares, type AccountShares, readAccountShares, type CategoryDef, CITIES, fetchAllPages, isoDay, loadMortgages, monthOf, netAmount, type Mortgage, type MortgageTerms, type PlanSettings, REAL_RETURN, type StoredPlan, type LifeVersion, defaultLayout, type DashboardLayout, stampActive } from '@/engine'
 import { effectiveBalances, effectiveDebts, type PlaidAccount } from '@/lib/balances'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/state/auth'
@@ -197,7 +197,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         setCategoryNeeds(cached.data.profile?.categoryNeeds ?? {})
         setDisplayCurrency(cached.data.currency ?? 'USD')
         // Belt and braces: fill anything an older copy lacks.
-        const d = { ...cached.data, homeLayout: normaliseLayout(cached.data.homeLayout) }
+        const d = { ...cached.data, homeLayout: defaultLayout() }
         d.profile = { ...d.profile, comparisons: d.profile?.comparisons ?? [] }
         setData(d); setSavedAt(cached.savedAt); shown.current = true
       }
@@ -235,7 +235,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         .eq('user_id', userId)
         .order('captured_at', { ascending: true })
         .limit(120),
-      supabase.from('profiles').select('contribution_plan, display_name, default_currency, dashboard_layout, free_to_spend_accounts').eq('user_id', userId).maybeSingle(),
+      supabase.from('profiles').select('contribution_plan, display_name, default_currency, free_to_spend_accounts').eq('user_id', userId).maybeSingle(),
       // Pro as the website decides it: an active Pro subscription, or a household that has one.
       (async () => {
         const { data: sub } = await supabase.from('subscriptions').select('status, plan').eq('user_id', userId).maybeSingle()
@@ -337,8 +337,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       },
       customCategories,
       displayName: (profileRes.data?.display_name as string | null) ?? '',
-      // Which Home cards show, in what order: the website's layout (lib/dashboard-layout).
-      homeLayout: normaliseLayout(profileRes.data?.dashboard_layout),
+      // Fixed Home; legacy stored preferences no longer control visibility or order.
+      homeLayout: defaultLayout(),
       currency,
       contributionPlan: Array.isArray((profileRes.data?.contribution_plan as StoredPlan | null)?.targets) ? (profileRes.data!.contribution_plan as StoredPlan) : null,
       snapshots: (snapRes.data ?? []).map(r => ({ value: Number(r.portfolio_value), at: r.captured_at as string })),

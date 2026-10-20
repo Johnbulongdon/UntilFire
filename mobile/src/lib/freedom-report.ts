@@ -1,4 +1,6 @@
 import * as Print from 'expo-print'
+import { TAX_ESTIMATES_AVAILABLE } from "@engine/release-gates.ts";
+
 import * as Sharing from 'expo-sharing'
 
 import { compactMoney, money } from '@/lib/format'
@@ -63,7 +65,7 @@ export function reportHtml(f: Freedom, inputs: Inputs, opts: { age: number | nul
   const conservative = [opts.usTaxHome ? 'No Social Security counted' : 'No state pension counted',
     ...((inputs.payGrowth ?? 0) > 0 ? [] : [`No raises: saving stays at ${money(saving)} a year`]),
     'Your home is not counted', `${pct(wr)} a year withdrawal, a common long-run rule`]
-  const notIncluded = [...(inputs.taxEnabled ? [] : ['Tax on withdrawals in retirement']), ...(opts.usTaxHome ? ['Health insurance before 65'] : []), 'Year-to-year market swings']
+  const notIncluded = [...(TAX_ESTIMATES_AVAILABLE && inputs.taxEnabled ? [] : ['Tax on withdrawals in retirement']), ...(opts.usTaxHome ? ['Health insurance before 65'] : []), 'Year-to-year market swings']
   const kpi = (l: string, v: string) => `<div style="background:${C.s2};border-radius:12px;padding:10px 12px"><span style="display:block;font-size:11.5px;color:${C.ink2}">${l}</span><b class="m" style="font-size:18px">${v}</b></div>`
   const list = (items: string[]) => `<ul style="margin:0;padding:0;list-style:none">${items.map(t => `<li style="margin:3px 0">○ ${esc(t)}</li>`).join('')}</ul>`
   const row = (l: string, v: string, last = false) => `<tr><td style="padding:5px 0;${last ? '' : `border-bottom:1px solid ${C.b}`}">${l}</td><td class="m" style="padding:5px 0;text-align:right;${last ? '' : `border-bottom:1px solid ${C.b}`}">${v}</td></tr>`

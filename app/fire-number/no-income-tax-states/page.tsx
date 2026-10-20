@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import Link from 'next/link'
 import { getNoIncomeTaxStates, getStateStats } from '@/lib/ranking-pages'
 import { STATE_NAMES } from '@/lib/state-pages'
@@ -28,6 +30,7 @@ export const metadata: Metadata = {
 }
 
 export default function NoIncomeTaxStatesPage() {
+  if (!TAX_ESTIMATES_AVAILABLE) return <main style={{ padding: 32 }}><h1>Tax comparisons are unavailable</h1><p>We are testing these estimates before making them available.</p><Link href="/fire-number">Compare living costs instead</Link></main>;
   const stateKeys = getNoIncomeTaxStates()
   const stateStats = stateKeys
     .map((key) => getStateStats(key))

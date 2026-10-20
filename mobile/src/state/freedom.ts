@@ -96,7 +96,7 @@ function moveFor(data: AccountData, freeYear: number | null): Freedom['move'] {
 export function project(inputs: Inputs, age: number | null) {
   const r = calcProjection(inputs)
   const date = exactFreedomDateFrom(r.data, r.fireYear, r.fireTarget)
-  const years = date ? (date.getTime() - Date.now()) / (365.25 * 864e5) : r.fireYear === 0 ? 0 : null
+  const years = date ? Math.max(0, (date.getTime() - Date.now()) / (365.25 * 864e5)) : r.fireYear === 0 ? 0 : null
   return { r, date, years, year: date ? date.getFullYear() : r.fireYear === 0 ? new Date().getFullYear() : null, ageAtFreedom: age != null && years != null ? Math.round(age + years) : null }
 }
 

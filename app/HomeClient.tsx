@@ -1,5 +1,7 @@
 "use client";
 
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useOnboardingMotion } from "@/lib/use-onboarding-motion";
 import SettlingNumber from "@/components/ui/SettlingNumber";
@@ -232,7 +234,7 @@ function IncomeScreen({ stateKey, cityName, cityCol, currency = "USD", onCurrenc
 }) {
   const isNonUSD = currency !== "USD";
   const isCustomJurisdiction = stateKey === "custom";
-  const canEstimateTax = !isNonUSD && !isCustomJurisdiction;
+  const canEstimateTax = TAX_ESTIMATES_AVAILABLE && !isNonUSD && !isCustomJurisdiction;
   const [mode, setMode] = useState<IncomeMode>("takehome");
   const [rawValue, setRawValue] = useState<string>("");
   const [takeHomeRaw, setTakeHomeRaw] = useState<string>("");
@@ -298,7 +300,7 @@ function IncomeScreen({ stateKey, cityName, cityCol, currency = "USD", onCurrenc
       )}
       {isNonUSD && <p className="uf-hint">1 {currency} ≈ {(1 / fxRate).toFixed(4)} USD (indicative rate)</p>}
 
-      <details className="uf-input-alternative"><summary>Change currency, or use gross pay</summary>
+      <details className="uf-input-alternative"><summary>Change currency</summary>
       {onCurrencyChange && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0" }}>
           {/* A real label, so assistive tech announces "Currency", not an
@@ -317,7 +319,7 @@ function IncomeScreen({ stateKey, cityName, cityCol, currency = "USD", onCurrenc
         </div>
       )}
       <div className="uf-mode-pills">
-          {INCOME_MODES.map((m) => (
+          {INCOME_MODES.filter(m => TAX_ESTIMATES_AVAILABLE || m.key === "takehome").map((m) => (
             <button
               key={m.key}
               aria-pressed={mode === m.key}
@@ -1236,11 +1238,15 @@ export default function HomeClient() {
   // landing_viewed; the four wizard steps are calculator_step_viewed; reveal
   // fires its own event from inside RevealScreen so we know the calculation
   // actually completed.
+  const landingTracked = useRef(false);
   useEffect(() => {
     if (screen === "hero") {
+      if (landingTracked.current) return;
+      landingTracked.current = true;
       trackLandingViewed(landingSource);
       return;
     }
+    landingTracked.current = false;
     const stepMap: Partial<Record<Screen, CalculatorStepId>> = {
       city: "city",
       income: "income",

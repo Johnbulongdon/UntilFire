@@ -345,12 +345,6 @@ export async function setCategoryFor(ids: string[], category: string): Promise<s
   return null
 }
 
-/** Save which Home cards show and in what order (profiles.dashboard_layout), shared with the website's Home. */
-export async function saveHomeLayout(userId: string, layout: unknown): Promise<string | null> {
-  const { error } = await supabase.from('profiles').update({ dashboard_layout: layout }).eq('user_id', userId)
-  return error ? 'Couldn\'t save. Please try again.' : null
-}
-
 /** File reviewed transactions: category, sub-category and the need/want tag, as the website's review does. */
 export async function fileTransactions(rows: { id: string; category: string; sub_category: string | null; tags: string[] }[]): Promise<string | null> {
   for (const r of rows) {

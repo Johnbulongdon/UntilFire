@@ -1,4 +1,6 @@
 import { router } from 'expo-router'
+import { TAX_ESTIMATES_AVAILABLE } from "@engine/release-gates.ts";
+
 import { useState } from 'react'
 import { View } from 'react-native'
 
@@ -25,7 +27,7 @@ export default function IncomeEdit() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
-  const pay = Number(gross) > 0 ? paycheck(fromInput(gross), fromInput(pension), data?.profile.taxKey ?? '') : null
+  const pay = TAX_ESTIMATES_AVAILABLE && Number(gross) > 0 ? paycheck(fromInput(gross), fromInput(pension), data?.profile.taxKey ?? '') : null
   const monthly = pay ? Math.round(pay.takeHome / 12) : fromInput(takeHome)
 
   const save = async () => {
@@ -45,10 +47,10 @@ export default function IncomeEdit() {
   return (
     <SheetFrame title="Your pay" saveLabel="Save" onSave={save} canSave={!!session && monthly > 0} busy={busy} error={error}>
       <View className="rounded-card border border-border bg-card px-4">
-        <MoneyRow first label="Salary a year" note="Before tax" value={gross} onChange={setGross} />
+        {TAX_ESTIMATES_AVAILABLE && <MoneyRow first label="Salary a year" note="Before tax" value={gross} onChange={setGross} />}
         <MoneyRow label="Pension before tax, a year" note="Taken from pay before tax" value={pension} onChange={setPension} />
         <MoneyRow label="Employer adds, a year" note="Into your pension, on top of pay" value={employer} onChange={setEmployer} />
-        {!pay && <MoneyRow label="Take-home a month" note="After tax; or add a salary to work it out" value={takeHome} onChange={setTakeHome} />}
+        {!pay && <MoneyRow label="Take-home a month" note="The amount that reaches your account each month" value={takeHome} onChange={setTakeHome} />}
       </View>
       {pay && (
         <Text className="mt-3 text-[14px] text-ink-2">

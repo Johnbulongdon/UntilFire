@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { countryPages, getCountryPage } from '@/lib/country-pages'
@@ -65,7 +67,7 @@ export default async function CountryPage({ params }: Props) {
             Living in {page.name} costs roughly <strong>{money(page.avgCol)} a year</strong> across
             the {multiCity ? `${page.cities.length} cities` : 'city'} we track, which puts a
             full FIRE target near <strong>{money(page.fireTarget)}</strong> at a 4% withdrawal
-            rate. {page.noIncomeTax
+            rate. {!TAX_ESTIMATES_AVAILABLE ? "Tax estimates are unavailable while we test them." : page.noIncomeTax
               ? 'There is no personal income tax, so every unit earned is a unit you keep.'
               : `Income is taxed at roughly ${Math.round(page.taxRate * 100)}% effective, which is what actually decides how fast you get there.`}
           </p>
@@ -78,10 +80,10 @@ export default async function CountryPage({ params }: Props) {
                 { label: 'FIRE target', value: money(page.fireTarget), note: '25× annual spending' },
                 {
                   label: 'Effective tax',
-                  value: page.noIncomeTax ? 'None' : `${Math.round(page.taxRate * 100)}%`,
+                  value: TAX_ESTIMATES_AVAILABLE ? (page.noIncomeTax ? 'None' : `${Math.round(page.taxRate * 100)}%`) : 'Unavailable',
                   note: page.noIncomeTax ? 'no personal income tax' : 'on employment income',
                 },
-              ].map((stat) => (
+              ].filter(stat => TAX_ESTIMATES_AVAILABLE || stat.label !== "Effective tax").map((stat) => (
                 <div key={stat.label} style={{ minWidth: 0 }}>
                   <div className="uf-t-label" style={{ color: 'var(--uf-ink-2)', marginBottom: 'var(--uf-s1)' }}>{stat.label}</div>
                   <div className="uf-t-data" style={{ fontSize: 24, fontWeight: 700, color: 'var(--uf-teal)' }}>{stat.value}</div>
@@ -252,9 +254,9 @@ export default async function CountryPage({ params }: Props) {
                 name: `What is the effective income tax rate in ${page.shortName}?`,
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: page.noIncomeTax
+                  text: !TAX_ESTIMATES_AVAILABLE ? "Tax estimates are unavailable while we test them." : page.noIncomeTax
                     ? `${page.shortName.charAt(0).toUpperCase() + page.shortName.slice(1)} levies no personal income tax, so gross pay and take-home pay are the same figure.`
-                    : `Around ${Math.round(page.taxRate * 100)}% effective on employment income — an all-in rate after typical allowances, not a marginal bracket.`,
+                    : `Tax estimates are unavailable while we test them.`,
                 },
               },
             ],

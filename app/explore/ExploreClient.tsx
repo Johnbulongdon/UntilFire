@@ -7,6 +7,8 @@
  * app's default currency, or the one you used in the calculator). Stars and
  * your numbers stay on this device; nothing is sent anywhere.
  */
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { readExplorePlan, saveExplorePlan } from "@/lib/explore-store";
@@ -180,7 +182,7 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
         <button type="button" style={chip(view === "us" && !onlyStarred)} onClick={() => { setView("us"); setOnlyStarred(false); }}><Flag emoji="🇺🇸" size={12} /> US</button>
         <button type="button" style={chip(view === "world" && !onlyStarred)} onClick={() => { setView("world"); setOnlyStarred(false); }}>🌍 Abroad</button>
         <button type="button" style={chip(onlyStarred)} onClick={() => setOnlyStarred(v => !v)}>★ Starred · {starred.size}</button>
-        <button type="button" style={chip(noTax)} onClick={() => setNoTax(v => !v)}>🧾 No income tax</button>
+        {TAX_ESTIMATES_AVAILABLE && <button type="button" style={chip(noTax)} onClick={() => setNoTax(v => !v)}>🧾 No income tax</button>}
       </div>
     </div>
     <div className="uf-explore-cards" ref={cardsRef}>

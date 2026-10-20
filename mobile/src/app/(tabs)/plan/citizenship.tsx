@@ -1,4 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { TAX_ESTIMATES_AVAILABLE } from "@engine/release-gates.ts";
+
 import { Button } from '@/components/Button'
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
@@ -27,6 +29,9 @@ const BAND_TONE = { strong: 'text-pos-ink', workable: 'text-warn', friction: 'te
 
 /** The website's Citizenship: how each passport treats FIRE, scored on tax, accounts and investing. */
 export default function Citizenship() {
+  return TAX_ESTIMATES_AVAILABLE ? <CitizenshipDetails /> : <DetailScreen back="Plan" title="Citizenship"><Card><Text>Passport tax comparisons are unavailable while we test them.</Text></Card></DetailScreen>
+}
+function CitizenshipDetails() {
   const [mine, setMine] = useState<string>('')
   const [picking, setPicking] = useState(false)
   const [sort, setSort] = useState<SortKey>('score')
@@ -62,7 +67,7 @@ export default function Citizenship() {
         ) : (
           <>
             <Label>Which passport do you hold?</Label>
-            <Text className="mt-1 text-[14px] leading-5 text-ink-2">It decides how you're taxed abroad, which retirement accounts you can use and where you can invest.</Text>
+            <Text className="mt-1 text-[14px] leading-5 text-ink-2">It decides how you are taxed abroad, which retirement accounts you can use and where you can invest.</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingTop: 12 }}>
               {[...CITIZENSHIP_SCORES].sort((a, b) => a.name.localeCompare(b.name)).map(c => (
                 <Pressable accessibilityRole="button" key={c.code} onPress={() => pick(c.code)} className={`rounded-full border px-3 py-1.5 ${mine === c.code ? 'border-green bg-green-50' : 'border-border bg-card'}`}>

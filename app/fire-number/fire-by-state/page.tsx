@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import Link from 'next/link'
 import { US_CITY_COST_DATA_UPDATED } from '@/lib/fire-data'
 import { statePages } from '@/lib/state-pages'
@@ -132,8 +134,8 @@ export default function FireByStatePage() {
                       <div className="state-reference-data uf-t-small" style={{ marginTop: 4 }}>{formatMoney(state.cheapestCity.col)}–{formatMoney(state.mostExpensiveCity.col)}</div>
                     </td>
                     <td>
-                      <span className="state-reference-data">{state.taxRate === 0 ? '0%' : `${(state.taxRate * 100).toFixed(1)}%`}</span>
-                      <div className="uf-t-small" style={{ marginTop: 4 }}>{state.taxLabel}</div>
+                      <span className="state-reference-data">{TAX_ESTIMATES_AVAILABLE ? (state.taxRate === 0 ? '0%' : `${(state.taxRate * 100).toFixed(1)}%`) : 'Unavailable'}</span>
+                      <div className="uf-t-small" style={{ marginTop: 4 }}>{TAX_ESTIMATES_AVAILABLE ? state.taxLabel : 'Tax estimates are being tested'}</div>
                     </td>
                   </tr>
                 ))}

@@ -1,3 +1,4 @@
+// D-94: Home now uses CARDS defaults. Merge/edit helpers below remain only for legacy data compatibility; no app editor calls them.
 /**
  * Which cards Home shows, in what order, at what width.
  *

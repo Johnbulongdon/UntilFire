@@ -67,7 +67,7 @@ export default function CityScreen({
   return (
     <div className="uf-screen" style={{ paddingTop: 16 }}>
       <h2 className="uf-ob-q">Where do you live?</h2>
-      <p className="uf-ob-hint">It sets the taxes. Skip it and we use your own spending.</p>
+      <p className="uf-ob-hint">Compare local living costs, or skip and use your own spending.</p>
 
       <div style={{ display: "grid", gap: 8 }}>
         <label className="uf-tile" style={{ display: "flex", alignItems: "center", gap: 10, cursor: "text" }}>

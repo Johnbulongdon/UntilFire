@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import {
@@ -181,7 +183,7 @@ export default async function RegionHubPage({ params }: Props) {
                       {formatMoney(city.fireTarget)}
                     </td>
                     <td style={{ padding: '13px 16px', textAlign: 'right' }}>
-                      {city.noIncomeTax ? (
+                      {!TAX_ESTIMATES_AVAILABLE ? <span>Unavailable</span> : city.noIncomeTax ? (
                         <span style={{ background: 'var(--uf-green-50)', color: 'var(--uf-green)', padding: '3px 10px', borderRadius: 6, fontSize: 12, fontWeight: 700 }}>None</span>
                       ) : (
                         <span style={{ color: 'var(--uf-ink-2)' }}>{(city.taxRate * 100).toFixed(1)}%</span>
