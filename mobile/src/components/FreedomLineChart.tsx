@@ -79,7 +79,7 @@ export function FreedomLineChart({ f, onDark }: { f: Freedom; onDark?: boolean }
   return (
     <View>
       <View onLayout={(e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width)} style={{ height: HEIGHT }} {...responder.panHandlers}
-        accessible accessibilityLabel={`Invested money over ${end} years, reaching ${compactMoney(f.target)}.${f.move ? ` Moving to ${f.move.city} in ${f.move.year}.` : ''} Drag to read a year.`}>
+        accessible accessibilityLabel={`Retirement portfolio over ${end} years, reaching ${compactMoney(f.target)}.${f.move ? ` Moving to ${f.move.city} in ${f.move.year}.` : ''} Drag to read a year.`}>
         {width > 0 && pts.length > 1 && (
           <Svg width={width} height={HEIGHT}>
             <Path d={`${curve} L${x(pts.length - 1)},${HEIGHT} L${x(0)},${HEIGHT} Z`} fill={c.line} opacity={0.18} />
@@ -115,6 +115,12 @@ export function FreedomLineChart({ f, onDark }: { f: Freedom; onDark?: boolean }
           <Text pointerEvents="none" className="font-mono text-[10px]" style={{ color: c.label, position: 'absolute', left: 0, top: Math.max(0, targetY - 16) }}>Target {compactMoney(f.target)}</Text>
         )}
       </View>
+      {f.inputs && <View className="mt-2">
+        <Text className="text-[12px]" style={{ color: onDark ? c.label : colors.ink2 }}>
+          Investments {compactMoney(f.invested - (f.inputs.cashSavings ?? 0))} · Safety cash {compactMoney(f.inputs.cashSavings ?? 0)}
+        </Text>
+        <Text className="mt-1 text-[11px]" style={{ color: onDark ? c.label : colors.ink2 }}>Cash uses saved APY (0% if unknown), less 3% inflation.</Text>
+      </View>}
       <View className="mt-3 flex-row justify-center gap-2">
         {RANGES.map(r => (
           <Pressable key={r.key} accessibilityRole="button" accessibilityState={{ selected: range === r.key }} hitSlop={6}

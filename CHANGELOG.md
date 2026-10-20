@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-20 — Safety cash in retirement progress
+
+- Include the safety pot in web and phone freedom progress; spending cash stays separate.
+- Cash grows at saved APY (0% if unknown), adjusted for 3% inflation, instead of investment returns. Early-access checks and Coast FIRE milestones use separate cash and investment returns.
+- Show investments and safety cash below the Home chart. The spending-based target and safety-months measure stay unchanged.
+
 ## 2026-10-20 — Fixed Home layout (review branch)
 
 - Approved loading revision: use the existing sun animation directly on the app surface, with a static logo for reduced motion or playback failure. Loading text remains available to screen readers only.

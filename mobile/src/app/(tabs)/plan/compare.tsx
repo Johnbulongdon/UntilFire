@@ -23,7 +23,7 @@ import { colors } from '@/theme/colors'
 
 const YEAR_MS = 365.25 * 864e5
 type Inputs = Parameters<typeof calcProjection>[0]
-type Run = { fireYear: number | null; invested: number[]; target: number; date: Date | null; broke: unknown }
+type Run = { cash?: number[]; cashGrowthRate?: number; fireYear: number | null; invested: number[]; target: number; date: Date | null; broke: unknown }
 
 /**
  * Plan → Compare (D-69), as on the website's What if…: try life changes on top
@@ -64,7 +64,7 @@ export default function Compare() {
     let r = cache.get(k)
     if (!r && inputs) {
       const p = calcProjection({ ...inputs, changes: [...(inputs.changes ?? []), ...changes] }) // keeps an earlier move (D-82)
-      r = { fireYear: p.fireYear, invested: p.data.map(d => d['Investable'] ?? 0), target: p.fireTarget, date: exactFreedomDateFrom(p.data, p.fireYear, p.fireTarget), broke: p.broke }
+      r = { fireYear: p.fireYear, invested: p.data.map(d => d['Investable'] ?? 0), target: p.fireTarget, cash: p.data.map(d => d["Cash"] ?? 0), cashGrowthRate: p.cashGrowthRate, date: exactFreedomDateFrom(p.data, p.fireYear, p.fireTarget), broke: p.broke }
       cache.set(k, r)
     }
     return r!

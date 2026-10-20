@@ -16,6 +16,7 @@ export interface PlaidAccount {
   official_name?: string | null
   type: string
   subtype: string | null
+  apy?: number | null
   balance_current: number | null
   balance_available?: number | null
   iso_currency_code?: string | null

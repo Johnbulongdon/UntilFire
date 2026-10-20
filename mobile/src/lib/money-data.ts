@@ -1,4 +1,4 @@
-import { addMonths, ALL_CATEGORIES, averageNeeds, budgetNeeds, cashAboveSafetyPot, inLastTwelve, isoDay, median, monthOf, type CategoryDef } from '@/engine'
+import { addMonths, ALL_CATEGORIES, averageNeeds, budgetNeeds, inLastTwelve, isoDay, median, monthOf, type CategoryDef } from '@/engine'
 import { customCategories } from './custom-categories'
 import { defaultNeed, needOverrides } from './review'
 import { spentUSD, toUSD, type AccountData, type Transaction } from '@/state/account'
@@ -115,17 +115,11 @@ export function monthlyNeeds(budget: Record<string, number>, transactions: Trans
 }
 
 /** The safety pot: cash outside the spending accounts, so spending money isn't also the emergency fund. */
-export const safetyCash = (data: AccountData) => cashByRole(data.plaidAccounts, data.spendToggles ?? {}, data.balances.cashSavings).safety
+export const safetyCash = (data: AccountData) => cashByRole(data.plaidAccounts, data.spendToggles ?? {}, data.typed.cashSavings).safety
 
-/**
- * Cash that counts toward freedom (money logic study, Oct 16 2026, the
- * founder's call): spending accounts never do, and the safety pot keeps up to
- * six months of needs out of the date, earning nothing. Only cash above that
- * is treated as invested.
- */
+/** All safety cash counts toward freedom; spending cash remains excluded (D-95). */
 export function freedomCash(data: AccountData): number {
-  const { needs } = monthlyNeeds(data.budget, data.transactions)
-  return cashAboveSafetyPot(safetyCash(data), needs)
+  return Math.max(0, safetyCash(data))
 }
 
 /** Months of needs the safety pot covers, or null without a needs figure. */

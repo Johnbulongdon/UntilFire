@@ -13,7 +13,7 @@ import { moneyMono } from "./MoneyCards";
  * it is until you keep them; the chart shows it dashed under the changed one,
  * each change shows what it costs, and changes can follow your milestones.
  */
-export type Full = { exactDate: Date | null; fireYear: number | null; fireTarget: number; data: Record<string, number>[];
+export type Full = { cashGrowthRate?: number; exactDate: Date | null; fireYear: number | null; fireTarget: number; data: Record<string, number>[];
   flows: { year: number; saved: number; withdrawn: number }[]; broke: { year: number; short: number } | null; withdrawn: number };
 type Money = { money: (usd: number) => string; local: (usd: number) => number; toUsd: (n: number) => number; currency: string };
 
@@ -49,7 +49,7 @@ export default function WhatIf({ run, ctx, growth, retireAge, m, saved, onSave, 
     return r;
   }, [cache]);
   const rctx = useMemo(() => ({ ...ctx, growth, retireAge }), [ctx, growth, retireAge]);
-  const lite = useCallback((ch: EngineChange[]) => { const r = full(ch); return { fireYear: r.fireYear, invested: r.data.map((d) => d["Investable"] ?? 0), target: r.fireTarget }; }, [full]);
+  const lite = useCallback((ch: EngineChange[]) => { const r = full(ch); return { fireYear: r.fireYear, invested: r.data.map((d) => d["Investable"] ?? 0), target: r.fireTarget, cash: r.data.map(d => d["Cash"] ?? 0), cashGrowthRate: r.cashGrowthRate }; }, [full]);
   const solve = useCallback((list: LifeChangeItem[]) => {
     const s = resolveAndRun(list, rctx, lite);
     return { items: s.items, out: full(s.items.flatMap((c) => toEngine(c, ctx))) };
@@ -68,8 +68,8 @@ export default function WhatIf({ run, ctx, growth, retireAge, m, saved, onSave, 
   const delta = by !== null && ny !== null ? ny - by : null;
   const pension = aged ? retireAge - ctx.currentAge : null;
   const inv = (r: Full) => r.data.map((d) => d["Investable"] ?? 0);
-  const coastBase = coastYear(inv(base), base.fireTarget, growth, ctx.currentAge, retireAge);
-  const coastNext = coastYear(inv(next.out), next.out.fireTarget, growth, ctx.currentAge, retireAge);
+  const coastBase = coastYear(inv(base), base.fireTarget, growth, ctx.currentAge, retireAge, base.data.map(d => d["Cash"] ?? 0), base.cashGrowthRate);
+  const coastNext = coastYear(inv(next.out), next.out.fireTarget, growth, ctx.currentAge, retireAge, next.out.data.map(d => d["Cash"] ?? 0), next.out.cashGrowthRate);
   const drawn = next.out.flows.filter((f) => f.withdrawn > 0).map((f) => f.year);
   const low = drawn.length ? drawn.reduce((a, y) => ((next.out.data[y]?.["Reachable"] ?? 0) < (next.out.data[a]?.["Reachable"] ?? 0) ? y : a), drawn[0]) : null;
   const changed = items.some((c) => c.on);

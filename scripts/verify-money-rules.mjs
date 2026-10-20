@@ -65,7 +65,7 @@ assert.equal(budgetNeeds({ housing: 2000, food: 600, entertainment: 200, _fire_p
 
 // ── Cash ──
 assert.equal(safetyPot([{ id: "c", type: "depository", subtype: "checking", balance_current: 5000 }], {}, 20000), 20000, "typed savings count while only checking is connected");
-assert.equal(freedomCash(20000, 3000), 2000, "only cash above six months of needs counts");
+assert.equal(freedomCash(20000), 20000, "all safety cash counts toward freedom (D-95)");
 
 // ── Debts ──
 const d = freedomDebt({ otherDebt: 10000, cards: [{ name: "Sapphire", balance: 8000 }, { name: "Amex", balance: 1500 }],

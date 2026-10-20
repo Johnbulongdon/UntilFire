@@ -24,7 +24,7 @@ import NextContributionCard, { useContributionPlan } from "./NextContributionCar
 import TodayStrip from "./TodayStrip";
 import { emergencyFundFromPlan, measuredEmergencyFund, type AccountFacts } from "@/lib/contribution-ladder";
 import { goalMonthly, goalRungs, type GoalLike } from "@/lib/goal-monthly";
-import { freedomCash, safetyPot } from "@/lib/freedom-cash";
+import { retirementCash, DEFAULT_CASH_GROWTH, bridgeRequired } from "@/lib/freedom-cash";
 import { spendingAverage } from "@/lib/real-spending";
 import { carriedCards, freedomDebt } from "@/lib/freedom-debt";
 import { applyAccountShares, readAccountShares, shareOf, SHARED_PCT, type AccountShares } from "@/lib/account-share";
@@ -380,7 +380,7 @@ function effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts }: {
 function calcProjection({
   annualIncome, monthlyExpenses, k401, rothIRA, taxable, cashSavings = 0,
   totalDebt, mortgageBalance, mortgageMonthly,
-  growthRate = REAL_RETURN, withdrawalRate = 0.04, years = 50, debtRate = 0.05,
+  cashGrowthRate = DEFAULT_CASH_GROWTH, growthRate = REAL_RETURN, withdrawalRate = 0.04, years = 50, debtRate = 0.05,
   targetMonthlyExpenses,
   taxEnabled = false, retirementTaxRate = 0, rothPct = 0,
   retirementAnnualSpend = 0, payGrowth = 0, employerAnnual = 0, pensionAnnual = 0,
@@ -389,7 +389,7 @@ function calcProjection({
   annualIncome: number; monthlyExpenses: number; k401: number;
   rothIRA: number; taxable: number; cashSavings?: number; totalDebt: number;
   mortgageBalance: number; mortgageMonthly: number;
-  growthRate?: number; withdrawalRate?: number; years?: number;
+  cashGrowthRate?: number; growthRate?: number; withdrawalRate?: number; years?: number;
   /** The non-mortgage debt's yearly rate as a fraction; 5% when unknown. */
   debtRate?: number;
   targetMonthlyExpenses?: number;
@@ -482,7 +482,8 @@ function calcProjection({
       if (early > 0) {
         // Spending until the pension opens, from money that keeps growing meanwhile. Each year's
         // spending comes out at its start (D-65): a year is lived before it earns its growth.
-        const needed = growthRate > 0 ? targetAnnualExpenses * (1 - Math.pow(1 + growthRate, -early)) / growthRate * (1 + growthRate) : targetAnnualExpenses * early;
+        const needed = bridgeRequired(targetAnnualExpenses, early, curCash,
+          curTaxable + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth), cashGrowthRate, growthRate);
         const reachable = curTaxable + curCash + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth);
         bridge = { needed, reachable, locked: investable - reachable, years: early };
         if (reachable >= needed) fireYear = y;
@@ -497,6 +498,7 @@ function calcProjection({
       "401(k)":        Math.round(cur401k),
       "Roth IRA":      Math.round(curRoth),
       "Taxable":       Math.round(curTaxable),
+      "Cash":          Math.round(curCash),
       "Net Worth":     Math.round(netWorth),
       "FIRE Target":   Math.round(fireTarget),
       "Investable":    Math.round(investable),
@@ -559,7 +561,7 @@ function calcProjection({
     cur401k    = cur401k    * (1 + growthRate) + k401Contrib + pension;
     curRoth    = curRoth    * (1 + growthRate) + rothContrib;
     curTaxable = curTaxable * (1 + growthRate) + taxableContrib;
-    curCash    = curCash    * (1 + growthRate);
+    curCash    = curCash    * (1 + cashGrowthRate);
     if (loans) {
       for (const l of loans) if (l.balance > 0) l.balance = Math.max(0, l.balance - Math.max(0, l.monthly * 12 - l.balance * l.rate));
       curMort = loans.reduce((s, l) => s + l.balance, 0);
@@ -571,7 +573,7 @@ function calcProjection({
   }
   // A path that runs out of reachable money before freedom has no freedom date: the gap was real (D-66).
   const reached = broke && (fireYear === null || fireYear > broke.year) ? null : fireYear;
-  return { data, fireYear: reached, fireTarget, annualSavings, firstYearInvested, totalYear, bridge, broke, withdrawn, flows };
+  return { data, cashGrowthRate, fireYear: reached, fireTarget, annualSavings, firstYearInvested, totalYear, bridge, broke, withdrawn, flows };
 }
 
 /**
@@ -594,7 +596,7 @@ type FreedomArgs = {
   currentCityCol?: number;
   taxEnabled: boolean; retirementTaxRate: number; rothPct: number;
   plan?: PlanSettings;
-  /** Spending accounts (D-29) and monthly needs, so only cash above the safety pot counts (lib/freedom-cash). */
+  /** Spending account switches (D-29); needs remain accepted for callers predating D-95. */
   spendToggles?: Record<string, boolean>; safetyNeeds?: number;
   /** The contribution ladder's debts with their typed rates (lib/freedom-debt). */
   ladderDebts?: { name: string; balance: number; ratePct: number }[];
@@ -611,7 +613,7 @@ type FreedomArgs = {
 function projectionInputs({
   income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
   growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-  currentCityCol = 0, taxEnabled, retirementTaxRate, rothPct, plan, changes, spendToggles = {}, safetyNeeds = 0, ladderDebts = [],
+  currentCityCol = 0, taxEnabled, retirementTaxRate, rothPct, plan, changes, spendToggles = {}, ladderDebts = [],
 }: FreedomArgs) {
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
@@ -630,8 +632,8 @@ function projectionInputs({
     ...plan,
     annualIncome: income * 12, monthlyExpenses,
     ...effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts }),
-    // Checking never counts and the safety pot keeps six months of needs out (lib/freedom-cash).
-    cashSavings: freedomCash(safetyPot(plaidAccounts, spendToggles, cashSavings), safetyNeeds),
+    // Safety cash counts once, at cash returns; spending accounts stay out (D-95).
+    ...retirementCash(plaidAccounts, spendToggles, cashSavings),
     // Loans, plus cards carried at a rate, at their own rates (lib/freedom-debt).
     ...(({ otherDebt, mortgage }) => {
       const debt = freedomDebt({ otherDebt, ladderDebts,
@@ -1109,7 +1111,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       if (b && startValue < fireTarget * share && b.year !== freeYear) out.push({ year: b.year, value: b.value, label });
     }
     const ahead = yearBars.filter((b) => b.year >= thisYear);
-    const coast = coastYear(ahead.map((b) => b.value), fireTarget, growthRate, fireAge, coastRetireAge);
+    const coast = coastYear(ahead.map((b) => b.value), fireTarget, growthRate, fireAge, coastRetireAge, ahead.map(b => data[b.year - thisYear]?.["Cash"] ?? 0), baseInputs.cashGrowthRate);
     const coastBar = coast != null && coast > 0 ? ahead[coast] : undefined;
     if (coastBar && coastBar.year !== freeYear) out.push({ year: coastBar.year, value: coastBar.value, label: "Coast FIRE" });
     // Labels sit above their dots, so two milestones a year or two apart would
@@ -1123,7 +1125,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       last = m.year;
       return true;
     });
-  }, [yearBars, fireTarget, fireAge, growthRate, thisYear, freeYear, coastRetireAge]);
+  }, [yearBars, fireTarget, fireAge, growthRate, thisYear, freeYear, coastRetireAge, data, baseInputs.cashGrowthRate]);
 
   // KPI trends — cashflow transactions only
   const hasActuals       = actualIncome > 0 || actualExpenses > 0;
@@ -1676,6 +1678,13 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
             )}
           </AreaChart>
         </ResponsiveContainer>
+        <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", display: "flex", flexWrap: "wrap", gap: "4px 16px", marginTop: 8 }}>
+          <span>Investments {fmtMoney(investable - balances.cash, true)}</span>
+          <span>Safety cash {fmtMoney(balances.cash, true)}</span>
+        </div>
+        <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 4 }}>
+          Cash uses saved APY (0% if unknown), less 3% inflation.
+        </div>
       </FreedomCard>
 
       </HomeSlot>
@@ -3675,7 +3684,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   const retirementConnected = plaidAccounts.some(isRetirementInvestmentAccount);
   const brokerageConnected = plaidAccounts.some(isBrokerageInvestmentAccount);
   const typedRows = [
-    { key: "cash", name: "Cash & savings", value: cashSavings, set: setCashSavings, show: !cashConnected, color: ACCOUNT_TYPE_COLORS.cash, icon: "🏦", note: "Savings and your emergency fund. Up to six months of needs stays out of the freedom date." },
+    { key: "cash", name: "Cash & savings", value: cashSavings, set: setCashSavings, show: !cashConnected, color: ACCOUNT_TYPE_COLORS.cash, icon: "🏦", note: "Savings and your emergency fund. Includes your safety pot toward freedom, at cash returns." },
     { key: "k401", name: "401(k)", value: k401, set: setK401, show: !retirementConnected, color: ACCOUNT_TYPE_COLORS.retirement, icon: "🏖️", note: "Retirement savings through work." },
     { key: "roth", name: "Roth IRA", value: rothIRA, set: setRothIRA, show: !retirementConnected, color: ACCOUNT_TYPE_COLORS.retirement, icon: "🏖️", note: "Your own retirement account." },
     { key: "taxable", name: "Taxable brokerage", value: taxable, set: setTaxable, show: !brokerageConnected, color: ACCOUNT_TYPE_COLORS.brokerage, icon: "📈", note: "Investments outside retirement accounts." },
