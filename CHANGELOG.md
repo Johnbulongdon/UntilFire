@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-20 — Start buttons open the calculator
+
+- "Start free" on the FIRE number pages, "Get started free" on Pricing and "Use with my profile" on Purchase Impact now open the calculator. They went to the dashboard or sign-up, so signed-out visitors landed on an empty Home and skipped onboarding. Signed-in visitors still go straight to the dashboard. Guarded by `npm run test:start-ctas`.
+
 ## 2026-10-20 — Safety cash in retirement progress
 
 - Include the safety pot in web and phone freedom progress; spending cash stays separate.

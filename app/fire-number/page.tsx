@@ -275,7 +275,7 @@ export default function FireNumberHubPage() {
             Log transactions, see your savings rate, and watch your FIRE date move closer every month.
           </p>
           <Link
-            href="/dashboard"
+            href="/?source=fire-number&start=onboarding"
             style={{
               display: "inline-block",
               background: "var(--uf-teal)",

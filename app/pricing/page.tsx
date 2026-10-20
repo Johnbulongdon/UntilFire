@@ -131,7 +131,7 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            <Link href="/login" className="uf-pricing-cta uf-pricing-cta--secondary">
+            <Link href="/?source=pricing&start=onboarding" className="uf-pricing-cta uf-pricing-cta--secondary">
               Get started free
             </Link>
           </Card>

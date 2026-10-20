@@ -201,7 +201,7 @@ export default function NoIncomeTaxStatesPage() {
               Start the calculator
             </Link>
             <Link
-              href="/dashboard"
+              href="/?source=no-income-tax-states-bottom&start=onboarding"
               style={{
                 display: 'inline-block',
                 background: 'rgba(255,255,255,0.15)',
