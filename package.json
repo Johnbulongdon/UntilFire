@@ -33,6 +33,8 @@
     "test:achieved-fire-reveal": "node scripts/verify-achieved-fire-reveal.mjs",
     "test:fire-type-cta": "node scripts/verify-fire-type-cta-starts-onboarding.mjs",
     "test:start-ctas": "node scripts/verify-start-ctas-open-onboarding.mjs",
+    "test:journeys": "node --experimental-strip-types --no-warnings scripts/verify-journeys.ts",
+    "journeys:capture": "node --experimental-strip-types --no-warnings scripts/capture-journeys.ts",
     "test:hysa-empty-state": "node scripts/verify-hysa-empty-state-card.mjs",
     "test:emergency-fund-needs": "node scripts/verify-emergency-fund-needs-only.mjs",
     "test:revenue-funnel": "node scripts/verify-revenue-funnel-instrumentation.mjs",

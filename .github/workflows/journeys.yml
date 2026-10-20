@@ -1,0 +1,43 @@
+# Keeps the admin Journeys tab true to the code: every PR checks that each
+# journey step's page still exists, and every production deploy re-takes the
+# screenshots. Capture needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY as
+# repository secrets and a public `journeys` storage bucket.
+name: Journeys
+
+on:
+  pull_request:
+  deployment_status:
+
+jobs:
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run test:journeys
+      - run: npm run test:start-ctas
+
+  capture:
+    if: >-
+      github.event_name == 'deployment_status' &&
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment.environment == 'Production'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.deployment.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Playwright stays out of package.json so Vercel builds don't carry it.
+      - run: npm install --no-save --no-audit --no-fund playwright@1.56.1 && npx playwright install --with-deps chromium
+      - run: npm run journeys:capture
+        env:
+          JOURNEY_BASE_URL: https://www.untilfire.com
+          GITHUB_SHA: ${{ github.event.deployment.sha }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
