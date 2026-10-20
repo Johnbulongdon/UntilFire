@@ -87,7 +87,7 @@ async function walkCalculator(page: Page, shoot: (name: string) => Promise<void>
 const steps = JOURNEYS.flatMap((j) => j.steps).filter((s) => s.shot)
 const unique = <T,>(items: T[], key: (t: T) => string) => [...new Map(items.map((t) => [key(t), t])).values()]
 const plainShots = unique(steps.filter((s) => s.shot!.startsWith('/')), (s) => s.shot!)
-const userShots = unique(steps.filter((s) => s.shot!.startsWith('user:')), (s) => `${s.shot}|${s.click ?? ''}`)
+const userShots = unique(steps.filter((s) => s.shot!.startsWith('user:')), (s) => `${s.shot}|${s.click?.join('|') ?? ''}`)
 
 const session = await botSession()
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
@@ -97,10 +97,10 @@ let taken = 0
 for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
   const context = await browser.newContext({ viewport: SHOT_VIEWPORTS[device], deviceScaleFactor: 1, isMobile: device === 'phone' })
   const page = await context.newPage()
-  const shoot = async (shot: string, click?: string) => {
+  const shoot = async (shot: string, click?: string[]) => {
     await save(shotFile(shot, device, click), await page.screenshot(), 'image/png')
     taken++
-    console.log(`✓ ${device} ${shot}${click ? ` → ${click}` : ''}`)
+    console.log(`✓ ${device} ${shot}${click ? ` → ${click.join(' → ')}` : ''}`)
   }
 
   for (const { shot } of plainShots) {
@@ -132,13 +132,13 @@ for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
         await page.goto(`${base}${shot!.slice('user:'.length)}`, { waitUntil: 'networkidle', timeout: 45_000 })
         if (new URL(page.url()).pathname === '/login') throw new Error('not signed in')
         await settle(page)
-        if (click) {
-          await page.getByRole('button', { name: new RegExp(`^${click}`) }).first().click()
+        for (const name of click ?? []) {
+          await page.getByRole('button', { name: new RegExp(name) }).first().click()
           await settle(page)
         }
         await shoot(shot!, click)
       } catch (error) {
-        failed.push(`${device} ${shot}${click ? ` → ${click}` : ''}: ${(error as Error).message}`)
+        failed.push(`${device} ${shot}${click ? ` → ${click.join(' → ')}` : ''}: ${(error as Error).message}`)
       }
     }
   }

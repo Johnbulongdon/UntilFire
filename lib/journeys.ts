@@ -24,8 +24,8 @@ export interface JourneyStep {
    * - `user:/path` — open it signed in as the journeys test account.
    */
   shot?: string
-  /** Signed-in steps only: a button whose text starts with this is pressed before the screenshot. */
-  click?: string
+  /** Signed-in steps only: buttons whose text contains these are pressed, in order, before the screenshot. */
+  click?: string[]
   /** Not ours to draw: a Google or Stripe page. */
   external?: boolean
 }
@@ -118,7 +118,7 @@ export const JOURNEYS: Journey[] = [
     id: 'web-subscribe', title: 'Start Pro', platform: 'web', visitor: 'returning',
     steps: [
       { label: 'Profile', action: 'Tap Try Pro', route: '/dashboard', shot: 'user:/dashboard?tab=profile' },
-      { label: 'Upgrade', action: 'Pick a plan', route: '/dashboard', shot: 'user:/dashboard?tab=profile', click: 'Try Pro' },
+      { label: 'Upgrade', action: 'Pick a plan', route: '/dashboard', shot: 'user:/dashboard?tab=profile', click: ['Try Pro'] },
       { label: 'Stripe checkout', route: '/api/stripe/checkout', external: true },
       { label: 'Home, Pro on', route: '/dashboard' },
     ],
@@ -134,9 +134,10 @@ export const JOURNEYS: Journey[] = [
   {
     id: 'web-delete', title: 'Delete account', platform: 'web', visitor: 'returning',
     steps: [
-      { label: 'Profile', action: 'Tap Delete account…', route: '/dashboard', shot: 'user:/dashboard?tab=profile' },
+      { label: 'Profile', action: 'Tap Data and account', route: '/dashboard', shot: 'user:/dashboard?tab=profile' },
+      { label: 'Data and account', action: 'Tap Delete account…', route: '/dashboard', shot: 'user:/dashboard?tab=profile', click: ['Data and account'] },
       // Only opens the confirm box: the script never types the email or deletes.
-      { label: 'Confirm', action: 'Type email, delete', route: '/dashboard', shot: 'user:/dashboard?tab=profile', click: 'Delete account' },
+      { label: 'Confirm', action: 'Type email, delete', route: '/dashboard', shot: 'user:/dashboard?tab=profile', click: ['Data and account', 'Delete account'] },
       { label: 'Landing', route: '/' },
     ],
   },
@@ -186,7 +187,7 @@ export const SHOT_VIEWPORTS: Record<ShotDevice, { width: number; height: number 
 export const SHOT_BUCKET = 'journeys'
 
 /** One file per URL and size, so a step shared by several journeys is taken once. */
-export function shotFile(shot: string, device: ShotDevice, click?: string): string {
-  const slug = (click ? `${shot}-${click}` : shot).replace(/^\/+/, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'landing'
+export function shotFile(shot: string, device: ShotDevice, click?: string[]): string {
+  const slug = [shot, ...(click ?? [])].join('-').replace(/^\/+/, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'landing'
   return `${slug}-${device}.png`
 }
