@@ -19,7 +19,9 @@ for (const journey of JOURNEYS) {
       ? webRouteExists(step.route)
       : fs.existsSync(path.join('mobile/src/app', step.route))
     if (!ok) failures.push(`${journey.id} → "${step.label}": ${step.route} does not exist`)
-    if (step.shot && journey.platform !== 'web') failures.push(`${journey.id} → "${step.label}": only web steps take screenshots`)
+    if (step.shot && (journey.platform === 'phone') !== step.shot.startsWith('app')) {
+      failures.push(`${journey.id} → "${step.label}": phone steps take app: shots, web steps the rest`)
+    }
   }
 }
 

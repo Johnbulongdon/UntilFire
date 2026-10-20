@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-20 — Phone app screens on the Journeys tab
+
+- Phone app steps are now real screenshots: each run builds the app for the browser from `mobile/`, walks onboarding with sample answers, then opens Home, Profile, Pro, Data and account and Delete as the test account. Opening Delete deletes nothing.
+- The website's email-code step and the landing page steps are screenshotted too; the code request is stubbed, so no email is sent. Google, Stripe, "Home, Pro on" and the phone's blank "Open app" redirect stay as boxes.
+
 ## 2026-10-20 — More Journeys screenshots
 
 - The screenshot run now answers the calculator with sample numbers, capturing every question and result page, and signs in as a test account (`journeys-bot@untilfire.com`, unsubscribed from emails) for Home, Profile, the upgrade box and the delete-account confirm box. It never pays or deletes.
