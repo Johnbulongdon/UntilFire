@@ -54,6 +54,6 @@ export { parseCSV, autoDetectColumns, buildTransactions, inferImportCurrency, is
 export { findFlags, FLAG_ORDER, okTag, type FlagKind } from '@engine/transaction-flags.ts'
 export { calcPurchaseImpact, formatDelay, formatFV } from '@engine/purchase-impact.ts'
 export { merchantKey } from '@engine/merchant-memory.ts'
-export { CARDS as HOME_CARDS, normaliseLayout, setCard, type DashboardLayout } from '@engine/dashboard-layout.ts'
+export { defaultLayout, type DashboardLayout } from '@engine/dashboard-layout.ts'
 export { buildMerchantMemory, suggestFromHistory } from '@engine/merchant-memory.ts'
 export { stampActive } from '@engine/last-active.ts'

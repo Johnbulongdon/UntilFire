@@ -51,7 +51,7 @@ retention, trust, and acquisition. Keep work bounded to the user's request.
 - **Plan:** long-term projections, assumptions, scenarios, and targets. Freedom
   Date, Compare, Scenarios, Goals, Contributions, Explore, Citizenship, Learn.
 - **Home:** synthesis and next moves, with no independent financial inputs.
-  Layout customisation is allowed.
+  Home uses a fixed layout; no reorder, resize, hide or restore controls (D-94).
 - **Profile:** account settings, billing, household setup, and FIRE personality/type.
   Planning assumptions live in Plan (`FireAssumptionsCard`), not ProfileTab.
 

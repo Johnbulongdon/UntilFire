@@ -35,35 +35,16 @@ assert.equal(paused.fireTarget,before.fireTarget);
 assert.equal(paused.fireYear,before.fireYear,'native dates ignore paused saved tax settings');
 console.log('Replay repair regressions passed: onboarding, reached/future date labels, and native tax-pause projection.');
 
-// Exercise the real save callback with delayed database replies: fast removals
-// must persist in order, and an earlier failure must not hide a later success.
+// Removing the editor must also remove its reads/writes and ignore old hidden cards.
 const source=readFileSync('app/dashboard/page.tsx','utf8');
-const ast=ts.createSourceFile('page.tsx',source,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
-let saveDeclaration;
-function visit(node) {
- if(ts.isVariableDeclaration(node)&&node.name.getText(ast)==='persistLayout') saveDeclaration=node.getText(ast);
- ts.forEachChild(node,visit);
-}
-visit(ast);
-assert.ok(saveDeclaration);
-const pending=[],writes=[],busy=[],errors=[];
-const output={};
-vm.runInNewContext(ts.transpileModule(`const ${saveDeclaration}; exports.save = persistLayout;`,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{
- exports:output,useCallback:fn=>fn,userId:'test-user',setLayout(){},
- setSavingLayout:v=>busy.push(v),setLayoutError:e=>errors.push(e),
- saveQueue:{current:Promise.resolve()},saveRevision:{current:0},
- supabase:{from:()=>({update:body=>({eq:()=>{writes.push(body.dashboard_layout);return new Promise(resolve=>pending.push(resolve));}})})}
-});
-const first=output.save({cards:['first']}),second=output.save({cards:['second']});
-await new Promise(setImmediate);
-assert.equal(writes.length,1,'only the first write starts before its reply');
-pending.shift()({error:new Error('temporary failure')});
-await new Promise(setImmediate);
-assert.equal(writes.length,2,'the next write runs even if the preceding one fails');
-assert.equal(writes[1].cards[0],'second');
-assert.ok(!busy.includes(false),'saving stays visible while the newest write is pending');
-pending.shift()({error:null});
-await Promise.all([first,second]);
-assert.equal(busy.at(-1),false);
-assert.equal(errors.at(-1),'');
-console.log('Layout persistence regression passed: ordered writes and recovery after an earlier failure.');
+assert.ok(!/persistLayout|useCardSort|CardInventory|dashboard_layout|DashboardRecovery/.test(source));
+const layout=load('lib/dashboard-layout.ts');
+const HomeSlot=load('app/dashboard/HomeSlot.tsx',{'@/lib/dashboard-layout':layout}).default;
+const home=renderToStaticMarkup(React.createElement(React.Fragment,null,...layout.CARDS.map(c=>React.createElement(HomeSlot,{key:c.id,id:c.id},c.label))));
+for(const label of ['Freedom date','Your next move','Left this month','Today','At a glance']) assert.ok(home.includes(label));
+assert.ok(!home.includes('Drag')&&!home.includes('Remove')&&!home.includes('Add cards'));
+assert.ok(!home.includes('Support UntilFire'));
+const legacyRoute=readFileSync('mobile/src/app/home-layout.tsx','utf8');
+assert.ok(legacyRoute.includes('<Redirect href="/" />'));
+assert.ok(!readFileSync('mobile/src/lib/mutations.ts','utf8').includes('saveHomeLayout'));
+console.log('Fixed Home regression passed: standard cards, no editor/layout persistence, and retired phone editor route.');

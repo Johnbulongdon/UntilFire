@@ -21,13 +21,13 @@ not "view vs edit", which breaks immediately (Money is editing too).
 | **Home**  | What does it mean?         | Synthesis and next moves; no independent financial inputs. |
 
 Money owns actual-finance and operational edits; Plan owns projection inputs.
-Both flow back to Home. Home layout customisation (reorder, resize, hide/restore
-cards) is allowed and does not introduce a second set of financial inputs.
+Both flow back to Home. Home uses the standard fixed card layout (D-94). Reorder,
+resize, hide and restore controls are removed; old stored layouts are ignored.
 
 ## The map
 
 ```
-Home                          synthesis · customisable layout
+Home                          synthesis · fixed layout
   └ Freedom date · progress · next moves
 
 Money                         actual finances and operational planning
@@ -65,7 +65,7 @@ Profile                       account, household setup, FIRE personality/type,
    contribution targets. An upcoming bill belongs in Money, not here merely
    because it has not happened yet.
 3. **Home** — if it interprets the other two, it goes here. Home never gets its
-   own independent financial inputs. Layout preferences are allowed.
+   own independent financial inputs. Home has a fixed layout (D-94).
 4. **Profile** — if it's about the account rather than the money, it goes here.
 5. If a feature seems to fit two groups, it is **two features**. Split it.
 6. Every tab must be reachable from a nav array. **One array per nav — never a

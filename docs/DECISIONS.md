@@ -3008,3 +3008,25 @@ after supported-jurisdiction calculations, gross/net/period handling, UI, saved
 profiles, web/phone parity and end-to-end QA are reviewed and explicitly approved.
 Existing saved income values have no reliable historical gross/net provenance;
 do not silently rewrite them during this pause.
+
+### D-94 — October 20: Remove dashboard arrangement controls
+
+**Status:** Active. Replaces the layout-customisation permission in the app
+structure and the Edit/hidden-card behavior in D-39 and D-89; their standard
+Home content, money logic and visual direction remain.
+
+**Decision:** Home uses its standard card set and order. Remove reorder, resize,
+hide/restore, inventory, reset and editor-recovery controls. Ignore old saved
+layout preferences, including hidden-card settings, without deleting them.
+Retire the native editor route with a redirect to Home.
+
+**Why / source:** The founder's October 20 review explicitly removed proposed
+repairs 6 and 7 and asked to remove reorganization itself. Improving toolbars
+and adding recovery controls would preserve the feature they no longer want.
+
+**Trade-off:** Optional cards formerly available only through the inventory are
+no longer exposed there. Existing Money/Plan destinations remain available.
+Revisit only with explicit product direction, not as a replay bug repair.
+
+The previous component-only screenshots were not faithful full-screen previews.
+Recapture the actual dashboard route and keep review notes outside app imagery.

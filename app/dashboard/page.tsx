@@ -15,7 +15,7 @@ import UpgradeModal from "./UpgradeModal";
 import TourModal from "./TourModal";
 import CitizenshipTab from "./CitizenshipTab";
 import OnboardingModal from "./OnboardingModal";
-import DashboardRecovery, { SavedPlanLoading } from "./DashboardRecovery";
+import SavedPlanLoading from "./SavedPlanLoading";
 import { CITIES, STATE_TAX, TAX_US_STATES } from "@/lib/fire-data";
 import LearnTab from "./LearnTab";
 import ContributionsTab from "./ContributionsTab";
@@ -66,8 +66,7 @@ import FreedomReport, { type ReportData } from "./FreedomReport";
 import { ageLabel, freedomAgeAt, pensionFor, taxFreeFor, type PlanSettings } from "@/lib/plan-settings";
 import { DEFAULT_MORTGAGE_RATE_PCT, engineMortgages, loadMortgages, newMortgageId, payoffYear, type Mortgage, type MortgageTerms } from "@/lib/mortgages";
 import HouseholdCard from "./HouseholdCard";
-import { CardInventory, DashSlot, useCardSort } from "./DashboardCustomise";
-import { defaultLayout, normaliseLayout, setCard, type DashboardLayout } from "@/lib/dashboard-layout";
+import HomeSlot from "./HomeSlot";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened, trackFreedomReportExported, trackPlanCompare } from "@/lib/analytics";
 import WhatIf from "./WhatIf";
@@ -761,54 +760,6 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   /** Plan settings (D-59), so Home's date is Plan's. */
   plan?: PlanSettings;
 }) {
-
-  // Home's arrangement. Loaded once per user; saved on every change rather
-  // than behind a Save button, because there is nothing to lose by saving and
-  // an arrangement that silently reverted would be worse than one that did
-  // not move. A failed save leaves the on-screen layout alone — the next
-  // change retries it.
-  const [layout, setLayout] = useState<DashboardLayout>(() => defaultLayout());
-  const [layoutLoading, setLayoutLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [savingLayout, setSavingLayout] = useState(false);
-  const [layoutError, setLayoutError] = useState("");
-  const saveQueue = useRef<Promise<void>>(Promise.resolve());
-  const saveRevision = useRef(0);
-
-  useEffect(() => {
-    if (!userId) return;
-    supabase
-      .from("profiles")
-      .select("dashboard_layout")
-      .eq("user_id", userId)
-      .maybeSingle()
-      .then(({ data }) => { setLayout(normaliseLayout(data?.dashboard_layout)); setLayoutLoading(false); });
-  }, [userId]);
-
-  const persistLayout = useCallback(async (next: DashboardLayout) => {
-    setLayout(next);
-    if (!userId) return;
-    const revision = ++saveRevision.current;
-    setSavingLayout(true);
-    const job = saveQueue.current.catch(() => {}).then(async () => {
-      const { error } = await supabase.from("profiles").update({ dashboard_layout: next }).eq("user_id", userId);
-      if (error) throw error;
-    });
-    saveQueue.current = job;
-    try {
-      await job;
-      if (revision === saveRevision.current) setLayoutError("");
-    } catch {
-      if (revision === saveRevision.current) setLayoutError("Your layout has not saved. Try again.");
-      // Keep what is on screen. A lost preference is a small thing; a card
-      // jumping back under the user's cursor is not.
-    } finally {
-      if (revision === saveRevision.current) setSavingLayout(false);
-    }
-  }, [userId]);
-
-  // Live updates stay local while dragging; the save happens once on drop.
-  const { draggingId, register, begin } = useCardSort(layout, setLayout, persistLayout);
 
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
   const chartMonthTickFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit" }), []);
@@ -1624,34 +1575,12 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     });
   }, [userId]);
 
-  if (layoutLoading) return <div role="status">Loading your dashboard…</div>;
-
   return (
     <>
-      {layoutError && <div role="alert">{layoutError} <button onClick={() => persistLayout(layout)}>Retry</button></div>}
-      {!editing && !layout.cards.some(c => c.visible && !["greeting", "setup", "contribution"].includes(c.id)) && (
-        <DashboardRecovery onAdd={() => setEditing(true)} onRestore={() => persistLayout(defaultLayout())} />
-      )}
-      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginBottom: editing ? 24 : 12 }}>
-        {editing && (
-          <button className="uf-dash-nudge" style={{ width: "auto", padding: "0 12px", height: 28 }}
-            onClick={() => persistLayout(defaultLayout())}>
-            Reset
-          </button>
-        )}
-        <button
-          className="uf-dash-nudge"
-          style={{ width: "auto", padding: "0 12px", height: 28 }}
-          onClick={() => setEditing((v) => !v)}
-        >
-          {editing ? (savingLayout ? "Saving\u2026" : "Done") : "Edit"}
-        </button>
-      </div>
-
     <div className="uf-dash-grid">
 
       {/* ── Greeting header ─────────────────────────────────────────────── */}
-      <DashSlot id="greeting" layout={layout} editing={editing} dragging={draggingId === "greeting"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="greeting">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <div>
           <div className="uf-t-h2" style={{ margin: 0 }}>
@@ -1663,9 +1592,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Setup checklist (hidden once all 4 steps done) ─────────────── */}
-      <DashSlot id="setup" layout={layout} editing={editing} dragging={draggingId === "setup"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="setup">
       <SetupChecklist
         income={income}
         expenses={expenses}
@@ -1679,12 +1608,12 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         onOpenOnboarding={onOpenOnboarding}
       />
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Hero: chart-led progress card. Fixed dark treatment regardless of
           the dashboard's light/dark setting — a deliberate hero moment, same
           idea as the free-calculator reveal — so it forces the `.dark` token
           scope rather than following the ambient theme. ─────────────────── */}
-      <DashSlot id="hero" layout={layout} editing={editing} dragging={draggingId === "hero"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="hero">
       <FreedomCard
         dateLabel={exactFreedomDate ? exactFreedomDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : retireYear ? String(retireYear) : null}
         yearsAway={exactFreedomDate ? Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5)) : fireYear}
@@ -1749,11 +1678,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </ResponsiveContainer>
       </FreedomCard>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── On-track score: not how independent you are (the freedom date
           answers that) — how well you're keeping up the habits that get you
           there. ─────────────────────────────────────────────────────────── */}
-      <DashSlot id="ontrack" layout={layout} editing={editing} dragging={draggingId === "ontrack"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="ontrack">
       <div className="uf-card" style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
         <div style={{ position: "relative", width: 96, height: 96, flexShrink: 0 }}>
           {(() => {
@@ -1795,11 +1724,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Your month: closes last month's loop and points at this month's
           move. Dismissible per calendar month (uf_checkin_dismissed_YYYY-MM)
           so it reads as a check-in ritual, not a permanent fixture. ────── */}
-      <DashSlot id="yourmonth" layout={layout} editing={editing} dragging={draggingId === "yourmonth"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="yourmonth">
       {!checkinDismissed && topTasks.length > 0 && (
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
@@ -1830,12 +1759,12 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       )}
 
-      </DashSlot>
-      <DashSlot id="free" layout={layout} editing={editing} dragging={draggingId === "free"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      </HomeSlot>
+      <HomeSlot id="free">
       {freeResult && <FreeToSpendHome result={freeResult} fmt={(n) => fmtMoney(n)} onOpen={onOpenFreeToSpend} />}
-      </DashSlot>
+      </HomeSlot>
       {/* ── Freedom date + best move ─────────────────────────────────────── */}
-      <DashSlot id="contribution" layout={layout} editing={editing} dragging={draggingId === "contribution"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="contribution">
       {nextMove ? (
         <NextMoveCard move={nextMove} fmt={(n) => fmtMoney(n)}
           onOpen={() => onTabChange?.(nextMove.tab)}
@@ -1844,8 +1773,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         <NextContributionCard facts={contributionFacts} onOpenPlan={() => onTabChange?.("contributions")} />
       )}
 
-      </DashSlot>
-      <DashSlot id="month" layout={layout} editing={editing} dragging={draggingId === "month"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      </HomeSlot>
+      <HomeSlot id="month">
         {paydayView && paydayLineView ? (
           <UntilPaydayCard
             line={paydayLineView}
@@ -1866,8 +1795,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           fmt={(n) => fmtMoney(n)}
           onOpen={() => onTabChange?.("cashflow")}
         />}
-      </DashSlot>
-      <DashSlot id="today" layout={layout} editing={editing} dragging={draggingId === "today"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      </HomeSlot>
+      <HomeSlot id="today">
         <TodayStrip
           userId={userId}
           bills={bills}
@@ -1876,8 +1805,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}
           onOpen={() => onTabChange?.("cashflow")}
         />
-      </DashSlot>
-      <DashSlot id="glance" layout={layout} editing={editing} dragging={draggingId === "glance"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      </HomeSlot>
+      <HomeSlot id="glance">
         <GlanceRow
           netWorth={currentNetWorth}
           invested={investedByMonth}
@@ -1888,8 +1817,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           onSafety={() => onTabChange?.("assets")}
           onSavings={() => onTabChange?.("contributions")}
         />
-      </DashSlot>
-      <DashSlot id="freedom" layout={layout} editing={editing} dragging={draggingId === "freedom"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      </HomeSlot>
+      <HomeSlot id="freedom">
       {efMonthlyBase > 0 && (
         <div className="uf-card" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 16, alignItems: "center" }}>
           <div>
@@ -2077,14 +2006,14 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Your goals: the measurable targets set via the PERMA intro flow
           or added by hand in Plan -> Goals. Read-only here — Home never
           gets its own inputs, per docs/design/app-structure.md. ───────── */}
-      <DashSlot id="compare" layout={layout} editing={editing} dragging={draggingId === "compare"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="compare">
         <CompareCard netWorthUsd={currentNetWorth} age={fireAge} currency={displayCurrency} onOpenAssumptions={() => onTabChange?.("fire-calculator")} />
-      </DashSlot>
-      <DashSlot id="goals" layout={layout} editing={editing} dragging={draggingId === "goals"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      </HomeSlot>
+      <HomeSlot id="goals">
       <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
@@ -2126,9 +2055,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         )}
       </div>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Monthly operating row ────────────────────────────────────────── */}
-      <DashSlot id="operating" layout={layout} editing={editing} dragging={draggingId === "operating"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="operating">
       <div className="uf-overview-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s investing</div>
@@ -2220,9 +2149,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Lower support row ────────────────────────────────────────────── */}
-      <DashSlot id="support" layout={layout} editing={editing} dragging={draggingId === "support"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="support">
       <div>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Where your money is</div>
@@ -2262,14 +2191,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
-      </DashSlot>
+      </HomeSlot>
     </div>
-      {editing && (
-        <CardInventory
-          layout={layout}
-          onToggle={(id, visible) => persistLayout(setCard(layout, id, { visible }))}
-        />
-      )}
     </>
   );
 }
