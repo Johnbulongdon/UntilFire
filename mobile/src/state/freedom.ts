@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { CITIES, engineMortgages, freedomDebt, moveBeforeFreedomChange, quickFreedom, retirementLocationMonthlySpend } from '@/engine'
 import { isMortgageAccount } from '@/lib/balances'
 import { spendingBasis } from '@/lib/budget-split'
-import { freedomCash } from '@/lib/money-data'
+import { retirementCash } from '@engine/freedom-cash.ts'
 import { calcProjection, exactFreedomDateFrom } from '@/lib/projection'
 import { useAccount, type AccountData } from '@/state/account'
 import { usePlan } from '@/state/plan'
@@ -22,7 +22,7 @@ export interface Freedom {
   invested: number
   monthlyIncome: number
   monthlySpending: number
-  /** Year by year, invested money against the target (account only). */
+  /** Year by year, retirement portfolio against the target (account only). */
   series: { year: number; invested: number; target: number; reachable: number }[]
   /** Money that can be reached before the pension opens, when it decides the date (D-59). */
   bridge: { needed: number; reachable: number; locked: number; years: number } | null
@@ -57,8 +57,8 @@ export function inputsFor(data: AccountData): Inputs {
     annualIncome: data.income * 12,
     monthlyExpenses,
     ...data.balances,
-    // Only cash above the safety pot is invested (lib/money-data freedomCash).
-    cashSavings: freedomCash(data),
+    // Use raw typed savings, not balances already replaced by linked checking.
+    ...retirementCash(data.plaidAccounts, data.spendToggles ?? {}, data.typed.cashSavings),
     // Loans, plus cards carried at a rate, at their own rates (lib/freedom-debt), as on the website.
     ...(({ balance, rate }) => ({ totalDebt: balance, debtRate: rate }))(freedomDebt({
       otherDebt: data.debts.otherDebt,

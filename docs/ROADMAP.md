@@ -1,5 +1,7 @@
 # UntilFire — Product Roadmap
 
+**October 20 money update:** safety cash counts toward freedom with separate cash returns (D-95). Spending accounts remain excluded.
+
 **October 20 update:** Home arrangement editing is removed by user request (D-94); use the standard fixed layout.
 
 **October 19 update:** tax estimators are paused by user request pending QA (D-93). Keep income entry in take-home terms; saved tax controls must not affect projections while unavailable.

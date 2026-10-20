@@ -16,7 +16,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { freedomCash, safetyPot } from '../lib/freedom-cash.ts';
+import { retirementCash, DEFAULT_CASH_GROWTH, bridgeRequired } from '../lib/freedom-cash.ts';
 import { freedomDebt } from '../lib/freedom-debt.ts';
 
 const file = 'app/dashboard/page.tsx';
@@ -34,7 +34,7 @@ const code = locationSource + '\n' + ['calcProjection', 'freedomProjection', 'pr
   + '\nexports.freedomProjection = freedomProjection; exports.calcProjection = calcProjection; exports.PlanFreedomDate = PlanFreedomDate; exports.effectiveBalances = effectiveBalances; exports.effectiveDebts = effectiveDebts;';
 const exports = {};
 vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2020 } }).outputText,
-  { exports, TAX_ESTIMATES_AVAILABLE, Math, Date, Object, React, freedomCash, safetyPot, freedomDebt, REAL_RETURN: 0.069, freedomAgeAt: (age, years) => Math.round(age + years) });
+  { exports, TAX_ESTIMATES_AVAILABLE, Math, Date, Object, React, retirementCash, DEFAULT_CASH_GROWTH, bridgeRequired, freedomDebt, REAL_RETURN: 0.069, freedomAgeAt: (age, years) => Math.round(age + years) });
 const { freedomProjection, calcProjection, PlanFreedomDate, effectiveBalances, effectiveDebts } = exports;
 
 // A person: $8k/month take-home, $5k spending, $60k invested, $10k in a linked savings account (no needs set, so all of it counts).
@@ -96,13 +96,13 @@ const both = freedomProjection({ ...base, plaidAccounts: [{ type: 'investment', 
 assert.equal(both.fireYear, home.fireYear, 'a linked brokerage account holding the typed $10k is not counted twice');
 
 // Cash roles (money logic study, Oct 16 2026): checking is spending money and never invested;
-// savings are the safety pot, kept out up to six months of needs; only cash above that counts.
+// all non-spending savings, including the safety pot, count (D-95).
 const cashOf = (accounts, extra = {}) =>
   freedomProjection({ ...base, plaidAccounts: accounts, growthRate: 0.069, ...extra }).data[0]['Investable'];
 const invested60k = cashOf([]);
 assert.equal(cashOf([{ id: 'c', type: 'depository', subtype: 'checking', balance_current: 10000 }]), invested60k, 'checking never counts toward freedom');
-assert.equal(cashOf([{ id: 's', type: 'depository', subtype: 'savings', balance_current: 10000 }], { safetyNeeds: 2000 }), invested60k, 'savings under six months of needs stay in the safety pot');
-assert.equal(cashOf([{ id: 's', type: 'depository', subtype: 'savings', balance_current: 15000 }], { safetyNeeds: 2000 }), invested60k + 3000, 'only cash above the safety pot counts');
+assert.equal(cashOf([{ id: 's', type: 'depository', subtype: 'savings', balance_current: 10000 }], { safetyNeeds: 2000 }), invested60k + 10000, 'safety cash counts even below six months of needs');
+assert.equal(cashOf([{ id: 's', type: 'depository', subtype: 'savings', balance_current: 15000 }], { safetyNeeds: 2000 }), invested60k + 15000, 'all safety cash counts once');
 assert.equal(cashOf([{ id: 'c', type: 'depository', subtype: 'checking', balance_current: 10000 }], { spendToggles: { c: false } }), invested60k + 10000, 'a checking account switched out of spending money counts like savings');
 
 // Debts by the same rule as balances (D-35).
@@ -164,8 +164,9 @@ assert.ok(bridgeAtTotal.bridge && bridgeAtTotal.bridge.reachable < bridgeAtTotal
 {
   // D-65: each year's spending comes out at its start, so the bridge needs one year's growth more than end-of-year.
   const b = bridgeAtTotal.bridge, g = locked.growthRate ?? 0.069, spend = locked.retirementAnnualSpend;
-  const endOfYear = spend * (1 - Math.pow(1 + g, -b.years)) / g;
-  assert.ok(spend > 0 && Math.abs(b.needed - endOfYear * (1 + g)) < 1e-6, `bridge is spent at the start of each year (${b.needed} vs ${endOfYear * (1 + g)})`);
+  let startOfYear = 0;
+  for (let y = 0; y < b.years; y++) startOfYear += spend * Math.min(1, b.years - y) / Math.pow(1 + g, y);
+  assert.ok(Math.abs(b.needed - startOfYear) < 1e-5, 'bridge discounts start-of-year spending, including a fractional final year');
 }
 const late = calcProjection({ ...locked, currentAge: 58, accessAge: 59.5 });
 assert.ok(late.fireYear !== null && late.fireYear >= noAge.fireYear, 'near the access age the bridge is short and soon over');

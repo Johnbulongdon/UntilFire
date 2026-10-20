@@ -7,12 +7,14 @@
  */
 import { TAX_ESTIMATES_AVAILABLE } from "@engine/release-gates.ts";
 
+import { DEFAULT_CASH_GROWTH, bridgeRequired } from "@engine/freedom-cash.ts";
+
 import { REAL_RETURN } from '@/engine'
 
 export function calcProjection({
   annualIncome, monthlyExpenses, k401, rothIRA, taxable, cashSavings = 0,
   totalDebt, mortgageBalance, mortgageMonthly,
-  growthRate = REAL_RETURN, withdrawalRate = 0.04, years = 50, debtRate = 0.05,
+  cashGrowthRate = DEFAULT_CASH_GROWTH, growthRate = REAL_RETURN, withdrawalRate = 0.04, years = 50, debtRate = 0.05,
   targetMonthlyExpenses,
   taxEnabled = false, retirementTaxRate = 0, rothPct = 0,
   retirementAnnualSpend = 0, payGrowth = 0, employerAnnual = 0, pensionAnnual = 0,
@@ -21,7 +23,7 @@ export function calcProjection({
   annualIncome: number; monthlyExpenses: number; k401: number;
   rothIRA: number; taxable: number; cashSavings?: number; totalDebt: number;
   mortgageBalance: number; mortgageMonthly: number;
-  growthRate?: number; withdrawalRate?: number; years?: number;
+  cashGrowthRate?: number; growthRate?: number; withdrawalRate?: number; years?: number;
   /** The non-mortgage debt's yearly rate as a fraction; 5% when unknown. */
   debtRate?: number;
   targetMonthlyExpenses?: number;
@@ -114,7 +116,8 @@ export function calcProjection({
       if (early > 0) {
         // Spending until the pension opens, from money that keeps growing meanwhile. Each year's
         // spending comes out at its start (D-65): a year is lived before it earns its growth.
-        const needed = growthRate > 0 ? targetAnnualExpenses * (1 - Math.pow(1 + growthRate, -early)) / growthRate * (1 + growthRate) : targetAnnualExpenses * early;
+        const needed = bridgeRequired(targetAnnualExpenses, early, curCash,
+          curTaxable + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth), cashGrowthRate, growthRate);
         const reachable = curTaxable + curCash + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth);
         bridge = { needed, reachable, locked: investable - reachable, years: early };
         if (reachable >= needed) fireYear = y;
@@ -129,6 +132,7 @@ export function calcProjection({
       "401(k)":        Math.round(cur401k),
       "Roth IRA":      Math.round(curRoth),
       "Taxable":       Math.round(curTaxable),
+      "Cash":          Math.round(curCash),
       "Net Worth":     Math.round(netWorth),
       "FIRE Target":   Math.round(fireTarget),
       "Investable":    Math.round(investable),
@@ -191,7 +195,7 @@ export function calcProjection({
     cur401k    = cur401k    * (1 + growthRate) + k401Contrib + pension;
     curRoth    = curRoth    * (1 + growthRate) + rothContrib;
     curTaxable = curTaxable * (1 + growthRate) + taxableContrib;
-    curCash    = curCash    * (1 + growthRate);
+    curCash    = curCash    * (1 + cashGrowthRate);
     if (loans) {
       for (const l of loans) if (l.balance > 0) l.balance = Math.max(0, l.balance - Math.max(0, l.monthly * 12 - l.balance * l.rate));
       curMort = loans.reduce((s, l) => s + l.balance, 0);
@@ -203,7 +207,7 @@ export function calcProjection({
   }
   // A path that runs out of reachable money before freedom has no freedom date: the gap was real (D-66).
   const reached = broke && (fireYear === null || fireYear > broke.year) ? null : fireYear;
-  return { data, fireYear: reached, fireTarget, annualSavings, firstYearInvested, totalYear, bridge, broke, withdrawn, flows };
+  return { data, cashGrowthRate, fireYear: reached, fireTarget, annualSavings, firstYearInvested, totalYear, bridge, broke, withdrawn, flows };
 }
 
 /**

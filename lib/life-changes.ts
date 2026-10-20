@@ -30,7 +30,7 @@ export type LifeChangeItem = {
   pension?: "same" | "stop";
 };
 
-/** Coast: what is invested would grow to enough by the retire age with no more saving. Free: the freedom date. */
+/** Coast: the retirement portfolio would grow to enough by the retire age with no more saving. Free: the freedom date. */
 export type Milestone = "coast" | "free";
 
 export type LifeVersion = { id: string; name: string; changes: LifeChangeItem[]; savedAt: number };
@@ -115,20 +115,21 @@ export function toEngine(c: LifeChangeItem, ctx: ChangeContext): EngineChange[] 
 export const versionToEngine = (v: LifeVersion, ctx: ChangeContext) => v.changes.flatMap((c) => toEngine(c, ctx));
 
 /**
- * The first year (from now) that what is invested would grow to the target by the retire age with
+ * The first year (from now) that the retirement portfolio would grow to the target by the retire age with
  * nothing more saved: Coast FIRE. Needs an age; null when never or unknown.
  */
-export function coastYear(invested: number[], target: number, growth: number, currentAge: number, retireAge: number): number | null {
+export function coastYear(invested: number[], target: number, growth: number, currentAge: number, retireAge: number, cash: number[] = [], cashGrowthRate = 0): number | null {
   if (!(currentAge > 0) || !(target > 0)) return null;
   for (let y = 0; y < invested.length; y++) {
     const left = retireAge - (currentAge + y);
     if (left <= 0) return null;
-    if (invested[y] * Math.pow(1 + growth, left) >= target) return y;
+    const heldCash = cash[y] ?? 0;
+    if ((invested[y] - heldCash) * Math.pow(1 + growth, left) + heldCash * Math.pow(1 + cashGrowthRate, left) >= target) return y;
   }
   return null;
 }
 
-export type RunResult = { fireYear: number | null; invested: number[]; target: number };
+export type RunResult = { fireYear: number | null; invested: number[]; target: number; cash?: number[]; cashGrowthRate?: number };
 
 /**
  * Pins milestone-bound changes to years and runs them. A change ending "when I'm free" moves the
@@ -143,7 +144,7 @@ export function resolveAndRun(items: LifeChangeItem[], ctx: ChangeContext & { gr
   let pinned = items;
   for (let round = 0; bound && round < 12; round++) {
     const at = (m: Milestone) => {
-      const y = m === "free" ? result.fireYear : coastYear(result.invested, result.target, ctx.growth, ctx.currentAge, ctx.retireAge);
+      const y = m === "free" ? result.fireYear : coastYear(result.invested, result.target, ctx.growth, ctx.currentAge, ctx.retireAge, result.cash, result.cashGrowthRate);
       return y == null ? null : ctx.thisYear + y;
     };
     const next = items.map((c) => {

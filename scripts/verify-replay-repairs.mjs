@@ -27,7 +27,7 @@ assert.ok(view(0).includes('Target reached today'));
 assert.ok(!view(0).includes('In 1 year'));
 assert.ok(view(0.5).includes('In 6 months'),'a future sub-year result must not say already reached');
 assert.ok(view(1).includes('In 1 year'));
-const mobile=load('mobile/src/lib/projection.ts',{'@engine/release-gates.ts':{TAX_ESTIMATES_AVAILABLE},'@/engine':{REAL_RETURN:0.069}});
+const mobile=load('mobile/src/lib/projection.ts',{'@engine/freedom-cash.ts':require('../lib/freedom-cash.ts'),'@engine/release-gates.ts':{TAX_ESTIMATES_AVAILABLE},'@/engine':{REAL_RETURN:0.069}});
 const input={annualIncome:60000,monthlyExpenses:3000,k401:0,rothIRA:0,taxable:10000,totalDebt:0,mortgageBalance:0,mortgageMonthly:0,growthRate:0.04,withdrawalRate:0.04};
 const before=mobile.calcProjection({...input,taxEnabled:false});
 const paused=mobile.calcProjection({...input,taxEnabled:true,retirementTaxRate:0.4,rothPct:10});

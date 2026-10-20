@@ -2803,7 +2803,7 @@ already committed, so they sign in before the questions.
 
 ### D-86 — October 16: one money model; freedom date from real spending
 
-**Status:** Active. The founder approved every fix in the money logic study
+**Status:** Active except the cash exclusion, superseded by D-95. The founder approved every fix in the money logic study
 (`untilfire/money-logic-study-2026-10-16.md`, compared with Monarch, YNAB,
 Copilot), chose the 12-month average, and asked for the website to match.
 **Decision:**
@@ -3030,3 +3030,32 @@ Revisit only with explicit product direction, not as a replay bug repair.
 
 The previous component-only screenshots were not faithful full-screen previews.
 Recapture the actual dashboard route and keep review notes outside app imagery.
+
+### D-95 — October 20: safety cash counts toward freedom
+
+**Status:** Active; founder requested implementation, commit and merge. Replaces
+only D-86's six-month cash exclusion, preserving spending-account separation.
+
+**Decision:** Include all non-spending savings, including the safety pot, once
+in retirement progress and the date. Linked savings replace typed savings even
+at zero; checking alone does not replace a separately typed savings balance.
+Transfers between cash and investments leave today's total unchanged.
+Cash stays cash: saved account APY (nominal percent), default 0% when missing,
+converted to real return using 3% inflation, the existing since-1928 baseline.
+Typed cash has no saved APY and uses that explicit default. Fixed APYs are an
+illustration, not a forecast of changing bank rates. Investments keep the Plan
+growth assumption. Coast FIRE milestones also keep those returns separate.
+The access-age bridge spends cash first, then investments,
+with separate returns and start-of-year withdrawals. Fractional years spend a
+proportional amount. The safety pot remains visible as months of needs, but is
+not also reserved forever outside retirement funding. The spending-based FIRE
+target is unchanged; reaching it is not a cash-only retirement guarantee.
+
+**Why / source:** Founder review on October 20: emergency cash has value and
+building it should show progress. D-86 excluded it to avoid optimistic dates;
+separate cash returns address that concern without hiding the balance.
+
+**Trade-off:** A lower cash yield may offset some date improvement versus the
+old model's excess cash earning equity returns, especially for cash-heavy users.
+Net worth can still differ due to spending cash, home value and liabilities.
+No bank audit or already-funded chart redesign is included in this decision.
