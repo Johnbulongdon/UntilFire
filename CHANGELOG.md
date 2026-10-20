@@ -2,6 +2,8 @@
 
 ## 2026-10-20 — Fixed Home layout (review branch)
 
+- Approved loading revision: use the existing sun animation directly on the app surface, with a static logo for reduced motion or playback failure. Loading text remains available to screen readers only.
+
 - Remove dashboard reordering, resizing, hiding, inventory and restore controls instead of repairing the editor. Use the standard Home for old customized accounts too; preserve stored preferences.
 - Retire the old phone layout editor route. Keep the approved continuous number-entry fix and the previously requested tax pause.
 - Replace component-only visual evidence with full app-route captures; review-only captions stay outside the app. Other proposed replay repairs remain draft pending review.

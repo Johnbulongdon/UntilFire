@@ -11,8 +11,16 @@ are included in this public repository. Review evidence is local/private.
 The founder approved continuous number entry and previously requested the tax
 pause. Their October 20 review rejects proposed editor-toolbar and recovery-card
 repairs (old review items 6 and 7), replacing both with removal of the editor.
-Date consistency, city entry, saved-profile loading, direct calculator entry and
-landing-event deduplication remain implemented draft proposals pending review.
+The founder subsequently approved the logo loading state (item 8): the existing
+sun animation is drawn without its black matte on the current surface, with a
+static source-logo fallback for reduced motion or playback failure. It unmounts
+as soon as profile data is ready and adds no minimum delay. Screen readers
+retain loading status; visible loading text is removed.
+
+Date consistency, city entry, direct calculator entry and landing-event
+deduplication remain draft proposals. Item 4 needs a revised Home-chart mock
+with optional bank-assisted review; no bank audit or new funded-state chart is
+implemented or approved by this revision.
 Do not interpret their presence in this draft as approval to merge or deploy.
 
 Home now uses the standard card visibility, order and widths. There are no drag,
