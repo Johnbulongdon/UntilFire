@@ -125,8 +125,8 @@ for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
   if (session) {
     // Same browser as the calculator walk, so Home picks up the plan it just
     // made, as it would for a person signing up.
-    const ref = new URL(supabaseUrl!).hostname.split('.')[0]
-    await page.evaluate(([key, value]) => localStorage.setItem(key, value), [`sb-${ref}-auth-token`, JSON.stringify(session)])
+    // The site's own storageKey (lib/supabase.ts).
+    await page.evaluate(([key, value]) => localStorage.setItem(key, value), ['fire-dashboard-auth', JSON.stringify(session)])
     for (const { shot, click } of userShots) {
       try {
         await page.goto(`${base}${shot!.slice('user:'.length)}`, { waitUntil: 'networkidle', timeout: 45_000 })
