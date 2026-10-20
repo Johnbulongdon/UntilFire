@@ -3,8 +3,8 @@
  *
  * Every web step names the page it happens on, and every phone step names its
  * screen file, so `npm run test:journeys` can fail when a step's page is moved
- * or deleted. Screenshots are taken from the `shot` URLs; steps without one
- * (Google, Stripe, the phone app) are drawn as labelled boxes.
+ * or deleted. Screenshots are taken from the `shot` values (see JourneyStep);
+ * steps without one (Google, Stripe, the phone app) are drawn as labelled boxes.
  */
 
 export type Platform = 'web' | 'phone'
@@ -17,8 +17,15 @@ export interface JourneyStep {
   action?: string
   /** Web: the app route (app/…/page.tsx). Phone: the screen file under mobile/src/app. */
   route: string
-  /** A signed-out URL the screenshot script can open, when there is one. */
+  /**
+   * How the screenshot script reaches this step:
+   * - `/path` — open it signed out;
+   * - `calc:<name>` — answer the calculator with sample numbers and stop here;
+   * - `user:/path` — open it signed in as the journeys test account.
+   */
   shot?: string
+  /** Signed-in steps only: a button whose text starts with this is pressed before the screenshot. */
+  click?: string
   /** Not ours to draw: a Google or Stripe page. */
   external?: boolean
 }
@@ -35,16 +42,25 @@ export interface Journey {
 const WEB_CALCULATOR: JourneyStep[] = [
   { label: 'City', action: 'Pick a city or skip', route: '/', shot: '/?start=onboarding' },
   { label: 'Income', action: 'Enter take-home pay', route: '/', shot: '/?start=onboarding&city=austin' },
-  { label: 'Savings', action: 'Enter monthly savings', route: '/' },
-  { label: 'Invested', action: 'Enter what you have', route: '/' },
-  { label: 'Age', action: 'Enter or skip', route: '/' },
-  { label: 'Freedom date', action: 'Tap Save my plan', route: '/' },
+  { label: 'Savings', action: 'Enter monthly savings', route: '/', shot: 'calc:savings' },
+  { label: 'Invested', action: 'Enter what you have', route: '/', shot: 'calc:portfolio' },
+  { label: 'Age', action: 'Enter or skip', route: '/', shot: 'calc:age' },
+  // The RevealFlow pages that follow the questions, in order.
+  { label: 'Freedom age', action: 'Tap Continue', route: '/', shot: 'calc:freedom-age' },
+  { label: 'Life in years', action: 'Tap Continue', route: '/', shot: 'calc:life' },
+  { label: 'Freedom number', action: 'Tap Continue', route: '/', shot: 'calc:number' },
+  { label: 'How you stack up', action: 'Tap Continue', route: '/', shot: 'calc:standing' },
+  { label: 'Expat FIRE', action: 'Tap Save my starting point', route: '/', shot: 'calc:abroad' },
+  { label: 'Save', action: 'Tap Save my starting point', route: '/', shot: 'calc:save' },
 ]
+
+/** The calculator pages the screenshot script walks through, in order. */
+export const CALC_SHOTS = ['savings', 'portfolio', 'age', 'freedom-age', 'life', 'number', 'standing', 'abroad', 'save'] as const
 
 const WEB_SIGN_UP: JourneyStep[] = [
   { label: 'Sign up', action: 'Continue with Google', route: '/login', shot: '/login' },
   { label: 'Google', route: '/auth/callback', external: true },
-  { label: 'Home', route: '/dashboard' },
+  { label: 'Home', route: '/dashboard', shot: 'user:/dashboard' },
 ]
 
 /** Phone onboarding after sign-in, in the order the screens push each other. */
@@ -87,7 +103,7 @@ export const JOURNEYS: Journey[] = [
     id: 'web-returning', title: 'Coming back', platform: 'web', visitor: 'returning',
     steps: [
       { label: 'Landing', action: 'Signed in: sent on', route: '/' },
-      { label: 'Home', route: '/dashboard' },
+      { label: 'Home', route: '/dashboard', shot: 'user:/dashboard' },
     ],
   },
   {
@@ -95,14 +111,14 @@ export const JOURNEYS: Journey[] = [
     steps: [
       { label: 'Log in', action: 'Tap Use email instead', route: '/login', shot: '/login' },
       { label: 'Code', action: 'Enter the 6-digit code', route: '/login' },
-      { label: 'Home', route: '/dashboard' },
+      { label: 'Home', route: '/dashboard', shot: 'user:/dashboard' },
     ],
   },
   {
     id: 'web-subscribe', title: 'Start Pro', platform: 'web', visitor: 'returning',
     steps: [
-      { label: 'Profile', action: 'Tap Try Pro', route: '/dashboard' },
-      { label: 'Upgrade', action: 'Pick a plan', route: '/dashboard' },
+      { label: 'Profile', action: 'Tap Try Pro', route: '/dashboard', shot: 'user:/dashboard?tab=profile' },
+      { label: 'Upgrade', action: 'Pick a plan', route: '/dashboard', shot: 'user:/dashboard?tab=profile', click: 'Try Pro' },
       { label: 'Stripe checkout', route: '/api/stripe/checkout', external: true },
       { label: 'Home, Pro on', route: '/dashboard' },
     ],
@@ -110,16 +126,17 @@ export const JOURNEYS: Journey[] = [
   {
     id: 'web-cancel', title: 'Cancel Pro', platform: 'web', visitor: 'returning',
     steps: [
-      { label: 'Profile', action: 'Tap Manage billing', route: '/dashboard' },
+      { label: 'Profile', action: 'Tap Manage billing', route: '/dashboard', shot: 'user:/dashboard?tab=profile' },
       { label: 'Stripe portal', action: 'Cancel plan', route: '/api/stripe/portal', external: true },
-      { label: 'Home', route: '/dashboard' },
+      { label: 'Home', route: '/dashboard', shot: 'user:/dashboard' },
     ],
   },
   {
     id: 'web-delete', title: 'Delete account', platform: 'web', visitor: 'returning',
     steps: [
-      { label: 'Profile', action: 'Tap Delete account…', route: '/dashboard' },
-      { label: 'Confirm', action: 'Type email, delete', route: '/dashboard' },
+      { label: 'Profile', action: 'Tap Delete account…', route: '/dashboard', shot: 'user:/dashboard?tab=profile' },
+      // Only opens the confirm box: the script never types the email or deletes.
+      { label: 'Confirm', action: 'Type email, delete', route: '/dashboard', shot: 'user:/dashboard?tab=profile', click: 'Delete account' },
       { label: 'Landing', route: '/' },
     ],
   },
@@ -169,7 +186,7 @@ export const SHOT_VIEWPORTS: Record<ShotDevice, { width: number; height: number 
 export const SHOT_BUCKET = 'journeys'
 
 /** One file per URL and size, so a step shared by several journeys is taken once. */
-export function shotFile(shot: string, device: ShotDevice): string {
-  const slug = shot.replace(/^\/+/, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'landing'
+export function shotFile(shot: string, device: ShotDevice, click?: string): string {
+  const slug = (click ? `${shot}-${click}` : shot).replace(/^\/+/, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'landing'
   return `${slug}-${device}.png`
 }

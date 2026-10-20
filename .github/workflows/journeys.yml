@@ -20,6 +20,30 @@ jobs:
       - run: npm run test:journeys
       - run: npm run test:start-ctas
 
+  # On a PR that changes the journeys, a dry run against production proves
+  # the script still reaches every step, without replacing the live shots.
+  capture-dry-run:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: changed
+        run: echo "journeys=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- lib/journeys.ts scripts/capture-journeys.ts | wc -l)" >> "$GITHUB_OUTPUT"
+      - if: steps.changed.outputs.journeys != '0'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - if: steps.changed.outputs.journeys != '0'
+        run: npm install --no-save --no-audit --no-fund playwright@1.56.1 && npx playwright install --with-deps chromium
+      - if: steps.changed.outputs.journeys != '0'
+        run: npm run journeys:capture
+        env:
+          JOURNEY_DRY_RUN: '1'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
   capture:
     if: >-
       github.event_name == 'deployment_status' &&
