@@ -20,8 +20,8 @@ jobs:
       - run: npm run test:journeys
       - run: npm run test:start-ctas
 
-  # On a PR that changes the journeys, a dry run against production proves
-  # the script still reaches every step, without replacing the live shots.
+  # Changed calculator journeys must be tested against the PR, not the older live site.
+  # Full authenticated/native captures still run after production deployment below.
   capture-dry-run:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -36,17 +36,25 @@ jobs:
         with:
           node-version: 22
       - if: steps.changed.outputs.journeys != '0'
+        run: npm ci --no-audit --no-fund
+      - if: steps.changed.outputs.journeys != '0'
         run: npm install --no-save --no-audit --no-fund playwright@1.56.1 && npx playwright install --with-deps chromium
       - if: steps.changed.outputs.journeys != '0'
-        run: npm ci --no-audit --no-fund && npx expo export --platform web --output-dir ../journey-app
-        working-directory: mobile
+        run: npm run build
       - if: steps.changed.outputs.journeys != '0'
-        run: npm run journeys:capture
+        run: |
+          npm run start -- --hostname 127.0.0.1 --port 3000 > /tmp/journey-server.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/ > /dev/null; then break; fi
+            sleep 1
+          done
+          npm run journeys:capture
         env:
           JOURNEY_DRY_RUN: '1'
-          JOURNEY_APP_DIR: journey-app
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          JOURNEY_CALCULATOR_ONLY: '1'
+          JOURNEY_BASE_URL: http://127.0.0.1:3000
+      - if: failure()
+        run: cat /tmp/journey-server.log 2>/dev/null || true
 
   capture:
     if: >-

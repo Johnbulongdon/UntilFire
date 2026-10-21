@@ -17,7 +17,8 @@ import { CALC_SHOTS, JOURNEYS, SHOT_BUCKET, SHOT_VIEWPORTS, shotFile, type ShotD
 const base = (process.env.JOURNEY_BASE_URL ?? 'https://www.untilfire.com').replace(/\/$/, '')
 const supabaseUrl = process.env.SUPABASE_URL
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const upload = !!supabaseUrl && !!serviceKey && process.env.JOURNEY_DRY_RUN !== '1'
+const calculatorOnly = process.env.JOURNEY_CALCULATOR_ONLY === '1'
+const upload = !calculatorOnly && !!supabaseUrl && !!serviceKey && process.env.JOURNEY_DRY_RUN !== '1'
 
 // A real account the script signs in as. It never pays and never deletes.
 const BOT_EMAIL = 'journeys-bot@untilfire.com'
@@ -256,7 +257,7 @@ const stripeShots = [...new Set(steps.filter((s) => s.shot!.startsWith('stripe:'
 // In manifest order, so the onboarding screens are walked in the order the app shows them.
 const appShots = [...new Set(steps.filter((s) => s.shot!.startsWith('app')).map((s) => s.shot!))]
 
-const session = await botSession()
+const session = calculatorOnly ? null : await botSession()
 const stripeReady = !!session && stripeShots.length > 0 && await hasStripeCustomer(String((session.user as { id: string }).id))
 if (session && stripeShots.length && !stripeReady) console.log('Skipping Stripe pages: the test account has no stripe_customer_id yet')
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
@@ -270,6 +271,16 @@ for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
     await save(shotFile(shot, device, click), await page.screenshot(), 'image/png')
     taken++
     console.log(`✓ ${device} ${shot}${click ? ` → ${click.join(' → ')}` : ''}`)
+  }
+
+  if (calculatorOnly) {
+    try {
+      await walkCalculator(page, (name) => shoot(name))
+    } catch (error) {
+      failed.push(`${device} calculator: ${(error as Error).message}`)
+    }
+    await context.close()
+    continue
   }
 
   for (const { shot } of plainShots) {
