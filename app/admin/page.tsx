@@ -47,7 +47,7 @@ export default function AdminPage() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#F8FAFC", fontFamily: "Manrope, system-ui, -apple-system, sans-serif" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px 80px" }}>
+      <div style={{ maxWidth: tab === "journeys" ? 1600 : 1100, margin: "0 auto", padding: "32px 24px 80px" }}>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: "#19181E", margin: "0 0 4px" }}>UntilFire Admin</h1>
         <p style={{ color: "#64748B", fontSize: 14, margin: "0 0 24px" }}>Operations, users, and email &mdash; internal only.</p>
 

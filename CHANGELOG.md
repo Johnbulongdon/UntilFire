@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-21 — Connected admin journey canvas
+
+- Replace the repeated numbered Journeys rows with one dotted canvas of shared screens, branching transitions and visible return loops. Keep website and phone states distinct.
+- Add drag-to-pan, zoom, Fit map, keyboard movement, path highlighting and a text connection list. Retain screenshot inspection with a focused, Escape-dismissable dialog.
+- Give Journeys more room in the admin shell; preserve the existing journey manifest, screenshot capture and admin access checks.
+
 ## 2026-10-21 — Save and sign up are one page
 
 - The calculator's last step is now the sign-up card itself: "{year} is just your starting point" over a blurred view of the real Home (its own cards, filled with the visitor's numbers where it has them), with Save with Google, Save with Apple and an email code. Back to results, Adjust inputs and Share stay underneath. There is no separate stop at /login after the calculator.

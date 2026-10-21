@@ -1,30 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { JOURNEYS, SHOT_BUCKET, shotDevice, shotFile, type JourneyStep, type Platform, type ShotDevice, type Visitor } from "@/lib/journeys";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { JOURNEYS, SHOT_BUCKET, type Platform, type ShotDevice, type Visitor } from "@/lib/journeys";
+
+import { journeyGraph } from "@/lib/journey-canvas";
+import JourneyCanvas from "./JourneyCanvas";
 
 const SHOTS = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${SHOT_BUCKET}`;
 
 interface ShotRun { sha: string; takenAt: string }
 
 /**
- * Every journey as a row of screens with arrows between them, screenshotted
+ * One connected canvas of shared screens and branching paths, screenshotted
  * after the last deploy (signed-in pages as the journeys test account).
  * Phone steps come from the phone app's web build. Click a screen to see it
  * full size. The steps come from lib/journeys.ts, which `npm run test:journeys` checks against the code.
  */
 export default function JourneysTab() {
-  const [platform, setPlatform] = useState<Platform | "all">("all");
+  const [platform, setPlatform] = useState<Platform | "all">("web");
   const [visitor, setVisitor] = useState<Visitor | "all">("all");
   const [device, setDevice] = useState<ShotDevice>("desktop");
   const [run, setRun] = useState<ShotRun | null>(null);
+  const [path, setPath] = useState("all");
+  const dialog = useRef<HTMLDialogElement>(null);
   const [zoom, setZoom] = useState<{ src: string; label: string } | null>(null);
 
   useEffect(() => {
-    if (!zoom) return;
-    const close = (e: KeyboardEvent) => { if (e.key === "Escape") setZoom(null); };
-    window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
+    if (zoom) dialog.current?.showModal();
+    else dialog.current?.close();
   }, [zoom]);
 
   useEffect(() => {
@@ -34,7 +37,10 @@ export default function JourneysTab() {
       .catch(() => setRun(null));
   }, []);
 
-  const shown = JOURNEYS.filter((j) => (platform === "all" || j.platform === platform) && (visitor === "all" || j.visitor === visitor));
+  const shown = useMemo(() => JOURNEYS.filter(j => (platform === "all" || j.platform === platform) && (visitor === "all" || j.visitor === visitor)), [platform, visitor]);
+  const graph = useMemo(() => journeyGraph(JOURNEYS.filter(j => platform === "all" || j.platform === platform)), [platform]);
+  const traced = shown.some(j => j.id === path) ? path : "all";
+  const active = useMemo(() => shown.filter(j => traced === "all" || j.id === traced).map(j => j.id), [shown, traced]);
 
   return (
     <div>
@@ -47,61 +53,27 @@ export default function JourneysTab() {
         {run ? `Screenshots from ${new Date(run.takenAt).toLocaleString()} · ${run.sha.slice(0, 7)}` : "No screenshots yet"}
       </p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-        {shown.map((j) => (
-          <section key={j.id}>
-            <h2 style={{ fontSize: 16, fontWeight: 800, color: "#19181E", margin: "0 0 10px" }}>
-              {j.title} <Tag>{j.platform === "web" ? "Website" : "Phone app"}</Tag> <Tag>{j.visitor === "new" ? "New" : "Returning"}</Tag>
-            </h2>
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, overflowX: "auto", paddingBottom: 8 }}>
-              {j.steps.map((step, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, flexShrink: 0 }}>
-                  {i > 0 && <span aria-hidden style={{ color: "#94A3B8", fontSize: 20, marginTop: device === "phone" ? 96 : 56 }}>→</span>}
-                  <Step step={step} n={i + 1} device={device} onZoom={setZoom} />
-                </div>
-              ))}
-            </div>
-          </section>
-        ))}
+      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
+        <label style={{ fontSize: 13, color: "#334155", fontWeight: 700 }}>Trace a path
+          <select aria-label="Trace a path" value={traced} onChange={e => setPath(e.target.value)} style={{ marginLeft: 8, padding: "10px 12px", minHeight: 44, maxWidth: "100%", border: "1px solid #CBD5E1", background: "#fff", borderRadius: 10, font: "inherit" }}>
+            <option value="all">All connected paths</option>
+            {shown.map(j => <option key={j.id} value={j.id}>{j.title}</option>)}
+          </select>
+        </label>
+        <span style={{ color: "#475569", fontSize: 12 }}>New / Returning highlights paths without hiding shared screens.</span>
       </div>
+      <JourneyCanvas graph={graph} activeJourneys={active} device={device} shots={SHOTS} onZoom={setZoom} />
 
-      {zoom && (
-        <div role="dialog" aria-modal="true" aria-label={zoom.label} onClick={() => setZoom(null)}
-          style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,23,42,0.8)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, cursor: "zoom-out" }}>
+      <dialog ref={dialog} aria-label={zoom?.label ?? "Screen preview"} onCancel={() => setZoom(null)}
+        onClick={e => { if (e.target === e.currentTarget) setZoom(null); }}
+        style={{ position: "fixed", left: "50%", top: "50%", transform: "translate(-50%, -50%)", margin: 0, maxWidth: "94vw", maxHeight: "94vh", padding: 20, border: "1px solid #CBD5E1", borderRadius: 16, background: "#fff", color: "#0F172A" }}>
+        {zoom && <>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 20, marginBottom: 12 }}><strong>{zoom.label}</strong><button type="button" autoFocus onClick={() => setZoom(null)} style={{ minHeight: 44, minWidth: 44, background: "#F1F5F9", border: 0, borderRadius: 8, color: "#334155", cursor: "pointer" }}>Close</button></div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={zoom.src} alt={zoom.label} style={{ maxWidth: "100%", maxHeight: "calc(100vh - 96px)", borderRadius: 12, background: "#fff", boxShadow: "0 12px 40px rgba(0,0,0,0.4)" }} />
-          <span style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>{zoom.label} · Esc or click to close</span>
-        </div>
-      )}
+          <img src={zoom.src} alt={zoom.label} style={{ display: "block", maxWidth: "88vw", maxHeight: "76vh", objectFit: "contain" }} />
+        </>}
+      </dialog>
     </div>
-  );
-}
-
-function Step({ step, n, device, onZoom }: { step: JourneyStep; n: number; device: ShotDevice; onZoom: (z: { src: string; label: string }) => void }) {
-  const [broken, setBroken] = useState(false);
-  const size = step.shot ? shotDevice(step.shot, device) : device;
-  const width = size === "phone" ? 120 : 200;
-  const height = size === "phone" ? 220 : 125;
-  const src = step.shot ? `${SHOTS}/${shotFile(step.shot, size, step.click)}` : null;
-  return (
-    <figure style={{ width, margin: 0 }}>
-      {src && !broken ? (
-        <button type="button" onClick={() => onZoom({ src, label: step.label })} aria-label={`Show ${step.label} full size`}
-          style={{ padding: 0, border: 0, background: "none", cursor: "zoom-in", display: "block" }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={src} alt={step.label} onError={() => setBroken(true)} loading="lazy"
-            style={{ width, height, objectFit: "cover", objectPosition: "top", borderRadius: 10, border: "1px solid #E2E8F0", display: "block", background: "#fff" }} />
-        </button>
-      ) : (
-        <div style={{ width, height, borderRadius: 10, border: `1px ${step.external ? "dashed" : "solid"} #CBD5E1`, background: step.external ? "#F1F5F9" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 8, boxSizing: "border-box", color: "#475569", fontSize: 12, fontWeight: 700 }}>
-          {step.label}
-        </div>
-      )}
-      <figcaption style={{ marginTop: 6, fontSize: 12, lineHeight: 1.4 }}>
-        <span style={{ fontWeight: 800, color: "#19181E" }}>{n}. {step.label}</span>
-        {step.action && <span style={{ display: "block", color: "#64748B" }}>{step.action}</span>}
-      </figcaption>
-    </figure>
   );
 }
 
@@ -110,14 +82,10 @@ function Chips<T extends string>({ value, onChange, options }: { value: T; onCha
     <div style={{ display: "flex", gap: 6 }}>
       {options.map(([key, label]) => (
         <button key={key} onClick={() => onChange(key)} aria-pressed={value === key}
-          style={{ padding: "6px 12px", borderRadius: 999, border: "1px solid #E2E8F0", background: value === key ? "#059669" : "#fff", color: value === key ? "#fff" : "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+          style={{ minHeight: 44, padding: "8px 12px", borderRadius: 999, border: "1px solid #E2E8F0", background: value === key ? "#059669" : "#fff", color: value === key ? "#fff" : "#475569", fontWeight: 700, fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
           {label}
         </button>
       ))}
     </div>
   );
-}
-
-function Tag({ children }: { children: React.ReactNode }) {
-  return <span style={{ fontSize: 11, fontWeight: 700, color: "#475569", background: "#F1F5F9", borderRadius: 999, padding: "2px 8px", marginLeft: 6, verticalAlign: "middle" }}>{children}</span>;
 }
