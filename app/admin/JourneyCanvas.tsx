@@ -16,6 +16,7 @@ export default function JourneyCanvas({ graph, activeJourneys, device, shots, on
 }) {
   const viewport = useRef<HTMLDivElement>(null);
   const pointer = useRef<{ id: number; x: number; y: number; origin: Camera } | null>(null);
+  const [panning, setPanning] = useState(false);
   const [camera, setCamera] = useState<Camera>({ x: 24, y: 24, scale: 0.6 });
   const marker = useId().replace(/:/g, '');
   const active = useMemo(() => new Set(activeJourneys), [activeJourneys]);
@@ -77,12 +78,15 @@ export default function JourneyCanvas({ graph, activeJourneys, device, shots, on
       }}
       onPointerDown={e => {
         if (e.button !== 0 || (e.target as Element).closest('button')) return;
+        e.preventDefault();
+        setPanning(true);
         pointer.current = { id: e.pointerId, x: e.clientX, y: e.clientY, origin: camera };
         e.currentTarget.setPointerCapture(e.pointerId);
       }}
       onPointerMove={e => { const p = pointer.current; if (p?.id === e.pointerId) setCamera({ ...p.origin, x: p.origin.x + e.clientX - p.x, y: p.origin.y + e.clientY - p.y }); }}
-      onPointerUp={() => { pointer.current = null; }} onPointerCancel={() => { pointer.current = null; }} onLostPointerCapture={() => { pointer.current = null; }}
-      style={{ height: 'min(76vh, 860px)', minHeight: 500, position: 'relative', overflow: 'hidden', touchAction: 'none', cursor: 'grab', backgroundImage: 'radial-gradient(#CBD5E1 1px, transparent 1px)', backgroundSize: '22px 22px' }}>
+      onPointerUp={() => { pointer.current = null; setPanning(false); }} onPointerCancel={() => { pointer.current = null; setPanning(false); }} onLostPointerCapture={() => { pointer.current = null; setPanning(false); }}
+      onDragStart={e => e.preventDefault()}
+      style={{ height: 'min(76vh, 860px)', minHeight: 500, position: 'relative', overflow: 'hidden', touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none', cursor: panning ? 'grabbing' : 'grab', backgroundImage: 'radial-gradient(#CBD5E1 1px, transparent 1px)', backgroundSize: '22px 22px' }}>
       <div style={{ width: graph.width, height: graph.height, transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`, transformOrigin: '0 0', position: 'absolute' }}>
         <svg width={graph.width} height={graph.height} style={{ position: 'absolute', inset: 0, overflow: 'visible' }} aria-hidden="true">
           <defs><marker id={marker} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#64748B" /></marker></defs>
@@ -118,7 +122,7 @@ function ScreenNode({ node, branching, device, shots, dim, onZoom, onFocus }: { 
     <div style={{ fontSize: 10, fontWeight: 800, color: '#475569', marginBottom: 9 }}>{step.external ? 'EXTERNAL' : step.label.startsWith('Home') ? (step.shot?.startsWith('pro:') ? 'HOME · PRO' : 'HOME · SHARED HUB') : step.label === 'Profile' && node.platform === 'web' ? (step.shot?.startsWith('pro:') ? 'PROFILE · PRO' : 'PROFILE · FREE') : node.journeys.length > 1 ? 'SHARED SCREEN' : 'SCREEN'}</div>
     <button type="button" onFocus={e => { if (e.currentTarget.matches(':focus-visible')) onFocus(); }} aria-label={`Show ${screenLabel(node)} full size${step.external ? ' (external)' : ''}`} onClick={() => src && !broken && onZoom({ src, label: screenLabel(node) })} disabled={!src || broken}
       style={{ width: '100%', height: 158, padding: 0, border: 0, borderRadius: 8, overflow: 'hidden', background: '#F1F5F9', color: '#475569', cursor: src && !broken ? 'zoom-in' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {src && !broken ? <img src={src} alt={step.label} loading="lazy" onError={() => setBroken(true)} style={{ width: '100%', height: '100%', objectFit: size === 'phone' ? 'contain' : 'cover', objectPosition: 'top', display: 'block' }} /> : <span>{step.external ? step.label : 'Screenshot unavailable'}</span>}
+      {src && !broken ? <img draggable={false} src={src} alt={step.label} loading="lazy" onError={() => setBroken(true)} style={{ width: '100%', height: '100%', objectFit: size === 'phone' ? 'contain' : 'cover', objectPosition: 'top', display: 'block' }} /> : <span>{step.external ? step.label : 'Screenshot unavailable'}</span>}
     </button>
     <figcaption style={{ fontSize: 13, lineHeight: 1.4, color: '#0F172A', marginTop: 9, fontWeight: 800 }}>{step.label}<span style={{ display: 'block', color: '#475569', fontSize: 11, fontWeight: 400, marginTop: 3 }}>{branching ? 'Choose a connected branch' : step.action ?? (step.external ? 'External service' : 'Continue on this screen')}</span></figcaption>
   </figure>;

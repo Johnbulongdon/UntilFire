@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-21 — Journey canvas panning
+
+- Prevent text selection and native image dragging inside the map so dragging labels pans without getting stuck. Show a grabbing cursor during a pan and reset it on release or cancellation. Keep screenshot inspection and keyboard controls.
+
 ## 2026-10-21 — Connected admin journey canvas
 
 - Replace the repeated numbered Journeys rows with one dotted canvas of shared screens, branching transitions and visible return loops. Keep website and phone states distinct.
