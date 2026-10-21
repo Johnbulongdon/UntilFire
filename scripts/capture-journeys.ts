@@ -124,6 +124,16 @@ const APP_ANSWERS: Record<string, (page: Page) => Promise<void>> = {
 }
 const tapText = (page: Page, text: string) => page.getByText(text, { exact: true }).last().click()
 
+/** The phone's launch screen, drawn from app.json's splash settings (the web build has none). */
+function launchScreen(): string {
+  const mobile = path.resolve('mobile')
+  const splash = (JSON.parse(fs.readFileSync(path.join(mobile, 'app.json'), 'utf8')).expo.plugins as unknown[])
+    .find((p): p is [string, { image: string; imageWidth: number; backgroundColor: string }] => Array.isArray(p) && p[0] === 'expo-splash-screen')![1]
+  const image = fs.readFileSync(path.join(mobile, splash.image)).toString('base64')
+  return `<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:${splash.backgroundColor}">`
+    + `<img src="data:image/png;base64,${image}" width="${splash.imageWidth}"></body>`
+}
+
 /** Serves the app's web build, sending every unknown path to index.html as the router expects. */
 function serveApp(dir: string): Promise<{ url: string; close: () => void }> {
   const types: Record<string, string> = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html', '.json': 'application/json', '.png': 'image/png', '.ttf': 'font/ttf', '.svg': 'image/svg+xml', '.wasm': 'application/wasm' }
@@ -156,6 +166,12 @@ async function captureApp(browser: Browser, dir: string, shots: string[], shoot:
   }
   try {
     const walk = shots.filter((s) => s.startsWith('app:/onboarding/')).map((s) => s.slice('app:/onboarding/'.length))
+    if (shots.includes('app:launch')) {
+      await attempt('app:launch', async () => {
+        await page.setContent(launchScreen())
+        await shoot(page, 'app:launch')
+      })
+    }
     for (const shot of shots.filter((s) => s.startsWith('app:/') && !s.startsWith('app:/onboarding/'))) {
       await attempt(shot, async () => { await open(shot.slice('app:'.length)); await shoot(page, shot) })
     }
@@ -189,14 +205,62 @@ async function captureApp(browser: Browser, dir: string, shots: string[], shoot:
   }
 }
 
+const SUBSCRIPTIONS = '**/rest/v1/subscriptions?*'
+
+/** Answers the browser's own subscription lookups with an active Pro plan. Nothing is written anywhere. */
+async function pretendPro(page: Page) {
+  const row = {
+    plan: 'pro', status: 'active', source: 'stripe', stripe_subscription_id: 'sub_journeys', cancel_at_period_end: false,
+    current_period_end: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+  }
+  await page.route(SUBSCRIPTIONS, (route) => {
+    const single = (route.request().headers().accept ?? '').includes('vnd.pgrst.object')
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(single ? row : [row]) })
+  })
+}
+
+/**
+ * The real Stripe pages need the test account to have a Stripe customer, so
+ * each run reuses it rather than creating a new one (checkout makes one when
+ * the account has none). Set once by hand: subscriptions.stripe_customer_id.
+ */
+async function hasStripeCustomer(userId: string): Promise<boolean> {
+  const res = await fetch(`${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${userId}&select=stripe_customer_id`, {
+    headers: { apikey: serviceKey!, Authorization: `Bearer ${serviceKey}` },
+  })
+  const rows = res.ok ? await res.json() as { stripe_customer_id: string | null }[] : []
+  return !!rows[0]?.stripe_customer_id
+}
+
+/** Presses the same buttons a person would, stopping on Stripe's page: nothing is paid or cancelled. */
+async function openStripe(page: Page, shot: 'stripe:checkout' | 'stripe:portal') {
+  if (shot === 'stripe:portal') await pretendPro(page)
+  await page.goto(`${base}/dashboard?tab=profile`, { waitUntil: 'networkidle', timeout: 45_000 })
+  await settle(page)
+  if (shot === 'stripe:checkout') {
+    await page.getByRole('button', { name: /Try Pro/ }).first().click()
+    await settle(page)
+    await page.getByRole('button', { name: /^(Start .*|Continue to checkout)$/ }).first().click()
+    await page.waitForURL(/checkout\.stripe\.com/, { timeout: 30_000 })
+  } else {
+    await page.getByRole('button', { name: 'Manage billing' }).first().click()
+    await page.waitForURL(/billing\.stripe\.com/, { timeout: 30_000 })
+  }
+  await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {})
+  await page.waitForTimeout(2000)
+}
+
 const steps = JOURNEYS.flatMap((j) => j.steps).filter((s) => s.shot)
 const unique = <T,>(items: T[], key: (t: T) => string) => [...new Map(items.map((t) => [key(t), t])).values()]
 const plainShots = unique(steps.filter((s) => s.shot!.startsWith('/')), (s) => s.shot!)
-const userShots = unique(steps.filter((s) => s.shot!.startsWith('user:')), (s) => `${s.shot}|${s.click?.join('|') ?? ''}`)
+const userShots = unique(steps.filter((s) => /^(user|pro):/.test(s.shot!)), (s) => `${s.shot}|${s.click?.join('|') ?? ''}`)
+const stripeShots = [...new Set(steps.filter((s) => s.shot!.startsWith('stripe:')).map((s) => s.shot!))]
 // In manifest order, so the onboarding screens are walked in the order the app shows them.
 const appShots = [...new Set(steps.filter((s) => s.shot!.startsWith('app')).map((s) => s.shot!))]
 
 const session = await botSession()
+const stripeReady = !!session && stripeShots.length > 0 && await hasStripeCustomer(String((session.user as { id: string }).id))
+if (session && stripeShots.length && !stripeReady) console.log('Skipping Stripe pages: the test account has no stripe_customer_id yet')
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
 const failed: string[] = []
 let taken = 0
@@ -245,7 +309,8 @@ for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
     await page.evaluate(([key, value]) => localStorage.setItem(key, value), ['fire-dashboard-auth', JSON.stringify(session)])
     for (const { shot, click } of userShots) {
       try {
-        await page.goto(`${base}${shot!.slice('user:'.length)}`, { waitUntil: 'networkidle', timeout: 45_000 })
+        if (shot!.startsWith('pro:')) await pretendPro(page)
+        await page.goto(`${base}${shot!.slice(shot!.indexOf(':') + 1)}`, { waitUntil: 'networkidle', timeout: 45_000 })
         if (new URL(page.url()).pathname === '/login') throw new Error('not signed in')
         await settle(page)
         for (const name of click ?? []) {
@@ -255,6 +320,18 @@ for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
         await shoot(shot!, click)
       } catch (error) {
         failed.push(`${device} ${shot}${click ? ` → ${click.join(' → ')}` : ''}: ${(error as Error).message}`)
+      } finally {
+        await page.unroute(SUBSCRIPTIONS)
+      }
+    }
+    for (const shot of stripeReady ? stripeShots : []) {
+      try {
+        await openStripe(page, shot as 'stripe:checkout' | 'stripe:portal')
+        await shoot(shot)
+      } catch (error) {
+        failed.push(`${device} ${shot}: ${(error as Error).message}`)
+      } finally {
+        await page.unroute(SUBSCRIPTIONS)
       }
     }
   }

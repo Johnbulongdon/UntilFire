@@ -10,15 +10,22 @@ interface ShotRun { sha: string; takenAt: string }
 /**
  * Every journey as a row of screens with arrows between them, screenshotted
  * after the last deploy (signed-in pages as the journeys test account).
- * Phone steps come from the phone app's web build. Google and Stripe steps
- * are labelled boxes. The steps come from
- * lib/journeys.ts, which `npm run test:journeys` checks against the code.
+ * Phone steps come from the phone app's web build. Click a screen to see it
+ * full size. The steps come from lib/journeys.ts, which `npm run test:journeys` checks against the code.
  */
 export default function JourneysTab() {
   const [platform, setPlatform] = useState<Platform | "all">("all");
   const [visitor, setVisitor] = useState<Visitor | "all">("all");
   const [device, setDevice] = useState<ShotDevice>("desktop");
   const [run, setRun] = useState<ShotRun | null>(null);
+  const [zoom, setZoom] = useState<{ src: string; label: string } | null>(null);
+
+  useEffect(() => {
+    if (!zoom) return;
+    const close = (e: KeyboardEvent) => { if (e.key === "Escape") setZoom(null); };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [zoom]);
 
   useEffect(() => {
     fetch(`${SHOTS}/run.json`, { cache: "no-store" })
@@ -50,34 +57,41 @@ export default function JourneysTab() {
               {j.steps.map((step, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, flexShrink: 0 }}>
                   {i > 0 && <span aria-hidden style={{ color: "#94A3B8", fontSize: 20, marginTop: device === "phone" ? 96 : 56 }}>→</span>}
-                  <Step step={step} n={i + 1} device={device} />
+                  <Step step={step} n={i + 1} device={device} onZoom={setZoom} />
                 </div>
               ))}
             </div>
           </section>
         ))}
       </div>
+
+      {zoom && (
+        <div role="dialog" aria-modal="true" aria-label={zoom.label} onClick={() => setZoom(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(15,23,42,0.8)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 24, cursor: "zoom-out" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={zoom.src} alt={zoom.label} style={{ maxWidth: "100%", maxHeight: "calc(100vh - 96px)", borderRadius: 12, background: "#fff", boxShadow: "0 12px 40px rgba(0,0,0,0.4)" }} />
+          <span style={{ color: "#fff", fontSize: 14, fontWeight: 700 }}>{zoom.label} · Esc or click to close</span>
+        </div>
+      )}
     </div>
   );
 }
 
-function Step({ step, n, device }: { step: JourneyStep; n: number; device: ShotDevice }) {
+function Step({ step, n, device, onZoom }: { step: JourneyStep; n: number; device: ShotDevice; onZoom: (z: { src: string; label: string }) => void }) {
   const [broken, setBroken] = useState(false);
   const size = step.shot ? shotDevice(step.shot, device) : device;
   const width = size === "phone" ? 120 : 200;
   const height = size === "phone" ? 220 : 125;
   const src = step.shot ? `${SHOTS}/${shotFile(step.shot, size, step.click)}` : null;
-  // Phone app screens have no web address to open.
-  const href = step.shot?.startsWith("app") ? undefined
-    : step.shot?.replace(/^user:/, "").startsWith("/") ? step.shot.replace(/^user:/, "") : step.route.includes("[") ? undefined : step.route;
   return (
     <figure style={{ width, margin: 0 }}>
       {src && !broken ? (
-        <a href={href} target="_blank" rel="noreferrer">
+        <button type="button" onClick={() => onZoom({ src, label: step.label })} aria-label={`Show ${step.label} full size`}
+          style={{ padding: 0, border: 0, background: "none", cursor: "zoom-in", display: "block" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={src} alt={step.label} onError={() => setBroken(true)} loading="lazy"
             style={{ width, height, objectFit: "cover", objectPosition: "top", borderRadius: 10, border: "1px solid #E2E8F0", display: "block", background: "#fff" }} />
-        </a>
+        </button>
       ) : (
         <div style={{ width, height, borderRadius: 10, border: `1px ${step.external ? "dashed" : "solid"} #CBD5E1`, background: step.external ? "#F1F5F9" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 8, boxSizing: "border-box", color: "#475569", fontSize: 12, fontWeight: 700 }}>
           {step.label}
