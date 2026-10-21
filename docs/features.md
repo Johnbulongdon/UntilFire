@@ -15,6 +15,7 @@ in [DECISIONS.md](DECISIONS.md).
 | Contributions | [Next contribution](design/next-contribution.md) | Shared Home/Plan derivation, separate payday/buy-in cadences and cashflow ledger; monthly email and live persistence QA remain separate |
 | Portfolio and scenarios | `app/portfolio/`, `app/dashboard/page.tsx` | Already implemented; no implied approval for new named asset recommendations |
 | City pricing | [Cost of living](cost-of-living.md) | Preserve rejected-source rationale; review data before promotion |
+| Admin journey map | `lib/journeys.ts`, `lib/journey-canvas.ts`, `app/admin/JourneysTab.tsx` | One shared-screen canvas with branching paths, separate account states, pan/zoom, path highlighting and screenshot inspection; navigation bridges join Home to Profile; capture manifest stays authoritative |
 | Analytics | [Event contract](analytics/EVENTS.md) | Check actual emit paths and data; historical counts are not current analytics |
 | Email | `app/api/email/retention/route.ts`, `lib/email-send.ts` | Existing lifecycle emails are not the unfinished monthly contribution email |
 | Pricing | `lib/pricing.ts` | Display constants do not prove the amount charged by Stripe |
