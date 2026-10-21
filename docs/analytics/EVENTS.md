@@ -165,6 +165,8 @@ querying history.
 
 ### `funnel_reveal_step_viewed`
 
+The added `savings_pace` step uses stable index 8 before save (index 7); existing IDs remain unchanged.
+
 - **Where**: `app/components/RevealFlow.tsx` reports each step through its
   `onStepViewed` prop (an effect on the current step), and `app/HomeClient.tsx`
   sends the event, as it does for `funnel_reveal_cta_clicked`; RevealFlow

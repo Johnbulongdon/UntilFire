@@ -25,3 +25,7 @@ in [DECISIONS.md](DECISIONS.md).
 The older `docs/modules/` documents and sprint plans are historical snapshots,
 not current implementation specifications. Preserve their intent where useful;
 do not implement their unverified routes or reopen completed work from checkboxes.
+
+### Reveal savings pace (October 22, 2026)
+
+The responsive website reveal includes a fixed-income savings experiment before sign-up. `SavingsPace` and `lib/savings-pace.ts` reuse the current projection engine; changed savings update spending and target together. Draft changes are local until the single original/updated-plan button is chosen. Sign-up preserves that selected prefill. No local peer benchmark is invented; research is tracked in ROADMAP. Native Expo onboarding is not changed.

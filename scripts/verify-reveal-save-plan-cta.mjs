@@ -18,6 +18,8 @@ const loadTs = (path, deps = {}) => {
 const fireNumber = loadTs('lib/fire-number.ts', { './sp500-history.ts': loadTs('lib/sp500-history.ts') });
 const yearCubes = loadTs('components/ui/YearCubes.tsx');
 // Exercise the real final-step component/callback without the video or animation.
+let selectedOverride = null;
+let selectedSaved;
 const exports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync('app/components/RevealFlow.tsx', 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -25,8 +27,8 @@ vm.runInNewContext(ts.transpileModule(readFileSync('app/components/RevealFlow.ts
   exports,
   require: (id) => id === 'react' ? {
     ...React, useEffect: () => {}, useMemo: (fn) => fn(), useRef: (value) => ({ current: value }),
-    useState: (value) => [value === 1 ? 7 : typeof value === 'function' ? value() : value, () => {}],
-  } : id === '@/components/ui/YearCubes' ? yearCubes : id === '@/app/components/Logo' ? { default: () => React.createElement('img', { src: '/logo/horizon-color.svg', alt: 'UntilFire' }) } : id === '@/app/components/PercentileTrack' ? { default: () => null } : id === 'next/dynamic' ? { default: () => () => null } : id === '@/lib/fire-number' ? fireNumber
+    useState: (value) => [value === 1 ? 7 : value === null ? selectedOverride : typeof value === 'function' ? value() : value, () => {}],
+  } : id === '@/components/ui/YearCubes' ? yearCubes : id === '@/app/components/Logo' ? { default: () => React.createElement('img', { src: '/logo/horizon-color.svg', alt: 'UntilFire' }) } : id === '@/app/components/PercentileTrack' ? { default: () => null } : id === 'next/dynamic' ? { default: () => () => null } : id === '@/app/components/SavingsPace' ? { default: () => null } : id === '@/lib/journey' ? { saveCalculatorPrefill: p => { selectedSaved = p; } } : id === '@/lib/fire-number' ? fireNumber
     // The save step's backdrop and sign-up card (D-96), stubbed: their own checks live elsewhere.
     : id === '@/app/components/auth/HomeBackdrop' ? { default: () => null }
     : id === '@/app/components/auth/SignInCard' ? { default: (p) => React.createElement('signin-card', { 'data-verb': p.verb, onClick: p.onStart }) }
@@ -127,3 +129,18 @@ for (const retireYear of [2048, null]) {
   assert.equal(destination, '/login');
 }
 console.log('Starting-point handoff preserves entered finances and omits unreached dates.');
+
+// Chosen pace overrides the original handoff immediately before sign-in starts.
+selectedOverride = { monthlyIncome: 6000, monthlySavings: 1750, monthlySpendEstimate: 4250, annualCost: 51000, retireYear: 2045, portfolioBalance: 135000, realReturn: 0.069 };
+let originalKept = false;
+const selectedTree = exports.default({ ...props, prefill: { monthlySavings: 1500 }, onKeepResult: () => { originalKept = true; }, onSave: () => {} });
+assert.match(renderToStaticMarkup(selectedTree), /2045/);
+findCard(selectedTree).props.onStart();
+assert.ok(originalKept);
+assert.equal(selectedSaved.monthlySavings, 1750);
+assert.equal(selectedSaved.monthlySpendEstimate, 4250);
+assert.equal(selectedSaved.annualCost, 51000);
+assert.equal(selectedSaved.retireYear, 2045);
+assert.equal(selectedSaved.portfolioBalance, 135000);
+assert.ok(selectedSaved.generatedAt);
+console.log('Selected savings pace reaches the actual sign-in handoff.');

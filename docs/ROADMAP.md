@@ -1,4 +1,7 @@
 # UntilFire — Product Roadmap
+## October 22, 2026 — City savings benchmark follow-up
+
+- [ ] Add typical savings by city to the savings-pace experience once a reliable, comparable source is verified. Research coverage, median versus average, city versus metro boundaries, data year, household versus individual units, and before-tax versus take-home definitions. Label estimates and broader geographic fallbacks explicitly. A resident percentile requires a savings distribution; never infer it from an average or from unrelated income and spending datasets. Until suitable data is available, keep the user's own savings percentage and money left to spend; do not display invented local benchmarks. This is a research and implementation to-do, not approval to publish an unsupported comparison.
 
 **October 20 money update:** safety cash counts toward freedom with separate cash returns (D-95). Spending accounts remain excluded.
 

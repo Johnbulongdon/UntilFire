@@ -33,6 +33,7 @@
     "test:achieved-fire-reveal": "node scripts/verify-achieved-fire-reveal.mjs",
     "test:fire-type-cta": "node scripts/verify-fire-type-cta-starts-onboarding.mjs",
     "test:start-ctas": "node scripts/verify-start-ctas-open-onboarding.mjs",
+    "test:savings-pace": "node scripts/verify-savings-pace.mjs",
     "test:journey-canvas": "node --experimental-strip-types --no-warnings scripts/verify-journey-canvas.ts",
     "test:journeys": "node --experimental-strip-types --no-warnings scripts/verify-journeys.ts",
     "journeys:capture": "node --experimental-strip-types --no-warnings scripts/capture-journeys.ts",
