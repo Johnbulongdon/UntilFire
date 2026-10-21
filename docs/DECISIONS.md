@@ -3079,3 +3079,13 @@ could be one page. Each extra page between the result and sign-up loses people.
 fires when sign-up starts on that step, so it no longer separates "clicked
 save" from "started Google or email"; step views of `save` still count arrivals.
 
+
+### D-97 — October 22: a simple savings-pace experiment before sign-up
+
+**Status:** Active; founder selected the simplified PC/phone-browser mock and explicitly requested implementation, commit and merge.
+
+**Decision:** Add a responsive reveal step before the existing save/sign-up card. One editable monthly amount and slider update the user's savings percentage, money left to spend, projected date and earlier/later difference. Income stays fixed: higher savings reduce spending and the spending-based retirement target together. Use the existing projection engine, not the illustrative mock dates. The sole plan action reads “Use original plan” at the original amount and “Use updated plan” otherwise. Draft changes do not write a saved plan; the chosen prefill carries into sign-up and Home. Existing reveal IDs remain stable; savings_pace is index 8, before save index 7.
+
+**Why:** The founder asked for fewer words and buttons, visible cause and effect, and an original-position marker. City averages/percentiles require credible comparable data; the roadmap records that research separately.
+
+**Scope / trade-off:** Website on PC and phone browsers only; the separate native Expo onboarding remains unchanged. This adds the selected savings page without redesigning earlier reveal screens or changing authentication providers. No new assumptions links, city rankings or promised retirement dates.

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-22 — Try a different savings pace
+
+- Add an editable monthly savings slider before reveal sign-up on desktop and phone browsers. Income stays fixed; spending, target and date recalculate together using the existing projection. Keep one original/updated-plan button and carry the selected numbers into sign-up. Native Expo onboarding is unchanged.
+
+
 ## 2026-10-21 — Journey canvas panning
 
 - Prevent text selection and native image dragging inside the map so dragging labels pans without getting stuck. Show a grabbing cursor during a pan and reset it on release or cancellation. Keep screenshot inspection and keyboard controls.

@@ -76,7 +76,7 @@ async function walkCalculator(page: Page, shoot: (name: string) => Promise<void>
       if (await next.first().isDisabled()) await step.locator('input:visible').first().fill(SAMPLE_ANSWER)
       await next.first().click()
     } else {
-      await page.getByRole('button', { name: /^(Continue|Save my starting point) →$/ }).first().click()
+      await page.getByRole('button', { name: /^(Continue →|Save my starting point →|Try a different pace →|Use original plan|Use updated plan)$/ }).first().click()
     }
     await settle(page)
     // The freedom date first plays a short loading scene.

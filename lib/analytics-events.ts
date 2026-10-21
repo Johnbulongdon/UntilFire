@@ -129,7 +129,7 @@ export type RevealCtaPlacement = 'reveal_save_step' | 'unreachable';
  *  screen shown instead when the inputs never reach the freedom number. */
 export type RevealStepId =
   | 'freedom_age' | 'life_years' | 'freedom_number' | 'stack_up' | 'expat' | 'save'
-  | 'unreachable';
+  | 'savings_pace' | 'unreachable';
 
 export const REVEAL_STEP_IDS: Record<number, RevealStepId> = {
   2: 'freedom_age',
@@ -138,11 +138,12 @@ export const REVEAL_STEP_IDS: Record<number, RevealStepId> = {
   5: 'stack_up',
   6: 'expat',
   7: 'save',
+  8: 'savings_pace',
 };
 
 export interface RevealStepViewedProperties extends BaseFunnelProperties {
   step_id: RevealStepId;
-  /** RevealFlow's step number, 2–7 (1 is the loading screen). */
+  /** RevealFlow's stable step index, 2–8 (1 is loading; 8 precedes save at 7). */
   step_index: number;
 }
 

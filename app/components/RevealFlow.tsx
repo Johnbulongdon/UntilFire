@@ -7,6 +7,8 @@ import Logo from "@/app/components/Logo";
 import PercentileTrack from "@/app/components/PercentileTrack";
 import type { RevealCtaPlacement } from "@/lib/analytics-events";
 import type { CalculatorPrefill } from "@/lib/journey";
+import SavingsPace from '@/app/components/SavingsPace';
+import { saveCalculatorPrefill } from '@/lib/journey';
 import HomeBackdrop from "@/app/components/auth/HomeBackdrop";
 import SignInCard from "@/app/components/auth/SignInCard";
 import type { NetWorthComparison } from "@/lib/net-worth-compare";
@@ -161,12 +163,14 @@ export default function RevealFlow(props: RevealFlowProps) {
   const [playMotion, setPlayMotion] = useState(false);
   const reduce = prefersReducedMotion && !playMotion;
   const [step, setStep] = useState(1);
+  const [selectedPlan, setSelectedPlan] = useState<CalculatorPrefill | null>(null);
+  const savedPlan = selectedPlan ?? prefill;
   const [showGrowth, setShowGrowth] = useState(false);
   const [showFuture, setShowFuture] = useState(false);
 
   const replay = () => { setPlayMotion(true); setStep(1); };
   const goTo = (n: number) => setStep(Math.min(7, Math.max(2, n)));
-  const next = () => setStep((s) => Math.min(7, s + 1));
+  const next = () => setStep((s) => s === 6 ? 8 : s === 8 ? 7 : Math.min(7, s + 1));
   const back = () => setStep((s) => Math.max(2, s - 1));
 
   // Keyboard navigation between result steps.
@@ -255,26 +259,32 @@ export default function RevealFlow(props: RevealFlowProps) {
     </div>
   );
 
+  if (step === 8) return <SavingsPace prefill={prefill} value={savedPlan.monthlySavings ?? 0}
+    onBack={() => setStep(6)} onUse={plan => { setSelectedPlan(plan); setStep(7); }} />;
+
   // 7 — save: the sign-up card itself, over the blurred Home, so saving the
   // result and signing up are one page (no separate /login stop).
   if (step === 7) return (
     <div className="rf-root" style={{ minHeight: "100vh", position: "relative", background: BG, display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 0" }}>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
-      <HomeBackdrop prefill={prefill} />
+      <HomeBackdrop prefill={savedPlan} />
       <main style={{ width: "100%", maxWidth: 400, padding: "0 24px", position: "relative", zIndex: 1, ...anim("rf-up .55s ease both") }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ marginBottom: 10 }}><Logo variant="auto" size={28} /></div>
           <h1 className="uf-t-h1" style={{ margin: 0, color: "var(--uf-ink)", textWrap: "balance" }}>
-            {freedomYear !== null
-              ? <><span style={{ color: TEAL }}>{freedomYear}</span> is just your starting point</>
+            {(selectedPlan ? selectedPlan.retireYear != null : freedomYear !== null)
+              ? <><span style={{ color: TEAL }}>{selectedPlan ? selectedPlan.retireYear : freedomYear}</span> is just your starting point</>
               : <>Your starting point is ready</>}
           </h1>
         </div>
-        <SignInCard verb="Save" onStart={onKeepResult} />
+        <SignInCard verb="Save" onStart={() => {
+          onKeepResult();
+          if (selectedPlan) saveCalculatorPrefill({ ...selectedPlan, generatedAt: new Date().toISOString() });
+        }} />
         <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 18, marginTop: 16 }}>
-          <button onClick={() => goTo(2)} style={linkPlain}>← Back to results</button>
+          <button onClick={() => setStep(8)} style={linkPlain}>← Back to results</button>
           <button onClick={onAdjust} style={linkPlain}>Adjust inputs</button>
-          <button onClick={onShare} style={linkPlain}>Share result</button>
+          {!selectedPlan && <button onClick={onShare} style={linkPlain}>Share result</button>}
         </div>
       </main>
     </div>
@@ -485,7 +495,7 @@ export default function RevealFlow(props: RevealFlowProps) {
         )}
         {step >= 2 && step < 7 && (
           <button onClick={next} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border-2)", color: "var(--uf-ink)", borderRadius: 10, padding: "15px 40px", font: "700 16px Manrope, sans-serif", cursor: "pointer" }}>
-            {step === 6 ? "Save my starting point →" : "Continue →"}
+            {step === 6 ? "Try a different pace →" : "Continue →"}
           </button>
         )}
       </div>
