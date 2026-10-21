@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-21 — Journeys: zoom and the last boxes
+
+- Clicking a screenshot on the admin Journeys tab now opens it full size (Esc or click to close) instead of opening the page.
+- New pictures: the phone's launch screen for "Open app", "Home, Pro on" and the Pro profile (the browser is told the test account has Pro; nothing is saved), and Stripe checkout and the billing portal (the script stops on Stripe's page; nothing is paid or cancelled). The Stripe pages need the test account's Stripe customer saved once in `subscriptions.stripe_customer_id`, so runs reuse it instead of creating customers.
+
 ## 2026-10-20 — Phone app screens on the Journeys tab
 
 - Phone app steps are now real screenshots: each run builds the app for the browser from `mobile/`, walks onboarding with sample answers, then opens Home, Profile, Pro, Data and account and Delete as the test account. Opening Delete deletes nothing.

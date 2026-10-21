@@ -23,7 +23,10 @@ export interface JourneyStep {
    * - `calc:<name>` — answer the calculator with sample numbers and stop here;
    * - `login:code` — ask for an email code on /login (the request is stubbed, so no email is sent);
    * - `user:/path` — open it signed in as the journeys test account;
-   * - `app:/path`, `app-user:/path` — the same in the phone app's web build, at phone size.
+   * - `pro:/path` — the same, with the browser told the account has Pro (nothing is saved);
+   * - `stripe:checkout`, `stripe:portal` — follow the Pro buttons to Stripe's own page and stop there;
+   * - `app:/path`, `app-user:/path` — the same in the phone app's web build, at phone size;
+   *   `app:launch` is its launch screen.
    *   `app:/onboarding/<screen>` shots are taken in one walk with sample answers.
    */
   shot?: string
@@ -122,15 +125,15 @@ export const JOURNEYS: Journey[] = [
     steps: [
       { label: 'Profile', action: 'Tap Try Pro', route: '/dashboard', shot: 'user:/dashboard?tab=profile' },
       { label: 'Upgrade', action: 'Pick a plan', route: '/dashboard', shot: 'user:/dashboard?tab=profile', click: ['Try Pro'] },
-      { label: 'Stripe checkout', route: '/api/stripe/checkout', external: true },
-      { label: 'Home, Pro on', route: '/dashboard' },
+      { label: 'Stripe checkout', route: '/api/stripe/checkout', shot: 'stripe:checkout', external: true },
+      { label: 'Home, Pro on', route: '/dashboard', shot: 'pro:/dashboard' },
     ],
   },
   {
     id: 'web-cancel', title: 'Cancel Pro', platform: 'web', visitor: 'returning',
     steps: [
-      { label: 'Profile', action: 'Tap Manage billing', route: '/dashboard', shot: 'user:/dashboard?tab=profile' },
-      { label: 'Stripe portal', action: 'Cancel plan', route: '/api/stripe/portal', external: true },
+      { label: 'Profile', action: 'Tap Manage billing', route: '/dashboard', shot: 'pro:/dashboard?tab=profile' },
+      { label: 'Stripe portal', action: 'Cancel plan', route: '/api/stripe/portal', shot: 'stripe:portal', external: true },
       { label: 'Home', route: '/dashboard', shot: 'user:/dashboard' },
     ],
   },
@@ -156,8 +159,8 @@ export const JOURNEYS: Journey[] = [
   {
     id: 'phone-returning', title: 'Phone: coming back', platform: 'phone', visitor: 'returning',
     steps: [
-      // index.tsx draws nothing: it only sends the person on.
-      { label: 'Open app', action: 'Plan saved: sent on', route: 'index.tsx' },
+      // index.tsx draws nothing: what shows is the launch screen (app.json splash).
+      { label: 'Open app', action: 'Plan saved: sent on', route: 'index.tsx', shot: 'app:launch' },
       { label: 'Home', route: '(tabs)/index.tsx', shot: 'app-user:/' },
     ],
   },
