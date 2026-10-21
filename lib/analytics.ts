@@ -328,7 +328,7 @@ export function trackRevealCtaClicked(input: {
     placement: input.placement,
     ...(input.landingSource ? { landing_source: input.landingSource } : {}),
   });
-  // sendInstantly: the click navigates to /login immediately after, and a
+  // sendInstantly: sign-in or /login follows immediately, and a
   // queued event can lose the race with the unload.
   capture(FunnelEvents.REVEAL_CTA_CLICKED, props, { sendInstantly: true });
 }

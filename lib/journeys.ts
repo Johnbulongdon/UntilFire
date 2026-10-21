@@ -57,14 +57,14 @@ const WEB_CALCULATOR: JourneyStep[] = [
   { label: 'Freedom number', action: 'Tap Continue', route: '/', shot: 'calc:number' },
   { label: 'How you stack up', action: 'Tap Continue', route: '/', shot: 'calc:standing' },
   { label: 'Expat FIRE', action: 'Tap Save my starting point', route: '/', shot: 'calc:abroad' },
-  { label: 'Save', action: 'Tap Save my starting point', route: '/', shot: 'calc:save' },
 ]
 
 /** The calculator pages the screenshot script walks through, in order. */
 export const CALC_SHOTS = ['savings', 'portfolio', 'age', 'freedom-age', 'life', 'number', 'standing', 'abroad', 'save'] as const
 
+/** The calculator's save step is the sign-up card itself (Google, Apple soon, or email). */
 const WEB_SIGN_UP: JourneyStep[] = [
-  { label: 'Sign up', action: 'Continue with Google', route: '/login', shot: '/login' },
+  { label: 'Save and sign up', action: 'Save with Google or email', route: '/', shot: 'calc:save' },
   { label: 'Google', route: '/auth/callback', external: true },
   { label: 'Home', route: '/dashboard', shot: 'user:/dashboard' },
 ]
@@ -115,7 +115,7 @@ export const JOURNEYS: Journey[] = [
   {
     id: 'web-email-login', title: 'Log in with email', platform: 'web', visitor: 'returning',
     steps: [
-      { label: 'Log in', action: 'Tap Use email instead', route: '/login', shot: '/login' },
+      { label: 'Log in', action: 'Enter email', route: '/login', shot: '/login' },
       { label: 'Code', action: 'Enter the 6-digit code', route: '/login', shot: 'login:code' },
       { label: 'Home', route: '/dashboard', shot: 'user:/dashboard' },
     ],

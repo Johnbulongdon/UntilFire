@@ -26,7 +26,11 @@ vm.runInNewContext(ts.transpileModule(readFileSync('app/components/RevealFlow.ts
   require: (id) => id === 'react' ? {
     ...React, useEffect: () => {}, useMemo: (fn) => fn(), useRef: (value) => ({ current: value }),
     useState: (value) => [value === 1 ? 7 : typeof value === 'function' ? value() : value, () => {}],
-  } : id === '@/components/ui/YearCubes' ? yearCubes : id === '@/app/components/Logo' ? { default: () => React.createElement('img', { src: '/logo/horizon-color.svg', alt: 'UntilFire' }) } : id === '@/app/components/PercentileTrack' ? { default: () => null } : id === 'next/dynamic' ? { default: () => () => null } : id === '@/lib/fire-number' ? fireNumber : require(id),
+  } : id === '@/components/ui/YearCubes' ? yearCubes : id === '@/app/components/Logo' ? { default: () => React.createElement('img', { src: '/logo/horizon-color.svg', alt: 'UntilFire' }) } : id === '@/app/components/PercentileTrack' ? { default: () => null } : id === 'next/dynamic' ? { default: () => () => null } : id === '@/lib/fire-number' ? fireNumber
+    // The save step's backdrop and sign-up card (D-96), stubbed: their own checks live elsewhere.
+    : id === '@/app/components/auth/HomeBackdrop' ? { default: () => null }
+    : id === '@/app/components/auth/SignInCard' ? { default: (p) => React.createElement('signin-card', { 'data-verb': p.verb, onClick: p.onStart }) }
+    : require(id),
 });
 const props = {
   freedomAge: 52, freedomYear: 2048, yearsToFire: 22, planningAge: 30,
@@ -43,21 +47,36 @@ function findButton(node, label) {
     if (match) return match;
   }
 }
-for (const yearsToFire of [22, 0, null]) {
+function findCard(node) {
+  if (!node || typeof node !== 'object') return;
+  if (node.props?.verb) return node;
+  for (const child of React.Children.toArray(node.props?.children)) {
+    const match = findCard(child);
+    if (match) return match;
+  }
+}
+// The save step is the sign-up card itself (D-96): starting sign-up keeps the result.
+for (const yearsToFire of [22, 0]) {
+  let kept = 0;
+  const tree = exports.default({ ...props, yearsToFire, prefill: {}, onKeepResult: () => { kept++; }, onSave: () => { throw new Error('the save step does not leave for /login'); } });
+  const html = renderToStaticMarkup(tree);
+  assert.match(html, /is just your starting point/);
+  assert.match(html, /data-verb="Save"/);
+  assert.doesNotMatch(html, /EXPLORE SCENARIOS|Save \$500|future 5% raise|sabbatical/);
+  for (const label of ['Back to results', 'Adjust inputs', 'Share result']) assert.ok(findButton(tree, label), label);
+  findCard(tree).props.onStart();
+  assert.equal(kept, 1);
+}
+{
   let saves = 0;
-  const tree = exports.default({ ...props, yearsToFire, onSave: () => { saves++; } });
+  const tree = exports.default({ ...props, yearsToFire: null, prefill: {}, onKeepResult: () => {}, onSave: () => { saves++; } });
   const html = renderToStaticMarkup(tree);
   assert.match(html, /Save my starting point/);
-  assert.doesNotMatch(html, /EXPLORE SCENARIOS|Save \$500|future 5% raise|sabbatical/);
-  const button = findButton(tree, 'Save my starting point');
-  assert.ok(button);
-  button.props.onClick();
+  findButton(tree, 'Save my starting point').props.onClick();
   assert.equal(saves, 1);
-  if (yearsToFire === null) {
-    assert.match(html, /Not reached under these assumptions/);
-    assert.doesNotMatch(html, /2048|Infinity|NaN|Free years|Share result/);
-    assert.ok(findButton(tree, 'Adjust inputs'));
-  }
+  assert.match(html, /Not reached under these assumptions/);
+  assert.doesNotMatch(html, /2048|Infinity|NaN|Free years|Share result/);
+  assert.ok(findButton(tree, 'Adjust inputs'));
 }
 console.log('Starting-point save and unreachable-result rendering checks passed.');
 // Verify the real save handler carries entered numbers through the browser handoff.
@@ -67,7 +86,7 @@ let handler;
 function visit(node) {
   if (ts.isFunctionDeclaration(node) && node.name?.text === 'RevealScreen') {
     function find(child) {
-      if (ts.isVariableDeclaration(child) && child.name.getText(ast) === 'onSave') handler = child.initializer.getText(ast);
+      if (ts.isVariableStatement(child) && ['prefill', 'keepResult', 'onSave'].includes(child.declarationList.declarations[0].name.getText(ast))) handler = (handler ?? '') + child.getText(ast) + '\n';
       ts.forEachChild(child, find);
     }
     find(node);
@@ -93,7 +112,7 @@ for (const retireYear of [2048, null]) {
     saveCalculatorPrefill: (value) => { saved = JSON.parse(JSON.stringify(value)); },
     router: { push: (path) => { destination = path; } },
   };
-  vm.runInNewContext(ts.transpileModule(`exports.save = ${handler};`, {
+  vm.runInNewContext(ts.transpileModule(`${handler}\nexports.save = onSave;`, {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
   }).outputText, scope);
   scope.exports.save('reveal_save_step');

@@ -15,7 +15,7 @@ import RevealFlow from "@/app/components/RevealFlow";
 import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
 import { CITY_COORDS } from "@/lib/city-coords";
 import { supabase } from "@/lib/supabase";
-import { saveCalculatorPrefill } from "@/lib/journey";
+import { saveCalculatorPrefill, type CalculatorPrefill } from "@/lib/journey";
 import { saveExplorePlan } from "@/lib/explore-store";
 import { calcFIRE, calcTakeHome } from "@/lib/fire";
 import { DEFAULT_RETURN_PCT, inflationFor } from "@/lib/fire-number";
@@ -1052,9 +1052,14 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
     return `${symbol}${Math.round(v)}`;
   };
 
-  const onSave = (placement: RevealCtaPlacement) => {
+  const prefill: CalculatorPrefill = { monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear ?? undefined, currentAge, portfolioBalance, landingSource, defaultCurrency: currency, realReturn: marketReturn };
+  /** Keeps the result in this browser so the dashboard picks it up after sign-in. */
+  const keepResult = (placement: RevealCtaPlacement) => {
     trackRevealCtaClicked({ placement, landingSource });
-    saveCalculatorPrefill({ monthlyIncome: Math.round(takeHome / 12), monthlySavings: savings, monthlySpendEstimate: Math.max(0, Math.round(takeHome / 12 - savings)), cityName: city.name, stateKey, fireTarget: result.fireTarget, annualCost: city.col, retireYear: result.retireYear ?? undefined, generatedAt: new Date().toISOString(), currentAge, portfolioBalance, landingSource, defaultCurrency: currency, realReturn: marketReturn });
+    saveCalculatorPrefill({ ...prefill, generatedAt: new Date().toISOString() });
+  };
+  const onSave = (placement: RevealCtaPlacement) => {
+    keepResult(placement);
     router.push("/login");
   };
 
@@ -1098,6 +1103,8 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
         expatCities={expatCities}
         formatCompact={formatCompact}
         onSave={onSave}
+        prefill={prefill}
+        onKeepResult={() => keepResult("reveal_save_step")}
         onStepViewed={(step, unreachable) => trackRevealStepViewed({
           stepId: unreachable ? "unreachable" : REVEAL_STEP_IDS[step],
           stepIndex: step,
