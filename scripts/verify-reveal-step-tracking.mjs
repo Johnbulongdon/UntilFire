@@ -20,7 +20,8 @@ const checks = [];
 const check = (name, ok, detail = '') => checks.push({ name, ok, detail });
 
 const flow = readFileSync('app/components/RevealFlow.tsx', 'utf8');
-const stepsRendered = [...flow.matchAll(/\{step === (\d) && \(/g)].map((m) => Number(m[1]));
+// Steps render inline (`{step === n && (`); the save step (7) is its own page (`if (step === 7) return (`).
+const stepsRendered = [...flow.matchAll(/\{step === (\d) && \(|if \(step === ([2-9])\) return \(/g)].map((m) => Number(m[1] ?? m[2]));
 check('every rendered result step has an id',
   stepsRendered.length === 6 && stepsRendered.every((n) => typeof REVEAL_STEP_IDS[n] === 'string'),
   `rendered ${stepsRendered.join(',')}; ids for ${Object.keys(REVEAL_STEP_IDS).join(',')}`);

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-21 — Save and sign up are one page
+
+- The calculator's last step is now the sign-up card itself: "{year} is just your starting point" over a blurred view of the real Home (its own cards, filled with the visitor's numbers where it has them), with Save with Google, Save with Apple and an email code. Back to results, Adjust inputs and Share stay underneath. There is no separate stop at /login after the calculator.
+- /login uses the same card and blurred Home on every visit, not only after the calculator. A direct visit reads "Start your journey to freedom" (it can be a first visit, so no "Welcome back").
+- Apple is a placeholder until it is set up in Supabase: tapping it says it is coming soon. Email shows on the card instead of behind "Use email instead" (still behind `NEXT_PUBLIC_EMAIL_SIGNIN`, D-18).
+- The admin Journeys map merges "Save" and "Sign up" into one step.
+
 ## 2026-10-21 — Journeys: zoom and the last boxes
 
 - Clicking a screenshot on the admin Journeys tab now opens it full size (Esc or click to close) instead of opening the page.

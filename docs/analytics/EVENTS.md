@@ -183,10 +183,14 @@ querying history.
 
 ### `funnel_reveal_cta_clicked`
 
-- **Where**: `app/HomeClient.tsx`, `onSave`, before the push to `/login`.
-  Sent instantly, because the navigation follows immediately and a queued
-  event loses the race with the unload.
-- **Why it exists**: `funnel_signup_started` fires on the login page's Google
+- **Where**: `app/HomeClient.tsx`, `keepResult`. On the save step (D-96) it
+  runs as Google or email sign-up starts on that step's card; on the
+  unreachable screen, before the push to `/login`. Sent instantly, because
+  the navigation follows immediately and a queued event loses the race with
+  the unload. Since D-96 the save step's click and `funnel_signup_started`
+  happen together, so arrivals on the step (`funnel_reveal_step_viewed`,
+  `save`) versus this event is the drop that matters.
+- **Why it exists**: `funnel_signup_started` fires on the sign-up card's Google
   button, not on the reveal. Everything between the two was one unexplained
   drop, and it hides three different failures that need three different
   fixes: never reaching the save step of the reveal sequence, reaching it and

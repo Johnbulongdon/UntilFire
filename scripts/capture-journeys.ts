@@ -63,7 +63,7 @@ const settle = (page: Page) => page.waitForTimeout(900) // let entrance motion f
 
 /**
  * Answers the website calculator with its suggested amounts, taking one shot
- * per CALC_SHOTS page, and ends on /login after "Save my starting point".
+ * per CALC_SHOTS page, and ends on the save step, which is the sign-up card.
  */
 async function walkCalculator(page: Page, shoot: (name: string) => Promise<void>) {
   await page.goto(`${base}/?start=onboarding&city=austin&uf_internal=1`, { waitUntil: 'networkidle', timeout: 45_000 })
@@ -85,8 +85,6 @@ async function walkCalculator(page: Page, shoot: (name: string) => Promise<void>
     if (!(await next.count())) await page.waitForTimeout(2200)
     await shoot(`calc:${name}`)
   }
-  await page.getByRole('button', { name: 'Save my starting point →' }).first().click()
-  await page.waitForURL('**/login**', { timeout: 20_000 })
 }
 
 /** Opens the code box on /login. The send is answered here, so no email goes out. */

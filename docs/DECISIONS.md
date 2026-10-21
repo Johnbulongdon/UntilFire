@@ -3059,3 +3059,23 @@ separate cash returns address that concern without hiding the balance.
 old model's excess cash earning equity returns, especially for cash-heavy users.
 Net worth can still differ due to spending cash, home value and liabilities.
 No bank audit or already-funded chart redesign is included in this decision.
+
+### D-96 — October 21: saving the result and signing up are one page
+
+**Status:** Active; founder approved the mock on October 21. Amends the
+October 18 sign-up page (PR #264, D-89 thread), which kept a separate /login stop.
+
+**Decision:** The reveal's save step (RevealFlow step 7) renders the sign-up
+card directly: Google, Apple (placeholder until configured) and email, over a
+blurred Home built from the dashboard's own cards. /login shows the same card
+and backdrop on every visit; its headline is the freedom year after the
+calculator and "Start your journey to freedom" otherwise, never "Welcome back".
+
+**Why / source:** John noticed the blurred dashboard never showed on a direct
+login visit (it needed calculator numbers) and asked whether Save and Sign up
+could be one page. Each extra page between the result and sign-up loses people.
+
+**Trade-off:** `funnel_reveal_cta_clicked` (placement `reveal_save_step`) now
+fires when sign-up starts on that step, so it no longer separates "clicked
+save" from "started Google or email"; step views of `save` still count arrivals.
+
