@@ -2,7 +2,7 @@ import type { Journey, JourneyStep, Platform } from './journeys.ts';
 
 export const NODE_WIDTH = 200;
 export const NODE_HEIGHT = 260;
-export interface JourneyNode { id: string; step: JourneyStep; platform: Platform; x: number; y: number; journeys: string[] }
+export interface JourneyNode { id: string; step: JourneyStep; platform: Platform; x: number; y: number; journeys: string[]; chainStart?: boolean }
 export interface JourneyEdge { id: string; from: string; to: string; label: string; journeys: string[]; navigation?: boolean }
 export interface JourneyGraph { nodes: JourneyNode[]; edges: JourneyEdge[]; width: number; height: number; headings: { text: string; x: number; y: number }[] }
 
@@ -44,17 +44,26 @@ export function journeyGraph(journeys: Journey[]): JourneyGraph {
       const row = Math.floor(index / 5), col = row % 2 ? 4 - index % 5 : index % 5;
       place(step, 420 + col * 270, 120 + row * 360);
     });
-    let entry = 1, branch = 0;
-    const mainRows = Math.ceil((primary.steps.length - 1) / 5);
+    let entry = 1, row = Math.ceil((primary.steps.length - 1) / 5), right = false;
     for (const path of paths.filter(j => j !== primary)) {
       const fresh = path.steps.filter(s => !placed.has(screenKey(platform, s)));
       if (path.visitor === 'new' && fresh.length === 1) { place(fresh[0], 80, 120 + entry++ * 310); continue; }
       if (!fresh.length) continue;
       // Branches stay on the same board, tied to their shared Home / Profile.
-      const row = mainRows + Math.floor(branch / 2), col = branch % 2 ? 3 : 0;
-      fresh.forEach((step, i) => place(step, 420 + (col + i) * 270, 120 + row * 360));
-      // A left branch longer than three screens would run into the right one: it keeps the row.
-      branch += col === 0 && fresh.length > 3 ? 2 : 1;
+      if (fresh.length <= 3) {
+        fresh.forEach((step, i) => place(step, 420 + ((right ? 3 : 0) + i) * 270, 120 + row * 360));
+        if (right) row++;
+        right = !right;
+        continue;
+      }
+      // A longer branch gets rows of its own, snaking like the main path.
+      if (right) { row++; right = false; }
+      fresh.forEach((step, i) => {
+        const r = Math.floor(i / 5), col = r % 2 ? 4 - i % 5 : i % 5;
+        place(step, 420 + col * 270, 120 + (row + r) * 360);
+      });
+      nodes.get(screenKey(platform, fresh[0]))!.chainStart = true;
+      row += Math.ceil(fresh.length / 5);
     }
     const find = (shot: string) => [...nodes.values()].find(n => n.platform === platform && n.step.shot === shot && !n.step.click?.length);
     // These are existing app navigation, joining the journeys' separate starts.
@@ -81,6 +90,11 @@ export function edgePath(from: JourneyNode, to: JourneyNode, lane: number, board
   if (from.y === to.y) {
     const right = to.x > from.x;
     return `M ${from.x + (right ? NODE_WIDTH : 0)} ${cy(from)} H ${to.x + (right ? 0 : NODE_WIDTH)}`;
+  }
+  // Into a longer branch: along the row gap, then down the free lane left of the board.
+  if (to.chainStart && to.y > from.y) {
+    const gap = from.y + NODE_HEIGHT + 60 + lane % 3 * 8, left = 385 - lane % 3 * 8;
+    return `M ${cx(from)} ${from.y + NODE_HEIGHT} V ${gap} H ${left} V ${cy(to)} H ${to.x}`;
   }
   if (from.x === to.x && to.y > from.y) return `M ${cx(from)} ${from.y + NODE_HEIGHT} V ${to.y}`;
   if (from.x < 300 && to.x >= 420) {

@@ -132,7 +132,7 @@ export default function JourneyCanvas({ graph, activeJourneys, device, shots, on
 
 function ScreenNode({ node, branching, device, shots, dim, onZoom, onFocus }: { node: JourneyNode; branching: boolean; device: ShotDevice; shots: string; dim: boolean; onZoom: (shot: { src: string; label: string }) => void; onFocus: () => void }) {
   const [broken, setBroken] = useState(false);
-  const step = node.step, size = step.shot ? shotDevice(step.shot, device) : device;
+  const step = node.step, size = step.shot ? shotDevice(step.shot, device, step.click) : device;
   const src = step.shot ? `${shots}/${shotFile(step.shot, size, step.click)}` : null;
   return <figure style={{ position: 'absolute', left: node.x, top: node.y, width: NODE_WIDTH, height: NODE_HEIGHT, margin: 0, padding: 12, boxSizing: 'border-box', borderRadius: 14, border: `1.5px ${step.external ? 'dashed' : 'solid'} ${step.label.startsWith('Home') ? '#059669' : '#CBD5E1'}`, background: '#fff', boxShadow: '0 3px 10px #0F172A08', opacity: dim ? 0.23 : 1 }}>
     <div style={{ fontSize: 10, fontWeight: 800, color: '#475569', marginBottom: 9 }}>{step.external ? 'EXTERNAL' : step.label.startsWith('Home') ? (step.shot?.startsWith('pro:') ? 'HOME · PRO' : 'HOME · SHARED HUB') : step.label === 'Profile' && node.platform === 'web' ? (step.shot?.startsWith('pro:') ? 'PROFILE · PRO' : 'PROFILE · FREE') : node.journeys.length > 1 ? 'SHARED SCREEN' : 'SCREEN'}</div>

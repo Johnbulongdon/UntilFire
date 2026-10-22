@@ -10,7 +10,7 @@ import { haptic } from '@/lib/haptics'
 import { Button } from './Button'
 import { PrimaryButton } from './PrimaryButton'
 import { ProgressBar } from './ProgressBar'
-import { Events, track } from '@/lib/analytics'
+import { Events, stepProps, track } from '@/lib/analytics'
 
 /** One onboarding question: progress, the question, its input, and a pinned Continue. */
 export function QuestionScreen(props: {
@@ -28,7 +28,7 @@ export function QuestionScreen(props: {
   /** For screens with their own drag (the globe): the page itself doesn't scroll. */
   noScroll?: boolean
 }) {
-  useEffect(() => { track(Events.ONBOARDING_STEP_VIEWED, { step: props.step, steps: props.steps }) }, [props.step, props.steps])
+  useEffect(() => { track(Events.ONBOARDING_STEP_VIEWED, stepProps(props.step, props.steps)) }, [props.step, props.steps])
   return (
     <SafeAreaView className="flex-1 bg-ground">
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

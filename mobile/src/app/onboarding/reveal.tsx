@@ -26,7 +26,7 @@ export default function Reveal() {
   const player = useAudioPlayer(require('../../../assets/sounds/reveal.wav'))
 
   useEffect(() => {
-    track(Events.ONBOARDING_REVEALED, { years_bucket: yearsBucket(result.year == null ? null : result.year - thisYear) })
+    track(Events.ONBOARDING_REVEALED, { years_to_fire_bucket: yearsBucket(result.year == null ? null : result.year - thisYear) })
     // Saved as soon as it shows, so leaving from any later reveal keeps the plan.
     savePlan(plan)
   // eslint-disable-next-line react-hooks/exhaustive-deps

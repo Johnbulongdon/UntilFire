@@ -45,7 +45,7 @@ export default function SignIn() {
   const send = async () => {
     if (!isPlausibleEmail(email)) { haptic.warn(); setError('Check the email address.'); return }
     setBusy(true); setError('')
-    track(Events.SIGNUP_STARTED, { method: 'email' })
+    track(Events.SIGNUP_STARTED, { auth_provider: 'email' })
     const problem = await sendCode(email)
     setBusy(false)
     if (problem) { haptic.warn(); setError(problem); return }
@@ -112,7 +112,7 @@ export default function SignIn() {
                       style={{ height: 56 }}
                       onPress={async () => {
                         haptic.press(); setError(''); setBusy(true)
-                        track(Events.SIGNUP_STARTED, { method: 'apple' })
+                        track(Events.SIGNUP_STARTED, { auth_provider: 'apple' })
                         const problem = await signInWithApple()
                         setBusy(false)
                         if (problem) { haptic.warn(); setError(problem) }
@@ -123,7 +123,7 @@ export default function SignIn() {
                     accessibilityRole="button"
                     onPress={async () => {
                       haptic.press(); setError(''); setBusy(true)
-                      track(Events.SIGNUP_STARTED, { method: 'google' })
+                      track(Events.SIGNUP_STARTED, { auth_provider: 'google' })
                       const problem = await signInWithGoogle()
                       setBusy(false)
                       if (problem) { haptic.warn(); setError(problem) }

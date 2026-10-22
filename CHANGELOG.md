@@ -5,6 +5,15 @@
 - Home's Today strip asks "Your lease: stay or move?" 30 days before the notice deadline, and "Do you rent or pay a mortgage?" while anything is on the old combined tag, the same as the phone. An answer on either counts on both. Move opens Plan → Compare.
 - Plan → Compare offers "Renew at +x%" and "Move, $y less rent" from the year the lease ends, when the Rent bill has a lease. Tries only; the freedom date stays on real spending (D-88).
 
+## 2026-10-22 — Phone app sends its funnel to PostHog
+
+- App Store and preview builds now send the phone's funnel (onboarding questions, freedom date, sign-up, Pro screen, purchase) into the same PostHog project as the website. Before, the key was missing from the build, so nothing arrived.
+- The phone's events use the website's property names (`step_id`, `years_to_fire_bucket`, `auth_provider`), so one funnel or breakdown covers both; split them with `surface = ios_app`.
+
+## 2026-10-22 — Journeys map covers the whole app
+
+- Admin → Journeys now also shows the Home tour (website and phone), every Money and Plan page with their sub-pages, and the phone's Profile pages, as paths that branch off Home or Profile. Longer paths get rows of their own on the map. Every PR that changes the journeys now screenshots the signed-in and phone screens as a test, without replacing the live pictures.
+
 ## 2026-10-22 — Cancel Pro in three short steps
 
 - Profile → Cancel Pro opens three steps: one reason (five choices, no "Other"), what stays free (your freedom date, budget, plan, one bank), and a goodbye with the date Pro ends and "No more charges". Cancelling is one tap from every step; nothing ends early (D-99).

@@ -20,6 +20,8 @@
       "env": {
         "EXPO_PUBLIC_SENTRY_DSN": "https://1ab53282603a01f16a1827b2674b97e7@o4512272601841664.ingest.us.sentry.io/4512272703881216",
         "EXPO_PUBLIC_APP_ENV": "preview",
+        "EXPO_PUBLIC_POSTHOG_KEY": "phc_G2bAlcWpA8SR19JqIrklfc8w7O2vB6Vwo5l0mPWIz9z",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com",
         "SENTRY_ORG": "untilfire",
         "SENTRY_PROJECT": "untilfire-app"
       }
@@ -30,6 +32,8 @@
       "env": {
         "EXPO_PUBLIC_SENTRY_DSN": "https://1ab53282603a01f16a1827b2674b97e7@o4512272601841664.ingest.us.sentry.io/4512272703881216",
         "EXPO_PUBLIC_APP_ENV": "production",
+        "EXPO_PUBLIC_POSTHOG_KEY": "phc_G2bAlcWpA8SR19JqIrklfc8w7O2vB6Vwo5l0mPWIz9z",
+        "EXPO_PUBLIC_POSTHOG_HOST": "https://us.i.posthog.com",
         "SENTRY_ORG": "untilfire",
         "SENTRY_PROJECT": "untilfire-app"
       }
