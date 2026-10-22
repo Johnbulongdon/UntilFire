@@ -2,6 +2,7 @@
   "expo": {
     "name": "UntilFire",
     "slug": "untilfire",
+    "owner": "ngjohn101",
     "scheme": "untilfire",
     "version": "0.1.0",
     "orientation": "portrait",
