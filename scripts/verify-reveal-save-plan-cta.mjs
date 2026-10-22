@@ -32,6 +32,8 @@ vm.runInNewContext(ts.transpileModule(readFileSync('app/components/RevealFlow.ts
     // The save step's backdrop and sign-up card (D-96), stubbed: their own checks live elsewhere.
     : id === '@/app/components/auth/HomeBackdrop' ? { default: () => null }
     : id === '@/app/components/auth/SignInCard' ? { default: (p) => React.createElement('signin-card', { 'data-verb': p.verb, onClick: p.onStart }) }
+    // The Freedom age share button (D-98), stubbed: test:freedom-share covers it.
+    : id === '@/app/components/ShareFreedomYear' ? { default: () => null }
     : require(id),
 });
 const props = {

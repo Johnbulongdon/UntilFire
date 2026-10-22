@@ -3089,3 +3089,30 @@ save" from "started Google or email"; step views of `save` still count arrivals.
 **Why:** The founder asked for fewer words and buttons, visible cause and effect, and an original-position marker. City averages/percentiles require credible comparable data; the roadmap records that research separately.
 
 **Scope / trade-off:** Website on PC and phone browsers only; the separate native Expo onboarding remains unchanged. This adds the selected savings page without redesigning earlier reveal screens or changing authentication providers. No new assumptions links, city rankings or promised retirement dates.
+
+### D-98 — October 22: share the freedom year from the Freedom age page
+
+**Status:** Active. Requested by the founder on 2026-10-22 ("Growth plan from Moonly video" thread).
+**Decision:** The calculator's Freedom age page has a "Share my freedom year"
+button. It shares `/share/freedom?y=<year>`, whose preview image
+(`/api/og/freedom`) reads "Free to stop working in 2041". The link, image and
+share page carry the year only, never an amount, age or city. On phones it
+opens the share sheet; elsewhere it copies the link. The share page asks the
+visitor "When could you stop working?" and leads to the calculator tagged
+`source=share-freedom-year`; it does not repeat the sharer's year (founder:
+someone else's year is no hook for the visitor). The existing "Share result"
+picker on the save step is unchanged.
+**Why:** Traffic, not the landing page, is the bottleneck: in the 30 days to
+2026-10-22 most landing exits were bots or startup-directory visitors, while
+search and FIRE-page visitors mostly started the calculator. A result people
+are glad to post is free, relevant traffic. The only share was a small link
+on the last screen behind a three-card picker. Extends D-22's rule (share
+where you stand, never what you have) to the calculator.
+**Guardrails:** `parseFreedomYear` accepts only a four-digit year from this
+year to 80 years ahead, so a hand-edited link can't put other text on the
+image. The share page is noindex and canonical to `/`. `test:freedom-share`
+checks both. The share event sends only the method, never the year.
+**Measure:** `funnel_freedom_year_shared` per Freedom age view, and landings
+with `landing_source=share-freedom-year`. Revisit after 28 days.
+**Source:** `app/components/ShareFreedomYear.tsx`, `lib/freedom-share.ts`,
+`app/share/freedom/page.tsx`, `app/api/og/freedom/route.tsx`.
