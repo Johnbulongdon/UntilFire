@@ -11,6 +11,7 @@ import SavingsPace from '@/app/components/SavingsPace';
 import { saveCalculatorPrefill } from '@/lib/journey';
 import HomeBackdrop from "@/app/components/auth/HomeBackdrop";
 import SignInCard from "@/app/components/auth/SignInCard";
+import ShareFreedomYear from "@/app/components/ShareFreedomYear";
 import type { NetWorthComparison } from "@/lib/net-worth-compare";
 import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
 import { CAUTIOUS_RETURN_PCT, DEFAULT_RETURN_PCT } from "@/lib/fire-number";
@@ -358,6 +359,11 @@ export default function RevealFlow(props: RevealFlowProps) {
                 <button onClick={onAdjust} style={{ marginTop: 2, background: "none", border: "none", color: "var(--uf-ink-2)", font: "600 13px Manrope, sans-serif", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 }}>
                   Based on an assumed age of {planningAge} — add yours for a sharper date →
                 </button>
+              )}
+              {!isAlreadyFire && freedomYear !== null && (
+                <div style={{ marginTop: 6, position: "relative", ...anim("rf-up .7s 2s ease both") }}>
+                  <ShareFreedomYear year={freedomYear} />
+                </div>
               )}
             </div>
           )}

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-22 — Share your freedom year
+
+- The calculator's Freedom age page has a "Share my freedom year" button. Phones open the share sheet; computers copy the link. The link's preview reads "Free to stop working in 2041" and leads friends to the calculator. It shares the year only, never amounts, age or city (D-98).
+
 ## 2026-10-22 — Try a different savings pace
 
 - Add an editable monthly savings slider before reveal sign-up on desktop and phone browsers. Income stays fixed; spending, target and date recalculate together using the existing projection. Keep one original/updated-plan button and carry the selected numbers into sign-up. Native Expo onboarding is unchanged.

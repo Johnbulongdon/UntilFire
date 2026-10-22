@@ -65,6 +65,7 @@ export const FunnelEvents = {
   EXPLORE_PLAN_STARTED: 'funnel_explore_plan_started',
   // The one-page plan saved as a PDF (D-60), with or without the UntilFire name.
   FREEDOM_REPORT_EXPORTED: 'funnel_freedom_report_exported',
+  FREEDOM_YEAR_SHARED: 'funnel_freedom_year_shared',
   // Plan → Compare (D-69): what was done with life changes. Never ages, years, amounts or names.
   PLAN_COMPARE: 'funnel_plan_compare',
 } as const;
@@ -291,3 +292,5 @@ export interface PlanCompareProperties extends BaseFunnelProperties {
 }
 export interface ExploreStarredProperties extends BaseFunnelProperties { starred: boolean }
 export interface FreedomReportExportedProperties extends BaseFunnelProperties { format: 'page' | 'poster' | 'timeline' | 'reddit'; branded: boolean }
+/** D-98: the year itself is never sent, only how it was shared. */
+export interface FreedomYearSharedProperties extends BaseFunnelProperties { share_method: 'native' | 'clipboard' }

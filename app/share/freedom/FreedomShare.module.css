@@ -1,0 +1,8 @@
+/* Text on the green call to action: white on cream, the ground colour in dark (as the net worth share page). */
+.primaryLink {
+  color: #fff;
+}
+
+:global(.dark) .primaryLink {
+  color: var(--uf-ground);
+}

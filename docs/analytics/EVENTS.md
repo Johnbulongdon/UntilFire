@@ -487,6 +487,14 @@ tools get used. Counts and enums only; no amounts, merchants or dates.
   `discarded`.
 - Never ages, years, dates, amounts or what a change is called.
 
+### `funnel_freedom_year_shared` (D-98)
+
+- **Where**: `app/components/ShareFreedomYear.tsx`, on the calculator's Freedom
+  age page, after the share sheet completes or the link is copied. Closing
+  the share sheet sends nothing.
+- **Properties**: `share_method` (`native` | `clipboard`). Never the year.
+- Visitors arriving from a shared link carry `landing_source=share-freedom-year`.
+
 ### `funnel_freedom_report_exported` (D-60)
 
 - **Where**: `app/dashboard/FreedomReport.tsx`, on Save as PDF, Download PNG

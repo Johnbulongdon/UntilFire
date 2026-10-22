@@ -28,6 +28,7 @@ import {
   type FireTypeStartedProperties,
   type FireTypeCompletedProperties,
   type FireTypeSharedProperties,
+  type FreedomYearSharedProperties,
   type FireTypeCtaClickedProperties,
   type HysaEmptyStateCtaClickedProperties,
   type NextMoveViewedProperties,
@@ -287,6 +288,11 @@ export function trackFireTypeShared(input: { fireTypeCode: string; shareMethod: 
     share_method: input.shareMethod,
   });
   capture(FunnelEvents.FIRE_TYPE_SHARED, props);
+}
+
+export function trackFreedomYearShared(input: { shareMethod: 'native' | 'clipboard' }) {
+  const props: FreedomYearSharedProperties = withVersion({ share_method: input.shareMethod });
+  capture(FunnelEvents.FREEDOM_YEAR_SHARED, props);
 }
 
 export function trackFireTypeCtaClicked(input: { fireTypeCode: string; source?: string }) {
