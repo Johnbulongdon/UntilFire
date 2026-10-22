@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-22 — Zoom the journey map with the mouse wheel
+
+- Admin → Journeys: scrolling over the map now zooms in and out toward the mouse pointer, and a trackpad pinch does the same. The page no longer scrolls while the pointer is on the map. The buttons and keys still work.
+
 ## 2026-10-22 — Share your freedom year
 
 - The calculator's Freedom age page has a "Share my freedom year" button. Phones open the share sheet; computers copy the link. The link's preview reads "Free to stop working in 2041" and leads friends to the calculator. It shares the year only, never amounts, age or city (D-98).
