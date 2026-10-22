@@ -3097,8 +3097,10 @@ save" from "started Google or email"; step views of `save` still count arrivals.
 button. It shares `/share/freedom?y=<year>`, whose preview image
 (`/api/og/freedom`) reads "Free to stop working in 2041". The link, image and
 share page carry the year only, never an amount, age or city. On phones it
-opens the share sheet; elsewhere it copies the link. The share page leads to
-the calculator tagged `source=share-freedom-year`. The existing "Share result"
+opens the share sheet; elsewhere it copies the link. The share page asks the
+visitor "When could you stop working?" and leads to the calculator tagged
+`source=share-freedom-year`; it does not repeat the sharer's year (founder:
+someone else's year is no hook for the visitor). The existing "Share result"
 picker on the save step is unchanged.
 **Why:** Traffic, not the landing page, is the bottleneck: in the 30 days to
 2026-10-22 most landing exits were bots or startup-directory visitors, while

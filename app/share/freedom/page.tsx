@@ -31,27 +31,16 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   }
 }
 
-export default async function FreedomSharePage({ searchParams }: Props) {
-  const { y } = await searchParams
-  const year = parseFreedomYear(y)
-
+// The page speaks to the visitor about their own year; the sharer's year
+// only appears in the link preview they chose to post.
+export default function FreedomSharePage() {
   return (
     <main style={{ background: 'var(--uf-ground)', color: 'var(--uf-ink)', minHeight: '100vh', padding: 'var(--uf-s7) var(--uf-s6)' }}>
       <div style={{ maxWidth: 560, margin: '0 auto', display: 'grid', gap: 'var(--uf-s5)', justifyItems: 'center', textAlign: 'center' }}>
         <div style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: 'var(--uf-s6) var(--uf-s5)', width: '100%', display: 'grid', gap: 'var(--uf-s4)', justifyItems: 'center' }}>
-          {year ? (
-            <>
-              <p className="uf-t-small" style={{ margin: 0, color: 'var(--uf-ink-2)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>
-                Someone could stop working in
-              </p>
-              <h1 className="uf-t-display" style={{ margin: 0, color: 'var(--uf-teal)' }}>{year}</h1>
-              <p className="uf-t-h2" style={{ margin: 0 }}>When could you?</p>
-            </>
-          ) : (
-            <h1 className="uf-t-h2" style={{ margin: 0 }}>When could you stop working?</h1>
-          )}
+          <h1 className="uf-t-h1" style={{ margin: 0 }}>When could you stop working?</h1>
           <p className="uf-t-body" style={{ margin: 0, color: 'var(--uf-ink-2)' }}>
-            Answer a few questions about your pay, savings and spending. Free, no sign-up, about a minute.
+            Most people wait until 65. Find your year in a minute. Free, no sign-up.
           </p>
           <Link
             href={START}
