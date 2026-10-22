@@ -22,7 +22,7 @@ for (const platform of ['web','phone'] as const) {
     if (visited.has(edge.from) || visited.has(edge.to)) { visited.add(edge.from); visited.add(edge.to); }
   }
   assert.equal(visited.size, graph.nodes.length, 'no disconnected path islands');
-  const homes=graph.nodes.filter(n => n.step.shot === (platform === 'web' ? 'user:/dashboard' : 'app-user:/'));
+  const homes=graph.nodes.filter(n => n.step.shot === (platform === 'web' ? 'user:/dashboard' : 'app-user:/') && !n.step.click?.length);
   assert.equal(homes.length,1,'all standard Home paths converge on one hub');
 }
 const web=journeyGraph(JOURNEYS.filter(j => j.platform==='web'));

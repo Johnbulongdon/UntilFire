@@ -4,7 +4,7 @@ import path from 'node:path'
 
 import { chromium, type Browser, type Page } from 'playwright'
 
-import { CALC_SHOTS, JOURNEYS, SHOT_BUCKET, SHOT_VIEWPORTS, shotFile, type ShotDevice } from '../lib/journeys.ts'
+import { CALC_SHOTS, JOURNEYS, SHOT_BUCKET, SHOT_VIEWPORTS, shotDevice, shotFile, type ShotDevice } from '../lib/journeys.ts'
 
 // Screenshots every journey step that has a `shot`, at desktop and phone size,
 // and uploads them to the public `journeys` bucket the admin Journeys tab reads.
@@ -18,6 +18,8 @@ const base = (process.env.JOURNEY_BASE_URL ?? 'https://www.untilfire.com').repla
 const supabaseUrl = process.env.SUPABASE_URL
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const calculatorOnly = process.env.JOURNEY_CALCULATOR_ONLY === '1'
+// The PR check for signed-in and phone screens leaves the calculator to the job that runs the PR build.
+const skipCalculator = process.env.JOURNEY_SKIP_CALCULATOR === '1'
 const upload = !calculatorOnly && !!supabaseUrl && !!serviceKey && process.env.JOURNEY_DRY_RUN !== '1'
 
 // A real account the script signs in as. It never pays and never deletes.
@@ -189,6 +191,8 @@ async function captureApp(browser: Browser, dir: string, shots: string[], shoot:
       // The app's Supabase client keeps its session under the default key.
       const key = `sb-${new URL(supabaseUrl!).hostname.split('.')[0]}-auth-token`
       await page.evaluate(([k, v]) => localStorage.setItem(k, v), [key, JSON.stringify(session)])
+      // GuidedTour's seen flag (AsyncStorage is localStorage on web): set, so Home shows without the tour.
+      await page.evaluate(() => localStorage.setItem('tour-seen', '1'))
       for (const shot of shots.filter((s) => s.startsWith('app-user:'))) {
         await attempt(shot, async () => {
           await open(shot.slice('app-user:'.length))
@@ -197,6 +201,20 @@ async function captureApp(browser: Browser, dir: string, shots: string[], shoot:
           await shoot(page, shot)
         })
       }
+      // The Home tour as on a first visit: cleared flag, then Next to each stop.
+      for (const shot of shots.filter((s) => s.startsWith('app-tour:'))) {
+        await attempt(shot, async () => {
+          await page.evaluate(() => localStorage.removeItem('tour-seen'))
+          await open('/')
+          await page.waitForTimeout(1500)
+          for (let i = 1; i < Number(shot.slice('app-tour:'.length)); i++) {
+            await tapText(page, 'Next')
+            await page.waitForTimeout(900)
+          }
+          await shoot(page, shot)
+        })
+      }
+      await page.evaluate(() => localStorage.setItem('tour-seen', '1'))
     }
   } finally {
     await context.close()
@@ -312,10 +330,12 @@ for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
     }
   }
 
-  try {
-    await walkCalculator(page, (name) => shoot(name))
-  } catch (error) {
-    failed.push(`${device} calculator: ${(error as Error).message}`)
+  if (!skipCalculator) {
+    try {
+      await walkCalculator(page, (name) => shoot(name))
+    } catch (error) {
+      failed.push(`${device} calculator: ${(error as Error).message}`)
+    }
   }
 
   if (session) {
@@ -324,13 +344,16 @@ for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
     // The site's own storageKey (lib/supabase.ts).
     await page.evaluate(([key, value]) => localStorage.setItem(key, value), ['fire-dashboard-auth', JSON.stringify(session)])
     for (const { shot, click } of userShots) {
+      if (shotDevice(shot!, device, click) !== device) continue
       try {
         if (shot!.startsWith('pro:')) await pretendPro(page)
         await page.goto(`${base}${shot!.slice(shot!.indexOf(':') + 1)}`, { waitUntil: 'networkidle', timeout: 45_000 })
         if (new URL(page.url()).pathname === '/login') throw new Error('not signed in')
         await settle(page)
         for (const name of click ?? []) {
-          await page.getByRole('button', { name: new RegExp(name) }).first().click()
+          // Visible only: the computer sidebar's buttons and the phone-size tabs share labels.
+          const pattern = new RegExp(name)
+          await page.getByRole('button', { name: pattern }).or(page.getByRole('tab', { name: pattern })).filter({ visible: true }).first().click()
           await settle(page)
         }
         await shoot(shot!, click)
