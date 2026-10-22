@@ -117,7 +117,7 @@ export function useAuth() {
 /** As lib/auth-finish.ts does on the website: a first sign-in gets the welcome email. */
 function welcomeIfNew(session: Session) {
   if (!isFirstSignIn(session.user)) return
-  track(Events.SIGNUP_COMPLETED, { method: session.user.app_metadata?.provider ?? 'email' })
+  track(Events.SIGNUP_COMPLETED, { auth_provider: session.user.app_metadata?.provider ?? 'email', is_new_user: true })
   fetch(`${SITE}/api/email/welcome`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },

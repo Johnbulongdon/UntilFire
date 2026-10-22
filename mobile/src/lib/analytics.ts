@@ -22,7 +22,8 @@ export const posthog: PostHog | null = KEY && Platform.OS !== 'web'
     })
   : null
 
-posthog?.register({ surface: 'ios_app' })
+// funnel_event_version as on the website (lib/analytics-events.ts), so one funnel reads both.
+posthog?.register({ surface: 'ios_app', funnel_event_version: 1 })
 
 export const Events = {
   ONBOARDING_STEP_VIEWED: 'funnel_calculator_step_viewed',
@@ -51,12 +52,28 @@ export function identify(userId: string | null) {
   else posthog.reset()
 }
 
-/** Years to freedom in the website's coarse buckets, never the exact figure. */
+/** Years to freedom in the website's bucketYears values, never the exact figure. */
 export function yearsBucket(years: number | null) {
-  if (years == null) return 'unknown'
-  if (years <= 5) return '0-5'
-  if (years <= 10) return '6-10'
-  if (years <= 20) return '11-20'
-  if (years <= 30) return '21-30'
-  return '30+'
+  if (years == null) return 'not_reached'
+  if (!Number.isFinite(years) || years < 0) return 'unknown'
+  if (years < 5) return 'lt_5'
+  if (years < 10) return '5_10'
+  if (years < 20) return '10_20'
+  if (years < 30) return '20_30'
+  return 'gte_30'
+}
+
+/**
+ * Onboarding question number → the website's step_id and step_index
+ * (CALCULATOR_STEP_INDEX), so a breakdown by step lines up across both.
+ * Pay and know exist only on the phone, so they carry no website index.
+ */
+const STEP_IDS: Record<number, [string, number | null]> = {
+  1: ['goal', 0], 2: ['city', 1], 3: ['pay', null], 4: ['income', 3],
+  5: ['know', null], 6: ['savings', 4], 7: ['portfolio', 5], 8: ['age', 6],
+}
+
+export function stepProps(step: number, steps: number) {
+  const [step_id, step_index] = STEP_IDS[step] ?? ['unknown', null]
+  return { step_id, step_index, step, steps }
 }
