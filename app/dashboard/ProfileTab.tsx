@@ -9,6 +9,8 @@ import { MoneyHead, MoneyList, MoneyRow } from "./MoneyCards";
 import GiveAMonthCard from "./GiveAMonthCard";
 import CreatorCard from "./CreatorCard";
 import HouseholdSection from "./HouseholdSection";
+import CancelProSheet, { changePro, fmtEnds, type ProBilling } from "./CancelProSheet";
+import { trackCancelFlow } from "@/lib/analytics";
 import { download, exportEverything, exportFileName, loadTransactions, transactionsCsv } from "@/lib/data-export";
 import { trackDataExported } from "@/lib/analytics";
 
@@ -36,9 +38,12 @@ interface Props {
   onDefaultCurrencyChange: (currency: string) => void;
   onPreferredCurrenciesChange: (currencies: string[]) => void;
   onTabChange: (tab: string) => void;
-  subscription: { plan: "free" | "pro" } | null;
+  subscription: { plan: "free" | "pro"; billing?: ProBilling } | null;
   onUpgradeClick: () => void;
   onManageBilling: () => void;
+  onBillingChange: (billing: ProBilling) => void;
+  /** "March 2041", shown on the cancel sheet as what stays free. */
+  freedomLabel: string | null;
   /** "60 days free" for an account a creator referred (D-27). */
   trialLabel?: string;
 }
@@ -53,6 +58,8 @@ export default function ProfileTab({
   subscription,
   onUpgradeClick,
   onManageBilling,
+  onBillingChange,
+  freedomLabel,
   trialLabel = TRIAL_LABEL,
 }: Props) {
   const [displayName, setDisplayName] = useState("");
@@ -78,6 +85,9 @@ export default function ProfileTab({
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [openRow, setOpenRow] = useState<string | null>(null);
   const [householdSummary, setHouseholdSummary] = useState("Set up");
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [resuming, setResuming] = useState(false);
+  const [billingError, setBillingError] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -210,6 +220,18 @@ export default function ProfileTab({
     boxSizing: "border-box",
   };
   const isPro = subscription?.plan === "pro";
+  const billing = subscription?.billing;
+  const ending = billing?.source === "stripe" && !billing.renews;
+
+  async function keepPro() {
+    if (!billing) return;
+    setResuming(true); setBillingError("");
+    const res = await changePro({ action: "resume" });
+    setResuming(false);
+    if (!res.ok) { setBillingError(res.error ?? "Something went wrong. Try again."); return; }
+    trackCancelFlow({ step: "resumed" });
+    onBillingChange({ ...billing, renews: true, endsAt: res.endsAt ?? billing.endsAt });
+  }
   const toggle = (k: string) => setOpenRow((o) => (o === k ? null : k));
   const fireTypeHref = `/fire-type?source=dashboard-profile${fireTypeResult ? `&type=${fireTypeResult.code}` : ""}`;
 
@@ -220,13 +242,30 @@ export default function ProfileTab({
       <MoneyHead
         label="Your account"
         value={<span style={{ fontFamily: "var(--uf-font-display)", fontSize: 34 }}>{displayName.trim() || "Add your name"}</span>}
-        sub={isPro ? <>{userEmail} · <b style={{ color: "var(--uf-ink)" }}>Pro</b> · {PRO_MONTHLY_LABEL} a month</> : <>{userEmail} · Free plan</>}
+        sub={isPro
+          ? <>{userEmail} · <b style={{ color: "var(--uf-ink)" }}>Pro</b> · {ending || billing?.source === "other" ? `ends ${fmtEnds(billing?.endsAt ?? null)}` : `${PRO_MONTHLY_LABEL} a month`}</>
+          : <>{userEmail} · Free plan</>}
         aside={<span aria-hidden style={{ width: 56, height: 56, borderRadius: 99, display: "grid", placeItems: "center", background: "color-mix(in srgb, var(--uf-teal) 18%, transparent)", color: "var(--uf-ink)", fontFamily: "var(--uf-font-display)", fontSize: 24 }}>
           {(displayName.trim() || userEmail || "?").charAt(0).toUpperCase()}
         </span>}
       >
         {isPro ? (
-          <div><Button variant="secondary" size="sm" onClick={onManageBilling}>Manage billing</Button></div>
+          // Cancel and keep live here, not in the Stripe portal (D-99); the
+          // portal stays for invoices and the card.
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            {billing?.source === "stripe" && (ending ? (<>
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Won&apos;t renew</span>
+              <Button variant="primary" size="sm" onClick={keepPro} disabled={resuming}>{resuming ? "One moment…" : "Keep Pro"}</Button>
+              <Button variant="ghost" size="sm" onClick={onManageBilling}>Invoices and card</Button>
+            </>) : (<>
+              <Button variant="secondary" size="sm" onClick={onManageBilling}>Invoices and card</Button>
+              <Button variant="ghost" size="sm" onClick={() => setCancelOpen(true)}>Cancel Pro</Button>
+            </>))}
+            {billing?.source === "apple" && (
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Billed by Apple. Change or cancel it in your iPhone&apos;s Settings, under your name, then Subscriptions.</span>
+            )}
+            {billingError && <span className="uf-t-small" role="alert" style={{ color: "var(--uf-neg-ink)" }}>{billingError}</span>}
+          </div>
         ) : (
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <Button variant="primary" size="sm" onClick={onUpgradeClick}>Try Pro, {trialLabel}</Button>
@@ -361,6 +400,16 @@ export default function ProfileTab({
           </>
         )}
       </div>
+
+      <CancelProSheet
+        open={cancelOpen}
+        onClose={() => setCancelOpen(false)}
+        onCancelled={(endsAt) => billing && onBillingChange({ ...billing, renews: false, endsAt })}
+        firstName={displayName.trim().split(/\s+/)[0] ?? ""}
+        freedomLabel={freedomLabel}
+        bankCount={plaidItems.length}
+        endsAt={billing?.endsAt ?? null}
+      />
     </div>
   );
 }

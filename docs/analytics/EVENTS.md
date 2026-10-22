@@ -495,6 +495,17 @@ tools get used. Counts and enums only; no amounts, merchants or dates.
 - **Properties**: `share_method` (`native` | `clipboard`). Never the year.
 - Visitors arriving from a shared link carry `landing_source=share-freedom-year`.
 
+### `funnel_cancel_flow` (D-99)
+
+- **Where**: `app/dashboard/CancelProSheet.tsx` and Profile's Keep Pro button
+  (`app/dashboard/ProfileTab.tsx`).
+- **Properties**: `step` is `opened`, `reason` (one picked), `kept` (closed the
+  sheet without cancelling), `cancelled` or `resumed` (Keep Pro after
+  cancelling). `reason` is a key from `lib/cancel-reasons.ts` (`budget`,
+  `break`, `free_enough`, `bank_sync`, `goal_reached`), sent once picked.
+  Never the free-text note, which goes only to Stripe.
+- **Save rate** = `kept` ÷ `opened`. Don't judge it until there are paying users.
+
 ### `funnel_freedom_report_exported` (D-60)
 
 - **Where**: `app/dashboard/FreedomReport.tsx`, on Save as PDF, Download PNG

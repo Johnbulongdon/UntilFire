@@ -53,7 +53,8 @@ export function journeyGraph(journeys: Journey[]): JourneyGraph {
       // Branches stay on the same board, tied to their shared Home / Profile.
       const row = mainRows + Math.floor(branch / 2), col = branch % 2 ? 3 : 0;
       fresh.forEach((step, i) => place(step, 420 + (col + i) * 270, 120 + row * 360));
-      branch++;
+      // A left branch longer than three screens would run into the right one: it keeps the row.
+      branch += col === 0 && fresh.length > 3 ? 2 : 1;
     }
     const find = (shot: string) => [...nodes.values()].find(n => n.platform === platform && n.step.shot === shot && !n.step.click?.length);
     // These are existing app navigation, joining the journeys' separate starts.

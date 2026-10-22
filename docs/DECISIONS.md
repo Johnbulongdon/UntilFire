@@ -3116,3 +3116,33 @@ checks both. The share event sends only the method, never the year.
 with `landing_source=share-freedom-year`. Revisit after 28 days.
 **Source:** `app/components/ShareFreedomYear.tsx`, `lib/freedom-share.ts`,
 `app/share/freedom/page.tsx`, `app/api/og/freedom/route.tsx`.
+
+### D-99 — October 22: cancel Pro in three short steps, in the app
+
+**Status:** Active. Founder approved on 2026-10-22 ("Cancel subscription flow" thread), after a Churnkey video on cancel flows.
+**Decision:** Profile → Cancel Pro opens a sheet: (1) "What changed?" with five
+reasons in the user's words and no "Other" (`lib/cancel-reasons.ts`); (2) what
+stays free, led by the freedom date, and what ends; (3) a goodbye naming the
+date Pro ends and "No more charges", with an optional note. `/api/stripe/cancel`
+sets `cancel_at_period_end` (never ends early), stores the reason in Stripe's
+`cancellation_details` and metadata, and can undo it (`resume`). The
+`auto_renew` column (0050, Apple) now also holds Stripe's, so Profile shows
+"ends <date> · Won't renew" and Keep Pro. The Stripe portal stays only for
+invoices and the card.
+**Why:** The only path was a generic Stripe portal; the app never learned of a
+cancel, so Profile kept saying "$9 a month", and nobody was asked why they left.
+With no paying users yet, the value of a cancel is the reason, not a save.
+**Guardrails:** Cancel is one tap from every step and the close button keeps
+Pro. No discounts, pauses or plan switches yet: add them once there are about
+20 paying users or the first real "budget" or "break" cancels, matched to the
+reason and never stacked. Apple-billed Pro can't be cancelled in the app
+(Apple's rule); Profile points to iPhone Settings. A household member's or
+reward-month Pro shows no cancel.
+**Also:** the webhook read `current_period_end` from the subscription, which
+Stripe's current API (2026-04-22.dahlia) only puts on its items, so every
+activation threw before saving. Fixed with `periodEndIso`; PR #269 carries a
+fuller version of the same fix.
+**Measure:** `funnel_cancel_flow` by `step` and `reason`.
+**Source:** `app/dashboard/CancelProSheet.tsx`, `app/dashboard/ProfileTab.tsx`,
+`app/api/stripe/cancel/route.ts`, `app/api/stripe/webhook/route.ts`,
+`lib/cancel-reasons.ts`, `lib/journeys.ts`.

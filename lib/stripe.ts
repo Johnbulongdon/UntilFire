@@ -31,3 +31,15 @@ export const stripe = new Proxy({} as Stripe, {
 export function priceIdFor(interval: "month" | "year"): string {
   return STRIPE_PRICE_IDS[interval];
 }
+
+/**
+ * When the paid (or trial) period ends. Since API version 2025-03-31 Stripe
+ * keeps it on each subscription item, not on the subscription, so reading
+ * `sub.current_period_end` gave undefined and `new Date(NaN).toISOString()`
+ * threw before the row was saved (D-99).
+ */
+export function periodEndIso(sub: Stripe.Subscription): string | null {
+  const ends = sub.items?.data?.[0]?.current_period_end
+    ?? (sub as unknown as { current_period_end?: number }).current_period_end;
+  return typeof ends === "number" ? new Date(ends * 1000).toISOString() : null;
+}

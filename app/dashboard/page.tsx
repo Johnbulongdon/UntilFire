@@ -51,6 +51,7 @@ import BudgetSetupModal from "./BudgetSetupModal";
 import ReportsTab from "./ReportsTab";
 import OffersTab from "./OffersTab";
 import ProfileTab from "./ProfileTab";
+import type { ProBilling } from "./CancelProSheet";
 import ExploreClient from "../explore/ExploreClient";
 import PurchaseImpactPanel from "./PurchaseImpactPanel";
 import Logo from "@/app/components/Logo";
@@ -4927,7 +4928,7 @@ export default function Dashboard() {
   // hadSubscription, not just plan: someone who subscribed once and cancelled
   // cannot have another trial, and the upgrade modal has to know that before it
   // offers one. Same source of truth the checkout route uses.
-  const [subscription, setSubscription] = useState<{ plan: "free" | "pro"; hadSubscription: boolean } | null>(null);
+  const [subscription, setSubscription] = useState<{ plan: "free" | "pro"; hadSubscription: boolean; billing?: ProBilling } | null>(null);
   // As stored: each balance in its account's own currency. Everything below
   // reads `plaidAccounts`, the converted list defined after `rates`.
   const [rawPlaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
@@ -5047,7 +5048,7 @@ export default function Dashboard() {
     if (!userId) return;
     supabase
       .from("subscriptions")
-      .select("plan, stripe_subscription_id")
+      .select("plan, stripe_subscription_id, source, auto_renew, current_period_end")
       .eq("user_id", userId)
       .maybeSingle()
       .then(async ({ data }) => {
@@ -5055,6 +5056,13 @@ export default function Dashboard() {
         setSubscription({
           plan: ownPlan,
           hadSubscription: Boolean(data?.stripe_subscription_id),
+          // Only your own Pro can be cancelled here: not a household member's,
+          // not Apple's, not a reward month (D-99).
+          billing: ownPlan === "pro" ? {
+            source: data?.source === "apple" ? "apple" : data?.stripe_subscription_id ? "stripe" : "other",
+            renews: data?.auto_renew !== false,
+            endsAt: data?.current_period_end ?? null,
+          } : undefined,
         });
         // One Pro subscription covers the household. Checked only when this
         // user has none of their own, so the paying member never waits on it,
@@ -6646,6 +6654,8 @@ export default function Dashboard() {
                 subscription={subscription}
                 onUpgradeClick={() => { setUpgradeSource("profile"); setUpgradeOpen(true); }}
                 onManageBilling={handleManageBilling}
+                onBillingChange={(billing) => setSubscription((s) => s && { ...s, billing })}
+                freedomLabel={freedomDate ? freedomDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null}
                 trialLabel={referredTrial ? REFERRED_TRIAL_LABEL : TRIAL_LABEL}
               />
             )}
