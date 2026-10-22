@@ -1,7 +1,8 @@
+import * as AppleAuthentication from 'expo-apple-authentication'
 import { router, useFocusEffect } from 'expo-router'
 import { Button } from '@/components/Button'
 import { useCallback, useState } from 'react'
-import { ActivityIndicator, Alert, Pressable, TextInput, View, Linking } from 'react-native'
+import { ActivityIndicator, Alert, Pressable, TextInput, View, Linking, Platform } from 'react-native'
 
 import { SheetFrame } from '@/components/SheetFrame'
 import { Text } from '@/components/Text'
@@ -104,9 +105,24 @@ export default function DeleteAccount() {
     if (!session || !matches || !ready) return
     haptic.warn()
     setBusy(true); setError('')
+    // Signed in with Apple: Apple asks once more, so the server can revoke
+    // that sign-in along with the account (guideline 5.1.1(v)).
+    const usesApple = Platform.OS === 'ios' && (session.user.identities ?? []).some(i => i.provider === 'apple')
+    let appleAuthorizationCode: string | undefined
+    if (usesApple && await AppleAuthentication.isAvailableAsync().catch(() => false)) {
+      try {
+        const cred = await AppleAuthentication.signInAsync({ requestedScopes: [] })
+        appleAuthorizationCode = cred.authorizationCode ?? undefined
+      } catch (e) {
+        setBusy(false)
+        if ((e as { code?: string }).code !== 'ERR_REQUEST_CANCELED') setError('Apple didn\'t confirm it\'s you. Please try again.')
+        return
+      }
+    }
     const res = await fetch(`${SITE}/api/user/delete`, {
       method: 'DELETE',
-      headers: { authorization: `Bearer ${session.access_token}` },
+      headers: { authorization: `Bearer ${session.access_token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ appleAuthorizationCode }),
     }).catch(() => null)
     if (!res || !res.ok) {
       const body = res ? await res.json().catch(() => ({})) : {}

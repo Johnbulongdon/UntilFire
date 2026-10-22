@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-22 — Deleting an account also removes Sign in with Apple
+
+- Phone: someone who signed in with Apple confirms with Apple once more when they delete their account, and the server revokes that Apple sign-in before the account goes (App Store guideline 5.1.1(v)). If Apple can't be reached, nothing is deleted and they're asked to try again.
+- Needs a Sign in with Apple key in Vercel: `APPLE_SIGNIN_KEY_ID` and `APPLE_SIGNIN_PRIVATE_KEY`, plus `APPLE_TEAM_ID`. Without them the account is still deleted and the missing key is logged.
+
 ## 2026-10-22 — Journeys map covers the whole app
 
 - Admin → Journeys now also shows the Home tour (website and phone), every Money and Plan page with their sub-pages, and the phone's Profile pages, as paths that branch off Home or Profile. Longer paths get rows of their own on the map. Every PR that changes the journeys now screenshots the signed-in and phone screens as a test, without replacing the live pictures.

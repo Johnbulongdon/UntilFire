@@ -59,6 +59,7 @@
     "test:money-rules": "node --experimental-strip-types --no-warnings scripts/verify-money-rules.mjs",
     "test:plan-freedom-date": "node --experimental-strip-types --no-warnings scripts/verify-plan-freedom-date.mjs",
     "test:apple-subscriptions": "node --experimental-strip-types --no-warnings scripts/verify-apple-subscriptions.ts",
+    "test:apple-signin": "node --experimental-strip-types --no-warnings scripts/verify-apple-signin.ts",
     "test:account-deletion": "node --experimental-strip-types --no-warnings scripts/verify-account-deletion.ts",
     "test:csv-import": "node --experimental-strip-types --no-warnings scripts/verify-csv-import.ts",
     "test:mortgages": "node --experimental-strip-types --no-warnings scripts/verify-mortgages.ts",

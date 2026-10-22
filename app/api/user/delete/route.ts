@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { appleWillRenew } from "@/lib/apple-store";
+import { appleSignInConfigured, revokeAppleSignIn } from "@/lib/apple-signin";
 import { adminClient } from "@/lib/supabase-admin";
 import { getPlaidClient } from "@/lib/plaid";
 import { disconnectAllForUser, listInstitutions } from "@/lib/plaid-remove";
@@ -86,6 +87,26 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({
       error: `We couldn't disconnect ${names}, so your account hasn't been deleted yet. Please try again in a few minutes.`,
     }, { status: 502 });
+  }
+
+  // Someone who signed in with Apple: revoke that sign-in too (App Store
+  // guideline 5.1.1(v)). The app sends a fresh Apple authorization code; the
+  // website has none, and the person can still remove it in iOS Settings.
+  const body = await req.json().catch(() => ({})) as { appleAuthorizationCode?: string };
+  const usesApple = (user.identities ?? []).some((i) => i.provider === "apple");
+  if (usesApple && body.appleAuthorizationCode) {
+    if (!appleSignInConfigured()) {
+      console.error("[user/delete] Sign in with Apple key not set; Apple sign-in not revoked");
+    } else {
+      try {
+        await revokeAppleSignIn(body.appleAuthorizationCode);
+      } catch (err) {
+        console.error("[user/delete] apple revoke", err);
+        return NextResponse.json({
+          error: "We couldn't disconnect Sign in with Apple, so your account hasn't been deleted yet. Please try again in a few minutes.",
+        }, { status: 502 });
+      }
+    }
   }
 
   const { error } = await admin.auth.admin.deleteUser(user.id);
