@@ -51,6 +51,22 @@ export default function JourneyCanvas({ graph, activeJourneys, device, shots, on
     const scale = clamp(c.scale * factor), ratio = scale / c.scale;
     return { scale, x: el.clientWidth / 2 - (el.clientWidth / 2 - c.x) * ratio, y: el.clientHeight / 2 - (el.clientHeight / 2 - c.y) * ratio };
   });
+  useEffect(() => {
+    const el = viewport.current;
+    if (!el) return;
+    // Native listener: React's onWheel is passive, so it can't stop the page scrolling.
+    const wheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const box = el.getBoundingClientRect(), px = e.clientX - box.left, py = e.clientY - box.top;
+      const step = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY; // Firefox reports lines
+      setCamera(c => {
+        const scale = clamp(c.scale * Math.exp(-step * (e.ctrlKey ? 0.01 : 0.0015))), ratio = scale / c.scale;
+        return { scale, x: px - (px - c.x) * ratio, y: py - (py - c.y) * ratio };
+      });
+    };
+    el.addEventListener('wheel', wheel, { passive: false });
+    return () => el.removeEventListener('wheel', wheel);
+  }, []);
   const focusNode = (node: JourneyNode) => {
     const el = viewport.current; if (!el) return;
     setCamera(c => { const scale = Math.max(c.scale, 0.8); return { scale, x: el.clientWidth / 2 - (node.x + NODE_WIDTH / 2) * scale, y: el.clientHeight / 2 - (node.y + NODE_HEIGHT / 2) * scale }; });
@@ -105,7 +121,7 @@ export default function JourneyCanvas({ graph, activeJourneys, device, shots, on
       </div>
     </div>
     <div id={`${marker}-help`} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8, background: '#fff', borderTop: '1px solid #E2E8F0', padding: '10px 16px', fontSize: 12, color: '#475569' }}>
-      <span>Drag the canvas to move · + / − to zoom · 0 to fit · Arrow keys to pan</span><span>Solid: journey steps · Dashed: open Profile · Click a screen to inspect</span>
+      <span>Drag the canvas to move · Scroll or + / − to zoom · 0 to fit · Arrow keys to pan</span><span>Solid: journey steps · Dashed: open Profile · Click a screen to inspect</span>
     </div>
     <details style={{ background: '#fff', padding: '10px 16px', borderTop: '1px solid #E2E8F0', color: '#334155', fontSize: 13 }}>
       <summary style={{ cursor: 'pointer', padding: '8px 0' }}>Connections as text</summary>
