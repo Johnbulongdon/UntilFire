@@ -268,6 +268,17 @@ The added `savings_pace` step uses stable index 8 before save (index 7); existin
 - `app_reward_month_granted` - the quiz's free month was given (D-79),
   `source: fire_quiz`.
 
+The app reuses the website's property names so one funnel and one breakdown
+read both (`mobile/src/lib/analytics.ts`): `funnel_calculator_step_viewed`
+carries `step_id`/`step_index` from `CALCULATOR_STEP_INDEX` (the phone-only
+`pay` and `know` questions have `step_index: null`), `funnel_calculator_revealed`
+carries `years_to_fire_bucket` in `bucketYears` values, and sign-up events carry
+`auth_provider`. On the phone, the welcome screen signs in before onboarding, so
+`funnel_signup_*` usually precede the calculator steps there; filter by `surface` when
+reading a funnel's order. Release builds get the project key from `eas.json`
+(`preview` and `production`); development builds and Expo Go stay off unless
+`mobile/.env` sets `EXPO_PUBLIC_POSTHOG_KEY`.
+
 ### `funnel_checkout_started`
 
 - **Where**: `app/dashboard/UpgradeModal.tsx`, after `POST /api/stripe/checkout`

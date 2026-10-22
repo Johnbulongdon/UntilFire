@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-22 — Phone app sends its funnel to PostHog
+
+- App Store and preview builds now send the phone's funnel (onboarding questions, freedom date, sign-up, Pro screen, purchase) into the same PostHog project as the website. Before, the key was missing from the build, so nothing arrived.
+- The phone's events use the website's property names (`step_id`, `years_to_fire_bucket`, `auth_provider`), so one funnel or breakdown covers both; split them with `surface = ios_app`.
+
 ## 2026-10-22 — Journeys map covers the whole app
 
 - Admin → Journeys now also shows the Home tour (website and phone), every Money and Plan page with their sub-pages, and the phone's Profile pages, as paths that branch off Home or Profile. Longer paths get rows of their own on the map. Every PR that changes the journeys now screenshots the signed-in and phone screens as a test, without replacing the live pictures.
