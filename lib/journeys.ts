@@ -28,6 +28,7 @@ export interface JourneyStep {
    * - `app:/path`, `app-user:/path` — the same in the phone app's web build, at phone size;
    *   `app:launch` is its launch screen.
    *   `app:/onboarding/<screen>` shots are taken in one walk with sample answers.
+   *   `app-tour:<n>` is stop n of the Home tour, shown as on a first visit.
    */
   shot?: string
   /** Signed-in steps only: buttons whose text contains these are pressed, in order, before the screenshot. */
@@ -75,6 +76,63 @@ const PHONE_ONBOARDING: JourneyStep[] = [
   'goal', 'city', 'pay', 'income', 'know', 'spending', 'invested', 'age',
   'reveal', 'life', 'number', 'standing', 'abroad', 'reminder',
 ].map((screen) => ({ label: screen[0].toUpperCase() + screen.slice(1), route: `onboarding/${screen}.tsx`, shot: `app:/onboarding/${screen}` }))
+
+/** Website Money and Plan pages; sub-pages without their own URL are opened like a person would, by their tab. */
+const WEB_MONEY: JourneyStep[] = [
+  { label: 'Transactions', action: 'Tap Calendar', route: '/dashboard', shot: 'user:/dashboard?tab=cashflow' },
+  { label: 'Calendar', action: 'Tap Categories', route: '/dashboard', shot: 'user:/dashboard?tab=cashflow', click: ['^Calendar$'] },
+  { label: 'Categories', action: 'Tap Budget', route: '/dashboard', shot: 'user:/dashboard?tab=cashflow', click: ['^Categories$'] },
+  { label: 'Budget', action: 'Tap Income', route: '/dashboard', shot: 'user:/dashboard?tab=cashflow', click: ['^Budget$'] },
+  { label: 'Income', action: 'Tap Net Worth', route: '/dashboard', shot: 'user:/dashboard?tab=income' },
+  { label: 'Net Worth', action: 'Tap Debts', route: '/dashboard', shot: 'user:/dashboard?tab=assets' },
+  { label: 'Debts', action: 'Tap Insights', route: '/dashboard', shot: 'user:/dashboard?tab=liabilities' },
+  { label: 'Insights', route: '/dashboard', shot: 'user:/dashboard?tab=reports' },
+]
+
+const WEB_PLAN: JourneyStep[] = [
+  { label: 'Freedom Date', action: 'Tap Compare', route: '/dashboard', shot: 'user:/dashboard?tab=fire-calculator' },
+  { label: 'Compare', action: 'Tap Scenarios', route: '/dashboard', shot: 'user:/dashboard?tab=fire-calculator', click: ['^Compare$'] },
+  { label: 'Scenarios', action: 'Tap Goals', route: '/dashboard', shot: 'user:/dashboard?tab=fire-calculator', click: ['^Scenarios$'] },
+  { label: 'Goals', action: 'Tap Contributions', route: '/dashboard', shot: 'user:/dashboard?tab=goals' },
+  { label: 'Contributions', action: 'Tap Explore', route: '/dashboard', shot: 'user:/dashboard?tab=contributions' },
+  { label: 'Explore', action: 'Tap Citizenship', route: '/dashboard', shot: 'user:/dashboard?tab=expat-fire' },
+  { label: 'Citizenship', action: 'Tap Learn', route: '/dashboard', shot: 'user:/dashboard?tab=citizenship' },
+  { label: 'Learn', route: '/dashboard', shot: 'user:/dashboard?tab=learning-hub' },
+]
+
+/** TourModal, opened from the sidebar's Take a tour (computer size only). */
+const WEB_TOUR: JourneyStep[] = ['Welcome', 'Home', 'Money', 'Plan', 'Profile'].map((label, i) => ({
+  label: `Tour: ${label}`, action: i ? 'Tap Next' : 'Tap Start Tour', route: '/dashboard', shot: 'user:/dashboard',
+  click: ['Take a tour', ...(i ? ['Start Tour'] : []), ...Array(Math.max(0, i - 1)).fill('Next →')],
+}))
+
+/** Phone tabs and pages, as each screen file names them. */
+const phoneScreens = (screens: [string, string][]): JourneyStep[] => screens.map(([label, file], i) => ({
+  label, ...(i < screens.length - 1 ? { action: `Tap ${screens[i + 1][0]}` } : {}),
+  route: `${file}.tsx`, shot: `app-user:/${file.replace(/^\(tabs\)\//, '').replace(/\/?index$/, '')}`,
+}))
+const PHONE_MONEY = phoneScreens([
+  ['Money', '(tabs)/money/index'], ['Transactions', '(tabs)/money/transactions'], ['Calendar', '(tabs)/money/calendar'],
+  ['Budget', '(tabs)/money/budget'], ['Income', '(tabs)/money/income'], ['Net worth', '(tabs)/money/net-worth'],
+  ['Insights', '(tabs)/money/insights'],
+])
+const PHONE_PLAN = phoneScreens([
+  ['Plan', '(tabs)/plan/index'], ['Freedom date', '(tabs)/plan/freedom'], ['What if', '(tabs)/plan/what-if'],
+  ['Compare', '(tabs)/plan/compare'], ['Scenarios', '(tabs)/plan/scenarios'], ['Goals', '(tabs)/plan/goals'],
+  ['Contributions', '(tabs)/plan/contributions'], ['Explore', '(tabs)/plan/explore'],
+  ['Citizenship', '(tabs)/plan/citizenship'], ['Learn', '(tabs)/plan/learn'],
+])
+const PHONE_PROFILE = phoneScreens([
+  ['Household', 'household'], ['Currency', 'currency'], ['Name', 'name'], ['FIRE type', 'fire-quiz'],
+  ['Give a month', 'give-a-month'], ["What's new", 'update-log'], ['Feedback', 'feedback'], ['Import', 'import'],
+])
+/** GuidedTour's four stops on Home. */
+const PHONE_TOUR: JourneyStep[] = ['Freedom date', 'Quick moves', 'Today', 'Tabs'].map((label, i) => ({
+  label: `Tour: ${label}`, action: i < 3 ? 'Tap Next' : 'Tap Got it', route: '(tabs)/index.tsx', shot: `app-tour:${i + 1}`,
+}))
+
+const WEB_HOME: JourneyStep = { label: 'Home', action: 'Open a page', route: '/dashboard', shot: 'user:/dashboard' }
+const PHONE_HOME: JourneyStep = { label: 'Home', action: 'Open a tab', route: '(tabs)/index.tsx', shot: 'app-user:/' }
 
 export const JOURNEYS: Journey[] = [
   {
@@ -157,6 +215,9 @@ export const JOURNEYS: Journey[] = [
       { label: 'Stripe portal', route: '/api/stripe/portal', shot: 'stripe:portal', external: true },
     ],
   },
+  { id: 'web-tour', title: 'Home tour', platform: 'web', visitor: 'new', steps: [WEB_HOME, ...WEB_TOUR] },
+  { id: 'web-money', title: 'Look around: Money', platform: 'web', visitor: 'returning', steps: [WEB_HOME, ...WEB_MONEY] },
+  { id: 'web-plan', title: 'Look around: Plan', platform: 'web', visitor: 'returning', steps: [WEB_HOME, ...WEB_PLAN] },
   {
     id: 'phone-new', title: 'Phone: sign in, then onboarding', platform: 'phone', visitor: 'new',
     steps: [
@@ -191,6 +252,13 @@ export const JOURNEYS: Journey[] = [
       { label: 'Welcome', route: 'onboarding/index.tsx', shot: 'app:/onboarding' },
     ],
   },
+  { id: 'phone-tour', title: 'Phone: Home tour', platform: 'phone', visitor: 'new', steps: [PHONE_HOME, ...PHONE_TOUR] },
+  { id: 'phone-money', title: 'Phone: look around Money', platform: 'phone', visitor: 'returning', steps: [PHONE_HOME, ...PHONE_MONEY] },
+  { id: 'phone-plan', title: 'Phone: look around Plan', platform: 'phone', visitor: 'returning', steps: [PHONE_HOME, ...PHONE_PLAN] },
+  {
+    id: 'phone-profile', title: 'Phone: Profile pages', platform: 'phone', visitor: 'returning',
+    steps: [{ label: 'Profile', action: 'Open a row', route: '(tabs)/profile.tsx', shot: 'app-user:/profile' }, ...PHONE_PROFILE],
+  },
 ]
 
 export type ShotDevice = 'desktop' | 'phone'
@@ -204,8 +272,9 @@ export const SHOT_VIEWPORTS: Record<ShotDevice, { width: number; height: number 
 /** Public Supabase Storage bucket the screenshots are uploaded to. */
 export const SHOT_BUCKET = 'journeys'
 
-/** Phone app shots exist only at phone size. */
-export const shotDevice = (shot: string, device: ShotDevice): ShotDevice => (shot.startsWith('app') ? 'phone' : device)
+/** Phone app shots exist only at phone size; the website tour opens only from the computer-size sidebar. */
+export const shotDevice = (shot: string, device: ShotDevice, click?: string[]): ShotDevice =>
+  shot.startsWith('app') ? 'phone' : click?.[0] === 'Take a tour' ? 'desktop' : device
 
 /** One file per URL and size, so a step shared by several journeys is taken once. */
 export function shotFile(shot: string, device: ShotDevice, click?: string[]): string {
