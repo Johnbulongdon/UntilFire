@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Button from "@/components/ui/Button";
 import { freedomAgeAt } from "@/lib/plan-settings";
+import { rentAfterRenewal } from "@/lib/lease";
 import { coastYear, resolveAndRun, toEngine, templateFor, type ChangeContext, type EngineChange, type LifeChangeItem, type LifeVersion } from "@/lib/life-changes";
 import WhatIfChanges from "./WhatIfChanges";
 import WhatIfChart, { type ChartMilestone } from "./WhatIfChart";
@@ -20,8 +21,27 @@ type Money = { money: (usd: number) => string; local: (usd: number) => number; t
 const YEAR_MS = 365.25 * 864e5;
 const yearsTo = (d: Date | null) => (d ? (d.getTime() - Date.now()) / YEAR_MS : null);
 
-export default function WhatIf({ run, ctx, growth, retireAge, m, saved, onSave, onDelete, onUse, onTrack }: {
+/** The lease on the Rent bill, when there is one: its last day, the rent in USD and the expected rise. */
+export type WhatIfLease = { endsOn: string; rentUsd: number; risePct: number | null };
+
+/**
+ * Renew or move at the lease's end, as the phone's What if offers them: new
+ * spending from that year, one at a time since both set it. A try only; the
+ * headline freedom date stays on real spending (lib/lease.ts).
+ */
+function leaseTries(lease: WhatIfLease, ctx: ChangeContext, money: (usd: number) => string): LifeChangeItem[] {
+  const from = Math.max(ctx.thisYear, +lease.endsOn.slice(0, 4));
+  const rise = rentAfterRenewal(lease.rentUsd, lease.risePct) - lease.rentUsd;
+  const cut = Math.round((lease.rentUsd * 0.15) / 10) * 10;
+  return [
+    ...(rise > 0 ? [{ id: "lease-renew", kind: "move" as const, name: `Renew at +${lease.risePct}%`, on: true, from, monthly: ctx.spendMonthly + rise }] : []),
+    ...(cut > 0 ? [{ id: "lease-move", kind: "move" as const, name: `Move, ${money(cut)} less rent`, on: true, from, monthly: Math.max(0, ctx.spendMonthly - cut) }] : []),
+  ];
+}
+
+export default function WhatIf({ run, ctx, growth, retireAge, lease, m, saved, onSave, onDelete, onUse, onTrack }: {
   run: (changes: EngineChange[]) => Full;
+  lease?: WhatIfLease | null;
   ctx: ChangeContext; growth: number; retireAge: number; m: Money;
   saved: LifeVersion[];
   onSave: (v: LifeVersion) => void;
@@ -147,6 +167,16 @@ export default function WhatIf({ run, ctx, growth, retireAge, m, saved, onSave, 
           </section>
         </div>
         <section aria-label="Your changes" style={{ display: "grid", gap: 10, minWidth: 0 }}>
+          {lease && leaseTries(lease, ctx, m.money).length > 0 && <div style={{ display: "grid", gap: 8, padding: 14, borderRadius: 16, background: "var(--uf-surface)" }}>
+            <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>🏠 <b style={{ color: "var(--uf-ink)" }}>Your lease ends {new Date(`${lease.endsOn}T12:00:00`).toLocaleDateString("en-US", { month: "short", year: "numeric" })}.</b> Try either.</span>
+            <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {leaseTries(lease, ctx, m.money).map((t) => {
+                const added = items.some((c) => c.id === t.id);
+                return <Button key={t.id} size="sm" variant={added ? "ghost" : "secondary"} disabled={added} aria-pressed={added}
+                  onClick={() => { setItems([...items.filter((c) => !c.id.startsWith("lease-")), t]); onTrack("added"); }}>{added ? `✓ ${t.name}` : t.name}</Button>;
+              })}
+            </span>
+          </div>}
           <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase" }}>Your changes</span>
           <WhatIfChanges items={items} onChange={(list) => { if (list.length > items.length) onTrack("added"); setItems(list); }} costs={costs} ctx={ctx} m={m} coast={aged} />
         </section>

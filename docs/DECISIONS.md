@@ -2899,13 +2899,18 @@ Copilot, Rocket Money and ProjectionLab) and said "fix all".
 - **The rise is a what-if only.** What if (phone) shows renewing at the
   expected rise and moving somewhere 15% cheaper. The headline freedom date
   stays on real spending (D-86) and catches up after renewal.
+- **The website matches (October 22).** After a phone and website gap review
+  the founder asked for the same rows on the web: Home's Today strip asks
+  both questions first, with the phone's keys and writes, so an answer on
+  either counts once, and Move opens Plan → Compare. Compare offers "Renew at
+  +x%" and "Move, $y less rent" as tries from the lease's end year, one at a
+  time since both set spending.
 **Why:** renewal is a once-a-year, high-stakes money moment. Other finance apps
 only let a bill end; lease reminders live in landlord software, so showing the
 renter whether moving is worth it, in freedom-date terms, is open ground.
 **Not:** lease documents, landlord details, deposits, or a lease prompt in
 onboarding.
-**Revisit when:** renters ask for a website What if row, or a second reminder
-time, or the 15% "cheaper place" should come from city rent data.
+**Revisit when:** renters ask for a second reminder time, or the 15% "cheaper place" should come from city rent data.
 
 ### D-89 — October 18: Home leads with one next move, and every card is a door
 

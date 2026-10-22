@@ -72,6 +72,7 @@ import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened, trackFreedomReportExported, trackPlanCompare } from "@/lib/analytics";
 import WhatIf from "./WhatIf";
 import { coastYear, type EngineChange, type LifeVersion } from "@/lib/life-changes";
+import { isRent } from "@/lib/lease";
 import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
@@ -721,7 +722,7 @@ function SectionLabel({ icon, text, color = "var(--uf-ink)" }: { icon: string; t
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60 }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onOpenOnboarding, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60 }: {
   spreadCategories?: string[];
   /** Typed on the phone; in net worth only (audit round 2). */
   homeValue?: number;
@@ -758,6 +759,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   freeResult?: FreeToSpend | null;
   onOpenFreeToSpend?: () => void;
   onTabChange?: (tab: TabKey) => void;
+  /** Plan → Compare, for "Move" on a lease in Today. */
+  onOpenCompare?: () => void;
   onOpenOnboarding?: () => void;
   onFreedomDateChange?: (date: Date | null) => void;
   /** Plan settings (D-59), so Home's date is Plan's. */
@@ -1814,6 +1817,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           fmt={(n) => fmtMoney(n)}
           toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}
           onOpen={() => onTabChange?.("cashflow")}
+          onWhatIf={onOpenCompare}
         />
       </HomeSlot>
       <HomeSlot id="glance">
@@ -5126,7 +5130,8 @@ export default function Dashboard() {
 
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
 
-  type CommittedRow = { id?: string; match_merchant?: string | null; amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null; category: string | null; description?: string | null; recurrence?: string | null };
+  type CommittedRow = { id?: string; match_merchant?: string | null; amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null; category: string | null; description?: string | null; recurrence?: string | null;
+    sub_category?: string | null; lease_ends_on?: string | null; lease_rise_pct?: number | null };
   const [committedRows, setCommittedRows] = useState<CommittedRow[]>([]);
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[]; category?: string; description?: string; sub_category?: string | null; plaid_account_id?: string | null }[]>([]);
@@ -5312,6 +5317,11 @@ export default function Dashboard() {
   // Plan → Compare (D-69): the plan with a set of life changes, on the same engine as the date (D-66).
   const compareSpendNow = useMemo(() => Object.entries(effectiveExpenses).filter(([k, v]) => !k.startsWith("_") && typeof v === "number")
     .reduce((t, [, v]) => t + (v as number), 0), [effectiveExpenses]);
+  // The lease on the Rent bill (lib/lease.ts), for Compare's renew-or-move tries. A what-if only.
+  const compareLease = useMemo(() => {
+    const r = committedRows.find((b) => b.transaction_type === "expense" && isRent(b) && b.lease_ends_on);
+    return r ? { endsOn: String(r.lease_ends_on).slice(0, 10), rentUsd: toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates), risePct: r.lease_rise_pct ?? null } : null;
+  }, [committedRows, rates]);
   const compareRetireAge = planSettings.accessAge || pensionFor(defaultCurrency, usTaxHome).age || 60;
   const runChanges = useCallback((changes: EngineChange[]) =>
     freedomProjection({ ...planFreedomInputs, growthRate, changes }), [planFreedomInputs, growthRate]);
@@ -5733,7 +5743,7 @@ export default function Dashboard() {
       // is misleading without them: money earmarked for rent is not money you
       // can spend, and until now the two tabs never spoke to each other.
       supabase.from("expected_payments")
-        .select("id, amount, currency, transaction_type, due_date, completed_at, category, description, recurrence, match_merchant")
+        .select("id, amount, currency, transaction_type, due_date, completed_at, category, description, recurrence, match_merchant, sub_category, lease_ends_on, lease_rise_pct")
         .eq("user_id", session.user.id)
         .is("completed_at", null)
         // Both directions. The contribution forecast needs income — payday
@@ -6417,6 +6427,7 @@ export default function Dashboard() {
                 retirementTaxRate={retirementTaxRate}
                 rothPct={rothPct}
                 onTabChange={setTab}
+                onOpenCompare={() => { setTab("fire-calculator"); setFireCalcSubTab("compare"); }}
                 onOpenOnboarding={() => setOnboardingOpen(true)}
                 onFreedomDateChange={setFreedomDate}
               />
@@ -6611,7 +6622,7 @@ export default function Dashboard() {
                   </>
                 )}
                 {fireCalcSubTab === "compare" && (
-                  <WhatIf run={runChanges} ctx={compareCtx} growth={growthRate} retireAge={compareRetireAge}
+                  <WhatIf run={runChanges} ctx={compareCtx} growth={growthRate} retireAge={compareRetireAge} lease={compareLease}
                     m={{ money: (n) => fmt(n, defaultCurrency, rates, true), local: (n) => convertUSDAmount(n, defaultCurrency, rates),
                       toUsd: (n) => (defaultCurrency === "USD" ? n : n / (rates[defaultCurrency] || 1)), currency: defaultCurrency }}
                     saved={comparisons}

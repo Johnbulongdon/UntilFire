@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-22 — Lease questions on the website
+
+- Home's Today strip asks "Your lease: stay or move?" 30 days before the notice deadline, and "Do you rent or pay a mortgage?" while anything is on the old combined tag, the same as the phone. An answer on either counts on both. Move opens Plan → Compare.
+- Plan → Compare offers "Renew at +x%" and "Move, $y less rent" from the year the lease ends, when the Rent bill has a lease. Tries only; the freedom date stays on real spending (D-88).
+
 ## 2026-10-22 — Cancel Pro in three short steps
 
 - Profile → Cancel Pro opens three steps: one reason (five choices, no "Other"), what stays free (your freedom date, budget, plan, one bank), and a goodbye with the date Pro ends and "No more charges". Cancelling is one tap from every step; nothing ends early (D-99).
