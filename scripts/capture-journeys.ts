@@ -205,17 +205,24 @@ async function captureApp(browser: Browser, dir: string, shots: string[], shoot:
 }
 
 const SUBSCRIPTIONS = '**/rest/v1/subscriptions?*'
+const CANCEL_PRO = '**/api/stripe/cancel'
 
-/** Answers the browser's own subscription lookups with an active Pro plan. Nothing is written anywhere. */
+/**
+ * Answers the browser's own subscription lookups with an active Pro plan, and
+ * Cancel Pro with a made-up success (D-99). Nothing is written anywhere and
+ * Stripe is never called.
+ */
 async function pretendPro(page: Page) {
+  const endsAt = new Date(Date.now() + 30 * 86_400_000).toISOString()
   const row = {
-    plan: 'pro', status: 'active', source: 'stripe', stripe_subscription_id: 'sub_journeys', cancel_at_period_end: false,
-    current_period_end: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+    plan: 'pro', status: 'active', source: 'stripe', stripe_subscription_id: 'sub_journeys', auto_renew: true,
+    current_period_end: endsAt,
   }
   await page.route(SUBSCRIPTIONS, (route) => {
     const single = (route.request().headers().accept ?? '').includes('vnd.pgrst.object')
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(single ? row : [row]) })
   })
+  await page.route(CANCEL_PRO, (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, endsAt, renews: false }) }))
 }
 
 /**
@@ -242,7 +249,7 @@ async function openStripe(page: Page, shot: 'stripe:checkout' | 'stripe:portal')
     await page.getByRole('button', { name: /^(Start .*|Continue to checkout)$/ }).first().click()
     await page.waitForURL(/checkout\.stripe\.com/, { timeout: 30_000 })
   } else {
-    await page.getByRole('button', { name: 'Manage billing' }).first().click()
+    await page.getByRole('button', { name: 'Invoices and card' }).first().click()
     await page.waitForURL(/billing\.stripe\.com/, { timeout: 30_000 })
   }
   await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {})
@@ -331,6 +338,7 @@ for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
         failed.push(`${device} ${shot}${click ? ` → ${click.join(' → ')}` : ''}: ${(error as Error).message}`)
       } finally {
         await page.unroute(SUBSCRIPTIONS)
+        await page.unroute(CANCEL_PRO)
       }
     }
     for (const shot of stripeReady ? stripeShots : []) {
@@ -341,6 +349,7 @@ for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
         failed.push(`${device} ${shot}: ${(error as Error).message}`)
       } finally {
         await page.unroute(SUBSCRIPTIONS)
+        await page.unroute(CANCEL_PRO)
       }
     }
   }

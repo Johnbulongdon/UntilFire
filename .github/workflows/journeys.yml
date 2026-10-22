@@ -24,7 +24,8 @@ jobs:
   # Full authenticated/native captures still run after production deployment below.
   capture-dry-run:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    # ubuntu-latest became 26.04 on 2026-10-22; Playwright 1.56.1 has no Chromium for it.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,7 +62,7 @@ jobs:
       github.event_name == 'deployment_status' &&
       github.event.deployment_status.state == 'success' &&
       github.event.deployment.environment == 'Production'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:

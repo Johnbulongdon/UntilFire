@@ -131,14 +131,6 @@ export const JOURNEYS: Journey[] = [
     ],
   },
   {
-    id: 'web-cancel', title: 'Cancel Pro', platform: 'web', visitor: 'returning',
-    steps: [
-      { label: 'Profile', action: 'Tap Manage billing', route: '/dashboard', shot: 'pro:/dashboard?tab=profile' },
-      { label: 'Stripe portal', action: 'Cancel plan', route: '/api/stripe/portal', shot: 'stripe:portal', external: true },
-      { label: 'Home', route: '/dashboard', shot: 'user:/dashboard' },
-    ],
-  },
-  {
     id: 'web-delete', title: 'Delete account', platform: 'web', visitor: 'returning',
     steps: [
       { label: 'Profile', action: 'Tap Data and account', route: '/dashboard', shot: 'user:/dashboard?tab=profile' },
@@ -146,6 +138,23 @@ export const JOURNEYS: Journey[] = [
       // Only opens the confirm box: the script never types the email or deletes.
       { label: 'Confirm', action: 'Type email, delete', route: '/dashboard', shot: 'user:/dashboard?tab=profile', click: ['Data and account', 'Delete account'] },
       { label: 'Landing', route: '/', shot: '/' },
+    ],
+  },
+  {
+    id: 'web-cancel', title: 'Cancel Pro', platform: 'web', visitor: 'returning',
+    steps: [
+      { label: 'Profile', action: 'Tap Cancel Pro', route: '/dashboard', shot: 'pro:/dashboard?tab=profile' },
+      { label: 'What changed?', action: 'Pick one reason', route: '/dashboard', shot: 'pro:/dashboard?tab=profile', click: ['Cancel Pro'] },
+      { label: 'What you keep', action: 'Tap Cancel Pro', route: '/api/stripe/cancel', shot: 'pro:/dashboard?tab=profile', click: ['Cancel Pro', "I'm taking a break"] },
+      { label: 'Goodbye', action: 'Tap Back to Profile', route: '/dashboard', shot: 'pro:/dashboard?tab=profile', click: ['Cancel Pro', 'Skip and cancel Pro'] },
+      { label: 'Profile, Pro ending', action: 'Tap Keep Pro to undo', route: '/dashboard', shot: 'pro:/dashboard?tab=profile', click: ['Cancel Pro', 'Skip and cancel Pro', 'Back to Profile'] },
+    ],
+  },
+  {
+    id: 'web-billing', title: 'Invoices and card', platform: 'web', visitor: 'returning',
+    steps: [
+      { label: 'Profile', action: 'Tap Invoices and card', route: '/dashboard', shot: 'pro:/dashboard?tab=profile' },
+      { label: 'Stripe portal', route: '/api/stripe/portal', shot: 'stripe:portal', external: true },
     ],
   },
   {

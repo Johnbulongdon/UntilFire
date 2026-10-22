@@ -68,6 +68,8 @@ export const FunnelEvents = {
   FREEDOM_YEAR_SHARED: 'funnel_freedom_year_shared',
   // Plan → Compare (D-69): what was done with life changes. Never ages, years, amounts or names.
   PLAN_COMPARE: 'funnel_plan_compare',
+  // Profile → Cancel Pro (D-99): each step, and the one reason picked. Never the free-text note.
+  CANCEL_FLOW: 'funnel_cancel_flow',
 } as const;
 
 export type FunnelEventName =
@@ -294,3 +296,8 @@ export interface ExploreStarredProperties extends BaseFunnelProperties { starred
 export interface FreedomReportExportedProperties extends BaseFunnelProperties { format: 'page' | 'poster' | 'timeline' | 'reddit'; branded: boolean }
 /** D-98: the year itself is never sent, only how it was shared. */
 export interface FreedomYearSharedProperties extends BaseFunnelProperties { share_method: 'native' | 'clipboard' }
+/** D-99: `reason` is a key from lib/cancel-reasons, only once one is picked. */
+export interface CancelFlowProperties extends BaseFunnelProperties {
+  step: 'opened' | 'reason' | 'kept' | 'cancelled' | 'resumed';
+  reason?: string;
+}

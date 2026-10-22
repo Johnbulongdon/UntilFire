@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-22 — Cancel Pro in three short steps
+
+- Profile → Cancel Pro opens three steps: one reason (five choices, no "Other"), what stays free (your freedom date, budget, plan, one bank), and a goodbye with the date Pro ends and "No more charges". Cancelling is one tap from every step; nothing ends early (D-99).
+- After cancelling, Profile shows "Pro · ends Nov 12, 2026 · Won't renew" with a Keep Pro button that undoes it. Before, it kept saying "$9 a month".
+- The Stripe portal stays for invoices and the card, renamed "Invoices and card". Pro billed by Apple says to change it in iPhone Settings.
+- Stripe webhook: reads the period end from the subscription item (Stripe's current API), which it failed on before, and records whether Pro will renew.
+- Admin → Journeys: the Cancel Pro journey shows the new steps; the portal has its own "Invoices and card" journey.
+
 ## 2026-10-22 — Zoom the journey map with the mouse wheel
 
 - Admin → Journeys: scrolling over the map now zooms in and out toward the mouse pointer, and a trackpad pinch does the same. The page no longer scrolls while the pointer is on the map. The buttons and keys still work.

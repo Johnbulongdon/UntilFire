@@ -45,6 +45,7 @@ import {
   type ExploreCityOpenedProperties,
   type ExploreModeChangedProperties,
   type PlanCompareProperties,
+  type CancelFlowProperties,
   type ExploreStarredProperties,
 } from './analytics-events';
 
@@ -429,6 +430,11 @@ export function trackExploreStarred(input: { starred: boolean }) {
 export function trackPlanCompare(input: { action: PlanCompareProperties['action'] }) {
   const props: PlanCompareProperties = withVersion({ action: input.action });
   capture(FunnelEvents.PLAN_COMPARE, props);
+}
+
+export function trackCancelFlow(input: { step: CancelFlowProperties['step']; reason?: string }) {
+  const props: CancelFlowProperties = withVersion({ step: input.step, ...(input.reason ? { reason: input.reason } : {}) });
+  capture(FunnelEvents.CANCEL_FLOW, props);
 }
 
 export function trackExplorePlanStarted() {
