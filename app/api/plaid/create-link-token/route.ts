@@ -32,7 +32,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const { platform } = (await req.json().catch(() => ({}))) as { platform?: string };
   const oauth =
     platform === "ios" && process.env.PLAID_IOS_REDIRECT_URI ? { redirect_uri: process.env.PLAID_IOS_REDIRECT_URI }
-    : platform === "android" ? { android_package_name: "com.untilfire.app.native" }
+    : platform === "android" ? { android_package_name: "com.untilfire.app" }
     : {};
 
   try {

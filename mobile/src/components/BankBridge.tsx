@@ -3,6 +3,7 @@ import * as WebBrowser from 'expo-web-browser'
 import { useState } from 'react'
 import { Alert, View } from 'react-native'
 
+import { proForSale } from '@/lib/native-build'
 import { haptic } from '@/lib/haptics'
 import { connectBankNative, plaidNativeAvailable } from '@/lib/plaid-native'
 import { useAccount } from '@/state/account'
@@ -34,7 +35,12 @@ export function BankBridge({ another, compact }: { another?: boolean; compact?: 
   const needsPro = !!another && !!data && !data.pro
 
   const open = async () => {
-    if (needsPro) { haptic.tick(); router.push({ pathname: '/pro', params: { from: 'bank_limit' } }); return }
+    if (needsPro) {
+      haptic.tick()
+      if (proForSale) router.push({ pathname: '/pro', params: { from: 'bank_limit' } })
+      else Alert.alert('One bank on the free plan', 'Free includes one connected bank.')
+      return
+    }
     if (native && session) {
       setBusy(true)
       const result = await connectBankNative(session.access_token)
@@ -49,7 +55,7 @@ export function BankBridge({ another, compact }: { another?: boolean; compact?: 
   return (
     <View className="gap-2">
       <Button small={compact} kind={another ? 'quiet' : 'primary'} disabled={busy}
-        label={busy ? 'Connecting…' : needsPro ? 'More banks with Pro' : another ? 'Connect another bank' : 'Connect a bank'} onPress={open} />
+        label={busy ? 'Connecting…' : needsPro ? (proForSale ? 'More banks with Pro' : 'One bank on the free plan') : another ? 'Connect another bank' : 'Connect a bank'} onPress={open} />
       {!another && (
         <Text className="text-[13px] leading-5 text-ink-3">
           {native

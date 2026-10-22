@@ -121,8 +121,8 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.untilfire.app.native",
-      "versionCode": 1
+      "package": "com.untilfire.app",
+      "versionCode": 10
     },
     "web": {
       "favicon": "./assets/favicon.png"

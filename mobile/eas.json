@@ -41,7 +41,11 @@
   },
   "submit": {
     "production": {
-      "ios": {}
+      "ios": {},
+      "android": {
+        "track": "alpha",
+        "releaseStatus": "draft"
+      }
     }
   }
 }
