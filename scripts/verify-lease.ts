@@ -7,6 +7,7 @@
 import assert from "node:assert/strict";
 import { isRent, isRentOrMortgage, leaseAsk, leaseProgress, noticeDeadline, daysUntil, rentAfterRenewal } from "../lib/lease.ts";
 import { classifyPlaid } from "../lib/plaid-category.ts";
+import { webTodayItems } from "../lib/today-web.ts";
 
 let n = 0;
 const ok = (name: string, fn: () => void) => { fn(); n++; console.log(`✓ ${name}`); };
@@ -48,6 +49,18 @@ ok("Plaid rent arrives tagged Rent, a mortgage as Mortgage", () => {
   assert.equal(classifyPlaid("RENT_AND_UTILITIES", "RENT_AND_UTILITIES_RENT", 1850).sub_category, "Rent");
   assert.equal(classifyPlaid("LOAN_PAYMENTS", "LOAN_PAYMENTS_MORTGAGE_PAYMENT", 1850).sub_category, "Mortgage");
   assert.equal(classifyPlaid("RENT_AND_UTILITIES", "RENT_AND_UTILITIES_GAS_AND_ELECTRICITY", 1850).category, "utilities");
+});
+
+ok("the website's Today strip asks the lease and the old tag first, with the phone's keys", () => {
+  const at = new Date("2027-01-10T15:00:00");
+  const base = { rows: [], bills: [], perDay: null, now: at };
+  const leases = [{ id: "b1", ends_on: "2027-03-31", notice_days: null, decision: null }];
+  const { items } = webTodayItems({ ...base, progress: { done: [], acks: [] }, leases, oldRentTag: true });
+  assert.deepEqual(items.map((i) => i.key), ["lease:b1:2027-03-31:first", "renttag", "day:2027-01-10"]);
+  const answered = webTodayItems({ ...base, progress: { done: [], acks: ["lease:b1:2027-03-31:first", "renttag"] }, leases, oldRentTag: true });
+  assert.deepEqual(answered.items.map((i) => i.kind), ["number"]);
+  const renewed = webTodayItems({ ...base, progress: { done: [], acks: [] }, leases: [{ ...leases[0], decision: "renew" as const }] });
+  assert.deepEqual(renewed.items.map((i) => i.kind), ["number"]);
 });
 
 console.log(`\n${n} lease checks passed`);
