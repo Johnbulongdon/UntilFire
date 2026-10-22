@@ -351,8 +351,9 @@ for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
         if (new URL(page.url()).pathname === '/login') throw new Error('not signed in')
         await settle(page)
         for (const name of click ?? []) {
-          // Visible only: the website's computer sidebar and phone tabs share labels.
-          await page.getByRole('button', { name: new RegExp(name) }).filter({ visible: true }).first().click()
+          // Visible only: the computer sidebar's buttons and the phone-size tabs share labels.
+          const pattern = new RegExp(name)
+          await page.getByRole('button', { name: pattern }).or(page.getByRole('tab', { name: pattern })).filter({ visible: true }).first().click()
           await settle(page)
         }
         await shoot(shot!, click)
