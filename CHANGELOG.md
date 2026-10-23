@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-23 — Node.js security patch
+
+- After Stripe's Node.js security notice, the website now states its Node line (24.x, the same as the Vercel setting) in `package.json`, so a fresh deploy picks up Vercel's patched 24 runtime. The journey screenshot workflow pins the patched Node 22.23.4.
+
 ## 2026-10-23 — Delete-account page
 
 - New public page untilfire.com/delete-account with the steps to delete an account in the app or on the website, what is deleted and what is kept. Google Play links to it from the store listing.
