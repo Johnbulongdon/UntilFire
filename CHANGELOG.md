@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-23 — Delete-account page
+
+- New public page untilfire.com/delete-account with the steps to delete an account in the app or on the website, what is deleted and what is kept. Google Play links to it from the store listing.
+
 ## 2026-10-22 — Android build of the phone app
 
 - The phone app can now be built for Android and replaces the June website wrapper inside the existing Play listing, under the same package `com.untilfire.app` (D-100).
