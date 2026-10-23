@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-23 — Get set up checklist
+
+- Home has a "Get set up" checklist: income, bank, payday, bills and budget, each ticked by itself from your data, with "2 of 5 done" (D-101). On the website it sits in the bottom-right corner and folds to a small pill; on the phone it is a slim card at the top of Home that opens all five.
+- Finishing a step shows what it changed: "Your date moved 2043 → 2041", or your new Until payday amount after payday or bills.
+- After a bank links, the paycheck and repeating bills it shows are offered as one-tap confirms ("We found 3 bills"). Untick any that aren't bills; they aren't offered again.
+- Once all five are done, "You're set up" shows your date once and the checklist is gone for good. It replaces the old "Get started" card.
+
 ## 2026-10-23 — Node.js security patch
 
 - After Stripe's Node.js security notice, the website now states its Node line (24.x, the same as the Vercel setting) in `package.json`, so a fresh deploy picks up Vercel's patched 24 runtime. The journey screenshot workflow pins the patched Node 22.23.4.

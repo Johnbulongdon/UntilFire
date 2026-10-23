@@ -65,7 +65,9 @@ Profile                       account, household setup, FIRE personality/type,
    contribution targets. An upcoming bill belongs in Money, not here merely
    because it has not happened yet.
 3. **Home** — if it interprets the other two, it goes here. Home never gets its
-   own independent financial inputs. Home has a fixed layout (D-94).
+   own independent financial inputs. Home has a fixed layout (D-94). One
+   exception: "Get set up" confirms payday and bills found in the bank with
+   one tap (D-101); nothing is typed on Home and the rows live in Calendar.
 4. **Profile** — if it's about the account rather than the money, it goes here.
 5. If a feature seems to fit two groups, it is **two features**. Split it.
 6. Every tab must be reachable from a nav array. **One array per nav — never a
@@ -202,10 +204,12 @@ browser.
 ## Known gap — not fixed by this structure
 
 Regrouping is a *findability* fix. It helps a user who knows what they want.
-The reported confusion is a **sequence** problem: the setup checklist hands a
-new user four steps and sends them to four different destinations (onboarding
-modal → Cashflow → Net Worth → Profile) before any value appears. The app's own
-setup flow contradicts its own navigation.
+The reported confusion is a **sequence** problem: the old setup checklist handed a
+new user four steps and sent them to four different destinations (onboarding
+modal → Cashflow → Net Worth → Profile) before any value appeared. "Get set up"
+(D-101) narrows this: it appears after the first result, starts one step in,
+and confirms payday and bills in place, but income, bank and budget still open
+their own pages.
 
 This is historical problem context, not a fresh audit or permission to add Home
 financial inputs. A guided setup flow remains a separate proposal: reconcile it

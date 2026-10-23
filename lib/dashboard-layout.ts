@@ -61,7 +61,6 @@ export interface CardDef {
  */
 export const CARDS: CardDef[] = [
   { id: "greeting",  label: "Greeting",          hint: "Your name and today's date. Stays at the top.",    defaultVisible: true, defaultSpan: "full", pinned: true },
-  { id: "setup",     label: "Setup checklist",   hint: "The remaining steps to a complete plan. Disappears once you finish them.", defaultVisible: true, defaultSpan: "full" },
   { id: "hero",      label: "Freedom date",      hint: "When work becomes optional, progress to your FIRE number, and the path there.", defaultVisible: true, defaultSpan: "full" },
   { id: "contribution", label: "Your next move", hint: "The one thing that helps most right now: a budget, your safety pot, a debt, or where to invest.", defaultVisible: true, defaultSpan: "half" },
   { id: "month",     label: "Left this month",   hint: "What's left of your budget, your pace so far, and the next bills.", defaultVisible: true, defaultSpan: "half" },

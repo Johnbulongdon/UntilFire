@@ -10,6 +10,7 @@ import { GuidedTour } from '@/components/GuidedTour'
 import { useTourAnchor } from '@/components/tour-anchors'
 import { HouseholdCard } from '@/components/HouseholdCard'
 import { RecurringTeaser } from '@/components/RecurringCard'
+import { SetupCard } from '@/components/SetupCard'
 import { CategoryGlyph, Icon } from '@/components/Icon'
 import { ProgressTrack, Screen } from '@/components/Screen'
 import { Sunny } from '@/components/Sunny'
@@ -47,6 +48,7 @@ export default function Home() {
 
   return (
     <Screen tab="home" flat hideTitle title="Home" refreshing={loading && !!data} onRefresh={data ? refresh : undefined}>
+      {data && <SetupCard data={data} freedomYear={result.year ?? null} />}
       <Hero result={result} />
       <DateMoved result={result} />
       {data && <SavingsGap data={data} />}

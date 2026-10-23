@@ -70,6 +70,8 @@ export const FunnelEvents = {
   PLAN_COMPARE: 'funnel_plan_compare',
   // Profile → Cancel Pro (D-99): each step, and the one reason picked. Never the free-text note.
   CANCEL_FLOW: 'funnel_cancel_flow',
+  // Home → Get set up: each step as it is finished, and the one-tap confirms. Never amounts or names.
+  SETUP_CHECKLIST: 'funnel_setup_checklist',
 } as const;
 
 export type FunnelEventName =
@@ -300,4 +302,12 @@ export interface FreedomYearSharedProperties extends BaseFunnelProperties { shar
 export interface CancelFlowProperties extends BaseFunnelProperties {
   step: 'opened' | 'reason' | 'kept' | 'cancelled' | 'resumed';
   reason?: string;
+}
+/** Get set up: `step` is a lib/setup-steps id; `done_count` is how many of the five are done after it. */
+export interface SetupChecklistProperties extends BaseFunnelProperties {
+  action: 'step_done' | 'found_confirmed' | 'opened' | 'folded' | 'finished';
+  step?: 'income' | 'bank' | 'payday' | 'bills' | 'budget';
+  done_count?: number;
+  /** found_confirmed only: how many found items were added. */
+  added?: number;
 }
