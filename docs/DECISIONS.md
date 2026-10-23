@@ -3168,3 +3168,33 @@ fuller version of the same fix.
   Android to the closed testing track (`alpha`) as a draft.
 **Revisit:** when Android has steady users (add Google Play billing, per D-75),
 or if the closed test turns up Android-only layout problems.
+
+### D-101 — October 23: "Get set up", a corner checklist with one-tap confirms
+**Status:** Active. Founder's call, 2026-10-23 ("yes mock it", "yess", "build").
+- Replaces the inline "Get started" card on Home (income, expenses, accounts,
+  city, teal buttons). Website: a box in the bottom-right corner of Home that
+  folds to a "Get set up 2/5" pill. Phone: a slim card at the top of Home with
+  the next step's button, opening a sheet with all five.
+- Five steps, in order, ticked from data (`lib/setup-steps.ts`, shared): your
+  income; link your bank (or typed retirement/investment balances, for people
+  Plaid can't reach; typed cash doesn't count, because onboarding seeds its
+  savings answer as cash); a repeating payday in Calendar; a repeating bill in
+  Calendar; a budget in any category but "Other" (where onboarding puts its
+  one spending estimate). City and goals are out: city is optional by design,
+  goals don't move the date.
+- Each finished step shows its payoff: "Your date moved 2043 → 2041" when the
+  date changed, or the new Until payday amount after payday or bills (those
+  don't move the date). After a bank links, payday and bills are offered as
+  "We found 3 bills" with ticks: one tap adds them to Calendar. Unticked ones
+  are not offered again, here or in Calendar.
+- **Exception to "Home has no inputs" (app-structure):** the one-tap confirm
+  writes Calendar rows from Home. Nothing is typed there: it only accepts what
+  the person's own bank shows, and the rows live and are edited in Money →
+  Calendar. "Add by hand" opens Calendar.
+- Done once: when all five are done, "You're set up" shows the date once, then
+  the checklist is gone for good. An account already complete when this ships
+  never sees it. Events: `funnel_setup_checklist` (web and phone).
+- Why: about 1 in 5 people finish setup checklists (Userpilot, 188 apps;
+  fintech about 1 in 4), so each step has to pay off on its own; a head start
+  (income from the calculator) is finished about twice as often (Nunes & Drèze 2006).
+**Revisit:** after a month of `funnel_setup_checklist`: which step people stop at.

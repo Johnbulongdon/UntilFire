@@ -18,14 +18,14 @@ import { amountInput } from '@/lib/format'
 
 const REPEATS: Recurrence[] = ['none', 'weekly', 'biweekly', 'monthly', 'quarterly', 'annual']
 
-/** Add or edit a bill or payday (the website's Calendar form). Opened with ?id= to edit, ?on=YYYY-MM-DD to start on a day. */
+/** Add or edit a bill or payday (the website's Calendar form). Opened with ?id= to edit, ?on=YYYY-MM-DD to start on a day, ?type=income to start as a payday. */
 export default function BillSheet() {
-  const { id, on } = useLocalSearchParams<{ id?: string; on?: string }>()
+  const { id, on, type: startType } = useLocalSearchParams<{ id?: string; on?: string; type?: string }>()
   const { session } = useAuth()
   const { data, refresh } = useAccount()
   const existing = id ? data?.bills.find(b => b.id === id) : undefined
 
-  const [type, setType] = useState<'expense' | 'income'>(existing?.transaction_type ?? (on ? 'expense' : 'expense'))
+  const [type, setType] = useState<'expense' | 'income'>(existing?.transaction_type ?? (startType === 'income' ? 'income' : 'expense'))
   const [description, setDescription] = useState(existing?.description ?? '')
   const [amount, setAmount] = useState(existing ? String(existing.amount) : '')
   const [due, setDue] = useState(existing?.due_date ?? on ?? isoDay(new Date()))

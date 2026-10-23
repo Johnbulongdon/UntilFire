@@ -46,6 +46,7 @@ import {
   type ExploreModeChangedProperties,
   type PlanCompareProperties,
   type CancelFlowProperties,
+  type SetupChecklistProperties,
   type ExploreStarredProperties,
 } from './analytics-events';
 
@@ -435,6 +436,11 @@ export function trackPlanCompare(input: { action: PlanCompareProperties['action'
 export function trackCancelFlow(input: { step: CancelFlowProperties['step']; reason?: string }) {
   const props: CancelFlowProperties = withVersion({ step: input.step, ...(input.reason ? { reason: input.reason } : {}) });
   capture(FunnelEvents.CANCEL_FLOW, props);
+}
+
+export function trackSetupChecklist(input: Omit<SetupChecklistProperties, 'funnel_event_version'>) {
+  const props: SetupChecklistProperties = withVersion(input);
+  capture(FunnelEvents.SETUP_CHECKLIST, props);
 }
 
 export function trackExplorePlanStarted() {

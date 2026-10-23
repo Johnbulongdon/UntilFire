@@ -40,6 +40,9 @@ import { paydayLine } from "@/lib/payday-line";
 import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, occurrences, presumePaid, rateSoFar, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
 import FreeToSpendRunway from "./FreeToSpendRunway";
 import FreeToSpendHome from "./FreeToSpendHome";
+import SetupChecklist, { type AddedExpected } from "./SetupChecklist";
+import type { SetupFacts, SetupStepId } from "@/lib/setup-steps";
+import type { RawTx } from "@/lib/recurring-detect";
 import { FreedomCard, MonthCard, GlanceRow, NextMoveCard, UntilPaydayCard, type MonthCategory } from "./HomeCards";
 import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, MoneyTrack, Fig, StackBar, PaceBar, MonthCalendar, BankLogo } from "./MoneyCards";
 import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
@@ -722,7 +725,7 @@ function SectionLabel({ icon, text, color = "var(--uf-ink)" }: { icon: string; t
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onOpenOnboarding, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60 }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60, budget = {}, expectedRows = [], onExpectedAdded, onSetupStep }: {
   spreadCategories?: string[];
   /** Typed on the phone; in net worth only (audit round 2). */
   homeValue?: number;
@@ -761,10 +764,14 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   onTabChange?: (tab: TabKey) => void;
   /** Plan → Compare, for "Move" on a lease in Today. */
   onOpenCompare?: () => void;
-  onOpenOnboarding?: () => void;
   onFreedomDateChange?: (date: Date | null) => void;
   /** Plan settings (D-59), so Home's date is Plan's. */
   plan?: PlanSettings;
+  /** Get set up: the budget as typed, Calendar as stored, and where each step opens. */
+  budget?: Record<string, unknown>;
+  expectedRows?: { transaction_type: string; recurrence?: string | null }[];
+  onExpectedAdded?: (rows: AddedExpected[]) => void;
+  onSetupStep?: (step: SetupStepId) => void;
 }) {
 
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
@@ -1227,6 +1234,16 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   }, [nwSnapshots]);
   // Home's "Until payday" (D-90): cash less bills before payday, the phone's rule; the budget card stands in without one.
   const paydayView = untilPayday(freeResult, bills.map((b) => b.description));
+  // Get set up (lib/setup-steps): read from what the account already has.
+  const setupFacts = useMemo<SetupFacts>(() => ({
+    income, bankLinked: plaidAccounts.length > 0, typedInvestments: k401 + rothIRA + taxable,
+    expected: expectedRows.map((r) => ({ type: r.transaction_type, recurrence: r.recurrence })), budget,
+  }), [income, plaidAccounts.length, k401, rothIRA, taxable, expectedRows, budget]);
+  const setupTxns = useMemo<RawTx[]>(() => recentTransactions
+    .filter((t) => t.transaction_type === "expense" || t.transaction_type === "income")
+    .map((t, i) => ({ id: String(i), date: t.date.slice(0, 10), amount: t.transaction_type === "expense" ? netAmt(t) : t.amount,
+      currency: t.currency, description: t.description ?? "", category: t.category ?? "", transaction_type: t.transaction_type as "expense" | "income" })),
+  [recentTransactions]);
   // Its line (lib/payday-line): the counted accounts' rows since last pay, then the bills ahead.
   const paydayLineView = useMemo(() => {
     if (!paydayView || !freeResult?.cash) return null;
@@ -1599,22 +1616,18 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       </div>
 
       </HomeSlot>
-      {/* ── Setup checklist (hidden once all 4 steps done) ─────────────── */}
-      <HomeSlot id="setup">
+      {/* ── Get set up: a box in the corner, not a slot (SetupChecklist). ── */}
       <SetupChecklist
-        income={income}
-        expenses={expenses}
-        k401={k401}
-        rothIRA={rothIRA}
-        taxable={taxable}
-        cashSavings={cashSavings}
-        cityName={cityName}
-        plaidAccounts={plaidAccounts}
-        onTabChange={onTabChange}
-        onOpenOnboarding={onOpenOnboarding}
+        userId={userId}
+        facts={setupFacts}
+        freedomYear={exactFreedomDate ? exactFreedomDate.getFullYear() : null}
+        untilPaydayUSD={paydayView ? paydayView.free : null}
+        fmt={(n) => fmtMoney(n)}
+        transactions={setupTxns}
+        rates={displayRates}
+        onAdded={(rows) => onExpectedAdded?.(rows)}
+        onOpen={(step) => onSetupStep?.(step)}
       />
-
-      </HomeSlot>
       {/* ── Hero: chart-led progress card. Fixed dark treatment regardless of
           the dashboard's light/dark setting — a deliberate hero moment, same
           idea as the free-calculator reveal — so it forces the `.dark` token
@@ -2760,73 +2773,6 @@ function SurveyModal({ onSubmit, onDismiss }: {
             Skip for now
           </button>
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Onboarding Modal ─────────────────────────────────────────────────────────
-
-function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings, cityName, plaidAccounts = [], onTabChange, onOpenOnboarding }: {
-  income: number; expenses: Record<string, number | undefined>;
-  k401: number; rothIRA: number; taxable: number; cashSavings: number;
-  cityName: string;
-  plaidAccounts?: PlaidAccount[];
-  onTabChange?: (tab: TabKey) => void;
-  onOpenOnboarding?: () => void;
-}) {
-  const hasExpenses = Object.values(expenses).some(v => (v ?? 0) > 0);
-  // Connected *or* entered. Plaid has no coverage in Hong Kong or mainland
-  // China, so keying this step on a Plaid connection left the people who
-  // cannot use it with a step that could never be completed — nagging them
-  // about something impossible, forever. The balances were already being
-  // passed to this component and ignored.
-  const hasAccounts = plaidAccounts.length > 0
-    || (k401 + rothIRA + taxable + cashSavings) > 0;
-  const steps = [
-    { label: "Set your income", done: income > 0, action: () => onOpenOnboarding?.(), cta: "Add income" },
-    { label: "Add your expenses", done: hasExpenses, action: () => onTabChange?.("cashflow"), cta: "Go to Cashflow" },
-    { label: "Add your accounts", done: hasAccounts, action: () => onTabChange?.("assets"), cta: "Add accounts" },
-    // Plan, not Profile: the assumptions moved there on 18 Sep and this step
-    // kept pointing at account settings, so the last thing a new user was
-    // asked to do sent them to a page that no longer had the field.
-    { label: "Set your city", done: cityName !== "", action: () => onTabChange?.("fire-calculator"), cta: "Go to Plan" },
-  ];
-  const completedCount = steps.filter(s => s.done).length;
-  if (completedCount === 4) return null;
-  const pct = (completedCount / 4) * 100;
-
-  return (
-    <div style={{ background: "var(--uf-card)", border: "1px solid rgba(34,211,165,0.2)", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>Get started</div>
-          <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 2 }}>{completedCount} of 4 complete</div>
-        </div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#22d3a5", fontFamily: "Manrope, sans-serif" }}>{Math.round(pct)}%</div>
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ height: 4, background: "var(--uf-border)", borderRadius: 99, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${pct}%`, background: "#22d3a5", borderRadius: 99, transition: "width 0.4s ease" }} />
-      </div>
-
-      {/* Steps */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {steps.map(step => (
-          <div key={step.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 18, height: 18, borderRadius: "50%", background: step.done ? "#22d3a5" : "transparent", border: step.done ? "none" : "1.5px solid var(--uf-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              {step.done && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#08080e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-            </div>
-            <span style={{ flex: 1, fontSize: 13, color: step.done ? "var(--uf-text-2)" : "var(--uf-text)", fontFamily: "Manrope, sans-serif", textDecoration: step.done ? "line-through" : "none" }}>{step.label}</span>
-            {!step.done && (
-              <button onClick={step.action} style={{ background: "transparent", border: "none", color: "#22d3a5", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: 0, whiteSpace: "nowrap" }}>
-                {step.cta} →
-              </button>
-            )}
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -6428,8 +6374,15 @@ export default function Dashboard() {
                 rothPct={rothPct}
                 onTabChange={setTab}
                 onOpenCompare={() => { setTab("fire-calculator"); setFireCalcSubTab("compare"); }}
-                onOpenOnboarding={() => setOnboardingOpen(true)}
                 onFreedomDateChange={setFreedomDate}
+                budget={expenses}
+                expectedRows={committedRows}
+                onExpectedAdded={(rows) => setCommittedRows((prev) => [...prev, ...rows])}
+                onSetupStep={(step) => {
+                  if (step === "income") setTab("income");
+                  else if (step === "bank") setTab("assets");
+                  else { setCashflowSubTab(step === "budget" ? "budgets" : "expected"); setTab("cashflow"); }
+                }}
               />
             )}
             {tab === "cashflow" && !profileLoading && (
