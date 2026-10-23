@@ -1,9 +1,11 @@
 import * as Application from 'expo-application'
 import { useEffect, useState } from 'react'
-import { Linking, StyleSheet, View } from 'react-native'
+import { Linking, Platform, StyleSheet, View } from 'react-native'
 
 import { EmptyState } from '@/components/EmptyState'
 import { colors } from '@/theme/colors'
+
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.untilfire.app'
 
 /** "1.2.10" vs "1.10.0", by number, part by part. */
 export function olderThan(version: string, min: string) {
@@ -29,7 +31,7 @@ export function UpdateGate() {
     fetch('https://www.untilfire.com/api/app-version')
       .then(res => (res.ok ? res.json() : null))
       .then((body: { minVersion?: string; storeUrl?: string } | null) => {
-        if (body?.minVersion && olderThan(version, body.minVersion)) setStoreUrl(body.storeUrl ?? 'https://apps.apple.com')
+        if (body?.minVersion && olderThan(version, body.minVersion)) setStoreUrl(Platform.OS === 'android' ? PLAY_STORE_URL : body.storeUrl ?? 'https://apps.apple.com')
       })
       .catch(() => {})
   }, [])

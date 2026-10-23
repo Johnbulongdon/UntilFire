@@ -14,6 +14,7 @@ import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
 import { FLAG_COPY } from '@/components/WorthALook'
 import { isoDay } from '@/engine'
+import { proForSale } from '@/lib/native-build'
 import { money, moneyIn } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { categoryOf } from '@/lib/money-data'
@@ -197,7 +198,7 @@ export default function Today() {
             <Text className="font-mono text-[17px] text-ink">{count.done} of {count.of} days this month</Text>
             <MonthDots done={progress.done} />
           </Animated.View>
-          {!data.pro && <View className="mt-2 items-center gap-2"><Text className="text-center text-[13px] text-ink-3">Pro adds payday and big-spend checks.</Text><Button small kind="quiet" label="See Pro" onPress={() => router.push({ pathname: '/pro', params: { from: 'today' } })} /></View>}
+          {!data.pro && proForSale && <View className="mt-2 items-center gap-2"><Text className="text-center text-[13px] text-ink-3">Pro adds payday and big-spend checks.</Text><Button small kind="quiet" label="See Pro" onPress={() => router.push({ pathname: '/pro', params: { from: 'today' } })} /></View>}
         </View>
       </Frame>
     )

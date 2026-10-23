@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-23 — Delete-account page
+
+- New public page untilfire.com/delete-account with the steps to delete an account in the app or on the website, what is deleted and what is kept. Google Play links to it from the store listing.
+
+## 2026-10-22 — Android build of the phone app
+
+- The phone app can now be built for Android and replaces the June website wrapper inside the existing Play listing, under the same package `com.untilfire.app` (D-100).
+- Android is free-only for now: no Pro screen or "See Pro", and a second bank says "One bank on the free plan". Pro bought on the website still works there.
+- Android says "Lock with fingerprint" (or face unlock) and sends "Update" to Google Play.
+
 ## 2026-10-22 — Lease questions on the website
 
 - Home's Today strip asks "Your lease: stay or move?" 30 days before the notice deadline, and "Do you rent or pay a mortgage?" while anything is on the old combined tag, the same as the phone. An answer on either counts on both. Move opens Plan → Compare.

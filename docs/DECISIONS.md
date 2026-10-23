@@ -3151,3 +3151,20 @@ fuller version of the same fix.
 **Source:** `app/dashboard/CancelProSheet.tsx`, `app/dashboard/ProfileTab.tsx`,
 `app/api/stripe/cancel/route.ts`, `app/api/stripe/webhook/route.ts`,
 `lib/cancel-reasons.ts`, `lib/journeys.ts`.
+
+### D-100 — October 22: Android from the Expo app, free-only, in the existing Play listing
+**Status:** Active. Founder's call, 2026-10-22 ("same app, go ahead").
+- Android ships from `mobile/` with EAS, not the June TWA wrapper in `android/`.
+  It takes over the Play listing that wrapper created ("UntilFire: Financial
+  Freedom", package `com.untilfire.app`), so the Expo app's Android package is
+  now `com.untilfire.app` (was `.native`, never published), and Plaid's
+  `android_package_name` matches. Builds must be signed with the wrapper's
+  upload key, or the founder resets the upload key in Play Console.
+- Android is free-only (`proForSale` in `mobile/src/lib/native-build.ts`): no
+  paywall, "See Pro" or Apple subscription links. Pro from the website still
+  unlocks everything. Google Play billing comes later, not before testers exist.
+- The founder's Play account is a personal one opened in 2026, so Google needs
+  a closed test (12+ testers, 14 days) before production. `eas.json` submits
+  Android to the closed testing track (`alpha`) as a draft.
+**Revisit:** when Android has steady users (add Google Play billing, per D-75),
+or if the closed test turns up Android-only layout problems.

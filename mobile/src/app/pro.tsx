@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Button } from '@/components/Button'
 import { Icon } from '@/components/Icon'
 import { Text } from '@/components/Text'
+import { proForSale } from '@/lib/native-build'
 import { buyPro, iapAvailable, PENDING, loadProPrices, restorePro, type ProPlan, type ProPrice } from '@/lib/apple-iap'
 import { haptic } from '@/lib/haptics'
 import { Events, track } from '@/lib/analytics'
@@ -97,7 +98,7 @@ export default function Pro() {
         {data?.pro ? (
           <View className="gap-3">
             <Text className="text-[17px] font-bold text-ink">You're on Pro. Thank you.</Text>
-            <Button kind="quiet" label="Manage your subscription" onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions').catch(() => {})} />
+            {proForSale && <Button kind="quiet" label="Manage your subscription" onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions').catch(() => {})} />}
           </View>
         ) : (
           <View className="flex-row gap-3">
@@ -116,7 +117,7 @@ export default function Pro() {
           </View>
         )}
       </ScrollView>
-      {!data?.pro && (
+      {!data?.pro && proForSale && (
         <View className="gap-3 px-6 pb-3">
           {waiting && failed
             ? <Button label="Couldn't reach the App Store. Try again" onPress={load} />

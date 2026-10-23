@@ -13,6 +13,7 @@ export async function lockAvailable(): Promise<{ ok: boolean; label: string }> {
     LocalAuthentication.supportedAuthenticationTypesAsync(),
   ])
   const face = types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)
+  if (Platform.OS === 'android') return { ok: hardware && enrolled, label: face ? 'face unlock' : 'fingerprint' }
   return { ok: hardware && enrolled, label: face ? 'Face ID' : 'Touch ID' }
 }
 

@@ -1,5 +1,8 @@
 # UntilFire Android — Setup Guide
 
+> Superseded (D-100): Android now ships from the Expo app in `mobile/` with EAS,
+> in the same Play listing. This folder is kept for history only.
+
 ## 1. Open in Android Studio
 
 1. Open Android Studio (Hedgehog or newer)
