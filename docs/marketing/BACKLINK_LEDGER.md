@@ -500,3 +500,17 @@ Owner/session: Codex backlink acquisition. Continued from pushed main `bbecec0b1
 | PRKatalog | `not-submitted` | https://prkatalog.info/submit-site | Public form and sample requests returned HTTP 429. No submission sent; respect rate limiting. |
 
 No new live dofollow backlink was confirmed in this continuation. Two new free review receipts were obtained. Existing monthly badge audit remains unchanged.
+
+### Additional verified backlink 2026-10-24
+
+Owner/session: Codex backlink acquisition. Baseline remains pushed main `bbecec0b12962be5d89e7d0ef5fdf7e6f4866f22`; receipt updates continue on PR #300 without changing website code.
+
+| Platform | Status | Submission / evidence URL | Verified conditions and next step |
+| --- | --- | --- | --- |
+| ToolIndex | `live-follow` | https://strategic-flow-audit.replit.app/directory/untilfire-10780 | Free public submission accepted 2026-10-24: HTTP 200, success=true, id=10780. Public page returned HTTP 200, title "UntilFire — Finance Tool", self-canonical URL and direct https://www.untilfire.com/ website anchor with rel="noopener" only. No nofollow, ugc, sponsored, redirect intermediary, page robots noindex/nofollow, or X-Robots-Tag observed. Public directory API confirms UntilFire, category Finance and the submitted factual description. No account, payment or reciprocal badge required. Contact ash@untilfire.com used with John's prior approval. Do not resubmit. Provider is hosted on a Replit subdomain; its advertised DR 86 is not treated as a verified rating of this listing or a promise of SEO impact. |
+| The Tool Directory | `not-submitted` | https://thetooldirectory.com/submit-a-tool/ | Free reviewed form supports Business & Finance, but current sample https://thetooldirectory.com/tools/research-match/ uses rel="noopener external sponsored" on its website links. Skipped under the dofollow-only instruction; no submission sent. |
+| FreeBacklink.org | `not-submitted` | https://freebacklink.org/submit/ | Public free form requires a numeric CAPTCHA answer. No challenge solved, form submitted or link claimed. |
+| Webdesign-Inspiration | `not-submitted` | https://www.webdesign-inspiration.com/submit | Current official form explicitly reserves the dofollow backlink for the $50 express option; free listings are nofollow. Skipped under zero-budget/dofollow-only instructions. |
+| SaaSpo | `not-submitted` | https://saaspo.com/submit | Current submit page returned HTTP 403. No bypass or submission attempted. |
+
+This pass obtained one new confirmed live followable link. Earlier pending review entries remain pending and were not resubmitted.
