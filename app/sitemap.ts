@@ -16,6 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 1,
     },
+    { url: siteUrl('/directory-partners'), changeFrequency: 'monthly', priority: 0.2 },
     { url: siteUrl('/privacy'), changeFrequency: 'yearly', priority: 0.2 },
     { url: siteUrl('/delete-account'), changeFrequency: 'yearly', priority: 0.1 },
     { url: siteUrl('/terms'), changeFrequency: 'yearly', priority: 0.2 },
