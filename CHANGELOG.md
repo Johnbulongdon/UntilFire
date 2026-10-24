@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-24 — Bank connect spinner
+
+- Connect a bank shows a spinner in the button while Plaid's screen loads, instead of a faded "Connecting…" that looked frozen. `Button` gained a `busy` prop (spinner plus label, taps blocked) for other slow actions.
+
 ## 2026-10-24 — Android connects banks in the app
 
 - On Android, Connect a bank now opens Plaid's own screen inside the app instead of the website, the same as iPhone. The native Plaid library was already in the Android build; only the switch was iPhone-only. The website sends Plaid the Android package name (`com.untilfire.app`), which must be allowed in the Plaid dashboard. Ships as an over-the-air update, no new store build.

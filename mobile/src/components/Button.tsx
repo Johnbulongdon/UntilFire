@@ -1,4 +1,4 @@
-import { Pressable, View, type StyleProp, type ViewStyle } from 'react-native'
+import { ActivityIndicator, Pressable, View, type StyleProp, type ViewStyle } from 'react-native'
 
 import { haptic } from '@/lib/haptics'
 import { colors } from '@/theme/colors'
@@ -13,15 +13,17 @@ export type ButtonKind = 'primary' | 'quiet' | 'onDark' | 'onDarkQuiet' | 'dange
  * presses down under the finger. Every tappable action looks like this, never
  * a bare word. Green acts; quiet is the neutral second choice; onDark sits on
  * the deep-green and coloured screens. `done` swaps the label for a tick, so
- * an answer shows it landed before the next screen arrives.
+ * an answer shows it landed before the next screen arrives. `busy` swaps it for
+ a spinner while something slow (like opening Plaid) is on its way.
  */
-export function Button({ label, onPress, kind = 'primary', small, disabled, done, style, accessibilityLabel }: {
+export function Button({ label, onPress, kind = 'primary', small, disabled, done, busy, style, accessibilityLabel }: {
   label: string
   onPress: () => void
   kind?: ButtonKind
   small?: boolean
   disabled?: boolean
   done?: boolean
+  busy?: boolean
   style?: StyleProp<ViewStyle>
   accessibilityLabel?: string
 }) {
@@ -39,8 +41,8 @@ export function Button({ label, onPress, kind = 'primary', small, disabled, done
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
+      accessibilityState={{ disabled: disabled || busy, busy }}
+      disabled={disabled || busy}
       onPress={() => { haptic.press(); onPress() }}
       style={[{ alignSelf: small ? 'flex-start' : 'stretch' }, style]}
     >
@@ -59,7 +61,12 @@ export function Button({ label, onPress, kind = 'primary', small, disabled, done
           justifyContent: 'center',
           opacity: disabled ? 0.4 : 1,
         }}>
-          {done
+          {busy
+            ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <ActivityIndicator color={ink} />
+                <Text style={{ color: ink }} className={`${small ? 'text-[15px]' : 'text-[17px]'} font-extrabold`}>{label}</Text>
+              </View>
+            : done
             ? <Icon name="checkmark" fallback="✓" size={small ? 18 : 24} color={ink} weight="heavy" />
             : <Text style={{ color: ink }} className={`${small ? 'text-[15px]' : 'text-[17px]'} font-extrabold`}>{label}</Text>}
         </View>
