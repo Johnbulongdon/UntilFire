@@ -1,0 +1,83 @@
+# Sends phone app fixes the way Vercel sends the website (D-102).
+# Every merge to main that touches mobile/ publishes an EAS update to the
+# "preview" channel, so John can check it on his own phone. "Ship" (run this
+# workflow by hand) copies that exact update to the "production" channel.
+# An update only goes out when the app's native fingerprint matches a finished
+# Android store build on the production channel; a native change (new package,
+# app.json native config) fails the run with "Store build needed" instead.
+# Needs the EXPO_TOKEN repository secret. Android only until iOS has a build.
+name: Phone updates
+
+on:
+  push:
+    branches: [main]
+    paths: ['mobile/**']
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'preview = send main to the preview channel; ship = copy the latest preview update to everyone'
+        type: choice
+        options: [ship, preview]
+        default: ship
+
+concurrency:
+  group: phone-updates
+  cancel-in-progress: false
+
+env:
+  PLATFORM: android
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - if: github.event_name == 'push' || inputs.action == 'preview'
+        run: npm ci --no-audit --no-fund
+
+      # Same check EAS uses to decide whether a JS update fits an installed build.
+      # "Ship" skips it: the preview update it copies already passed.
+      - name: Check for native changes
+        if: github.event_name == 'push' || inputs.action == 'preview'
+        run: |
+          hash=$(eas fingerprint:generate --platform "$PLATFORM" --build-profile production --json --non-interactive | jq -r '.hash')
+          builds=$(eas build:list --platform "$PLATFORM" --channel production --status finished --fingerprint-hash "$hash" --limit 1 --json --non-interactive | jq 'length')
+          echo "Fingerprint $hash, matching production builds: $builds"
+          if [ "$builds" = "0" ]; then
+            {
+              echo "### Store build needed"
+              echo "This change touches the app's native layer (fingerprint \`$hash\`), so no update was sent."
+              echo "Phones on the current store build can't run it. Ask for a store build."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::Store build needed: native fingerprint $hash has no finished production build."
+            exit 1
+          fi
+
+      # Bundled with the production environment so "ship" sends the exact bundle John checked.
+      - name: Send to preview
+        if: github.event_name == 'push' || inputs.action == 'preview'
+        run: |
+          eas update --channel preview --environment production --platform "$PLATFORM" \
+            --message "$(git log -1 --pretty=%s)" --non-interactive
+          echo "### Sent to preview" >> "$GITHUB_STEP_SUMMARY"
+          echo "Close and reopen the preview app twice to see it." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Ship to everyone
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'ship'
+        run: |
+          eas update:republish --channel preview --destination-channel production \
+            --platform "$PLATFORM" --message "Ship $(date -u +%F)" --non-interactive
+          echo "### Shipped to everyone" >> "$GITHUB_STEP_SUMMARY"
+          echo "Phones pick it up silently on their next open." >> "$GITHUB_STEP_SUMMARY"
