@@ -1056,6 +1056,14 @@ function FooterSection() {
           >
             Listed on CurlShip
           </a>
+            <a href="https://indielineup.com/product/untilfire?ref=badge" target="_blank" rel="noopener" title="IndieLineup directory application">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="https://indielineup.com/badge/untilfire.svg" alt="Featured on IndieLineup" width={160} height={44} loading="lazy" />
+            </a>
+            <a href="https://wayfindio.com" target="_blank" rel="noopener noreferrer" title="Wayfindio directory application">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="https://wayfindio.com/badge/badge_light.svg" alt="Featured on Wayfindio" width={200} height={54} loading="lazy" />
+            </a>
           </div>
         </details>
 
