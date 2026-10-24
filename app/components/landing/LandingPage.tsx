@@ -404,11 +404,25 @@ function Closing7({ onStart }: { onStart: () => void }) {
 
 /* ── Footer ──────────────────────────────────────────────────────────── */
 function FooterSection() {
+  const recognitions = [
+    {
+      rank: "#1",
+      name: "Startup Fast",
+      detail: "Daily Winner",
+      href: "https://startupfa.st/projects/untilfire",
+    },
+    {
+      rank: "#3",
+      name: "Uneed",
+      detail: "Product of the Day",
+      href: "https://www.uneed.best/tool/untilfire",
+    },
+  ];
+
   return (
-    <footer style={{ background: "var(--uf-ground)", borderTop: "1px solid var(--uf-border)", padding: "48px 24px 32px" }}>
-      <div style={{ maxWidth: 800, margin: "0 auto" }}>
-        {/* Links */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 28, flexWrap: "wrap", marginBottom: 32 }}>
+    <footer className="uf7-footer">
+      <div className="uf7-footer-inner">
+        <div className="uf7-footer-links">
           {[
             ["How it works", "#how"],
             ["Learn", "/learn"],
@@ -417,22 +431,40 @@ function FooterSection() {
             ["Privacy", "/privacy"],
             ["Terms", "/terms"],
           ].map(([label, href]) => (
-            <a key={label} href={href} style={{ fontSize: 16, fontWeight: 600, color: "var(--uf-ink-2)", textDecoration: "none" }}>{label}</a>
+            <a key={label} href={href}>{label}</a>
           ))}
         </div>
 
-        {/* Wordmark */}
-        <div style={{
-          fontFamily: F, fontWeight: 800, fontSize: "clamp(56px, 14vw, 140px)", lineHeight: 0.85,
-          letterSpacing: "-0.05em", textAlign: "center", color: "#ffffff",
-          opacity: 0.08,
-        }}>
-          untilfire
-        </div>
+        <div className="uf7-footer-wordmark">untilfire</div>
 
-        {/* Bottom */}
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "24px 0 16px", fontSize: 14, color: "var(--uf-ink-2)", fontWeight: 500, flexWrap: "wrap", gap: 16 }}>
-          <span>© 2026 UntilFire</span>
+        <section className="uf7-recognition" aria-labelledby="uf7-recognition-title">
+          <div className="uf7-recognition-copy">
+            <p className="uf7-recognition-kicker">Independent recognition</p>
+            <h2 id="uf7-recognition-title">A couple of milestones we&apos;re proud of.</h2>
+          </div>
+          <div className="uf7-recognition-list">
+            {recognitions.map((recognition) => (
+              <a
+                key={recognition.name}
+                href={recognition.href}
+                target="_blank"
+                rel="noopener"
+                className="uf7-recognition-card"
+                aria-label={`${recognition.name}: ${recognition.rank} ${recognition.detail}`}
+              >
+                <span className="uf7-recognition-rank">{recognition.rank}</span>
+                <span>
+                  <strong>{recognition.name}</strong>
+                  <small>{recognition.detail}</small>
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <details className="uf7-listings" open>
+          <summary>Directory partners</summary>
+          <div className="uf7-listings-badges" aria-label="Directory badges">
           <a
             href="https://www.founder.best/products/untilfire?ref=founderbest"
             target="_blank"
@@ -1024,6 +1056,19 @@ function FooterSection() {
           >
             Listed on CurlShip
           </a>
+            <a href="https://indielineup.com/product/untilfire?ref=badge" target="_blank" rel="noopener" title="IndieLineup directory application">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="https://indielineup.com/badge/untilfire.svg" alt="Featured on IndieLineup" width={160} height={44} loading="lazy" />
+            </a>
+            <a href="https://wayfindio.com" target="_blank" rel="noopener noreferrer" title="Wayfindio directory application">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="https://wayfindio.com/badge/badge_light.svg" alt="Featured on Wayfindio" width={200} height={54} loading="lazy" />
+            </a>
+          </div>
+        </details>
+
+        <div className="uf7-footer-bottom">
+          <span>© 2026 UntilFire</span>
           <span>Make work optional</span>
         </div>
       </div>
@@ -1032,10 +1077,87 @@ function FooterSection() {
 }
 
 
-
 const CSS7 = `
   .uf7-root { background: var(--uf-ground); color: var(--uf-ink); overflow-x: hidden; }
   .uf7-root * { box-sizing: border-box; }
+  .uf7-footer {
+    background: var(--uf-ground);
+    border-top: 1px solid var(--uf-border);
+    padding: 48px 24px 32px;
+  }
+  .uf7-footer-inner { max-width: 980px; margin: 0 auto; }
+  .uf7-footer-links {
+    display: flex; justify-content: center; gap: 28px; flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .uf7-footer-links a {
+    color: var(--uf-ink-2); font-size: 16px; font-weight: 600; text-decoration: none;
+  }
+  .uf7-footer-links a:hover { color: var(--uf-ink); }
+  .uf7-footer-wordmark {
+    color: #fff; font-family: ${F}; font-size: clamp(56px, 14vw, 140px);
+    font-weight: 800; letter-spacing: -0.05em; line-height: 0.85;
+    opacity: 0.08; text-align: center;
+  }
+  .uf7-recognition {
+    display: grid; grid-template-columns: minmax(220px, 0.8fr) minmax(420px, 1.2fr);
+    gap: 32px; align-items: center; margin-top: 34px; padding: 28px 0;
+    border-top: 1px solid var(--uf-border); border-bottom: 1px solid var(--uf-border);
+  }
+  .uf7-recognition-kicker {
+    margin: 0 0 7px; color: var(--uf-progress-ink, var(--uf-teal));
+    font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .uf7-recognition-copy h2 {
+    margin: 0; color: var(--uf-ink); font-size: clamp(22px, 3vw, 30px);
+    line-height: 1.15; letter-spacing: -0.035em;
+  }
+  .uf7-recognition-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .uf7-recognition-card {
+    display: flex; min-height: 82px; align-items: center; gap: 14px;
+    padding: 14px; color: var(--uf-ink); text-decoration: none;
+    background: var(--uf-surface); border: 1px solid var(--uf-border); border-radius: 16px;
+    transition: border-color 180ms ease, transform 180ms ease;
+  }
+  .uf7-recognition-card:hover {
+    border-color: var(--uf-control-border, var(--uf-ink-2)); transform: translateY(-2px);
+  }
+  .uf7-recognition-card:focus-visible {
+    outline: 3px solid var(--uf-teal); outline-offset: 3px;
+  }
+  .uf7-recognition-rank {
+    display: grid; width: 48px; height: 48px; flex: 0 0 48px; place-items: center;
+    border-radius: 50%; color: var(--uf-ground); background: var(--uf-action, var(--uf-ink));
+    font-family: ${MONO}; font-size: 16px; font-weight: 800;
+  }
+  .uf7-recognition-card strong,
+  .uf7-recognition-card small { display: block; }
+  .uf7-recognition-card strong { font-size: 16px; line-height: 1.25; }
+  .uf7-recognition-card small { margin-top: 4px; color: var(--uf-ink-2); font-size: 13px; line-height: 1.35; }
+  .uf7-listings { margin: 18px auto 0; color: var(--uf-ink-2); font-size: 13px; text-align: center; }
+  .uf7-listings summary {
+    display: inline-block; cursor: pointer; font-weight: 650; list-style-position: inside;
+  }
+  .uf7-listings summary:hover { color: var(--uf-ink); }
+  .uf7-listings-badges {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;
+    max-width: 760px; margin: 18px auto 0;
+  }
+  .uf7-listings-badges a {
+    display: flex; min-height: 58px; align-items: center; justify-content: center;
+    padding: 8px; border: 1px solid var(--uf-border); border-radius: 10px;
+    background: var(--uf-surface);
+  }
+  .uf7-listings-badges img { display: block; max-width: 100%; max-height: 42px; width: auto; height: auto; }
+  .uf7-listings-links {
+    display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 18px;
+    max-width: 760px; margin: 16px auto 0;
+  }
+  .uf7-listings-links a { color: var(--uf-ink-2); text-decoration: underline; text-underline-offset: 3px; }
+  .uf7-footer-bottom {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;
+    gap: 12px; padding-top: 24px; color: var(--uf-ink-2); font-size: 14px; font-weight: 500;
+  }
   .uf7-grain {
     position: fixed; inset: 0; pointer-events: none; z-index: 40;
     opacity: 0.14; mix-blend-mode: overlay;
@@ -1303,6 +1425,14 @@ const CSS7 = `
     .uf7-curve { height: 148px; }
     .uf7-curve-last { display: none; }
     .uf7-curve-axis { font-size: 13px; padding: 0 14px; }
+    .uf7-footer { padding: 40px 20px 28px; }
+    .uf7-footer-links { gap: 18px 24px; }
+    .uf7-footer-wordmark { font-size: clamp(54px, 22vw, 88px); }
+    .uf7-recognition { grid-template-columns: 1fr; gap: 20px; padding: 24px 0; }
+    .uf7-recognition-list { grid-template-columns: 1fr; }
+    .uf7-listings-badges { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .uf7-footer-bottom { justify-content: center; text-align: center; }
+
   }
   /* Section rules run the full width of the window while the text keeps its
      margin. Rules that stopped at the 1060px column were part of why
