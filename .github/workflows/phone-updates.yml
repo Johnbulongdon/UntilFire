@@ -44,8 +44,8 @@ jobs:
         with:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
-      - if: github.event_name == 'push' || inputs.action == 'preview'
-        run: npm ci --no-audit --no-fund
+      # Every eas command reads the app config, which needs the expo package installed.
+      - run: npm ci --no-audit --no-fund
 
       # Same check EAS uses to decide whether a JS update fits an installed build.
       # Store builds uploaded from John's Windows checkout (git autocrlf) hash
@@ -84,7 +84,12 @@ jobs:
       - name: Ship to everyone
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'ship'
         run: |
-          eas update:republish --channel preview --destination-channel production \
+          # Non-interactive republish only takes --group, so look up preview's latest one.
+          eas update:list --branch preview --platform "$PLATFORM" --limit 1 --json --non-interactive > latest.json || { cat latest.json; exit 1; }
+          group=$(jq -r '.currentPage[0].group // empty' latest.json)
+          if [ -z "$group" ]; then cat latest.json; echo "::error::No update on preview to ship."; exit 1; fi
+          echo "Shipping preview update group $group"
+          eas update:republish --group "$group" --destination-channel production \
             --platform "$PLATFORM" --message "Ship $(date -u +%F)" --non-interactive
           echo "### Shipped to everyone" >> "$GITHUB_STEP_SUMMARY"
           echo "Phones pick it up silently on their next open." >> "$GITHUB_STEP_SUMMARY"
