@@ -40,6 +40,8 @@ export const Events = {
   CHECKOUT_STARTED: 'funnel_checkout_started',
   PURCHASE_RESULT: 'app_purchase_result',
   REWARD_MONTH_GRANTED: 'app_reward_month_granted',
+  // Home → Get set up, as on the website (lib/setup-steps).
+  SETUP_CHECKLIST: 'funnel_setup_checklist',
 } as const
 
 export function track(event: (typeof Events)[keyof typeof Events], props?: Record<string, string | number | boolean | null>) {

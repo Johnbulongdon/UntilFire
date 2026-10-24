@@ -498,6 +498,17 @@ tools get used. Counts and enums only; no amounts, merchants or dates.
   `discarded`.
 - Never ages, years, dates, amounts or what a change is called.
 
+### `funnel_setup_checklist` (D-101)
+
+- **Where**: `app/dashboard/SetupChecklist.tsx` (website Home, corner box) and
+  `mobile/src/components/SetupCard.tsx` (phone Home, `surface = ios_app`).
+- **Properties**: `action` — `step_done` (a step was found finished since the
+  last visit; with `step` and `done_count`), `found_confirmed` (payday or bills
+  found in the bank were added; with `step` and `added`, a count), `opened` /
+  `folded` (the box or sheet; `done_count`), `finished` (the "You're set up"
+  moment was closed). `step` is `income`, `bank`, `payday`, `bills` or `budget`.
+- Never amounts, years, bill names or merchants.
+
 ### `funnel_freedom_year_shared` (D-98)
 
 - **Where**: `app/components/ShareFreedomYear.tsx`, on the calculator's Freedom

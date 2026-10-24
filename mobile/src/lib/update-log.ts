@@ -7,6 +7,8 @@ import * as Updates from 'expo-updates'
  * each line short and in plain words (the founder reads it to check a build).
  */
 export const UPDATE_LOG: { version: string; date: string; changes: string[] }[] = [
+  { version: '0.1.0', date: '2026-10-24', changes: ['Android: Explore shows the city list, fixing a crash when opening it'] },
+  { version: '0.1.0', date: '2026-10-23', changes: ['Home has a "Get set up" checklist that adds the bills it finds in your bank in one tap'] },
   { version: '0.1.0', date: '2026-10-22', changes: ['First Android build, free plan only'] },
   { version: '0.1.0', date: '2026-10-20', changes: ['Safety cash now counts toward freedom, with cash returns instead of stock returns', 'Home uses a fixed layout; dashboard editing has been removed'] },
   {
