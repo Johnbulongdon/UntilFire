@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-24 — Phone app updates go out by themselves
+
+- Every merge that changes the phone app is sent to the preview version of the app within minutes, like the website (D-102). Saying "ship" sends that same update to everyone; phones pick it up quietly on their next open.
+- Changes that need a new store build (new native package or native setting) are caught and flagged instead of being sent.
+
+## 2026-10-24 — Android Explore crash
+
+- On Android the phone app's Explore opens as the city list and has no Map toggle. The map uses Google Maps on Android, which needs an API key the app doesn't have, so opening Explore crashed (Sentry UNTILFIRE-APP-1/-2, build 13, seen on Play's pre-launch test devices). iPhone keeps the map (Apple Maps, no key). Add an Android Maps key later only if the map earns its place.
+
 ## 2026-10-23 — Android build fix
 
 - The Android app now needs Android 7.1 (API 25) or newer, which the Plaid bank library requires. The first two Android builds failed at the manifest step because the app allowed Android 7.0. It targets Android 16 (API 36), as Google Play requires.

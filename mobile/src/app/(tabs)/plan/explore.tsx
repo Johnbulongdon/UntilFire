@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { TAX_ESTIMATES_AVAILABLE } from "@engine/release-gates.ts";
 
-import { Pressable, ScrollView, TextInput, View } from 'react-native'
+import { Platform, Pressable, ScrollView, TextInput, View } from 'react-native'
 
 import { DetailScreen } from '@/components/DetailScreen'
 import { ExploreMap } from '@/components/ExploreMap'
@@ -12,6 +12,9 @@ import { money } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { useLivePlan } from '@/state/live-plan'
 import { colors } from '@/theme/colors'
+
+/** Android has no Google Maps key, and the map crashes without one, so it gets the list only. */
+const HAS_MAP = Platform.OS !== 'android'
 
 type Filter = 'all' | 'us' | 'abroad' | 'notax'
 const FILTERS: { key: Filter; label: string }[] = [
@@ -26,7 +29,7 @@ const FILTERS: { key: Filter; label: string }[] = [
  */
 export default function Explore() {
   const { plan } = useLivePlan()
-  const [view, setView] = useState<'map' | 'list'>('map')
+  const [view, setView] = useState<'map' | 'list'>(HAS_MAP ? 'map' : 'list')
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
   const [picked, setPicked] = useState<string | null>(null)
@@ -61,13 +64,13 @@ export default function Explore() {
 
   return (
     <DetailScreen back="Plan" title="Explore" subtitle="Where your money goes further">
-      <View className="flex-row rounded-control bg-surface p-1">
+      {HAS_MAP && <View className="flex-row rounded-control bg-surface p-1">
         {(['map', 'list'] as const).map(v => (
           <Pressable accessibilityRole="button" key={v} onPress={() => { haptic.select(); setView(v) }} className={`flex-1 items-center rounded-lg py-2 ${view === v ? 'bg-card' : ''}`}>
             <Text className={`text-[14px] font-semibold ${view === v ? 'text-ink' : 'text-ink-2'}`}>{v === 'map' ? 'Map' : 'List'}</Text>
           </Pressable>
         ))}
-      </View>
+      </View>}
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         {FILTERS.map(f => (
