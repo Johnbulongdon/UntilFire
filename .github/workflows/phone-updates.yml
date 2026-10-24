@@ -84,7 +84,11 @@ jobs:
       - name: Ship to everyone
         if: github.event_name == 'workflow_dispatch' && inputs.action == 'ship'
         run: |
-          eas update:republish --channel preview --destination-channel production \
+          # Non-interactive republish only takes --group, so look up preview's latest one.
+          group=$(eas update:list --branch preview --platform "$PLATFORM" --limit 1 --json --non-interactive | jq -r '.currentPage[0].group // empty')
+          if [ -z "$group" ]; then echo "::error::No update on preview to ship."; exit 1; fi
+          echo "Shipping preview update group $group"
+          eas update:republish --group "$group" --destination-channel production \
             --platform "$PLATFORM" --message "Ship $(date -u +%F)" --non-interactive
           echo "### Shipped to everyone" >> "$GITHUB_STEP_SUMMARY"
           echo "Phones pick it up silently on their next open." >> "$GITHUB_STEP_SUMMARY"
