@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-24 — Android Google sign-in "Unmatched Route"
+
+- On Android, Google sign-in briefly opened an "Unmatched Route" page: the return link (untilfire://auth?code=...) also reached the app's page router, which has no auth page. The sign-in itself already finished in the background. The router now ignores that link (`mobile/src/app/+native-intent.tsx`), with a small `auth` page as a backup that steps straight back. iPhone never saw it, because its sign-in sheet catches the link itself.
+
 ## 2026-10-24 — Phone app updates go out by themselves
 
 - Every merge that changes the phone app is sent to the preview version of the app within minutes, like the website (D-102). Saying "ship" sends that same update to everyone; phones pick it up quietly on their next open.
