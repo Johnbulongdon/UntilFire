@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-24 — Android connects banks in the app
+
+- On Android, Connect a bank now opens Plaid's own screen inside the app instead of the website, the same as iPhone. The native Plaid library was already in the Android build; only the switch was iPhone-only. The website sends Plaid the Android package name (`com.untilfire.app`), which must be allowed in the Plaid dashboard. Ships as an over-the-air update, no new store build.
+
 ## 2026-10-24 — Android Google sign-in "Unmatched Route"
 
 - On Android, Google sign-in briefly opened an "Unmatched Route" page: the return link (untilfire://auth?code=...) also reached the app's page router, which has no auth page. The sign-in itself already finished in the background. The router now ignores that link (`mobile/src/app/+native-intent.tsx`), with a small `auth` page as a backup that steps straight back. iPhone never saw it, because its sign-in sheet catches the link itself.
