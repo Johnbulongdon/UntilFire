@@ -54,7 +54,7 @@ export function BankBridge({ another, compact }: { another?: boolean; compact?: 
   }
   return (
     <View className="gap-2">
-      <Button small={compact} kind={another ? 'quiet' : 'primary'} disabled={busy}
+      <Button small={compact} kind={another ? 'quiet' : 'primary'} busy={busy}
         label={busy ? 'Connecting…' : needsPro ? (proForSale ? 'More banks with Pro' : 'One bank on the free plan') : another ? 'Connect another bank' : 'Connect a bank'} onPress={open} />
       {!another && (
         <Text className="text-[13px] leading-5 text-ink-3">
