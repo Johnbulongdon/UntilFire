@@ -26,7 +26,7 @@ const sections: LegalSection[] = [
       "What you enter: income, spending, budgets, transactions, balances, goals, your plan and its assumptions, and your answers to the onboarding questions.",
       "Connected banks: if you connect a bank, Plaid sends us account names, balances, holdings and transactions for the accounts you choose. We never see or store your bank username or password.",
       "Payments: if you subscribe to Pro on the website, Stripe handles your card. We store whether you subscribe and your Stripe customer reference, never your card number. If you subscribe in the iOS app, Apple handles the payment; we store whether you subscribe, when it renews and Apple's reference for the purchase.",
-      "Usage: which pages and features are used, device and browser type, and errors, so we can fix problems and improve the product. We don't send your amounts, names or email address in these events.",
+      "Usage: which pages and features are used, device and browser type, errors, and screen recordings of how pages are used, so we can fix problems and improve the product. We don't send your amounts, names or email address in these events, and recordings hide amounts and everything you type.",
     ],
   },
   {
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy policy"
-      updated="11 October 2026"
+      updated="24 October 2026"
       intro="UntilFire helps you see when work becomes optional. To do that it holds sensitive information about your money, so this page says plainly what we collect, why, and how you stay in control of it. It covers the website at untilfire.com and the UntilFire iOS app."
       sections={sections}
     />

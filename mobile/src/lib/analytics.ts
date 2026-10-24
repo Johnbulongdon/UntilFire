@@ -19,6 +19,18 @@ export const posthog: PostHog | null = KEY && Platform.OS !== 'web'
       captureAppLifecycleEvents: true,
       // Uncaught JS errors and promise rejections become $exception events, as on the website.
       errorTracking: { autocapture: { uncaughtExceptions: true, unhandledRejections: true, console: false } },
+      // Screen recordings, to see where new people get stuck. Needs the native
+      // @posthog/react-native-plugin, so it starts with a store build. Every
+      // text, text box and image is masked, so a recording shows layout and
+      // taps but never an amount, name or email; logs and network are off.
+      enableSessionReplay: true,
+      sessionReplayConfig: {
+        maskAllTextInputs: true,
+        maskAllImages: true,
+        maskAllSandboxedViews: true,
+        captureLog: false,
+        captureNetworkTelemetry: false,
+      },
     })
   : null
 

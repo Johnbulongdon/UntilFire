@@ -3218,3 +3218,19 @@ and then big ones, they need my permission").
   is worth the extra step; small fixes otherwise ship the same day, and store
   builds are bundled every 2 to 4 weeks or when a native change forces one.
 **Revisit:** when iOS has a store build (add `ios` to the workflow).
+
+### D-103 — October 24: masked screen recordings in the phone app
+**Status:** Active. Founder's call, 2026-10-24 ("turn on recording"), after the
+first day of Android testers showed 12 people reach sign-in and 5 finish.
+- `mobile/src/lib/analytics.ts` turns on PostHog session replay with the
+  native `@posthog/react-native-plugin`. Every text, text box and image is
+  masked, so a recording shows layout and taps, never an amount, name or
+  email. Console logs and network calls are not recorded.
+- It is a native change, so it starts with the next store build. The app
+  version moves to 0.2.0 so updates made for the new build never reach phones
+  still on build 13 (runtime version follows the app version).
+- The privacy policy's usage line now mentions masked screen recordings.
+- Why: the web already records with amounts marked `ph-no-capture`; the phone
+  had no way to see where new people get stuck.
+**Revisit:** if masking leaks any amount in a real recording, turn replay off
+with an update and report it.
