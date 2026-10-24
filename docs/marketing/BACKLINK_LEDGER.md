@@ -514,3 +514,23 @@ Owner/session: Codex backlink acquisition. Baseline remains pushed main `bbecec0
 | SaaSpo | `not-submitted` | https://saaspo.com/submit | Current submit page returned HTTP 403. No bypass or submission attempted. |
 
 This pass obtained one new confirmed live followable link. Earlier pending review entries remain pending and were not resubmitted.
+
+
+## 2026-10-24 follow-up: one free submission and public status audit
+
+| Directory | Status after this check | Evidence |
+| --- | --- | --- |
+| IndieHustles | `pending` - new free submission | Submitted through the public form's normal server function with `submission_tier: free`, UntilFire's public website/product details, and approved contact `ash@untilfire.com`. HTTP 200 returned receipt ID `e54a56c9-9670-46ae-bc88-0e30b35b2c52`. Public `https://indiehustles.com/product/e54a56c9-9670-46ae-bc88-0e30b35b2c52` currently says Product Not Found / not published yet; do not count a backlink. Sample ordinary listing `https://indiehustles.com/product/8c7f16ae-4c4d-4f90-8af1-1ad33f3119e0` links directly to hausjam.com with `rel="noopener noreferrer"`. Free form says 8-10 weeks; generic confirmation says 5-7 days. Approval time is uncertain. No payment, badge, account, or duplicate submission. |
+| IndieLineup | `live-follow` reverified | `https://indielineup.com/product/untilfire/` HTTP 200; three direct UntilFire anchors with `rel="noopener"` only. |
+| DevElif | `live-follow` reverified | `https://develif.com/s/untilfire-financial-freedom-planner` HTTP 200; two direct UntilFire anchors with `rel="noopener noreferrer"` only. |
+| ToolIndex | `live-follow` reverified | `https://strategic-flow-audit.replit.app/directory/untilfire-10780` HTTP 200; direct website anchor with `rel="noopener"` only. |
+| Discoverly | `pending` unchanged | Checked expected public URL `https://discoverly.tech/apps/untilfire`: HTTP 404. No new receipt or duplicate submission. |
+| Web Apps Directory | `pending` unchanged | Checked `https://webapps.directory/directory/untilfire`: HTTP 404. Existing queued receipt remains the evidence of submission. |
+| PWA Directory | `pending` unchanged | Checked `https://pwa.directory/directory/untilfire`: HTTP 404. Existing accepted receipt remains the evidence of submission. |
+| ToolPromote / SaaSGrow / Startup Alternatives | Not publicly verified | Checked previously expected UntilFire URLs: HTTP 404. This is not proof of rejection. No resubmission. |
+| SaaSBison | Not publicly verified | `https://saasbison.com/item/untilfire` returns HTTP 200 but a generic fallback, with no UntilFire listing content or outbound anchor. Do not count the HTTP 200 as a backlink. |
+| Postmake / AppDirectory.org | Not publicly verified | Postmake homepage/search checks did not reveal the listing; this is inconclusive. AppDirectory's checked expected product route returned HTTP 404. Preserve existing pending/unconfirmed state. |
+
+Additional screening: Linkrena's sample ordinary listing links directly with `rel="noopener"`, but its normal `/api/submit` returned auth error "Sign in to submit a tool."; no receipt and no listing created. AI SaaS Radar ordinary links use `rel="ugc nofollow noopener noreferrer"`, so skipped. LinkWith explicitly uses nofollow, so skipped. PublishYourSaaS now points submissions to an account dashboard. CodeHype requires a verified badge for free dofollow. We Are Founders requires a reciprocal link before review and excludes investment tools, so not submitted. Global Site Directory currently offers local-service categories with no accurate UntilFire software category; not retried.
+
+Baseline: latest pushed main `bbecec0b12962be5d89e7d0ef5fdf7e6f4866f22`. Local unrelated changes preserved. Raw receipts and public markup checks saved under `outputs/directory-partners/`; only this ledger is included in the existing receipt PR. This check confirms link markup, not search indexing or ranking impact.
