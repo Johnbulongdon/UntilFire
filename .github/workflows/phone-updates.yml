@@ -48,22 +48,29 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       # Same check EAS uses to decide whether a JS update fits an installed build.
-      # "Ship" skips it: the preview update it copies already passed.
+      # Store builds uploaded from John's Windows checkout (git autocrlf) hash
+      # .gitignore and eas.json with CRLF line endings, so a Linux checkout never
+      # matches them. Try the checkout as is, then with those two files as CRLF.
       - name: Check for native changes
         if: github.event_name == 'push' || inputs.action == 'preview'
         run: |
-          hash=$(eas fingerprint:generate --platform "$PLATFORM" --build-profile production --json --non-interactive | jq -r '.hash')
-          builds=$(eas build:list --platform "$PLATFORM" --channel production --status finished --fingerprint-hash "$hash" --limit 1 --json --non-interactive | jq 'length')
-          echo "Fingerprint $hash, matching production builds: $builds"
-          if [ "$builds" = "0" ]; then
-            {
-              echo "### Store build needed"
-              echo "This change touches the app's native layer (fingerprint \`$hash\`), so no update was sent."
-              echo "Phones on the current store build can't run it. Ask for a store build."
-            } >> "$GITHUB_STEP_SUMMARY"
-            echo "::error::Store build needed: native fingerprint $hash has no finished production build."
-            exit 1
-          fi
+          match() {
+            hash=$(eas fingerprint:generate --platform "$PLATFORM" --build-profile production --json --non-interactive | jq -r '.hash')
+            builds=$(eas build:list --platform "$PLATFORM" --channel production --status finished --fingerprint-hash "$hash" --limit 1 --json --non-interactive | jq 'length')
+            echo "Fingerprint $hash ($1), matching production builds: $builds"
+            [ "$builds" != "0" ]
+          }
+          if match "LF"; then exit 0; fi
+          sed -i 's/$/\r/' .gitignore eas.json
+          if match "CRLF"; then git checkout -- .gitignore eas.json; exit 0; fi
+          git checkout -- .gitignore eas.json
+          {
+            echo "### Store build needed"
+            echo "This change touches the app's native layer (fingerprint \`$hash\`), so no update was sent."
+            echo "Phones on the current store build can't run it. Ask for a store build."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::Store build needed: native fingerprint $hash has no finished production build."
+          exit 1
 
       # Bundled with the production environment so "ship" sends the exact bundle John checked.
       - name: Send to preview
