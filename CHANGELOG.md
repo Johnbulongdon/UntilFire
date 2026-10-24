@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-24 — Phone app updates go out by themselves
+
+- Every merge that changes the phone app is sent to the preview version of the app within minutes, like the website (D-102). Saying "ship" sends that same update to everyone; phones pick it up quietly on their next open.
+- Changes that need a new store build (new native package or native setting) are caught and flagged instead of being sent.
+
 ## 2026-10-23 — Node.js security patch
 
 - After Stripe's Node.js security notice, the website now states its Node line (24.x, the same as the Vercel setting) in `package.json`, so a fresh deploy picks up Vercel's patched 24 runtime. The journey screenshot workflow pins the patched Node 22.23.4.

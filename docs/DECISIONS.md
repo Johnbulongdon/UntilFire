@@ -3168,3 +3168,23 @@ fuller version of the same fix.
   Android to the closed testing track (`alpha`) as a draft.
 **Revisit:** when Android has steady users (add Google Play billing, per D-75),
 or if the closed test turns up Android-only layout problems.
+
+### D-102 — October 24: phone app updates go out like the website
+**Status:** Active. Founder's call, 2026-10-24 ("small fixes just go automatic,
+and then big ones, they need my permission").
+- Every merge to main that touches `mobile/` sends an EAS update to the
+  `preview` channel (`.github/workflows/phone-updates.yml`). Only phones on a
+  preview build see it. Updates download silently and show on the next open.
+- John checks it on his phone, then says "ship": the workflow's manual run
+  copies that exact update to `production` (`eas update:republish`), so what
+  users get is what he tested.
+- Native changes (new native package, app.json native config) can't go out as
+  an update. The workflow compares the app's fingerprint with finished
+  production store builds and stops with "Store build needed". Store builds
+  (`eas build` + `eas submit` to Play closed testing) still need John's OK.
+- Updates are bundled with the EAS `production` environment, so preview checks
+  report to Sentry as production. Android only until iOS has a store build.
+- Why: one bad update reaches every phone at once, so one look on John's phone
+  is worth the extra step; small fixes otherwise ship the same day, and store
+  builds are bundled every 2 to 4 weeks or when a native change forces one.
+**Revisit:** when iOS has a store build (add `ios` to the workflow).
