@@ -461,3 +461,15 @@ Copy the appropriate table row above, then fill every known field. At minimum re
 | 2026-06-22 | Codex backlink acquisition | Qualified Uneed, Launching Next, and Think Save Retire for the first free batch; deferred BetaList and StartupBase pending account-gated details; rejected Fazier's reciprocal-link free tier. |
 | 2026-06-22 | Codex backlink acquisition | Corrected Product Hunt to user-confirmed `submitted`; added `scheduled` status and exact assigned launch-date tracking. |
 | 2026-06-22 | Codex backlink audit | Initial repository, public web, live-page, and authenticated Ahrefs reconciliation. |
+
+
+## 2026-10-24 directory acquisition batch
+
+| Platform | Status | Evidence / destination | Verification and next step |
+| --- | --- | --- | --- |
+| DevElif | `live-follow` | https://develif.com/s/untilfire-financial-freedom-planner | Submitted free; response ok=true, status=PUBLISHED. Public page returned HTTP 200; direct UntilFire anchors have rel="noopener noreferrer" only, robots index/follow. Do not resubmit. |
+| Postmake | `submitted` | https://postmake.io/submit-badge-listing | Official badge submission accepted on 2026-10-24, HTTP 200 and {"ok":true}; existing homepage badge verified present. Await editorial review, then verify public listing and link attributes. Do not resubmit. This supersedes the older not-submitted row. |
+| Discoverly | `not-submitted` | https://discoverly.tech/submit | Official badge prepared on /directory-partners; requires deployment before truthful submission. Free submission uses Finance / Freemium / Web. Badge required while listed. No publication or link claim. |
+| LaunchesHQ | `not-submitted` | https://launcheshq.com/submit | Official badge prepared on /directory-partners; requires deployment and sign-in. Free plan gives nofollow until badge verification. Verify using https://www.untilfire.com/directory-partners; select $0 review queue. No publication or link claim. |
+
+Badge assets returned HTTP 200 on 2026-10-24. The separate public page avoids overlapping open PR #161's homepage footer work. No existing production route was reskinned. Daily follow-up in the requesting chat checks public listings and actual outbound rel attributes; pending review is not a verified dofollow backlink. Merge/deployment awaits John's explicit merge instruction under AGENTS.md.
