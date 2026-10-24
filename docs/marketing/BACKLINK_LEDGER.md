@@ -554,3 +554,14 @@ Screening: SaaSLineup already live in ledger, so not duplicated. Phyco free subm
 Rejected/deferred in this pass: SubmitStartup.io explicitly gives free listings nofollow and reserves dofollow for Featured; not submitted. Amplibee sample `/launches/tta1` has a direct `rel="noopener"` website link and index/follow meta, but its current submit handler requires authentication plus Turnstile; not submitted. PRKatalog remains blocked by a Vercel security checkpoint (HTTP 429), so no submission. ProductCool now redirects submission to sign-in; DirVibe also requires login. ToolPassed, Cockpit Index and Stackdrop are specialized AI/developer/aviation directories without a strong demonstrated UntilFire fit. Previously listed Canopy and Zearches were not duplicated. BidoutX link type was not verified; no listing sent.
 
 Baseline: latest pushed main `bbecec0b12962be5d89e7d0ef5fdf7e6f4866f22` reverified. Local unrelated changes preserved. Only this ledger updated in the receipt PR; no website, badge or deployment changes.
+
+
+## 2026-10-25: SEO Listing free submission
+
+| Directory | Status | Evidence |
+| --- | --- | --- |
+| SEO Listing | `pending` | Free form `https://seolisting.io/add-listing`, normal public POST `/api/listings`. Before submission the public listing API had zero UntilFire matches. HTTP 201 receipt: `{"ok":true,"id":"lst_0mvmmegk921b1110439ed","slug":"untilfire","status":"pending"}`. Used Technology & IT (`technology`, explicitly includes software/SaaS), factual product description, John and approved contact `ash@untilfire.com`. Optional address/phone/hours blank. Public `https://seolisting.io/listings/untilfire` is HTTP 404, so no live backlink counted. Sample `https://seolisting.io/listings/homegpt` has three direct website anchors with `rel="noopener"` only and `robots=index, follow`. Publisher states free dofollow listings and human review within 24 hours; approval is not guaranteed. No payment, badge, account or duplicate. Local receipt `outputs/directory-partners/seolisting-receipt-2026-10-25.json`. |
+
+Screening: Freeboard explicitly says it does not pass ranking credit and routes through click tracking; skipped under dofollow-only scope. HereIsMySaaS requires sign-in. AI-only/design directories were not used without demonstrated product fit. aifindr now requires GitHub sign-in despite its no-account text; no submission. WebRankDirectory returned HTTP 403; no bypass.
+
+Baseline: latest fetched `origin/main` remains `bbecec0b12962be5d89e7d0ef5fdf7e6f4866f22`. Fetch succeeded but Git background maintenance reported a pre-existing bad-tree/repack error; unrelated local changes preserved. This PR changes only the backlink ledger.
