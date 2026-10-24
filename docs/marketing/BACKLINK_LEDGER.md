@@ -482,3 +482,21 @@ Badge assets returned HTTP 200 on 2026-10-24. The separate public page avoids ov
 | Wayfindio | `not-submitted` | https://wayfindio.com/submit | Homepage footer badge verified live on 2026-10-24. Free plan requires account/sign-in and logo. Browser access timed out during this session; no account or listing created and no submission claimed. Existing sample finance listing has a direct dofollow website link, but this is not evidence of an UntilFire backlink. |
 
 Prepared product facts for the three forms: UntilFire; https://www.untilfire.com/; financial freedom planning app; free no-login estimate, scenario comparisons and saved progress; Freemium / Web. No paid upgrades or invented company/account information. No new backlinks claimed from this candidate batch.
+
+### Free-directory continuation 2026-10-24
+
+Owner/session: Codex backlink acquisition. Continued from pushed main `bbecec0b12962be5d89e7d0ef5fdf7e6f4866f22` and the existing unmerged receipt branch for PR #300. No website changes or new badges.
+
+| Platform | Status | Submission / evidence URL | Verified conditions and next step |
+| --- | --- | --- | --- |
+| Web Apps Directory | `pending` | https://webapps.directory/submit | Free standard submission accepted 2026-10-24: HTTP 200, `ok:true`, `receipt_status:queued`, submission ID `srv_mvmhzt32_xewhwl`. Finance & Business; contact ash@untilfire.com approved by John. Review stated up to four weeks. Sample https://webapps.directory/directory/tta1 links directly to its product with rel="noopener noreferrer" only. UntilFire public route returned 404 immediately after submission; no incoming dofollow confirmed yet. Do not resubmit. |
+| PWA Directory | `pending` | https://pwa.directory/submit | Free standard submission accepted 2026-10-24: HTTP 200, `ok:true`, `receipt_status:accepted`, submission ID `88f26222-4de0-42ef-ad73-b1a66da52d68`. Finance & Business; review stated up to four weeks. UntilFire's live manifest and /sw.js returned 200; pinned main layout registers the worker. Sample https://pwa.directory/directory/tta1 has direct rel="noopener noreferrer" product links. UntilFire public route returned 404 immediately after submission; no incoming dofollow confirmed yet. Do not resubmit. |
+| purshoLOGY | `not-submitted` | https://www.purshology.com/submit-your-tool/ | Official form advertises a free reviewed dofollow listing. Search returned zero UntilFire results before attempt. Normal form submission returned "Invalid request!"; its normal page-load token-refresh action returned 0. No success receipt or public listing. Treat as failed, not queued; no alternate bypass attempted. |
+| Qevra | `not-submitted` | https://qevra.app/ | Current homepage and API docs require $2 for a listing, despite older free-listing references. Skipped: zero budget. |
+| PromoteIndex | `not-submitted` | https://promoteindex.com/p/tta1 | Current sample website anchor uses rel="nofollow ugc noopener". Skipped under dofollow-only instruction, despite third-party dofollow claims. |
+| Canopy Launch Directory | `not-submitted` | https://canopystack.dev/launches | Current public directory anchors use rel="nofollow noopener". Skipped; no submission sent. |
+| LeanVibe | `not-submitted` | https://submitmap.com/platform/leanvibe/ | Eligibility excludes freemium products; UntilFire offers optional paid features. Skipped as wrong fit; no submission sent. |
+| Ignlab Launch | `not-submitted` | https://launch.ignlab.net/submit.html | Public form requires a math human-verification answer. No challenge solved and no submission sent. |
+| PRKatalog | `not-submitted` | https://prkatalog.info/submit-site | Public form and sample requests returned HTTP 429. No submission sent; respect rate limiting. |
+
+No new live dofollow backlink was confirmed in this continuation. Two new free review receipts were obtained. Existing monthly badge audit remains unchanged.
