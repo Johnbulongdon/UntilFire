@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-24 — Android Explore crash
+
+- On Android the phone app's Explore opens as the city list and has no Map toggle. The map uses Google Maps on Android, which needs an API key the app doesn't have, so opening Explore crashed (Sentry UNTILFIRE-APP-1/-2, build 13, seen on Play's pre-launch test devices). iPhone keeps the map (Apple Maps, no key). Add an Android Maps key later only if the map earns its place.
+
 ## 2026-10-23 — Get set up checklist
 
 - Home has a "Get set up" checklist: income, bank, payday, bills and budget, each ticked by itself from your data, with "2 of 5 done" (D-101). On the website it sits in the bottom-right corner and folds to a small pill; on the phone it is a slim card at the top of Home that opens all five.
