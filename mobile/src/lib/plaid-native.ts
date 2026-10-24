@@ -1,7 +1,7 @@
 import type { LinkSuccess } from 'react-native-plaid-link-sdk'
 import { Platform } from 'react-native'
 
-import { nativeBuild } from '@/lib/native-build'
+import { ownBuild } from '@/lib/native-build'
 
 const SITE = 'https://www.untilfire.com'
 
@@ -14,7 +14,8 @@ const SITE = 'https://www.untilfire.com'
  * (the same free-plan limit of one bank applies).
  */
 export function plaidNativeAvailable(): boolean {
-  if (!nativeBuild) return false
+  // Both platforms: Android sends its package name instead of iOS's redirect URI.
+  if (!ownBuild) return false
   try { require('react-native-plaid-link-sdk'); return true } catch { return false }
 }
 

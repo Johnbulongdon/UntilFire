@@ -11,6 +11,9 @@ export const inExpoGo = Constants.executionEnvironment === ExecutionEnvironment.
 /** Our own iOS build, where native-only features can run. */
 export const nativeBuild = Platform.OS === 'ios' && !inExpoGo
 
+/** Our own build on either platform (iOS or Android), outside Expo Go. */
+export const ownBuild = Platform.OS !== 'web' && !inExpoGo
+
 /**
  * Pro is sold through Apple only (D-75). Android launches free (D-100): no
  * paywall or "See Pro" until Google Play billing exists. Pro bought on the
