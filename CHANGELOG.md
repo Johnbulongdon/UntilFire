@@ -9,6 +9,10 @@
 
 - On Android the phone app's Explore opens as the city list and has no Map toggle. The map uses Google Maps on Android, which needs an API key the app doesn't have, so opening Explore crashed (Sentry UNTILFIRE-APP-1/-2, build 13, seen on Play's pre-launch test devices). iPhone keeps the map (Apple Maps, no key). Add an Android Maps key later only if the map earns its place.
 
+## 2026-10-23 — Android build fix
+
+- The Android app now needs Android 7.1 (API 25) or newer, which the Plaid bank library requires. The first two Android builds failed at the manifest step because the app allowed Android 7.0. It targets Android 16 (API 36), as Google Play requires.
+
 ## 2026-10-23 — Get set up checklist
 
 - Home has a "Get set up" checklist: income, bank, payday, bills and budget, each ticked by itself from your data, with "2 of 5 done" (D-101). On the website it sits in the bottom-right corner and folds to a small pill; on the phone it is a slim card at the top of Home that opens all five.
