@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Directory partners | UntilFire",
@@ -10,9 +11,9 @@ export default function DirectoryPartnersPage() {
   return (
     <main style={{ minHeight: "100vh", background: "var(--uf-ground)", color: "var(--uf-ink)", padding: "64px 24px" }}>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <a href="/" style={{ color: "var(--uf-green)", display: "inline-flex", alignItems: "center", minHeight: 44 }}>
+        <Link href="/" style={{ color: "var(--uf-green)", display: "inline-flex", alignItems: "center", minHeight: 44 }}>
           Back to UntilFire
-        </a>
+        </Link>
         <h1 style={{ fontSize: "clamp(32px, 6vw, 48px)", lineHeight: 1.15, margin: "32px 0 16px" }}>Directory partners</h1>
         <p style={{ fontSize: 16, lineHeight: 1.6, color: "var(--uf-ink-2)", margin: "0 0 32px" }}>
           We are applying to these directories. A badge here does not mean a listing has been approved.
