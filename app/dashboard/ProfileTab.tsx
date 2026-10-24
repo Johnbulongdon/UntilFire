@@ -3,8 +3,16 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { SUPPORTED_CURRENCIES, CURRENCY_NAMES } from "@/lib/currency";
-import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, TRIAL_LABEL } from "@/lib/pricing";
+import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, TRIAL_LABEL, REFERRED_TRIAL_LABEL } from "@/lib/pricing";
+import { Button } from "@/components/ui";
+import { MoneyHead, MoneyList, MoneyRow } from "./MoneyCards";
+import GiveAMonthCard from "./GiveAMonthCard";
+import CreatorCard from "./CreatorCard";
 import HouseholdSection from "./HouseholdSection";
+import CancelProSheet, { changePro, fmtEnds, type ProBilling } from "./CancelProSheet";
+import { trackCancelFlow } from "@/lib/analytics";
+import { download, exportEverything, exportFileName, loadTransactions, transactionsCsv } from "@/lib/data-export";
+import { trackDataExported } from "@/lib/analytics";
 
 interface PlaidItem {
   id: string;
@@ -30,9 +38,14 @@ interface Props {
   onDefaultCurrencyChange: (currency: string) => void;
   onPreferredCurrenciesChange: (currencies: string[]) => void;
   onTabChange: (tab: string) => void;
-  subscription: { plan: "free" | "pro" } | null;
+  subscription: { plan: "free" | "pro"; billing?: ProBilling } | null;
   onUpgradeClick: () => void;
   onManageBilling: () => void;
+  onBillingChange: (billing: ProBilling) => void;
+  /** "March 2041", shown on the cancel sheet as what stays free. */
+  freedomLabel: string | null;
+  /** "60 days free" for an account a creator referred (D-27). */
+  trialLabel?: string;
 }
 
 export default function ProfileTab({
@@ -45,6 +58,9 @@ export default function ProfileTab({
   subscription,
   onUpgradeClick,
   onManageBilling,
+  onBillingChange,
+  freedomLabel,
+  trialLabel = TRIAL_LABEL,
 }: Props) {
   const [displayName, setDisplayName] = useState("");
 
@@ -65,6 +81,13 @@ export default function ProfileTab({
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [showDelete, setShowDelete] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [openRow, setOpenRow] = useState<string | null>(null);
+  const [householdSummary, setHouseholdSummary] = useState("Set up");
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [resuming, setResuming] = useState(false);
+  const [billingError, setBillingError] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -178,327 +201,262 @@ export default function ProfileTab({
     window.location.href = "/";
   }
 
-  const cardStyle: React.CSSProperties = {
-    background: "var(--uf-card)",
-    borderRadius: 12,
-    border: "1px solid var(--uf-border)",
-    padding: "24px 28px",
-    marginBottom: 20,
-  };
-
-  const labelStyle: React.CSSProperties = {
-    display: "block",
-    fontSize: 13,
-    fontWeight: 600,
-    color: "#374151",
-    marginBottom: 6,
-  };
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  }
 
   const inputStyle: React.CSSProperties = {
-    width: "100%",
+    flex: "1 1 180px",
+    minWidth: 0,
     padding: "9px 12px",
-    border: "1px solid var(--uf-border)",
-    borderRadius: 8,
+    border: "1px solid var(--uf-border-2)",
+    borderRadius: 10,
+    font: "inherit",
     fontSize: 14,
-    color: "#1a1a2e",
-    background: "var(--uf-card)",
+    color: "var(--uf-ink)",
+    background: "var(--uf-bg)",
     outline: "none",
     boxSizing: "border-box",
   };
+  const isPro = subscription?.plan === "pro";
+  const billing = subscription?.billing;
+  const ending = billing?.source === "stripe" && !billing.renews;
 
-  const btnStyle = (variant: "primary" | "danger" | "disabled"): React.CSSProperties => ({
-    padding: "9px 20px",
-    borderRadius: 8,
-    fontSize: 14,
-    fontWeight: 600,
-    border: "none",
-    cursor: variant === "disabled" ? "not-allowed" : "pointer",
-    background: variant === "primary" ? "#059669" : variant === "danger" ? "#dc2626" : "#E2E8F0",
-    color: variant === "primary" || variant === "danger" ? "#fff" : "#9ca3af",
-    opacity: variant === "disabled" ? 0.6 : 1,
-    whiteSpace: "nowrap",
-  });
+  async function keepPro() {
+    if (!billing) return;
+    setResuming(true); setBillingError("");
+    const res = await changePro({ action: "resume" });
+    setResuming(false);
+    if (!res.ok) { setBillingError(res.error ?? "Something went wrong. Try again."); return; }
+    trackCancelFlow({ step: "resumed" });
+    onBillingChange({ ...billing, renews: true, endsAt: res.endsAt ?? billing.endsAt });
+  }
+  const toggle = (k: string) => setOpenRow((o) => (o === k ? null : k));
+  const fireTypeHref = `/fire-type?source=dashboard-profile${fireTypeResult ? `&type=${fireTypeResult.code}` : ""}`;
 
+  // Calm Profile (D-48): who you are and your plan first, then settings as
+  // rows that open their editor in place.
   return (
-    <div style={{ maxWidth: 600, padding: "32px 24px" }}>
-      <h2 style={{ fontSize: 22, fontWeight: 700, color: "#064E3B", marginBottom: 24, marginTop: 0 }}>
-        Profile &amp; Settings
-      </h2>
-
-      {/* Account */}
-      <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 16px" }}>Account</h3>
-        <label style={labelStyle}>Display name</label>
-        <div style={{ display: "flex", gap: 10 }}>
-          <input
-            style={inputStyle}
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Your name"
-            onKeyDown={(e) => e.key === "Enter" && saveName()}
-          />
-          <button
-            style={btnStyle(saving.name ? "disabled" : "primary")}
-            onClick={saveName}
-            disabled={saving.name || !displayName.trim()}
-          >
-            {saving.name ? "Saving…" : saved.name ? "Saved ✓" : "Save"}
-          </button>
-        </div>
-        <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 6, marginBottom: 0 }}>
-          This is how your name appears in the dashboard greeting.
-        </p>
-      </div>
-
-      {/* Household — account, not money (app-structure rule 4). */}
-      <HouseholdSection />
-
-      {/* Preferences */}
-      <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 16px" }}>Preferences</h3>
-        <label style={labelStyle}>Default currency</label>
-        <div style={{ display: "flex", gap: 10 }}>
-          <select
-            style={{ ...inputStyle, width: "auto", minWidth: 120, cursor: "pointer" }}
-            value={defaultCurrency}
-            onChange={(e) => setDefaultCurrency(e.target.value)}
-          >
-            {SUPPORTED_CURRENCIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-          <button
-            style={btnStyle(saving.currency ? "disabled" : "primary")}
-            onClick={saveCurrency}
-            disabled={saving.currency}
-          >
-            {saving.currency ? "Saving…" : saved.currency ? "Saved ✓" : "Save"}
-          </button>
-        </div>
-        <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 6, marginBottom: 0 }}>
-          Sets the dashboard display currency and pre-fills new transaction entries.
-        </p>
-
-        <div style={{ marginTop: 20 }}>
-          <label style={labelStyle}>Preferred currencies</label>
-          <p style={{ fontSize: 12, color: "#94a3b8", margin: "0 0 10px" }}>
-            Add currencies to filter dropdowns. Leave empty to show all.
-          </p>
-          {preferredCurrencies.length > 0 && (
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-              {preferredCurrencies.map(c => (
-                <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px 3px 8px", borderRadius: 20, background: "#F0FDF4", border: "1px solid #BBF7D0", fontSize: 12, fontWeight: 700, color: "#047857", fontFamily: "DM Mono, monospace" }}>
-                  {c}
-                  <button
-                    onClick={() => toggleCurrency(c)}
-                    style={{ background: "none", border: "none", padding: "0 0 0 2px", cursor: "pointer", color: "#6b7280", fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center" }}
-                    aria-label={`Remove ${c}`}
-                  >×</button>
-                </span>
-              ))}
-            </div>
-          )}
-          <div style={{ position: "relative" }}>
-            <input
-              style={inputStyle}
-              value={currencySearch}
-              onChange={e => { setCurrencySearch(e.target.value); setShowCurrencyDropdown(true); }}
-              onFocus={() => setShowCurrencyDropdown(true)}
-              onBlur={() => setTimeout(() => setShowCurrencyDropdown(false), 150)}
-              placeholder="Search to add a currency…"
-            />
-            {showCurrencyDropdown && currencySearch.trim().length >= 1 && (() => {
-              const q = currencySearch.trim().toLowerCase();
-              const matches = SUPPORTED_CURRENCIES.filter(c =>
-                !preferredCurrencies.includes(c) &&
-                (c.toLowerCase().includes(q) || (CURRENCY_NAMES[c] || "").toLowerCase().includes(q))
-              ).slice(0, 8);
-              if (!matches.length) return null;
-              return (
-                <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.1)", maxHeight: 220, overflowY: "auto", marginTop: 4 }}>
-                  {matches.map(c => (
-                    <div
-                      key={c}
-                      onMouseDown={() => { toggleCurrency(c); setCurrencySearch(""); setShowCurrencyDropdown(false); }}
-                      style={{ padding: "8px 14px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid var(--uf-border)", display: "flex", alignItems: "center", gap: 8 }}
-                      onMouseEnter={e => (e.currentTarget.style.background = "var(--uf-surface)")}
-                      onMouseLeave={e => (e.currentTarget.style.background = "")}
-                    >
-                      <span style={{ fontWeight: 700, fontFamily: "DM Mono, monospace", minWidth: 36 }}>{c}</span>
-                      <span style={{ color: "var(--uf-text-2)", fontSize: 12 }}>{CURRENCY_NAMES[c]}</span>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-      </div>
-
-      {/* FIRE type — a personality result, not a projection input, so it stays
-          here. The assumptions that drive the freedom date moved to Plan on
-          18 Sep 2026 (app-structure rule 2). */}
-      <div style={cardStyle}>
-        <div style={{ marginBottom: 14 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 6px" }}>FIRE type</h3>
-          <p style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6, margin: 0 }}>
-            Your age, target city, lifestyle and tax home now live with your plan,
-            next to the freedom date they produce.
-          </p>
-        </div>
-
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", maxWidth: "100%" }}>
-          <a
-            href={`/fire-type?source=dashboard-profile${fireTypeResult ? `&type=${fireTypeResult.code}` : ""}`}
-            style={{
-              ...btnStyle("primary"),
-              textDecoration: "none",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flex: "1 1 260px",
-              minWidth: 0,
-              maxWidth: "100%",
-              boxSizing: "border-box",
-              textAlign: "center",
-              whiteSpace: "normal",
-              overflowWrap: "anywhere",
-            }}
-          >
-            {fireTypeResult ? `FIRE type: ${fireTypeResult.name} →` : "Find my FIRE type →"}
-          </a>
-          <button
-            onClick={() => onTabChange("fire-calculator")}
-            style={{
-              padding: "9px 16px",
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 700,
-              border: "1px solid #BBF7D0",
-              background: "#F0FDF4",
-              color: "#047857",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              flex: "1 1 180px",
-              minWidth: 0,
-              maxWidth: "100%",
-              boxSizing: "border-box",
-            }}
-          >
-            View freedom date →
-          </button>
-        </div>
-      </div>
-
-      {/* Subscription */}
-      <div style={cardStyle}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: "0 0 16px" }}>Subscription</h3>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{
-              display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
-              background: subscription?.plan === "pro" ? "#f0fdf4" : "#f1f5f9",
-              color: subscription?.plan === "pro" ? "#059669" : "#64748b",
-              border: `1px solid ${subscription?.plan === "pro" ? "#bbf7d0" : "#e2e8f0"}`,
-            }}>
-              {subscription?.plan === "pro" ? "Pro" : "Free"}
-            </span>
-            <span style={{ fontSize: 13, color: "#6b7280" }}>
-              {subscription?.plan === "pro"
-                ? `UntilFire Pro — ${PRO_MONTHLY_LABEL}/month`
-                : "Free plan — limited features"}
-            </span>
-          </div>
-          {subscription?.plan === "pro" ? (
-            <button
-              onClick={onManageBilling}
-              style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid var(--uf-border)", background: "transparent", color: "#374151", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
-            >
-              Manage billing
-            </button>
-          ) : (
-            <button
-              onClick={onUpgradeClick}
-              style={{ padding: "7px 16px", borderRadius: 8, border: "none", background: "#059669", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
-            >
-              Try 3 months free
-            </button>
-          )}
-        </div>
-        {subscription?.plan !== "pro" && (
-          <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 10, marginBottom: 0 }}>
-            {TRIAL_LABEL} — then {PRO_MONTHLY_LABEL}/mo, or {PRO_ANNUAL_LABEL}/yr. Unlimited bank connections and priority AI access.
-          </p>
-        )}
-      </div>
-
-      {/* Connected Banks */}
-      <div style={cardStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", margin: 0 }}>Connected Banks</h3>
-          <button
-            onClick={() => onTabChange("assets")}
-            style={{ fontSize: 13, fontWeight: 600, color: "#047857", background: "none", border: "1px solid #D1FAE5", borderRadius: 8, padding: "5px 12px", cursor: "pointer" }}
-          >
-            Manage →
-          </button>
-        </div>
-        {plaidItems.length === 0 ? (
-          <div style={{ fontSize: 13, color: "var(--uf-text-3)" }}>
-            No banks connected yet.{" "}
-            <button onClick={() => onTabChange("assets")} style={{ background: "none", border: "none", color: "#047857", fontWeight: 600, cursor: "pointer", padding: 0, fontSize: 13 }}>
-              Connect one →
-            </button>
+    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 12, maxWidth: 760 }}>
+      <MoneyHead
+        label="Your account"
+        value={<span style={{ fontFamily: "var(--uf-font-display)", fontSize: 34 }}>{displayName.trim() || "Add your name"}</span>}
+        sub={isPro
+          ? <>{userEmail} · <b style={{ color: "var(--uf-ink)" }}>Pro</b> · {ending || billing?.source === "other" ? `ends ${fmtEnds(billing?.endsAt ?? null)}` : `${PRO_MONTHLY_LABEL} a month`}</>
+          : <>{userEmail} · Free plan</>}
+        aside={<span aria-hidden style={{ width: 56, height: 56, borderRadius: 99, display: "grid", placeItems: "center", background: "color-mix(in srgb, var(--uf-teal) 18%, transparent)", color: "var(--uf-ink)", fontFamily: "var(--uf-font-display)", fontSize: 24 }}>
+          {(displayName.trim() || userEmail || "?").charAt(0).toUpperCase()}
+        </span>}
+      >
+        {isPro ? (
+          // Cancel and keep live here, not in the Stripe portal (D-99); the
+          // portal stays for invoices and the card.
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            {billing?.source === "stripe" && (ending ? (<>
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Won&apos;t renew</span>
+              <Button variant="primary" size="sm" onClick={keepPro} disabled={resuming}>{resuming ? "One moment…" : "Keep Pro"}</Button>
+              <Button variant="ghost" size="sm" onClick={onManageBilling}>Invoices and card</Button>
+            </>) : (<>
+              <Button variant="secondary" size="sm" onClick={onManageBilling}>Invoices and card</Button>
+              <Button variant="ghost" size="sm" onClick={() => setCancelOpen(true)}>Cancel Pro</Button>
+            </>))}
+            {billing?.source === "apple" && (
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Billed by Apple. Change or cancel it in your iPhone&apos;s Settings, under your name, then Subscriptions.</span>
+            )}
+            {billingError && <span className="uf-t-small" role="alert" style={{ color: "var(--uf-neg-ink)" }}>{billingError}</span>}
           </div>
         ) : (
-          plaidItems.map((item, i) => (
-            <div key={item.id} style={{
-              display: "flex", justifyContent: "space-between", alignItems: "center",
-              padding: "10px 0",
-              borderBottom: i < plaidItems.length - 1 ? "1px solid var(--uf-border)" : "none",
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 16 }}>🏦</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)" }}>{item.institution_name}</span>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <Button variant="primary" size="sm" onClick={onUpgradeClick}>Try Pro, {trialLabel}</Button>
+            <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Then {PRO_MONTHLY_LABEL} a month or {PRO_ANNUAL_LABEL} a year. Unlimited bank connections and priority AI.</span>
+          </div>
+        )}
+      </MoneyHead>
+
+      <Section t="Account" />
+      <MoneyList>
+        <MoneyRow dot="#2a78d6" icon="👤" name="Name" meta="How the dashboard greets you" value={`${displayName.trim() || "Add"} ›`} onClick={() => toggle("name")}
+          after={openRow === "name" && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <input aria-label="Display name" style={inputStyle} value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" onKeyDown={(e) => e.key === "Enter" && saveName()} />
+              <Button variant="primary" size="sm" onClick={saveName} disabled={saving.name || !displayName.trim()}>{saving.name ? "Saving…" : saved.name ? "Saved ✓" : "Save"}</Button>
+            </div>
+          )} />
+        <MoneyRow dot="#e87ba4" icon="👥" name="Household" meta="Plan together with a partner" value={`${householdSummary} ›`} onClick={() => toggle("household")}
+          after={<div style={{ display: openRow === "household" ? "block" : "none" }}><HouseholdSection bare onSummary={setHouseholdSummary} /></div>} />
+        <MoneyRow dot="#1baf7a" icon="💱" name="Currency" meta="Amounts show in this; new entries start in it" value={`${defaultCurrency} ›`} onClick={() => toggle("currency")}
+          after={openRow === "currency" && (
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <select aria-label="Default currency" style={{ ...inputStyle, flex: "none", minWidth: 120, cursor: "pointer" }} value={defaultCurrency} onChange={(e) => setDefaultCurrency(e.target.value)}>
+                {SUPPORTED_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <Button variant="primary" size="sm" onClick={saveCurrency} disabled={saving.currency}>{saving.currency ? "Saving…" : saved.currency ? "Saved ✓" : "Save"}</Button>
+            </div>
+          )} />
+        <MoneyRow dot="#6b5bd2" icon="🗂️" name="Currency shortlist" meta="Only these appear in currency menus; empty shows all"
+          value={`${preferredCurrencies.length ? preferredCurrencies.slice(0, 3).join(", ") + (preferredCurrencies.length > 3 ? ` +${preferredCurrencies.length - 3}` : "") : "All"} ›`}
+          onClick={() => toggle("shortlist")}
+          after={openRow === "shortlist" && (
+            <div style={{ display: "grid", gap: 8 }}>
+              {preferredCurrencies.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {preferredCurrencies.map((c) => (
+                    <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px 3px 8px", borderRadius: 20, background: "var(--uf-surface-2)", fontSize: 13, fontWeight: 600, color: "var(--uf-ink)" }}>
+                      {c}
+                      <button onClick={() => toggleCurrency(c)} aria-label={`Remove ${c}`} style={{ background: "none", border: "none", padding: "0 0 0 2px", cursor: "pointer", color: "var(--uf-ink-2)", fontSize: 14, lineHeight: 1 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div style={{ position: "relative", display: "flex" }}>
+                <input aria-label="Add a currency" style={inputStyle} value={currencySearch}
+                  onChange={(e) => { setCurrencySearch(e.target.value); setShowCurrencyDropdown(true); }}
+                  onFocus={() => setShowCurrencyDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowCurrencyDropdown(false), 150)}
+                  placeholder="Search to add a currency…" />
+                {showCurrencyDropdown && currencySearch.trim().length >= 1 && (() => {
+                  const q = currencySearch.trim().toLowerCase();
+                  const matches = SUPPORTED_CURRENCIES.filter((c) => !preferredCurrencies.includes(c) && (c.toLowerCase().includes(q) || (CURRENCY_NAMES[c] || "").toLowerCase().includes(q))).slice(0, 8);
+                  if (!matches.length) return null;
+                  return (
+                    <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, boxShadow: "var(--uf-e2)", overflow: "hidden" }}>
+                      {matches.map((c) => (
+                        <button key={c} type="button" onMouseDown={() => { toggleCurrency(c); setCurrencySearch(""); setShowCurrencyDropdown(false); }}
+                          style={{ display: "flex", gap: 8, width: "100%", padding: "8px 14px", border: "none", borderBottom: "1px solid var(--uf-border)", background: "none", font: "inherit", fontSize: 13, color: "var(--uf-ink)", cursor: "pointer", textAlign: "left" }}>
+                          <b style={{ fontFamily: "var(--uf-font-mono)", minWidth: 36 }}>{c}</b>
+                          <span style={{ color: "var(--uf-ink-2)", fontSize: 12 }}>{CURRENCY_NAMES[c]}</span>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--uf-text-3)" }}>
-                <span style={{ color: "#059669", fontWeight: 600 }}>{"●"} Connected</span>
-                <span>{fmtSynced(item.last_synced_at)}</span>
+              <div><Button variant="primary" size="sm" onClick={saveCurrency} disabled={saving.currency}>{saving.currency ? "Saving…" : saved.currency ? "Saved ✓" : "Save shortlist"}</Button></div>
+            </div>
+          )} />
+      </MoneyList>
+
+      <Section t="Banks" />
+      <MoneyList footer={<Button variant="secondary" size="sm" onClick={() => onTabChange("assets")}>{plaidItems.length ? "Connect another bank" : "Connect a bank"}</Button>}>
+        {plaidItems.length === 0
+          ? <MoneyRow dot="var(--uf-ink-3)" icon="🏦" name="No banks connected" meta="Connect one to fill Money in automatically" value="" />
+          : plaidItems.map((item) => (
+            <MoneyRow key={item.id} dot="#1baf7a" icon="🏦" name={item.institution_name} meta={`Connected · synced ${fmtSynced(item.last_synced_at)}`} value="Manage ›" onClick={() => onTabChange("assets")} />
+          ))}
+      </MoneyList>
+
+      {/* FIRE type is a personality result, not a projection input (app-structure rule 2). */}
+      <Section t="You and FIRE" />
+      <MoneyList>
+        <MoneyRow dot="#eda100" icon="🧬" name="FIRE type" meta={fireTypeResult ? "Your result from the FIRE type quiz" : "A short quiz about how you want freedom to look"}
+          value={fireTypeResult ? `${fireTypeResult.name} ›` : "Find yours ›"} onClick={() => { window.location.href = fireTypeHref; }} />
+        <MoneyRow dot="var(--uf-teal)" icon="📅" name="Planning assumptions" meta="Age, city, lifestyle and tax live in Plan, next to your freedom date" value="Open ›" onClick={() => onTabChange("fire-calculator")} />
+      </MoneyList>
+
+      <Section t="Share UntilFire" />
+      <MoneyList>
+        <MoneyRow dot="#e34948" icon="🎁" name="Give a month, get a month" meta={`Friends get Pro ${REFERRED_TRIAL_LABEL}; you get a month when one subscribes`} value="Get link ›" onClick={() => toggle("give")}
+          after={openRow === "give" && <GiveAMonthCard cardStyle={{}} bare />} />
+        <MoneyRow dot="#2a78d6" icon="📣" name="Creator program" meta="Earn from readers who subscribe" value="Learn more ›" onClick={() => toggle("creator")}
+          after={openRow === "creator" && <CreatorCard cardStyle={{}} bare />} />
+      </MoneyList>
+
+      {/* Matches the phone (D-48): export and delete sit folded behind one row,
+          and Sign out closes the page. */}
+      <Section t="Data and account" />
+      <MoneyList>
+        <MoneyRow dot="#1baf7a" icon="📦" name="Data and account" meta="Export your data or delete your account" value="Open ›" onClick={() => toggle("data")}
+          after={openRow === "data" && (
+            <div style={{ display: "grid", gap: 16 }}>
+              <ExportData userId={userId} />
+              <div style={{ borderTop: "1px solid var(--uf-border)", paddingTop: 12 }}>
+                {!showDelete ? (
+                  <Button variant="ghost" size="sm" onClick={() => setShowDelete(true)}>Delete account…</Button>
+                ) : (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>First cancel Pro (if it renews) and disconnect your banks in Money. Then type <b>{userEmail}</b> to confirm. This can&apos;t be undone.</span>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <input aria-label="Confirm your email" type="email" style={{ ...inputStyle, borderColor: deleteConfirm && deleteConfirm !== userEmail ? "var(--uf-neg)" : "var(--uf-border-2)" }}
+                        value={deleteConfirm} onChange={(e) => { setDeleteConfirm(e.target.value); setDeleteError(""); }} placeholder={userEmail} />
+                      <Button variant="danger" size="sm" onClick={handleDelete} disabled={deleting || deleteConfirm !== userEmail}>{deleting ? "Deleting…" : "Delete account"}</Button>
+                      <Button variant="ghost" size="sm" onClick={() => { setShowDelete(false); setDeleteConfirm(""); setDeleteError(""); }}>Cancel</Button>
+                    </div>
+                    {deleteError && <span role="alert" className="uf-t-small" style={{ color: "var(--uf-neg-ink)" }}>{deleteError}</span>}
+                  </div>
+                )}
               </div>
             </div>
-          ))
+          )} />
+      </MoneyList>
+
+      <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap", marginTop: 16 }}>
+        {!confirmSignOut ? (
+          <Button variant="secondary" onClick={() => setConfirmSignOut(true)}>Sign out</Button>
+        ) : (
+          <>
+            <Button variant="ghost" onClick={() => setConfirmSignOut(false)}>Cancel</Button>
+            <Button variant="danger" onClick={handleSignOut}>Sign out</Button>
+          </>
         )}
       </div>
 
-      {/* Danger zone */}
-      <div style={{ ...cardStyle, borderColor: "#fecaca", background: "var(--uf-card)" }}>
-        <h3 style={{ fontSize: 15, fontWeight: 700, color: "#dc2626", margin: "0 0 8px" }}>Danger Zone</h3>
-        <p style={{ fontSize: 14, color: "#6b7280", margin: "0 0 16px" }}>
-          Permanently deletes your account, all transactions, and FIRE data. This cannot be undone.
-        </p>
-        <label style={{ ...labelStyle, color: "#6b7280" }}>
-          Type your email address to confirm: <strong>{userEmail}</strong>
-        </label>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <input
-            style={{ ...inputStyle, borderColor: deleteConfirm && deleteConfirm !== userEmail ? "#fca5a5" : "#E2E8F0" }}
-            type="email"
-            value={deleteConfirm}
-            onChange={(e) => { setDeleteConfirm(e.target.value); setDeleteError(""); }}
-            placeholder={userEmail}
-          />
-          <button
-            style={btnStyle(deleting || deleteConfirm !== userEmail ? "disabled" : "danger")}
-            onClick={handleDelete}
-            disabled={deleting || deleteConfirm !== userEmail}
-          >
-            {deleting ? "Deleting…" : "Delete account"}
-          </button>
-        </div>
-        {deleteError && (
-          <p style={{ fontSize: 13, color: "#dc2626", marginTop: 8, marginBottom: 0 }}>{deleteError}</p>
-        )}
-      </div>
+      <CancelProSheet
+        open={cancelOpen}
+        onClose={() => setCancelOpen(false)}
+        onCancelled={(endsAt) => billing && onBillingChange({ ...billing, renews: false, endsAt })}
+        firstName={displayName.trim().split(/\s+/)[0] ?? ""}
+        freedomLabel={freedomLabel}
+        bankCount={plaidItems.length}
+        endsAt={billing?.endsAt ?? null}
+      />
     </div>
   );
+}
+
+/**
+ * Export your data (D-56): transactions as a spreadsheet, or everything as one
+ * file. Built in the browser; nothing is sent anywhere to make it.
+ */
+function ExportData({ userId }: { userId: string }) {
+  const [busy, setBusy] = useState<null | "csv" | "json">(null);
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const run = async (kind: "csv" | "json") => {
+    setBusy(kind);
+    setNote(null);
+    const file = kind === "csv" ? "transactions_csv" : "everything_json";
+    try {
+      if (kind === "csv") {
+        const rows = await loadTransactions(userId);
+        download(exportFileName("transactions", "csv"), transactionsCsv(rows), "text/csv;charset=utf-8");
+        setNote({ ok: true, text: `${rows.length.toLocaleString()} transactions saved as a spreadsheet file.` });
+      } else {
+        download(exportFileName("everything", "json"), await exportEverything(userId), "application/json");
+        setNote({ ok: true, text: "Everything saved as one file." });
+      }
+      trackDataExported({ file, ok: true });
+    } catch (e) {
+      setNote({ ok: false, text: e instanceof Error ? e.message : "The export didn't finish. Try again." });
+      trackDataExported({ file, ok: false });
+    } finally {
+      setBusy(null);
+    }
+  };
+  return (
+    <div style={{ display: "grid", gap: 8 }}>
+      <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>
+        Transactions open in Excel, Numbers or Google Sheets, and other apps can import them. Everything is one JSON file with your transactions,
+        upcoming bills, budget, goals, accounts, net worth history and plan. Bank connection details are never included.
+      </span>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <Button variant="secondary" size="sm" onClick={() => run("csv")} disabled={busy !== null}>{busy === "csv" ? "Preparing…" : "Transactions (CSV)"}</Button>
+        <Button variant="secondary" size="sm" onClick={() => run("json")} disabled={busy !== null}>{busy === "json" ? "Preparing…" : "Everything (JSON)"}</Button>
+      </div>
+      {note && <span role={note.ok ? "status" : "alert"} className="uf-t-small" style={{ color: note.ok ? "var(--uf-pos-ink)" : "var(--uf-neg-ink)" }}>{note.text}</span>}
+    </div>
+  );
+}
+
+function Section({ t }: { t: string }) {
+  return <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>{t}</div>;
 }

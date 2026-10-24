@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
     const customerId = typeof session.customer === "string" ? session.customer : session.customer!.id;
 
     await admin.from("subscriptions").upsert({
+      source: "stripe",
       user_id: user.id,
       stripe_customer_id: customerId,
       stripe_subscription_id: sub.id,

@@ -54,6 +54,19 @@
   --uf-warn:    #C4831A;
   --uf-warn-bg: #FCEFD8;
 
+  /* illustration only (D-50): the onboarding sun. Never buttons, text or numbers. */
+  --uf-sun:      #F2A65A;
+  --uf-sun-soft: #F6C27A;
+
+  /* illustration only (D-67): freedom badge medals. Same in both themes, like
+     the objects they draw; the stars and the label carry the meaning too. */
+  --uf-bronze:      #D08A55;
+  --uf-bronze-deep: #8E5226;
+  --uf-silver:      #DCE1E6;
+  --uf-silver-deep: #87909A;
+  --uf-gold:        #F3CE5B;
+  --uf-gold-deep:   #B08413;
+
   /* *-ink variants: the AA-compliant text colour for 11px badge text on the
      matching tint. The base colours above pass at display size but not at 11px,
      so badges use these. Solved for >= 4.5:1, not eyeballed. */
@@ -658,171 +671,23 @@ html[data-splash="1"] #uf-splash {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
 }
 
-.uf-dash-slot { min-width: 0; }
+/* Side-by-side cards share the row's height (D-89). */
+.uf-dash-slot { min-width: 0; display: flex; flex-direction: column; }
+.uf-dash-slot > div:last-child { flex: 1; display: flex; flex-direction: column; }
+.uf-dash-slot > div:last-child > * { flex: 1; }
 .uf-dash-slot[data-span="full"] { grid-column: span 2; }
 .uf-dash-slot[data-span="half"] { grid-column: span 1; }
-.uf-dash-slot:empty { display: none; }
+.uf-dash-slot:empty, .uf-dash-slot:has(> div:empty) { display: none; }
 
-/* One column on a phone: a half-width card at 390px is unreadable, so the
-   width choice is a desktop one and narrow screens ignore it. */
+/* Calm Money lists (D-40): a divider between rows, none above the first. */
+.uf-money-list .uf-money-row + .uf-money-row { border-top: 1px solid var(--uf-border); }
+
+/* Fixed half-width cards stack on a phone. */
 @media (max-width: 900px) {
   .uf-dash-grid { grid-template-columns: 1fr; }
   .uf-dash-slot[data-span="full"],
   .uf-dash-slot[data-span="half"] { grid-column: span 1; }
-}
-
-.uf-dash-customise {
-  background: var(--uf-card);
-  border: 1px solid var(--uf-border);
-  border-radius: var(--uf-r-card, 20px);
-  padding: var(--uf-s4);
-  margin-bottom: 20px;
-}
-
-.uf-dash-nudge {
-  width: 28px;
-  height: 24px;
-  border: 1px solid var(--uf-border);
-  border-radius: 8px;
-  background: var(--uf-card);
-  color: var(--uf-ink-2);
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 13px;
-  line-height: 1;
-}
-.uf-dash-nudge:hover:not(:disabled) { border-color: var(--uf-green); color: var(--uf-green); }
-.uf-dash-nudge:disabled { opacity: 0.35; cursor: not-allowed; }
-
-/* ── Home edit mode ───────────────────────────────────────────────────────
-   Pressing Edit puts a toolbar on each card: a grip to drag it, a control to
-   change its width, and an X to drop it. The card's own content is made inert
-   underneath so a drag or a tap does not also press something inside it. */
-/* A dashed outline reads as disabled or struck through — the opposite of
-   "you can pick this up". A solid ring in the action colour plus a small lift
-   reads as liftable, which is what editing means here. */
-.uf-dash-slot.is-editing {
-  position: relative;
-  border-radius: var(--uf-r-card, 20px);
-  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--uf-green) 38%, transparent);
-  transition: box-shadow 160ms ease;
-}
-
-/* The card being carried lifts above the rest and follows the finger; the
-   others slide under it via FLIP, so transform here is set inline and must
-   not be fought by a transition. */
-.uf-dash-slot.is-dragging {
-  z-index: 20;
-  box-shadow: 0 0 0 2px var(--uf-green), var(--uf-e3);
-}
-/* The lifted card is fixed-position and follows the finger; the slot beneath
-   keeps its space so the grid does not jump when the card leaves flow. */
-.uf-dash-slot.is-dragging > .uf-dash-inert {
-  box-shadow: var(--uf-e3);
-  border-radius: var(--uf-r-card, 20px);
-  cursor: grabbing;
-}
-.uf-dash-slot.is-dragging { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--uf-green) 55%, transparent); }
-
-.uf-dash-tools {
-  position: absolute;
-  top: -12px;
-  left: 8px;
-  right: 8px;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  pointer-events: none;
-}
-.uf-dash-tools > * { pointer-events: auto; }
-
-.uf-dash-tool {
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  border: 1px solid var(--uf-border);
-  background: var(--uf-card);
-  color: var(--uf-ink-2);
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-  font-family: inherit;
-  box-shadow: var(--uf-e1);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.uf-dash-tool:hover { border-color: var(--uf-green); color: var(--uf-green); }
-
-/* touch-action:none is what makes a touch drag work: without it the browser
-   claims the gesture for scrolling and pointermove never arrives. */
-.uf-dash-grip { cursor: grab; touch-action: none; }
-
-/* Wider than the round tools because it carries a word rather than a glyph. */
-.uf-dash-width {
-  width: auto;
-  padding: 0 12px;
-  font-size: 12px;
-  font-weight: 700;
-}
-.uf-dash-grip:active { cursor: grabbing; }
-
-.uf-dash-remove:hover { border-color: var(--uf-neg); color: var(--uf-neg); }
-
-/* Editing is about the arrangement, not the contents. */
-.uf-dash-inert { pointer-events: none; user-select: none; }
-
-.uf-dash-tray {
-  margin-top: 20px;
-  padding: var(--uf-s4);
-  background: var(--uf-card);
-  border: 1px solid var(--uf-border);
-  border-radius: var(--uf-r-card, 20px);
-}
-
-.uf-dash-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--uf-border);
-  background: transparent;
-  color: var(--uf-ink-3);
-  font-weight: 700;
-  font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
-}
-.uf-dash-chip:hover:not(:disabled) { border-color: var(--uf-green); color: var(--uf-green); }
-
-/* Filled means on. The difference has to survive a glance, because this panel
-   exists to answer "what have I got" without reading it. */
-.uf-dash-chip.is-on {
-  background: color-mix(in srgb, var(--uf-green) 12%, transparent);
-  border-color: color-mix(in srgb, var(--uf-green) 45%, transparent);
-  color: var(--uf-green);
-}
-.uf-dash-chip:disabled { opacity: 0.6; cursor: default; }
-
-/* A pinned card says so where its grip would be, rather than offering a
-   handle that does nothing. */
-.uf-dash-pin {
-  display: inline-flex;
-  align-items: center;
-  height: 34px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px dashed var(--uf-border);
-  background: var(--uf-card);
-  color: var(--uf-ink-3);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
 }

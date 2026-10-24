@@ -9,7 +9,8 @@ export async function GET(req: NextRequest) {
   const [{ data: usersPage, error: usersErr }, { data: profiles }, { data: subs }] = await Promise.all([
     admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
     admin.from("profiles").select("user_id, display_name, marketing_unsubscribed_at"),
-    admin.from("subscriptions").select("user_id, status, plan"),
+    // "*" so the page keeps working before and after 0050 adds source (D-75).
+    admin.from("subscriptions").select("*"),
   ]);
 
   if (usersErr) {
@@ -31,6 +32,10 @@ export async function GET(req: NextRequest) {
         createdAt: u.created_at,
         lastSignInAt: u.last_sign_in_at ?? null,
         plan: isPro ? (sub?.plan ?? "pro") : "free",
+        // Who bills: Stripe (website) or Apple (iOS app), and when the paid period ends.
+        billing: isPro ? ((sub?.source as string | undefined) ?? "stripe") : null,
+        periodEnd: isPro ? (sub?.current_period_end ?? null) : null,
+        autoRenew: isPro ? (sub?.source === "apple" ? sub?.auto_renew ?? null : null) : null,
         unsubscribed: !!profile?.marketing_unsubscribed_at,
       };
     })

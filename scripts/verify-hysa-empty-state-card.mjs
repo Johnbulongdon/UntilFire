@@ -18,13 +18,13 @@ assert(
 );
 
 assert(
-  plaidConnect.includes('We are not recommending any bank here yet'),
-  'HYSA card stays educational and avoids affiliate-style bank recommendations'
+  plaidConnect.includes('says who earns from each link'),
+  'HYSA card points to Offers and says links are disclosed (D-81)'
 );
 
 assert(
-  plaidConnect.includes('href="/calculators/apy?source=dashboard-hysa-card"') && plaidConnect.includes('Learn more'),
-  'HYSA card links Learn more to the internal APY calculator'
+  plaidConnect.includes('href="/dashboard?tab=offers"') && plaidConnect.includes('See savings accounts') && plaidConnect.includes("cta: 'see_offers'"),
+  'HYSA card links to Money → Offers with a tracked CTA'
 );
 
 assert(

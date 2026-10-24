@@ -1,0 +1,45 @@
+/* The shared public top bar. Matches the landing page's original nav.
+   It scrolls with the page: calculator results cards and table heads
+   already stick to the top, and a pinned bar would cover them. */
+.bar {
+  position: relative; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 14px 28px;
+  background: var(--uf-topbar-glass); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--uf-surface);
+  font-family: 'Manrope', sans-serif;
+}
+.fixed { position: fixed; top: 0; left: 0; right: 0; }
+.logo { text-decoration: none; display: inline-flex; }
+
+.links { display: flex; gap: 26px; }
+.links a { font-size: 14px; font-weight: 600; color: var(--uf-ink-2); text-decoration: none; }
+.links a:hover, .links a[aria-current="page"] { color: var(--uf-ink); }
+
+.actions { display: flex; align-items: center; gap: 8px; }
+.cta {
+  padding: 9px 18px; border-radius: var(--uf-r-pill); border: none; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 700; line-height: 1.3;
+  color: var(--uf-ground); background: var(--uf-ink); text-decoration: none; display: inline-block; white-space: nowrap;
+}
+.menu {
+  display: none; width: 38px; height: 38px; border-radius: var(--uf-r-pill);
+  border: 1px solid var(--uf-border); background: transparent; color: var(--uf-ink);
+  font-size: 16px; cursor: pointer;
+}
+.links a:focus-visible, .cta:focus-visible, .menu:focus-visible, .logo:focus-visible {
+  outline: 2px solid var(--uf-green); outline-offset: 2px; border-radius: 6px;
+}
+
+@media (max-width: 760px) {
+  .bar { padding: 12px 16px; }
+  .menu { display: inline-flex; align-items: center; justify-content: center; }
+  .links {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    flex-direction: column; gap: 0; padding: 8px 16px 12px;
+    background: var(--uf-ground); border-bottom: 1px solid var(--uf-border);
+  }
+  .links.open { display: flex; }
+  .links a { padding: 12px 0; font-size: 16px; border-bottom: 1px solid var(--uf-surface); }
+  .links a:last-child { border-bottom: none; }
+}

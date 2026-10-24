@@ -77,4 +77,18 @@ assert(
   'Analytics event docs must describe live paywall/checkout emit sites and revenue properties.',
 );
 
+// D-26: checkout charges the price IDs that sit beside the display prices,
+// not Vercel settings that can drift from the page.
+const pricing = fs.readFileSync('lib/pricing.ts', 'utf8');
+const stripeLib = fs.readFileSync('lib/stripe.ts', 'utf8');
+assert(
+  /month: "price_[A-Za-z0-9]+", \/\/ \$9 \/ month/.test(pricing) &&
+    /year: "price_[A-Za-z0-9]+", \/\/ \$79 \/ year/.test(pricing) &&
+    pricing.includes('export const PRO_MONTHLY_USD = 9;') &&
+    pricing.includes('export const PRO_ANNUAL_USD = 79;') &&
+    stripeLib.includes('return STRIPE_PRICE_IDS[interval];') &&
+    !/process\.env\.STRIPE_PRO_(ANNUAL_)?PRICE_ID/.test(stripeLib),
+  'Checkout must charge the Stripe price IDs kept beside the display prices in lib/pricing.ts.',
+);
+
 console.log('Revenue funnel instrumentation regression passed');

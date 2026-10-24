@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import './onboarding-motion.css'
 import Script from 'next/script'
 import { AuthProvider } from '../lib/auth-context'
 import { Toaster } from 'react-hot-toast'
 import { Analytics } from '@vercel/analytics/react'
 import LoadingSplash from './components/LoadingSplash'
+import SiteHeader from './components/SiteHeader'
+import AcquisitionCapture from './components/AcquisitionCapture'
 import {
   UNTILFIRE_ANCHOR_COPY,
   UNTILFIRE_ANCHOR_DESCRIPTION,
@@ -72,7 +75,7 @@ export default function RootLayout({
             off internal navigations. See app/components/LoadingSplash.tsx. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var r=window.matchMedia('(prefers-reduced-motion: reduce)').matches;var s=sessionStorage.getItem('uf_splash_seen')==='1';if(!r&&!s){document.documentElement.setAttribute('data-splash','1');sessionStorage.setItem('uf_splash_seen','1')}}catch(e){}})()`,
+            __html: `(function(){try{var r=window.matchMedia('(prefers-reduced-motion: reduce)').matches;var s=sessionStorage.getItem('uf_splash_seen')==='1';var e=location.pathname.indexOf('/embed/')===0;if(!r&&!s&&!e){document.documentElement.setAttribute('data-splash','1');sessionStorage.setItem('uf_splash_seen','1')}}catch(e){}})()`,
           }}
         />
         <script
@@ -175,6 +178,8 @@ export default function RootLayout({
         />
         <LoadingSplash />
         <AuthProvider>
+          <AcquisitionCapture />
+          <SiteHeader />
           {children}
 
           <Toaster position="top-right" />

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { callerKey, rateLimit } from "@/lib/rate-limit";
 import { adminClient } from "@/lib/supabase-admin";
 import { Resend } from "resend";
 import { CAMPAIGNS, sendTagged } from "@/lib/email-send";
@@ -6,6 +7,8 @@ import { buildWelcomeEmail, firstNameFor } from "@/lib/email-html";
 import { LIFECYCLE_EVENTS, recordEvent } from "@/lib/lifecycle";
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(callerKey(req, "email-welcome"), 3);
+  if (limited) return limited;
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

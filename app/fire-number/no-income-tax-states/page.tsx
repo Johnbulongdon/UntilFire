@@ -1,8 +1,11 @@
 import type { Metadata } from 'next'
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import Link from 'next/link'
 import { getNoIncomeTaxStates, getStateStats } from '@/lib/ranking-pages'
 import { STATE_NAMES } from '@/lib/state-pages'
 import { formatMoney } from "@/lib/money";
+import UsFireGuideLinks from '../UsFireGuideLinks'
 
 
 export const metadata: Metadata = {
@@ -27,6 +30,7 @@ export const metadata: Metadata = {
 }
 
 export default function NoIncomeTaxStatesPage() {
+  if (!TAX_ESTIMATES_AVAILABLE) return <main style={{ padding: 32 }}><h1>Tax comparisons are unavailable</h1><p>We are testing these estimates before making them available.</p><Link href="/fire-number">Compare living costs instead</Link></main>;
   const stateKeys = getNoIncomeTaxStates()
   const stateStats = stateKeys
     .map((key) => getStateStats(key))
@@ -170,6 +174,8 @@ export default function NoIncomeTaxStatesPage() {
           ))}
         </section>
 
+        <UsFireGuideLinks current="/fire-number/no-income-tax-states" />
+
         {/* Bottom CTA */}
         <div style={{ background: 'linear-gradient(135deg, var(--uf-green-900) 0%, var(--uf-green-700) 100%)', borderRadius: 16, padding: '32px 36px', textAlign: 'center' }}>
           <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--uf-card)', margin: '0 0 10px' }}>
@@ -195,7 +201,7 @@ export default function NoIncomeTaxStatesPage() {
               Start the calculator
             </Link>
             <Link
-              href="/dashboard"
+              href="/?source=no-income-tax-states-bottom&start=onboarding"
               style={{
                 display: 'inline-block',
                 background: 'rgba(255,255,255,0.15)',

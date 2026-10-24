@@ -39,20 +39,22 @@ check('a pasted code keeps only its digits',
 
 // ── Wiring
 const login = readFileSync('app/login/page.tsx', 'utf8');
+// The card (Google, Apple soon, email) is shared by /login and the calculator's save step (D-96).
+const card = readFileSync('app/components/auth/SignInCard.tsx', 'utf8');
 check('email sign-in stays off unless switched on',
-  /const EMAIL_SIGNIN = process\.env\.NEXT_PUBLIC_EMAIL_SIGNIN === 'on'/.test(login) && /\{EMAIL_SIGNIN && \(/.test(login));
+  /const EMAIL_SIGNIN = process\.env\.NEXT_PUBLIC_EMAIL_SIGNIN === 'on'/.test(card) && /\{EMAIL_SIGNIN && \(/.test(card));
 check('the code is checked in this tab, then finishes like any sign-in',
-  /verifyOtp\(\{ email: email\.trim\(\), token, type: 'email' \}\)/.test(login) && /finishSignIn\(data\.session, 'email'\)/.test(login));
+  /verifyOtp\(\{ email: email\.trim\(\), token, type: 'email' \}\)/.test(card) && /finishSignIn\(data\.session, 'email'\)/.test(card));
 check('the sign-in listener leaves the redirect to finishSignIn while a code is checked',
-  /SIGNED_IN' && session && !finishingWithCode\.current\) router\.push/.test(login) &&
-  /finishingWithCode\.current = true[\s\S]{0,200}verifyOtp/.test(login));
+  /SIGNED_IN' && session && !isFinishingWithCode\(\)\) router\.push/.test(login) &&
+  /finishingWithCode = true[\s\S]{0,200}verifyOtp/.test(card));
 check('a link in the email signs in through the callback, marked as email',
-  /emailRedirectTo: `\$\{getOAuthRedirectTo\(\)\}\?via=email`/.test(login));
+  /emailRedirectTo: `\$\{oauthRedirectTo\(\)\}\?via=email`/.test(card));
 check('both ways in record which one was chosen',
-  /authProvider: 'google'/.test(login) && /authProvider: 'email'/.test(login));
+  /started\('google'\)/.test(card) && /started\('email'\)/.test(card) && /trackSignupStarted\(\{[\s\S]{0,80}authProvider,/.test(card));
 check('asking for another code does not count as another signup start',
-  /if \(!isResend\) \{[\s\S]{0,80}trackSignupStarted/.test(login));
-check('errors are announced', (login.match(/role="alert"/g) ?? []).length >= 2);
+  /if \(!isResend\) started\('email'\)/.test(card));
+check('errors are announced', (card.match(/role="alert"/g) ?? []).length >= 2);
 const callback = readFileSync('app/auth/callback/page.tsx', 'utf8');
 check('Google and email links share one finish', /finishSignIn\(session, callbackMethod\(window\.location\.search\)\)/.test(callback) && !/authProvider: 'google'/.test(callback));
 const stub = readFileSync('lib/supabase.ts', 'utf8');

@@ -12,8 +12,8 @@ function assert(condition, message) {
 }
 
 assert(
-  src.includes('All Categories'),
-  'Categories page labels the management list as All Categories'
+  src.includes('>All categories<'),
+  'Categories page labels the management list as All categories (sentence case, D-38)'
 );
 
 assert(

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import {
-  ANNUAL_MONTHS_FREE, ANNUAL_PER_MONTH_LABEL, PRO_ANNUAL_LABEL, PRO_ANNUAL_USD,
+  ANNUAL_PER_MONTH_LABEL, ANNUAL_SAVING_PCT, PRO_ANNUAL_LABEL, PRO_ANNUAL_USD,
   PRO_MONTHLY_LABEL, PRO_MONTHLY_USD, TRIAL_LABEL,
 } from "@/lib/pricing";
 import { siteUrl } from "@/lib/site";
@@ -131,7 +131,7 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            <Link href="/login" className="uf-pricing-cta uf-pricing-cta--secondary">
+            <Link href="/?source=pricing&start=onboarding" className="uf-pricing-cta uf-pricing-cta--secondary">
               Get started free
             </Link>
           </Card>
@@ -155,10 +155,10 @@ export default function PricingPage() {
               <span className="uf-t-body" style={{ color: "var(--uf-ink-3)", marginLeft: 4 }}>/month after</span>
             </div>
             <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: "0 0 4px" }}>
-              or {PRO_ANNUAL_LABEL}/year &mdash; {ANNUAL_MONTHS_FREE} months free, {ANNUAL_PER_MONTH_LABEL}/mo
+              or {PRO_ANNUAL_LABEL}/year &mdash; save {ANNUAL_SAVING_PCT}%, {ANNUAL_PER_MONTH_LABEL}/mo
             </p>
             <p className="uf-t-small" style={{ color: "var(--uf-ink-3)", margin: "0 0 var(--uf-s5)" }}>
-              {TRIAL_LABEL} &mdash; no charge today. Cancel anytime.
+              {TRIAL_LABEL} &mdash; no charge today. Cancel anytime, and export your data free, Pro or not.
             </p>
 
             <ul style={{ listStyle: "none", padding: 0, margin: "0 0 var(--uf-s5)", display: "grid", gap: "var(--uf-s3)" }}>

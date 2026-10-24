@@ -1,8 +1,12 @@
 import type { Metadata } from 'next'
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import Link from 'next/link'
 import { getCheapestCities, getRankingPage } from '@/lib/ranking-pages'
 import { formatMoney } from "@/lib/money";
 import { cityPagePath } from "@/lib/city-pages";
+import UsFireGuideLinks from '../UsFireGuideLinks'
+import { formatStateAbbreviation } from '@/lib/state-pages'
 
 
 export const metadata: Metadata = {
@@ -125,11 +129,11 @@ export default function CheapestCitiesPage() {
                         {city.name}
                       </Link>
                     </td>
-                    <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--uf-ink-2)' }}>{city.state.toUpperCase()}</td>
+                    <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--uf-ink-2)' }}>{formatStateAbbreviation(city.state)}</td>
                     <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: 'var(--uf-green-900)' }}>{formatMoney(city.col)}</td>
                     <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 700, color: 'var(--uf-teal)' }}>{formatMoney(city.col * 25)}</td>
                     <td style={{ padding: '14px 16px', fontSize: 12, color: 'var(--uf-ink-2)' }}>
-                      {taxInfo?.rate === 0 ? '0%' : `${(taxInfo?.rate * 100).toFixed(1)}%`}
+                      {TAX_ESTIMATES_AVAILABLE ? (taxInfo?.rate === 0 ? '0%' : `${(taxInfo?.rate * 100).toFixed(1)}%`) : 'Unavailable'}
                     </td>
                   </tr>
                 )
@@ -137,6 +141,8 @@ export default function CheapestCitiesPage() {
             </tbody>
           </table>
         </section>
+
+        <UsFireGuideLinks current="/fire-number/cheapest-cities" />
 
         {/* Bottom CTA */}
         <div style={{ background: 'linear-gradient(135deg, var(--uf-green-900) 0%, var(--uf-green-700) 100%)', borderRadius: 16, padding: '32px 36px', textAlign: 'center' }}>
@@ -163,7 +169,7 @@ export default function CheapestCitiesPage() {
               Calculate your FIRE date
             </Link>
             <Link
-              href="/dashboard"
+              href="/?source=cheapest-cities-bottom&start=onboarding"
               style={{
                 display: 'inline-block',
                 background: 'rgba(255,255,255,0.15)',

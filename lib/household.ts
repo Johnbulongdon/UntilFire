@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
 import { adminClient } from "./supabase-admin";
+import { FALLBACK_RATES } from "./currency";
+import { fetchAllPages } from "./supabase-pages";
+import { householdSpending, type MemberSpendRow } from "./household-spending";
 
 /**
  * Household membership, server side.
@@ -326,15 +329,23 @@ export interface HouseholdPosition {
   undecidedDuplicates: number;
 }
 
+/** Mirrors isRetirementInvestmentAccount in app/dashboard/page.tsx. */
+function isRetirementAccount(a: { subtype: string | null }): boolean {
+  const subtype = (a.subtype ?? "").toLowerCase().replace(/[_-]/g, " ");
+  return ["401", "403", "457", "ira", "roth", "retirement", "pension", "annuity", "sep", "simple", "keogh"]
+    .some((t) => subtype.includes(t));
+}
+
 /**
  * Both partners' numbers, summed.
  *
  * Aggregate, not pooled: each person's own figures are untouched and this only
  * ever adds them up. Read through the service-role client because it needs
- * both members at once, and every value comes from scenario_assumptions, which
- * is the same source each person's own dashboard reads.
+ * both members at once, and every value comes from the same sources each
+ * person's own dashboard reads.
  *
- * Portfolio is 401k + Roth + taxable. Cash savings live outside
+ * Portfolio is 401k + Roth + taxable, with linked investment accounts
+ * replacing the typed figures as on the dashboard. Cash savings live outside
  * scenario_assumptions, so they are deliberately absent rather than guessed —
  * a household total that quietly invents a number is worse than one that is
  * visibly conservative.
@@ -355,6 +366,13 @@ export async function householdPosition(admin: Admin, userId: string): Promise<H
   const ids = (memberRows ?? []).map((m) => m.user_id as string);
   if (ids.length < 2) return null;
 
+  const { data: investRows } = await admin
+    .from("plaid_accounts")
+    .select("plaid_account_id, user_id, subtype, balance_current")
+    .in("user_id", ids)
+    .eq("type", "investment");
+  const invest = (investRows ?? []) as { plaid_account_id: string; user_id: string; subtype: string | null; balance_current: number | null }[];
+
   const members: MemberPosition[] = [];
   for (const id of ids) {
     const [{ data: prof }, { data: assumptions }, auth] = await Promise.all([
@@ -371,8 +389,15 @@ export async function householdPosition(admin: Admin, userId: string): Promise<H
     const categories = (assumptions?.budget_categories ?? {}) as Record<string, number>;
     const monthlyExpenses = Object.values(categories).reduce((sum, v) => sum + (Number(v) || 0), 0);
     const monthlyIncome = Number(assumptions?.monthly_income ?? 0);
+    // Same rule as each person's own dashboard (D-32): linked retirement
+    // accounts replace the typed 401(k) and Roth, linked brokerage replaces
+    // typed taxable. Bank accounts are not part of the portfolio.
+    const mineInvest = invest.filter((a) => a.user_id === id);
+    const retirement = mineInvest.filter(isRetirementAccount).reduce((s, a) => s + Number(a.balance_current ?? 0), 0);
+    const brokerage = mineInvest.filter((a) => !isRetirementAccount(a)).reduce((s, a) => s + Number(a.balance_current ?? 0), 0);
     const portfolio =
-      Number(assumptions?.k401 ?? 0) + Number(assumptions?.roth_ira ?? 0) + Number(assumptions?.taxable ?? 0);
+      (retirement > 0 ? retirement : Number(assumptions?.k401 ?? 0) + Number(assumptions?.roth_ira ?? 0))
+      + (brokerage > 0 ? brokerage : Number(assumptions?.taxable ?? 0));
 
     members.push({
       userId: id,
@@ -397,19 +422,35 @@ export async function householdPosition(admin: Admin, userId: string): Promise<H
     .eq("household_id", mine.household_id);
 
   const confirmed = (links ?? []).filter((l) => l.status === "confirmed");
-  let dedupedBalance = 0;
-  if (confirmed.length) {
-    const { data: dupAccounts } = await admin
-      .from("plaid_accounts")
-      .select("balance_current")
-      .in("plaid_account_id", confirmed.map((l) => l.plaid_account_id_b as string));
-    dedupedBalance = (dupAccounts ?? []).reduce((sum, a) => sum + Number(a.balance_current ?? 0), 0);
-  }
+  // Only a linked investment account is inside a portfolio above, so only
+  // that kind can be counted twice. A shared checking account was never in
+  // the total, and subtracting it would push the household date later.
+  const confirmedIds = new Set(confirmed.map((l) => l.plaid_account_id_b as string));
+  const dedupedBalance = invest
+    .filter((a) => confirmedIds.has(a.plaid_account_id))
+    .reduce((sum, a) => sum + Number(a.balance_current ?? 0), 0);
 
   const undecided = await duplicateCandidates(admin, userId);
 
   const monthlyIncome = members.reduce((s, m) => s + m.monthlyIncome, 0);
-  const monthlyExpenses = members.reduce((s, m) => s + m.monthlyExpenses, 0);
+  /* Real spending once both have three months of it, with a joint account
+     both connected counted once (lib/household-spending); adding two typed
+     budgets counted shared rent twice. Typed budgets before that. */
+  let monthlyExpenses = members.reduce((s, m) => s + m.monthlyExpenses, 0);
+  try {
+    const now = new Date();
+    const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const since = new Date(now.getFullYear(), now.getMonth() - 13, 1).toISOString().slice(0, 10);
+    const { data: spendRows } = await fetchAllPages((from, to) => admin.from("expenses")
+      .select("user_id, date, amount, refund_amount, currency, description, sub_category")
+      .in("user_id", ids).eq("transaction_type", "expense").gte("date", since)
+      .order("date").order("id").range(from, to));
+    const real = householdSpending((spendRows ?? []) as MemberSpendRow[], current,
+      (amount, currency) => (currency === "USD" ? amount : amount / (FALLBACK_RATES[currency] || 1)));
+    if (real.average != null) monthlyExpenses = real.average;
+  } catch (spendErr) {
+    console.error("[household] real spending:", spendErr);
+  }
   const portfolio = Math.max(0, members.reduce((s, m) => s + m.portfolio, 0) - dedupedBalance);
 
   return {

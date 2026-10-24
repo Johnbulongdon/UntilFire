@@ -218,9 +218,11 @@ paper over.
    month. For a budget whose repeating bills are all listed, Left for the
    month equals the Budget's own surplus.
 
-   The daily rate now comes from what was actually spent (D-11): last
-   complete month's need-tagged spending over that month's days
-   (`needsAllowance`, chosen by `dayToDayAllowance`). A need already on the
+   Since D-62 the daily rate is the Budget's spending less repeating listed
+   bills, spread per day; the Budget is the long-term plan. Without a budget it
+   falls back to what was actually spent (D-11): last complete month's
+   need-tagged spending over that month's days (`needsAllowance`, chosen by
+   `dayToDayAllowance`). A need already on the
    Expected list is left out, whether it matches by name, by the category of
    a repeating bill, or by an amount within 5% of one. The amount match
    exists because rent paid as transfers to a person has no merchant name to

@@ -54,9 +54,11 @@ check(
     /Not in our list\? We&apos;ll still save it\./.test(assumptions),
 );
 
+// D-82: where you live and where you retire are separate. Choosing a
+// retirement city only fills the current city when none is set yet.
 check(
-  "city selection still updates dashboard city and retirement target together",
-  /onRetirementCityChange=\{\(name, col\) => \{ setCityName\(name\); setRetirementCityName\(name\); setRetirementCityCol\(col\); \}\}/.test(dashboard),
+  "choosing a retirement city keeps the current city",
+  /onRetirementCityChange=\{\(name, col\) => \{ if \(!cityName\) setCityName\(name\); setRetirementCityName\(name\); setRetirementCityCol\(col\); \}\}/.test(dashboard),
 );
 
 check(

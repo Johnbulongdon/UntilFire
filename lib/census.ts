@@ -59,6 +59,25 @@ const MOVER_TABLE = "B25113";
  *
  * Shown separately in the admin so it is never mistaken for a measurement.
  */
+/**
+ * Household income distribution, B19080: the upper limits of the lowest four
+ * fifths (the 20th, 40th, 60th and 80th percentiles) and the lower limit of the
+ * top 5% (the 95th), annual USD. Used for one thing (D-82): suggesting pay in a
+ * city someone plans to work in, at the same rank they hold where they live.
+ * It is HOUSEHOLD income, not one person's pay, which is why only the ratio
+ * between two cities at the same rank is ever used, never the figure itself.
+ */
+const INCOME_BANDS = ["B19080_001E", "B19080_002E", "B19080_003E", "B19080_004E", "B19080_005E"];
+
+/** Percentiles of INCOME_BANDS, in order. */
+export const INCOME_BAND_PERCENTILES = [20, 40, 60, 80, 95] as const;
+
+/** Five ascending figures, or null when Census suppressed any of them. */
+function bandsFrom(values: (string | null)[]): number[] | null {
+  const n = values.map((v) => Number(v));
+  return n.length === 5 && n.every((v, i) => Number.isFinite(v) && v > 1000 && (i === 0 || v >= n[i - 1])) ? n : null;
+}
+
 export const NON_HOUSING_ANNUAL_USD = 34_000;
 
 /**
@@ -103,6 +122,8 @@ export interface CityRent {
   capped: boolean;
   /** The hand-entered figure this would replace. */
   previous: number;
+  /** Household income at INCOME_BAND_PERCENTILES, annual USD; null where suppressed. */
+  incomeBands: number[] | null;
 }
 
 export interface CensusResult {
@@ -210,11 +231,11 @@ export type MatchKind = "exact" | "prefix" | "contains" | "county";
  * coin toss. The kind of match is carried out with the row so a loose one can
  * be checked in review rather than taken on trust.
  */
-interface PlaceHit { rent: number; marketRent: number | null; moe: number | null; geo: string }
+interface PlaceHit { rent: number; marketRent: number | null; moe: number | null; geo: string; incomeBands: number[] | null }
 
 function findPlace(
   target: string,
-  places: { bare: string; rent: number; marketRent: number | null; moe: number | null; geo: string }[],
+  places: (PlaceHit & { bare: string })[],
 ): { hit: PlaceHit; how: MatchKind } | { ambiguous: string[] } | null {
   const exact = places.filter((p) => p.bare === target);
   if (exact.length) return { hit: exact[0], how: "exact" };
@@ -326,7 +347,11 @@ async function stateGeographies(year: number, key: string, fips: string, moverVa
   // to pay the same — Toledo and Palo Alto both show a 0% gap, and a range of
   // zero width is not a range.
   const moeVar = moverVar ? moverVar.replace(/E$/, "M") : null;
-  const get = `NAME,${MEDIAN_GROSS_RENT}${moverVar ? `,${moverVar}` : ""}${moeVar ? `,${moeVar}` : ""}`;
+  // Income bands go last among the variables. Census then appends the
+  // geography codes (state and place, or state and county) to every row, so
+  // they are read by position from the variable list, not from the row's end.
+  const get = `NAME,${MEDIAN_GROSS_RENT}${moverVar ? `,${moverVar}` : ""}${moeVar ? `,${moeVar}` : ""},${INCOME_BANDS.join(",")}`;
+  const bandsAt = get.split(",").length - INCOME_BANDS.length;
   const [places, counties] = await Promise.all([
     censusRows(year, key, { get, for: "place:*", in: `state:${fips}` }),
     censusRows(year, key, { get, for: "county:*", in: `state:${fips}` }),
@@ -334,9 +359,10 @@ async function stateGeographies(year: number, key: string, fips: string, moverVa
 
   // A list rather than a map: the fallbacks in findPlace need to scan, and an
   // exact-keyed map would have thrown away the very names they look for.
-  const placeList: { bare: string; rent: number; marketRent: number | null; moe: number | null; geo: string }[] = [];
+  const placeList: (PlaceHit & { bare: string })[] = [];
   const seen = new Set<string>();
-  for (const [name, value, mover, moe] of places) {
+  for (const row of places) {
+    const [name, value, mover, moe] = row;
     const rent = rentFrom(value);
     if (rent === null) continue;
     const marketRent = moverVar ? rentFrom(mover) : null;
@@ -346,11 +372,12 @@ async function stateGeographies(year: number, key: string, fips: string, moverVa
     // the incorporated city is the one anyone means.
     if (seen.has(bare)) continue;
     seen.add(bare);
-    placeList.push({ bare, rent, marketRent, moe: moeValue, geo: String(name) });
+    placeList.push({ bare, rent, marketRent, moe: moeValue, geo: String(name), incomeBands: bandsFrom(row.slice(bandsAt, bandsAt + INCOME_BANDS.length)) });
   }
 
-  const byCounty = new Map<string, { rent: number; marketRent: number | null; moe: number | null; geo: string }>();
-  for (const [name, value, mover, moe] of counties) {
+  const byCounty = new Map<string, PlaceHit>();
+  for (const row of counties) {
+    const [name, value, mover, moe] = row;
     const rent = rentFrom(value);
     if (rent === null) continue;
     byCounty.set(normalise(String(name).split(",")[0]), {
@@ -358,6 +385,7 @@ async function stateGeographies(year: number, key: string, fips: string, moverVa
       marketRent: moverVar ? rentFrom(mover) : null,
       moe: moeVar ? moeFrom(moe) : null,
       geo: String(name),
+      incomeBands: bandsFrom(row.slice(bandsAt, bandsAt + INCOME_BANDS.length)),
     });
   }
 
@@ -520,6 +548,7 @@ export async function fetchCityRents(
       matchedBy: how,
       rentSource: hit.marketRent !== null ? "market" : "all",
       previous: city.col,
+      incomeBands: hit.incomeBands,
     });
   }
 

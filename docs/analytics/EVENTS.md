@@ -18,6 +18,7 @@ funnel_landing_viewed
            → funnel_calculator_step_viewed (step_id=income)
            → funnel_calculator_step_viewed (step_id=savings)
            → funnel_calculator_step_viewed (step_id=portfolio)
+           → funnel_calculator_step_viewed (step_id=age)
            → funnel_calculator_revealed
            → funnel_reveal_step_viewed (step_id=freedom_age … save, or unreachable)
            → funnel_reveal_cta_clicked
@@ -34,7 +35,7 @@ funnel_landing_viewed
                → funnel_fire_type_shared    (optional, on share action)
                → funnel_fire_type_cta_clicked → rejoins primary funnel
 
-  → [dashboard experiment] funnel_hysa_empty_state_cta_clicked (cta=learn_more|connect_account)
+  → [dashboard experiment] funnel_hysa_empty_state_cta_clicked (cta=learn_more|connect_account|see_offers)
 ```
 
 `step_id=currency` is a tombstone: an earlier flow had a standalone currency-selection
@@ -73,6 +74,15 @@ Do not wire a new screen to `step_id=currency`.
 - `learn-fire-meaning` labels the link from the quick FIRE number box in the
   "What does FIRE mean?" article into the main calculator. It uses the same
   path and passes no amounts.
+- `nav-<page>` labels the shared site header's Get started link, from the
+  page it was clicked on (`nav-calculators-apy`, `nav-fire-number-austin-tx`,
+  `nav-learn`). It replaced the calculators' own page-bar links
+  (`calculator-apy`, `calculator-compound-interest`, `calculator-savings-rate`,
+  `calculator-coast-fire` in the bar); in-page links keep their labels.
+- `ref-<code>` labels a visit through a creator's referral link
+  (`/r/<code>`, D-27). It uses the same path, so each creator's funnel is a
+  `landing_source` filter with no new events. The code is the creator's public
+  handle, not a person's identity, and nothing about the visitor is attached.
 
 ## Person properties
 
@@ -129,10 +139,11 @@ querying history.
 ### `funnel_calculator_step_viewed`
 
 - **Where**: `app/HomeClient.tsx`, `HomeClient` screen effect when the wizard
-  transitions to one of the five live steps (`goal`, `city`, `income`,
-  `savings`, `portfolio`).
+  transitions to one of the six live steps (`goal`, `city`, `income`,
+  `savings`, `portfolio`, `age`). Age became its own step in D-50 (index `6`);
+  before that it was asked on the `portfolio` step.
 - **Properties**:
-  - `step_id` - `goal` | `city` | `income` | `savings` | `portfolio` (`currency`
+  - `step_id` - `goal` | `city` | `income` | `savings` | `portfolio` | `age` (`currency`
     is a tombstoned value from a retired step; see the funnel order note above).
   - `step_index` - mirrors `step_id` for funnel ordering in PostHog. Not a dense
     `1..5` range - `goal` was added after the others were indexed and kept its
@@ -154,6 +165,8 @@ querying history.
 
 ### `funnel_reveal_step_viewed`
 
+The added `savings_pace` step uses stable index 8 before save (index 7); existing IDs remain unchanged.
+
 - **Where**: `app/components/RevealFlow.tsx` reports each step through its
   `onStepViewed` prop (an effect on the current step), and `app/HomeClient.tsx`
   sends the event, as it does for `funnel_reveal_cta_clicked`; RevealFlow
@@ -172,10 +185,14 @@ querying history.
 
 ### `funnel_reveal_cta_clicked`
 
-- **Where**: `app/HomeClient.tsx`, `onSave`, before the push to `/login`.
-  Sent instantly, because the navigation follows immediately and a queued
-  event loses the race with the unload.
-- **Why it exists**: `funnel_signup_started` fires on the login page's Google
+- **Where**: `app/HomeClient.tsx`, `keepResult`. On the save step (D-96) it
+  runs as Google or email sign-up starts on that step's card; on the
+  unreachable screen, before the push to `/login`. Sent instantly, because
+  the navigation follows immediately and a queued event loses the race with
+  the unload. Since D-96 the save step's click and `funnel_signup_started`
+  happen together, so arrivals on the step (`funnel_reveal_step_viewed`,
+  `save`) versus this event is the drop that matters.
+- **Why it exists**: `funnel_signup_started` fires on the sign-up card's Google
   button, not on the reveal. Everything between the two was one unexplained
   drop, and it hides three different failures that need three different
   fixes: never reaching the save step of the reveal sequence, reaching it and
@@ -237,6 +254,30 @@ querying history.
   - `price_id` - optional Stripe price id when available.
   - `source` - short label for where the paywall rendered (e.g. `profile`,
     `plaid_limit`, `dashboard_upgrade_modal`).
+
+### In the iOS app (D-75)
+
+`app/pro.tsx` fires `funnel_paywall_viewed` when the Pro screen opens and
+`funnel_checkout_started` when Apple's purchase sheet is asked for, with
+`store: apple`, `billing` (`monthly` or `yearly`) and `source` (`today`,
+`profile`, `bank_limit`, or `direct`). Every event in the app also carries
+`surface: ios_app`. Apple has no webhook here, so the app adds:
+
+- `app_purchase_result` - after the sheet closes. `outcome` is `succeeded`,
+  `pending`, `cancelled` or `failed`, plus `billing` and `source`.
+- `app_reward_month_granted` - the quiz's free month was given (D-79),
+  `source: fire_quiz`.
+
+The app reuses the website's property names so one funnel and one breakdown
+read both (`mobile/src/lib/analytics.ts`): `funnel_calculator_step_viewed`
+carries `step_id`/`step_index` from `CALCULATOR_STEP_INDEX` (the phone-only
+`pay` and `know` questions have `step_index: null`), `funnel_calculator_revealed`
+carries `years_to_fire_bucket` in `bucketYears` values, and sign-up events carry
+`auth_provider`. On the phone, the welcome screen signs in before onboarding, so
+`funnel_signup_*` usually precede the calculator steps there; filter by `surface` when
+reading a funnel's order. Release builds get the project key from `eas.json`
+(`preview` and `production`); development builds and Expo Go stay off unless
+`mobile/.env` sets `EXPO_PUBLIC_POSTHOG_KEY`.
 
 ### `funnel_checkout_started`
 
@@ -331,8 +372,8 @@ client-side experience without double-counting conversions.
 
 - **Where**: `app/dashboard/PlaidConnect.tsx`, only in the Assets empty state card when no bank is connected yet.
 - **Properties**:
-  - `cta` — `learn_more` | `connect_account`.
-  - `destination` — `apy_calculator` | `plaid_connect`.
+  - `cta` — `learn_more` | `connect_account` | `see_offers` (Money → Offers, D-81).
+  - `destination` — `apy_calculator` | `plaid_connect` | `offers`.
   - `placement` — `assets_empty_state`.
 
 ## Engagement loop (post-auth)
@@ -404,6 +445,97 @@ UntilFire creating action versus just curiosity.
 - **Note**: uses `send_instantly` — `onSave` navigates immediately after,
   same reasoning as `trackSignupCompleted`.
 
+## Transactions page
+
+Added 2026-10-06 with D-31 to see whether the multi-month view and its
+tools get used. Counts and enums only; no amounts, merchants or dates.
+
+### `funnel_tx_range_changed`
+
+- **Where**: `app/dashboard/TransactionsTab.tsx`, the date pill's `onChange`
+  (a preset, a custom span or the arrows).
+- **Properties**: `range_preset` (`1`, `3`, `6`, `12`, `ytd` or `custom`),
+  `range_months`.
+
+### `funnel_tx_view_changed`
+
+- **Where**: `app/dashboard/SpendCard.tsx`, the Line/Bars/Calendar switch.
+- **Properties**: `view` (`line`, `bars`, `cal`), `range_months`.
+
+### `funnel_tx_review_opened`
+
+- **Where**: `app/dashboard/TransactionsTab.tsx`, the review bar's green part.
+- **Properties**: `need_count`, `range_months`.
+
+### `funnel_tx_flag_resolved`
+
+- **Where**: `app/dashboard/TransactionsTab.tsx`, `resolveFlag`, when a
+  "Worth a look" row is answered.
+- **Properties**: `flag` (`bill`, `card_payment`, `duplicate`, `large`), `confirmed`
+  (true for "It's a card payment" / "Delete this one", false for the dismissals).
+
+### `funnel_data_exported`
+
+- **Where**: `app/dashboard/ProfileTab.tsx`, Export your data (D-56), after a
+  download is offered or fails.
+- **Properties**: `file` (`transactions_csv`, `everything_json`), `ok`
+  (false when a read failed). Never row counts, amounts or file contents.
+
+### Explore (D-58)
+
+- **Where**: `app/explore/ExploreClient.tsx`, one call site each.
+- `funnel_explore_viewed`: on load. `has_plan` (your numbers were already here).
+- `funnel_explore_city_opened`: a card or pin chosen. `mode` (`monthly`, `year`, `age`, `badge` since D-67).
+- `funnel_explore_mode_changed`: the pin switch. `mode`.
+- `funnel_explore_starred`: `starred` (false when unstarred).
+- `funnel_explore_plan_started`: "Plan {city}" into the calculator. No properties.
+- Never city names, amounts, ages or years: what was used, not what was looked at.
+
+### `funnel_plan_compare` (D-69)
+
+- Plan → Compare, life changes on top of the plan. `action` is `added` (a
+  change added), `saved` (a what-if saved), `used` (made the plan) or
+  `discarded`.
+- Never ages, years, dates, amounts or what a change is called.
+
+### `funnel_setup_checklist` (D-101)
+
+- **Where**: `app/dashboard/SetupChecklist.tsx` (website Home, corner box) and
+  `mobile/src/components/SetupCard.tsx` (phone Home, `surface = ios_app`).
+- **Properties**: `action` — `step_done` (a step was found finished since the
+  last visit; with `step` and `done_count`), `found_confirmed` (payday or bills
+  found in the bank were added; with `step` and `added`, a count), `opened` /
+  `folded` (the box or sheet; `done_count`), `finished` (the "You're set up"
+  moment was closed). `step` is `income`, `bank`, `payday`, `bills` or `budget`.
+- Never amounts, years, bill names or merchants.
+
+### `funnel_freedom_year_shared` (D-98)
+
+- **Where**: `app/components/ShareFreedomYear.tsx`, on the calculator's Freedom
+  age page, after the share sheet completes or the link is copied. Closing
+  the share sheet sends nothing.
+- **Properties**: `share_method` (`native` | `clipboard`). Never the year.
+- Visitors arriving from a shared link carry `landing_source=share-freedom-year`.
+
+### `funnel_cancel_flow` (D-99)
+
+- **Where**: `app/dashboard/CancelProSheet.tsx` and Profile's Keep Pro button
+  (`app/dashboard/ProfileTab.tsx`).
+- **Properties**: `step` is `opened`, `reason` (one picked), `kept` (closed the
+  sheet without cancelling), `cancelled` or `resumed` (Keep Pro after
+  cancelling). `reason` is a key from `lib/cancel-reasons.ts` (`budget`,
+  `break`, `free_enough`, `bank_sync`, `goal_reached`), sent once picked.
+  Never the free-text note, which goes only to Stripe.
+- **Save rate** = `kept` ÷ `opened`. Don't judge it until there are paying users.
+
+### `funnel_freedom_report_exported` (D-60)
+
+- **Where**: `app/dashboard/FreedomReport.tsx`, on Save as PDF, Download PNG
+  or Copy as Markdown.
+- **Properties**: `format` (`page`, `poster`, `timeline`, `reddit`) and
+  `branded` (false without the UntilFire name; the poster, timeline and Reddit
+  text are always unbranded). Never the plan's amounts, ages or dates.
+
 ## Adding a new event
 
 1. Add the event name to `FunnelEvents` in `lib/analytics-events.ts`.
@@ -420,3 +552,12 @@ UntilFire creating action versus just curiosity.
   `funnel_calculator_revealed`).
 - The PostHog project for verification is the one configured by
   `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST` (see Vercel env).
+# City-guide plan entry (7 October 2026)
+
+`funnel_city_plan_started` fires on the primary city-guide plan link. Properties:
+`city_key`, `city_slug`, `source` (`fire-number-{slug}`), `placement` (`city_guide`),
+and `funnel_event_version`. These are public guide identifiers, not the visitor's
+personal finances or precise location. Pageviews provide the visitor denominator;
+follow the existing reveal, signup-completed and dashboard-first-view events to
+measure conversion and activation. Deduplicate by visitor/session, exclude
+internal traffic, and do not count a click as a signup.

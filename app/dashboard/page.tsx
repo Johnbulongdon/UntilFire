@@ -1,26 +1,50 @@
 "use client";
 
+import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
+
 import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react";
-import dynamic from "next/dynamic";
-const GeoArbitrageGlobe = dynamic(() => import("@/app/components/GeoArbitrageGlobe"), { ssr: false });
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
-  XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, LineChart, Line, Legend, ReferenceLine, ReferenceDot,
-  ComposedChart, Area,
+  XAxis, YAxis, Tooltip,
+  ResponsiveContainer, ReferenceLine, ReferenceDot, AreaChart, Area,
 } from "recharts";
 import TransactionsTab from "./TransactionsTab";
-import PlaidConnect from "./PlaidConnect";
+import PlaidConnect, { type PlaidItem } from "./PlaidConnect";
 import UpgradeModal from "./UpgradeModal";
 import TourModal from "./TourModal";
 import CitizenshipTab from "./CitizenshipTab";
+import OnboardingModal from "./OnboardingModal";
+import SavedPlanLoading from "./SavedPlanLoading";
+import { CITIES, STATE_TAX, TAX_US_STATES } from "@/lib/fire-data";
+import LearnTab from "./LearnTab";
 import ContributionsTab from "./ContributionsTab";
 import CompareCard from "./CompareCard";
-import NextContributionCard from "./NextContributionCard";
-import { measuredEmergencyFund, type AccountFacts } from "@/lib/contribution-ladder";
+import NextContributionCard, { useContributionPlan } from "./NextContributionCard";
+import TodayStrip from "./TodayStrip";
+import { emergencyFundFromPlan, measuredEmergencyFund, type AccountFacts } from "@/lib/contribution-ladder";
+import { goalMonthly, goalRungs, type GoalLike } from "@/lib/goal-monthly";
+import { retirementCash, DEFAULT_CASH_GROWTH, bridgeRequired } from "@/lib/freedom-cash";
+import { spendingAverage } from "@/lib/real-spending";
+import { carriedCards, freedomDebt } from "@/lib/freedom-debt";
+import { applyAccountShares, readAccountShares, shareOf, SHARED_PCT, type AccountShares } from "@/lib/account-share";
+import { billCategorySet } from "@/lib/bill-categories";
+import { everydayByDay, everydayLeft } from "@/lib/everyday-left";
+import { ladderViewFromPlan } from "@/lib/contribution-ladder";
+import { isSnoozed, pickNextMove, snooze } from "@/lib/next-move";
+import { budgetNeeds, inLastTwelve, transactionNeed, type NeedOverrides } from "@/lib/needs";
 import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
+import { freeToSpend, untilPayday, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
+import { paydayLine } from "@/lib/payday-line";
+import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, occurrences, presumePaid, rateSoFar, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
+import FreeToSpendRunway from "./FreeToSpendRunway";
+import FreeToSpendHome from "./FreeToSpendHome";
+import SetupChecklist, { type AddedExpected } from "./SetupChecklist";
+import type { SetupFacts, SetupStepId } from "@/lib/setup-steps";
+import type { RawTx } from "@/lib/recurring-detect";
+import { FreedomCard, MonthCard, GlanceRow, NextMoveCard, UntilPaydayCard, type MonthCategory } from "./HomeCards";
+import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, MoneyTrack, Fig, StackBar, PaceBar, MonthCalendar, BankLogo } from "./MoneyCards";
 import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
 import { accountInUSD, daysSinceSync, STALE_AFTER_DAYS, type ConvertedFields } from "@/lib/account-currency";
 import { fetchAllPages } from "@/lib/supabase-pages";
@@ -28,24 +52,37 @@ import CategoriesTab from "./CategoriesTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
 import BudgetSetupModal from "./BudgetSetupModal";
 import ReportsTab from "./ReportsTab";
+import OffersTab from "./OffersTab";
 import ProfileTab from "./ProfileTab";
+import type { ProBilling } from "./CancelProSheet";
+import ExploreClient from "../explore/ExploreClient";
 import PurchaseImpactPanel from "./PurchaseImpactPanel";
 import Logo from "@/app/components/Logo";
 import FeedbackWidget from "./FeedbackWidget";
-import { calcFIRE, REAL_RETURN } from "@/lib/fire";
+import { REAL_RETURN, moveBeforeFreedomChange, retirementLocationMonthlySpend } from "@/lib/fire";
 import { FALLBACK_RATES, convertUSDAmount, getCurrencySymbol } from "@/lib/currency";
 import { HOUSEHOLD_INVITE_KEY } from "@/lib/household-invite";
 import FireAssumptionsCard from "./FireAssumptionsCard";
+import PlanGoalCard from "./PlanGoalCard";
+import IncomeTab from "./IncomeTab";
+import SavingSplitCard from "./SavingSplitCard";
+import FreedomReport, { type ReportData } from "./FreedomReport";
+import { ageLabel, freedomAgeAt, pensionFor, taxFreeFor, type PlanSettings } from "@/lib/plan-settings";
+import { DEFAULT_MORTGAGE_RATE_PCT, engineMortgages, loadMortgages, newMortgageId, payoffYear, type Mortgage, type MortgageTerms } from "@/lib/mortgages";
 import HouseholdCard from "./HouseholdCard";
-import { CardInventory, DashSlot, useCardSort } from "./DashboardCustomise";
-import { defaultLayout, normaliseLayout, setCard, type DashboardLayout } from "@/lib/dashboard-layout";
+import HomeSlot from "./HomeSlot";
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
-import { CITIES, STATE_TAX, TAX_COUNTRIES, TAX_US_STATES, TAX_CA_PROVINCES } from "@/lib/fire-data";
-import { CITY_COORDS } from "@/lib/city-coords";
-import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened } from "@/lib/analytics";
-import { EXPENSE_CATEGORIES } from "@/lib/categories";
+import { trackDashboardFirstView, trackNextMoveViewed, trackNextMoveOpened, trackFreedomReportExported, trackPlanCompare } from "@/lib/analytics";
+import WhatIf from "./WhatIf";
+import { coastYear, type EngineChange, type LifeVersion } from "@/lib/life-changes";
+import { isRent } from "@/lib/lease";
+import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
+import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
-import { Alert, Badge, Button, ICON_PATHS, Stat } from "@/components/ui";
+import { Alert, Button, ICON_PATHS, Input } from "@/components/ui";
+import Flag, { flagUri } from "@/app/components/Flag";
+import { stampActive } from "@/lib/last-active";
+import { knownWithdrawalLimit, parseWithdrawalLimit, withdrawalsLeftLabel } from "@/lib/savings-limits";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Expenses = Record<string, number>;
@@ -65,6 +102,9 @@ type PlaidAccount = {
   plaid_item_id: string;
   updated_at: string;
   apy: number | null;
+  withdrawal_limit?: number | null;
+  /** This month's money out, present only when a limit is set. */
+  withdrawals?: { date: string; amount: number; description: string | null; pending: boolean }[];
 };
 type PlaidHolding = {
   account_id: string;
@@ -86,12 +126,14 @@ type TabKey =
   | "cashflow"
   | "assets"
   | "liabilities"
+  | "income"
   | "fire-calculator"
   | "expat-fire"
   | "goals"
   | "contributions"
   | "citizenship"
   | "reports"
+  | "offers"
   | "learning-hub"
   | "profile";
 
@@ -107,7 +149,6 @@ type EmergencyFundPriorityMode = "protect" | "balance" | "grow";
 const EMERGENCY_FUND_HISTORY_KEY = "uf_emergency_fund_healthy_once_v1";
 const EMERGENCY_FUND_FLOOR_MONTHS = 1.5;
 const EMERGENCY_FUND_TARGET_MONTHS = 6;
-const EMERGENCY_FUND_BUDGET_NEED_KEYS = ["housing", "food", "transport", "healthcare"] as const;
 const EMERGENCY_FUND_MONTH_MARKS = Array.from({ length: EMERGENCY_FUND_TARGET_MONTHS }, (_, index) => index + 1);
 
 function useEmergencyFundHistory(isHealthyNow: boolean) {
@@ -250,29 +291,6 @@ function EmergencyFundProgressBar({ progressPct, state, height = 8 }: { progress
   );
 }
 
-const LEARNING_STAGES: { id: LearnStageId; label: string; whatMattersNow: string }[] = [
-  {
-    id: "starting-out",
-    label: "Starting Out",
-    whatMattersNow: "Learn the basics first: FIRE, savings rate, and compounding before you optimize anything.",
-  },
-  {
-    id: "building-momentum",
-    label: "Building Momentum",
-    whatMattersNow: "Improve the machine: account strategy, savings pace, and choosing the right FIRE path for your life.",
-  },
-  {
-    id: "approaching-fire",
-    label: "Approaching FIRE",
-    whatMattersNow: "Pressure-test the plan: target size, assumptions, and sequence risk matter more as FIRE gets closer.",
-  },
-  {
-    id: "living-in-fire",
-    label: "Living in FIRE",
-    whatMattersNow: "Protect the portfolio: withdrawals, tax-aware access, and resilience through real retirement years.",
-  },
-];
-
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
@@ -292,10 +310,11 @@ const toUSD = (amount: number, currency: string, rates: Record<string, number>) 
 const netAmt = (t: { amount: number; refund_amount?: number | null }) =>
   Math.max(0, t.amount - (t.refund_amount || 0));
 
-const normalizePlaidSubtype = (subtype: string | null | undefined) =>
-  (subtype ?? "").toLowerCase().replace(/[_-]/g, " ").trim();
+function normalizePlaidSubtype(subtype: string | null | undefined) {
+  return (subtype ?? "").toLowerCase().replace(/[_-]/g, " ").trim();
+}
 
-const isRetirementInvestmentAccount = (account: PlaidAccount) => {
+function isRetirementInvestmentAccount(account: Pick<PlaidAccount, "type" | "subtype">) {
   if (account.type !== "investment") return false;
   const subtype = normalizePlaidSubtype(account.subtype);
   return [
@@ -311,41 +330,129 @@ const isRetirementInvestmentAccount = (account: PlaidAccount) => {
     "simple",
     "keogh",
   ].some((token) => subtype.includes(token));
-};
+}
 
-const isBrokerageInvestmentAccount = (account: PlaidAccount) => (
-  account.type === "investment" && !isRetirementInvestmentAccount(account)
-);
+function isBrokerageInvestmentAccount(account: Pick<PlaidAccount, "type" | "subtype">) {
+  return account.type === "investment" && !isRetirementInvestmentAccount(account);
+}
+
+/**
+ * The balances everything on Home and Plan starts from (D-32): a connected
+ * account replaces what was typed in for the same kind of money, rather than
+ * adding to it. Retirement accounts replace the 401(k) and Roth figures,
+ * other investment accounts replace taxable, bank accounts replace cash.
+ * Adding both counted a linked 401(k) twice for anyone who had typed its
+ * balance in first, and the money-mix ring already used this rule.
+ */
+function effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts }: {
+  k401: number; rothIRA: number; taxable: number; cashSavings: number;
+  plaidAccounts: Pick<PlaidAccount, "type" | "subtype" | "balance_current">[];
+}) {
+  const sum = (keep: (a: Pick<PlaidAccount, "type" | "subtype">) => boolean) =>
+    plaidAccounts.filter(keep).reduce((s, a) => s + (a.balance_current ?? 0), 0);
+  const retirement = sum(isRetirementInvestmentAccount), brokerage = sum(isBrokerageInvestmentAccount);
+  const cash = sum((a) => a.type === "depository");
+  return {
+    k401: retirement > 0 ? retirement : k401,
+    rothIRA: retirement > 0 ? 0 : rothIRA,
+    taxable: brokerage > 0 ? brokerage : taxable,
+    cashSavings: cash > 0 ? cash : cashSavings,
+  };
+}
+
+/**
+ * Debts by the same rule as balances (D-35): a connected mortgage replaces the
+ * typed mortgage, other connected loans replace typed "other debt". Credit
+ * cards are owed, so net worth counts them, but the projection does not: a
+ * card balance is this month's spending, already in expenses.
+ */
+function effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts }: {
+  totalDebt: number; mortgageBalance: number;
+  plaidAccounts: Pick<PlaidAccount, "type" | "subtype" | "balance_current">[];
+}) {
+  const isMortgage = (a: Pick<PlaidAccount, "type" | "subtype">) => a.type === "loan" && normalizePlaidSubtype(a.subtype).includes("mortgage");
+  const sum = (keep: (a: Pick<PlaidAccount, "type" | "subtype">) => boolean) =>
+    plaidAccounts.filter(keep).reduce((s, a) => s + Math.max(0, a.balance_current ?? 0), 0);
+  const mortgages = sum(isMortgage), loans = sum((a) => a.type === "loan" && !isMortgage(a));
+  return {
+    otherDebt: loans > 0 ? loans : totalDebt,
+    mortgage: mortgages > 0 ? mortgages : mortgageBalance,
+    cards: sum((a) => a.type === "credit"),
+  };
+}
 
 // ─── FIRE Engine ──────────────────────────────────────────────────────────────
 function calcProjection({
   annualIncome, monthlyExpenses, k401, rothIRA, taxable, cashSavings = 0,
   totalDebt, mortgageBalance, mortgageMonthly,
-  growthRate = REAL_RETURN, withdrawalRate = 0.04, years = 50,
+  cashGrowthRate = DEFAULT_CASH_GROWTH, growthRate = REAL_RETURN, withdrawalRate = 0.04, years = 50, debtRate = 0.05,
   targetMonthlyExpenses,
   taxEnabled = false, retirementTaxRate = 0, rothPct = 0,
+  retirementAnnualSpend = 0, payGrowth = 0, employerAnnual = 0, pensionAnnual = 0,
+  currentAge = 0, accessAge = 0, mortgageRate = 0.065, taxFreeAnnual, taxFreeGainsLocked = true, mortgages, change, changes,
 }: {
   annualIncome: number; monthlyExpenses: number; k401: number;
   rothIRA: number; taxable: number; cashSavings?: number; totalDebt: number;
   mortgageBalance: number; mortgageMonthly: number;
-  growthRate?: number; withdrawalRate?: number; years?: number;
+  cashGrowthRate?: number; growthRate?: number; withdrawalRate?: number; years?: number;
+  /** The non-mortgage debt's yearly rate as a fraction; 5% when unknown. */
+  debtRate?: number;
   targetMonthlyExpenses?: number;
   taxEnabled?: boolean; retirementTaxRate?: number; rothPct?: number;
+  /** What you plan to spend a year once free (D-59). Set, it is the goal, ahead of today's spending or a city. */
+  retirementAnnualSpend?: number;
+  /** Pay growth a year above inflation. Spending stays as it is, so a raise is saved; employer money grows with pay. */
+  payGrowth?: number;
+  /** Paid into a pension outside take-home pay: by your employer, and by you before tax. */
+  employerAnnual?: number; pensionAnnual?: number;
+  /** With both set, you are only free once the money you can reach before the pension opens lasts until it does. */
+  currentAge?: number; accessAge?: number;
+  mortgageRate?: number;
+  /**
+   * After-tax saving into a tax-free account a year (Roth IRA, ISA, NISA, TFSA). Set, or with a pension
+   * set, saving from take-home goes there first and the rest to a taxable account: the pension is already
+   * counted, so none of it goes to the 401(k). Unset, the old split (40% 401(k), 20% Roth, the rest taxable).
+   */
+  taxFreeAnnual?: number;
+  /** Only what was paid in can be taken out before the access age (a Roth IRA); elsewhere all of it. */
+  taxFreeGainsLocked?: boolean;
+  /**
+   * Each mortgage on its own (D-61): balance, payment a month, rate as a fraction. Given, they replace the
+   * single mortgage above; each is paid down at its own rate, and once paid off its payment goes to saving.
+   */
+  mortgages?: { balance: number; monthly: number; rate: number }[];
+  /**
+   * A different path for a while (D-66): from `startYear` to `endYear` (years from now), work a share of
+   * today's hours (or earn a set take-home) and spend differently. Pay, pension contributions and debt
+   * repayment scale with the share (debt keeps at least its interest paid). A year that earns less than it
+   * spends withdraws the gap: cash, then taxable, then the tax-free account (paid-in only before the access
+   * age where gains wait), then the pension once it opens. What cannot be covered is a shortfall, reported
+   * as `broke`, and that path has no freedom date.
+   */
+  change?: { startYear: number; endYear?: number; workShare?: number; annualIncome?: number; annualSpend?: number };
+  /**
+   * Several changes, each in its own years (Compare, D-69), applied together with `change`. Work shares
+   * multiply; a set take-home or spending replaces today's (the later one in the list wins); `addIncome`
+   * and `addSpend` add to whatever the year earns or spends (college, a side job); `once` lands in
+   * `startYear` only, positive for a windfall and negative for a one-off cost.
+   */
+  changes?: { startYear: number; endYear?: number; workShare?: number; annualIncome?: number; annualSpend?: number;
+    addIncome?: number; addSpend?: number; once?: number }[];
 }) {
+  const loans = mortgages && mortgages.length > 0 ? mortgages.map((m) => ({ ...m })) : null;
+  const events: NonNullable<typeof changes> = [...(change ? [change] : []), ...(changes ?? [])];
   const annualExpenses       = monthlyExpenses * 12;
-  const targetAnnualExpenses = targetMonthlyExpenses != null ? targetMonthlyExpenses * 12 : annualExpenses;
-  const annualMortgage = mortgageMonthly * 12;
+  const targetAnnualExpenses = retirementAnnualSpend > 0 ? retirementAnnualSpend
+    : targetMonthlyExpenses != null ? targetMonthlyExpenses * 12 : annualExpenses;
+  const annualMortgage = loans ? loans.reduce((s, l) => s + l.monthly * 12, 0) : mortgageMonthly * 12;
   const annualSavings  = annualIncome - annualExpenses - annualMortgage;
   // When tax is enabled, gross up the withdrawal needed to cover retirement taxes.
   // Roth / tax-free portion needs no grossing; traditional portion does.
-  const taxGrossup = (taxEnabled && retirementTaxRate > 0)
+  const taxGrossup = (TAX_ESTIMATES_AVAILABLE && taxEnabled && retirementTaxRate > 0)
     ? ((1 - rothPct / 100) / (1 - Math.min(retirementTaxRate, 0.6)) + rothPct / 100)
     : 1;
   const fireTarget     = targetAnnualExpenses * taxGrossup / withdrawalRate;
 
-  const k401Contrib    = Math.min(Math.max(annualSavings * 0.4, 0), 23000);
-  const rothContrib    = Math.min(Math.max(annualSavings * 0.2, 0), 7000);
-  const taxableContrib = Math.max(annualSavings - k401Contrib - rothContrib, 0);
 
   const data: Record<string, number>[] = [];
   let cur401k    = k401;
@@ -353,9 +460,18 @@ function calcProjection({
   let curTaxable = taxable;
   let curCash    = cashSavings;
   let curDebt    = totalDebt;
-  let curMort    = mortgageBalance;
+  let curMort    = loans ? loans.reduce((s, l) => s + l.balance, 0) : mortgageBalance;
   let fireYear: number | null = null;
+  // The first year the total reaches the target, whether or not it can be reached in time (the bridge check below).
+  let totalYear: number | null = null;
+  let bridge: { needed: number; reachable: number; locked: number; years: number } | null = null;
+  let rothBasis = rothIRA; // Roth money paid in can be taken out at any age; its growth waits for the access age.
   let totalContributed = k401 + rothIRA + taxable + cashSavings;
+  let firstYearInvested = 0; // savings invested in year one, after debt payments (Plan's tools use it)
+  // The first year a change's spending could not be covered from money within reach (D-66).
+  let broke: { year: number; short: number } | null = null;
+  let withdrawn = 0;
+  const flows: { year: number; saved: number; withdrawn: number }[] = [];
 
   for (let y = 0; y <= years; y++) {
     const investable = cur401k + curRoth + curTaxable + curCash;
@@ -365,74 +481,174 @@ function calcProjection({
     // monthlyExpenses, so fireTarget itself) is still its zero default —
     // without this, "$0 invested >= $0 target" is trivially true on the
     // very first loop year, and the freedom date briefly shows as today.
-    if (fireYear === null && fireTarget > 0 && investable >= fireTarget && y > 0) fireYear = y;
+    if (fireYear === null && fireTarget > 0 && investable >= fireTarget && y > 0) {
+      totalYear ??= y;
+      const early = currentAge > 0 && accessAge > 0 ? Math.max(0, accessAge - (currentAge + y)) : 0;
+      if (early > 0) {
+        // Spending until the pension opens, from money that keeps growing meanwhile. Each year's
+        // spending comes out at its start (D-65): a year is lived before it earns its growth.
+        const needed = bridgeRequired(targetAnnualExpenses, early, curCash,
+          curTaxable + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth), cashGrowthRate, growthRate);
+        const reachable = curTaxable + curCash + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth);
+        bridge = { needed, reachable, locked: investable - reachable, years: early };
+        if (reachable >= needed) fireYear = y;
+      } else {
+        bridge = null;
+        fireYear = y;
+      }
+    }
     const contributed = Math.min(totalContributed, investable);
     data.push({
       year: y,
       "401(k)":        Math.round(cur401k),
       "Roth IRA":      Math.round(curRoth),
       "Taxable":       Math.round(curTaxable),
+      "Cash":          Math.round(curCash),
       "Net Worth":     Math.round(netWorth),
       "FIRE Target":   Math.round(fireTarget),
       "Investable":    Math.round(investable),
       "Debt":          Math.round(-(curDebt + curMort)),
       "Contributions": Math.round(contributed),
       "Market Growth": Math.round(Math.max(investable - contributed, 0)),
+      // What can be drawn before the pension opens (D-59): taxable, cash, and the tax-free account (paid-in only where gains wait).
+      "Reachable":     Math.round(curTaxable + curCash + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth)),
     });
-    totalContributed += Math.max(annualSavings, 0);
-    cur401k    = cur401k    * (1 + growthRate) + k401Contrib;
+    // Debt is paid out of savings first (up to 30% of them), and only what
+    // is left is invested. Paying it from savings that were also invested in
+    // full spent the same money twice and brought the date forward (D-32).
+    // During a change (D-66), earnings and spending are the change's; outside it, today's, exactly as before.
+    const active   = events.filter((e) => e.once == null && y >= e.startYear && (e.endYear == null || y < e.endYear));
+    const once     = events.reduce((t, e) => t + (e.once != null && e.startYear === y ? e.once : 0), 0);
+    const inChange = active.length > 0 || once !== 0;
+    const share    = active.reduce((m, e) => m * Math.min(1, Math.max(0, e.workShare ?? 1)), 1);
+    const setIncome = active.reduce<number | undefined>((v, e) => e.annualIncome ?? v, undefined);
+    const setSpend  = active.reduce<number | undefined>((v, e) => e.annualSpend ?? v, undefined);
+    const added     = active.reduce((t, e) => t + (e.addIncome ?? 0) - (e.addSpend ?? 0), 0);
+    let debtPayment = 0;
+    if (curDebt > 0) {
+      // The debt's own rate when known (lib/freedom-debt), else 5%.
+      const interest = curDebt * debtRate;
+      // Working less repays less, though never below the interest.
+      debtPayment = inChange
+        ? Math.min(curDebt + interest, Math.max(interest, annualSavings * 0.3 * share))
+        : Math.min(curDebt + interest, Math.max(annualSavings * 0.3, 0));
+      curDebt = Math.max(0, curDebt + interest - debtPayment);
+    }
+    const pay            = Math.pow(1 + payGrowth, y);
+    const raises         = annualIncome * (pay - 1);
+    // A mortgage paid off in an earlier year stops costing anything: its payment is saved instead.
+    const freed          = loans ? loans.filter((l) => l.balance <= 0).reduce((s, l) => s + l.monthly * 12, 0) : 0;
+    const changeNet      = inChange
+      ? (setIncome ?? annualIncome * pay * share) - (setSpend ?? annualExpenses) + added + once - annualMortgage + freed - debtPayment
+      : 0;
+    const toInvest       = inChange ? Math.max(changeNet, 0) : Math.max(annualSavings + raises + freed - debtPayment, 0);
+    let need             = inChange ? Math.max(-changeNet, 0) : 0;
+    if (need > 0) {
+      const take = (v: number) => { const t = Math.min(Math.max(v, 0), need); need -= t; return v - t; };
+      curCash = take(curCash);
+      curTaxable = take(curTaxable);
+      const open = !(currentAge > 0 && accessAge > 0) || currentAge + y >= accessAge;
+      if (open || !taxFreeGainsLocked) { curRoth = take(curRoth); rothBasis = Math.min(rothBasis, curRoth); }
+      else { const t = Math.min(Math.max(Math.min(rothBasis, curRoth), 0), need); curRoth -= t; rothBasis -= t; need -= t; }
+      if (open) cur401k = take(cur401k);
+      withdrawn += Math.max(-changeNet, 0) - need;
+      if (need > 0.5 && !broke) broke = { year: y, short: need };
+    }
+    const ownSplit       = taxFreeAnnual != null || pensionAnnual > 0;
+    const k401Contrib    = ownSplit ? 0 : Math.min(toInvest * 0.4, 23000);
+    const rothContrib    = ownSplit ? Math.min(toInvest, taxFreeAnnual ?? 0) : Math.min(toInvest * 0.2, 7000);
+    const taxableContrib = toInvest - k401Contrib - rothContrib;
+    const pension        = (pensionAnnual + employerAnnual * pay) * share;
+    flows.push({ year: y, saved: toInvest + pension, withdrawn: inChange ? Math.max(-changeNet, 0) - need : 0 });
+    if (y === 0) firstYearInvested = toInvest + pension;
+    totalContributed += toInvest + pension;
+    rothBasis += rothContrib;
+    cur401k    = cur401k    * (1 + growthRate) + k401Contrib + pension;
     curRoth    = curRoth    * (1 + growthRate) + rothContrib;
     curTaxable = curTaxable * (1 + growthRate) + taxableContrib;
-    curCash    = curCash    * (1 + growthRate);
-    if (curDebt > 0) {
-      const interest = curDebt * 0.05;
-      const payment  = Math.min(curDebt + interest, Math.max(annualSavings * 0.3, 0));
-      curDebt = Math.max(0, curDebt + interest - payment);
-    }
-    if (curMort > 0) {
-      const mInt = curMort * 0.065;
+    curCash    = curCash    * (1 + cashGrowthRate);
+    if (loans) {
+      for (const l of loans) if (l.balance > 0) l.balance = Math.max(0, l.balance - Math.max(0, l.monthly * 12 - l.balance * l.rate));
+      curMort = loans.reduce((s, l) => s + l.balance, 0);
+    } else if (curMort > 0) {
+      const mInt = curMort * mortgageRate;
       const prin = Math.max(0, annualMortgage - mInt);
       curMort = Math.max(0, curMort - prin);
     }
   }
-  return { data, fireYear, fireTarget, annualSavings };
+  // A path that runs out of reachable money before freedom has no freedom date: the gap was real (D-66).
+  const reached = broke && (fireYear === null || fireYear > broke.year) ? null : fireYear;
+  return { data, cashGrowthRate, fireYear: reached, fireTarget, annualSavings, firstYearInvested, totalYear, bridge, broke, withdrawn, flows };
 }
 
 /**
  * The freedom date exactly as Home shows it, for anywhere else that needs it
  * (Plan shows it beside the assumptions that move it). One function, so the
- * two screens cannot drift: same expenses, target spending, cash including
- * linked accounts, tax settings and growth.
+ * two screens cannot drift: same expenses, target spending, balances
+ * (connected accounts replacing typed ones), tax settings and growth.
  */
-function freedomProjection({
-  income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
-  growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-  taxEnabled, retirementTaxRate, rothPct,
-}: {
+function freedomProjection(args: FreedomArgs) {
+  const result = calcProjection(projectionInputs(args));
+  return { ...result, exactDate: exactFreedomDateFrom(result.data, result.fireYear, result.fireTarget) };
+}
+
+type FreedomArgs = {
   income: number; expenses: Record<string, number>; k401: number; rothIRA: number; taxable: number;
   cashSavings: number; totalDebt: number; mortgageBalance: number; mortgageMonthly: number;
   growthRate: number; withdrawalRate: number; plaidAccounts: PlaidAccount[];
   retirementCityCol: number; lifestyleMultiplier: number; monthlyWorkCosts?: number;
+  /** Annual living costs where they live now, so a retirement city scales their own spending (D-82). */
+  currentCityCol?: number;
   taxEnabled: boolean; retirementTaxRate: number; rothPct: number;
-}) {
+  plan?: PlanSettings;
+  /** Spending account switches (D-29); needs remain accepted for callers predating D-95. */
+  spendToggles?: Record<string, boolean>; safetyNeeds?: number;
+  /** The contribution ladder's debts with their typed rates (lib/freedom-debt). */
+  ladderDebts?: { name: string; balance: number; ratePct: number }[];
+  /** Life changes on top of the plan (Compare, D-69), already as the engine's dated changes. */
+  changes?: { startYear: number; endYear?: number; workShare?: number; annualIncome?: number; annualSpend?: number; addIncome?: number; addSpend?: number; once?: number }[];
+};
+
+/**
+ * What the freedom date is projected from. Home's "what if" moves and its
+ * spending warnings start from these too and change one thing, so a move's
+ * years are the move's alone: they used to leave the tax settings out, and
+ * every move looked better by the difference (D-32).
+ */
+function projectionInputs({
+  income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
+  growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
+  currentCityCol = 0, taxEnabled, retirementTaxRate, rothPct, plan, changes, spendToggles = {}, ladderDebts = [],
+}: FreedomArgs) {
   const monthlyExpenses = Object.entries(expenses)
     .filter(([k]) => !k.startsWith("_"))
     .reduce((s, [, v]) => s + (v || 0), 0);
   // Work costs disappear at retirement → FIRE target uses adjusted spend.
   const retirementMonthlyExpenses = monthlyWorkCosts ? Math.max(0, monthlyExpenses - monthlyWorkCosts) : monthlyExpenses;
-  const targetMonthlyExpenses = retirementCityCol > 0
-    ? (retirementCityCol * lifestyleMultiplier) / 12
-    : monthlyWorkCosts ? retirementMonthlyExpenses : undefined;
-  const plaidAssets = plaidAccounts
-    .filter(a => a.type === "depository" || a.type === "investment")
-    .reduce((s, a) => s + (a.balance_current ?? 0), 0);
-  const result = calcProjection({
+  // What you set to spend once free comes first; then your spending moved to a
+  // retirement city (D-82); then today's spending.
+  const cityMonthly = retirementLocationMonthlySpend({ monthlySpend: retirementMonthlyExpenses, currentCityCol, retirementCityCol, lifestyleMultiplier });
+  const targetMonthlyExpenses = (plan?.retirementAnnualSpend ?? 0) > 0 ? plan!.retirementAnnualSpend! / 12
+    : cityMonthly ?? (monthlyWorkCosts ? retirementMonthlyExpenses : undefined);
+  // Moving before freedom changes spending, and pay if they said so, from that year (D-82).
+  const move = moveBeforeFreedomChange({ moveYear: plan?.moveYear, thisYear: new Date().getFullYear(), monthlySpend: monthlyExpenses,
+    currentCityCol, retirementCityCol, payMonthly: plan?.movePayMonthly });
+  return {
+    ...plan,
     annualIncome: income * 12, monthlyExpenses,
-    k401, rothIRA, taxable, cashSavings: cashSavings + plaidAssets, totalDebt, mortgageBalance, mortgageMonthly,
+    ...effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts }),
+    // Safety cash counts once, at cash returns; spending accounts stay out (D-95).
+    ...retirementCash(plaidAccounts, spendToggles, cashSavings),
+    // Loans, plus cards carried at a rate, at their own rates (lib/freedom-debt).
+    ...(({ otherDebt, mortgage }) => {
+      const debt = freedomDebt({ otherDebt, ladderDebts,
+        cards: plaidAccounts.filter((a) => a.type === "credit").map((a) => ({ name: a.name || a.official_name || "Credit card", balance: a.balance_current ?? 0 })) });
+      return { totalDebt: debt.balance, debtRate: debt.rate, mortgageBalance: mortgage };
+    })(effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts })),
+    mortgageMonthly,
     growthRate, withdrawalRate, targetMonthlyExpenses,
-    taxEnabled, retirementTaxRate, rothPct,
-  });
-  return { ...result, exactDate: exactFreedomDateFrom(result.data, result.fireYear, result.fireTarget) };
+    taxEnabled, retirementTaxRate, rothPct, changes: move ? [move, ...(changes ?? [])] : changes,
+  };
 }
 
 /**
@@ -447,6 +663,12 @@ function exactFreedomDateFrom(data: Record<string, number>[], fireYear: number |
   if (!prevPoint || !curPoint) return null;
   const prevVal = prevPoint["Investable"] ?? 0;
   const curVal = curPoint["Investable"] ?? 0;
+  const msPerYearExact = 365.25 * 24 * 60 * 60 * 1000;
+  // Past the target today: work is already optional, as the first result said. Year 0 is never the
+  // freedom year (it guards the zero-input moment), so without this it read as a year from now.
+  if (fireYear === 1 && prevVal >= fireTarget) return new Date();
+  // Already past the target the year before: freedom waited for the bridge (D-59), so it is this year exactly.
+  if (prevVal >= fireTarget) return new Date(Date.now() + fireYear * msPerYearExact);
   const span = curVal - prevVal;
   const fraction = span > 0 ? Math.min(1, Math.max(0, (fireTarget - prevVal) / span)) : 0;
   const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
@@ -492,35 +714,8 @@ function NumberInput({ value, onChange, placeholder = "0", prefix = "$", currenc
   );
 }
 
-function FieldRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-      <label style={{ fontSize: 11, fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", color: "#64748B", fontWeight: 700 }}>
-        {label}
-      </label>
-      {children}
-      {hint && <span style={{ fontSize: 11, color: "#94A3B8", fontStyle: "italic" }}>{hint}</span>}
-    </div>
-  );
-}
 
-/* Wraps the kit's Stat primitive. Stat renders the figure in DM Mono with
-   tabular numerals, which is what makes a row of balances line up on the
-   decimal instead of drifting — this used to be Manrope with hand-typed hex
-   per card, so the four KPI figures never aligned. */
-function KpiCard({ label, value, sub, tone = "default", glow = false }: {
-  label: string; value: React.ReactNode; sub?: string;
-  tone?: "default" | "positive" | "negative" | "freedom"; glow?: boolean;
-}) {
-  return (
-    <div className={`uf-card ${glow ? "uf-card-glow" : ""}`} style={{ padding: "18px 20px" }}>
-      <Stat label={label} value={value} delta={sub} deltaTone="default" tone={tone} size="lg" />
-    </div>
-  );
-}
-
-
-function SectionLabel({ icon, text, color = "#064E3B" }: { icon: string; text: string; color?: string }) {
+function SectionLabel({ icon, text, color = "var(--uf-ink)" }: { icon: string; text: string; color?: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
       <span style={{ fontSize: 14 }}>{icon}</span>
@@ -530,7 +725,12 @@ function SectionLabel({ icon, text, color = "#064E3B" }: { icon: string; text: s
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenOnboarding, onFreedomDateChange }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60, budget = {}, expectedRows = [], onExpectedAdded, onSetupStep }: {
+  spreadCategories?: string[];
+  /** Typed on the phone; in net worth only (audit round 2). */
+  homeValue?: number;
+  /** The age Coast FIRE counts to: pension access, as in Plan → Compare. */
+  coastRetireAge?: number;
   userId: string;
   income: number; expenses: Expenses; k401: number; rothIRA: number;
   taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
@@ -539,10 +739,12 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   prevIncome?: number; prevExpenses?: number; userName?: string;
   displayCurrency: string; displayRates: Record<string, number>;
   plaidAccounts?: PlaidAccount[];
-  retirementCityCol?: number; lifestyleMultiplier?: number;
+  retirementCityCol?: number; retirementCityName?: string; lifestyleMultiplier?: number;
   fireAge?: number;
   nwSnapshots?: { portfolio_value: number; captured_at: string }[];
-  recentTransactions?: { date: string; amount: number; refund_amount?: number; currency: string; transaction_type?: string; tags?: string[] }[];
+  recentTransactions?: { date: string; amount: number; refund_amount?: number; currency: string; transaction_type?: string; tags?: string[]; description?: string; category?: string; plaid_account_id?: string | null }[];
+  /** Upcoming expense bills (USD), which date this month's forecast and plan line, as on Transactions. */
+  bills?: Bill[];
   /** What the contribution ladder reads: balances, measured needs, the
    *  growth assumption. Home reports the ladder; it never edits it. */
   contributionFacts?: AccountFacts;
@@ -551,52 +753,26 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   histMonthsCount?: number;
   userJoinedAt?: string;
   monthlyNeedsExpenses?: number;
+  spendToggles?: Record<string, boolean>;
   monthlyWorkCosts?: number;
   taxEnabled?: boolean;
   retirementTaxRate?: number;
   rothPct?: number;
+  /** Free to spend until payday (D-29); read-only here, explained in Money. */
+  freeResult?: FreeToSpend | null;
+  onOpenFreeToSpend?: () => void;
   onTabChange?: (tab: TabKey) => void;
-  onOpenOnboarding?: () => void;
+  /** Plan → Compare, for "Move" on a lease in Today. */
+  onOpenCompare?: () => void;
   onFreedomDateChange?: (date: Date | null) => void;
+  /** Plan settings (D-59), so Home's date is Plan's. */
+  plan?: PlanSettings;
+  /** Get set up: the budget as typed, Calendar as stored, and where each step opens. */
+  budget?: Record<string, unknown>;
+  expectedRows?: { transaction_type: string; recurrence?: string | null }[];
+  onExpectedAdded?: (rows: AddedExpected[]) => void;
+  onSetupStep?: (step: SetupStepId) => void;
 }) {
-  const [chartPeriod, setChartPeriod] = useState<"5Y" | "15Y" | "All">("5Y");
-  const [showBreakdown, setShowBreakdown] = useState(true);
-
-  // Home's arrangement. Loaded once per user; saved on every change rather
-  // than behind a Save button, because there is nothing to lose by saving and
-  // an arrangement that silently reverted would be worse than one that did
-  // not move. A failed save leaves the on-screen layout alone — the next
-  // change retries it.
-  const [layout, setLayout] = useState<DashboardLayout>(() => defaultLayout());
-  const [editing, setEditing] = useState(false);
-  const [savingLayout, setSavingLayout] = useState(false);
-
-  useEffect(() => {
-    if (!userId) return;
-    supabase
-      .from("profiles")
-      .select("dashboard_layout")
-      .eq("user_id", userId)
-      .maybeSingle()
-      .then(({ data }) => setLayout(normaliseLayout(data?.dashboard_layout)));
-  }, [userId]);
-
-  const persistLayout = useCallback(async (next: DashboardLayout) => {
-    setLayout(next);
-    if (!userId) return;
-    setSavingLayout(true);
-    try {
-      await supabase.from("profiles").update({ dashboard_layout: next }).eq("user_id", userId);
-    } catch {
-      // Keep what is on screen. A lost preference is a small thing; a card
-      // jumping back under the user's cursor is not.
-    } finally {
-      setSavingLayout(false);
-    }
-  }, [userId]);
-
-  // Live updates stay local while dragging; the save happens once on drop.
-  const { draggingId, register, begin } = useCardSort(layout, setLayout, persistLayout);
 
   const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
   const chartMonthTickFormatter = useMemo(() => new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit" }), []);
@@ -616,46 +792,53 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 
   // Emergency fund covers needs only (essentials that remain during an emergency).
   // Falls back to total expenses when the user hasn't tagged any needs yet.
-  const efMonthlyBase = monthlyNeedsExpenses ?? monthlyExpenses;
+  // The emergency fund as Contributions defines it (D-34): its accounts and
+  // needs basis, so the safety runway and the ladder never disagree.
+  const contributionPlan = useContributionPlan();
+  const ladderEf = contributionFacts ? emergencyFundFromPlan(contributionPlan, contributionFacts) : null;
+  const efMonthlyBase = ladderEf && ladderEf.monthlyNeeds > 0 ? ladderEf.monthlyNeeds : monthlyNeedsExpenses ?? monthlyExpenses;
 
   // Work costs disappear at retirement → FIRE target uses adjusted spend.
   const retirementMonthlyExpenses = monthlyWorkCosts
     ? Math.max(0, monthlyExpenses - monthlyWorkCosts)
     : monthlyExpenses;
 
-  const targetMonthlyExpenses = retirementCityCol > 0
-    ? (retirementCityCol * lifestyleMultiplier) / 12
-    : monthlyWorkCosts ? retirementMonthlyExpenses : undefined;
+  const currentCityCol = CITIES.find((c) => c.name === cityName)?.col ?? 0;
+  const targetMonthlyExpenses = retirementLocationMonthlySpend({ monthlySpend: retirementMonthlyExpenses, currentCityCol, retirementCityCol, lifestyleMultiplier })
+    ?? (monthlyWorkCosts ? retirementMonthlyExpenses : undefined);
 
-  const plaidAssets = plaidAccounts
-    .filter(a => a.type === "depository" || a.type === "investment")
-    .reduce((s, a) => s + (a.balance_current ?? 0), 0);
-  const totalCash = cashSavings + plaidAssets;
-
-  // Shared with Plan's freedom date (freedomProjection), so the two can't disagree.
+  // Shared with Plan's freedom date (freedomProjection), so the two can't
+  // disagree; the moves and warnings below start from the same inputs.
+  const baseInputs = useMemo(() => projectionInputs({
+    income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
+    growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
+    currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan, spendToggles, safetyNeeds: monthlyNeedsExpenses, ladderDebts: contributionPlan?.ladder?.debts ?? [],
+  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan, spendToggles, monthlyNeedsExpenses, contributionPlan]);
+  const balances = { k401: baseInputs.k401, rothIRA: baseInputs.rothIRA, taxable: baseInputs.taxable, cash: baseInputs.cashSavings };
   const { data, fireYear, fireTarget, annualSavings } = useMemo(() => freedomProjection({
     income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
     growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts,
-    taxEnabled, retirementTaxRate, rothPct,
-  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, taxEnabled, retirementTaxRate, rothPct]);
+    currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan, spendToggles, safetyNeeds: monthlyNeedsExpenses, ladderDebts: contributionPlan?.ladder?.debts ?? [],
+  }), [income, expenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, monthlyWorkCosts, currentCityCol, taxEnabled, retirementTaxRate, rothPct, plan, spendToggles, monthlyNeedsExpenses, contributionPlan]);
 
   const nextMoveScenarios = useMemo(() => {
     if (!(income > 0 && fireYear !== null)) return null;
     return [
       {
-        label: "Save $500/mo more",
-        detail: "Redirect $500/month from spending to investments",
-        result: calcProjection({ annualIncome: income * 12, monthlyExpenses: Math.max(0, monthlyExpenses - 500), k401, rothIRA, taxable, cashSavings: totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
+        // In the person's currency, not a dollar sign written into the copy.
+        label: `Save ${fmt(500, displayCurrency, displayRates)} a month more`,
+        detail: `Move ${fmt(500, displayCurrency, displayRates)} a month from expenses to investing`,
+        result: calcProjection({ ...baseInputs, monthlyExpenses: Math.max(0, monthlyExpenses - 500) }),
       },
       {
         label: "Cut expenses 10%",
-        detail: `Reduce monthly spending from spending to ${Math.round(monthlyExpenses * 0.9).toLocaleString()}`,
-        result: calcProjection({ annualIncome: income * 12, monthlyExpenses: monthlyExpenses * 0.9, k401, rothIRA, taxable, cashSavings: totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
+        detail: `Bring expenses down to ${fmt(monthlyExpenses * 0.9, displayCurrency, displayRates)} a month`,
+        result: calcProjection({ ...baseInputs, monthlyExpenses: monthlyExpenses * 0.9 }),
       },
       {
         label: "Grow income 10%",
         detail: "Extra income goes straight to your date",
-        result: calcProjection({ annualIncome: income * 1.1 * 12, monthlyExpenses, k401, rothIRA, taxable, cashSavings: totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses }),
+        result: calcProjection({ ...baseInputs, annualIncome: income * 1.1 * 12 }),
       },
     ]
       .map(s => ({
@@ -665,32 +848,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         newRetireYear: s.result.fireYear !== null ? new Date().getFullYear() + s.result.fireYear : null,
       }))
       .sort((a, b) => b.deltaYears - a.deltaYears);
-  }, [income, monthlyExpenses, fireYear, k401, rothIRA, taxable, totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
+  }, [income, monthlyExpenses, fireYear, baseInputs, displayCurrency, displayRates]);
 
-  const investable  = k401 + rothIRA + taxable + totalCash;
-  const savingsRate = income > 0 ? ((annualSavings / 12) / income) * 100 : 0;
+  const investable  = balances.k401 + balances.rothIRA + balances.taxable + balances.cash;
   const progress    = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
 
-  const milestones = useMemo(() => {
-    if (fireTarget <= 0) return [] as Array<{ key: string; label: string; value: number; achieved: boolean }>;
-    const fixed = [
-      { key: "start", label: "Journey Started", value: 1 },
-      { key: "10k",   label: "First $10k",       value: 10_000 },
-      { key: "100k",  label: "Six Figures",       value: 100_000 },
-    ];
-    const pct = [
-      { key: "quarter",  label: "Foundation Built", value: fireTarget * 0.25 },
-      { key: "half",     label: "Halfway Free",      value: fireTarget * 0.5  },
-      { key: "approach", label: "On the Approach",   value: fireTarget * 0.75 },
-      { key: "fi",       label: "Work is Optional",  value: fireTarget        },
-    ].filter(m => m.value > 100_000);
-    // Include $1M "2 Comma Club" unless it overlaps closely with a %-based milestone
-    const oneMil = { key: "1m", label: "2 Comma Club", value: 1_000_000 };
-    const tooClose = pct.some(m => Math.abs(m.value - 1_000_000) / 1_000_000 < 0.12);
-    return [...fixed, ...(!tooClose ? [oneMil] : []), ...pct]
-      .sort((a, b) => a.value - b.value)
-      .map(m => ({ ...m, achieved: investable >= m.value }));
-  }, [investable, fireTarget]);
   // Memoized so its reference is stable across renders. Downstream memos depend
   // on it (chartData, exactFreedomDate); a fresh array every render made
   // exactFreedomDate recompute a new Date() each render, which the freedom-date
@@ -920,46 +1082,103 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     ? `${DAY_NAMES[now.getDay()]} · ${MONTH_NAMES[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`
     : null;
 
-  // Chart period filter
-  const periodData = useMemo(() => {
-    const limit = chartPeriod === "5Y" ? 5 : chartPeriod === "15Y" ? 15 : Number.POSITIVE_INFINITY;
-    return chartData.filter(entry => entry.phase !== "projection" || ((entry.yearsOut ?? 0) <= limit));
-  }, [chartData, chartPeriod]);
+  // One point a year on the freedom curve: the last reading of each calendar
+  // year, actual where it has happened and projected after, ending at the
+  // freedom year so the line finishes on the FIRE number. A move to the
+  // retirement city (D-82) is marked with its flag.
+  const thisYear = new Date().getFullYear();
+  const freeYear = exactFreedomDate ? exactFreedomDate.getFullYear() : null;
+  const retireCity = retirementCityName && retirementCityName !== cityName ? retirementCityName : "";
+  // An earlier move counts only where the maths can price it (both cities listed), as in moveBeforeFreedomChange.
+  const earlyMove = plan?.moveYear && currentCityCol > 0 && retirementCityCol > 0 && (freeYear == null || plan.moveYear < freeYear) ? plan.moveYear : null;
+  const moveYear = retireCity ? earlyMove ?? freeYear : null;
+  const moveFlagUri = retireCity ? flagUri(CITIES.find((c) => c.name === retireCity)?.flag ?? "") : null;
+  const yearBars = useMemo(() => {
+    const byYear = new Map<number, { year: number; value: number; actual: boolean }>();
+    for (const e of chartData) {
+      const year = e.phase === "today" ? thisYear : Number(e.label.slice(-4));
+      const value = e.actual ?? e.projected;
+      if (!Number.isFinite(year) || value == null) continue;
+      if (year === thisYear && e.phase !== "today" && byYear.get(year)?.actual) continue;
+      if (freeYear != null && year > freeYear) continue;
+      byYear.set(year, { year, value, actual: e.phase !== "projection" });
+    }
+    return Array.from(byYear.values()).map((b) => ({ ...b, label: String(b.year) }));
+  }, [chartData, thisYear, freeYear]);
+  const todayPoint = yearBars.find((b) => b.year === thisYear) ?? yearBars[0];
 
-  // Milestone bubble markers — first point in periodData where portfolio value crosses each milestone
-  const milestoneDots = useMemo(() => {
-    if (!periodData.length || !milestones.length) return [] as Array<{ shortLabel: string; chartValue: number; label: string; achieved: boolean }>;
-    return milestones
-      .filter(m => m.key !== "start")
-      .flatMap(m => {
-        for (let i = 0; i < periodData.length; i++) {
-          const entry = periodData[i];
-          const val = entry.actual ?? entry.projected ?? 0;
-          if (val >= m.value) {
-            return [{ shortLabel: entry.shortLabel, chartValue: val, label: m.label, achieved: m.achieved }];
-          }
-        }
-        return [];
-      });
-  }, [periodData, milestones]);
+  // Milestones drawn on the curve, so a far-off date still shows the steps
+  // between here and there: the first year past a quarter and a half of the
+  // FIRE number, and Coast FIRE, the first year the pot would reach the number
+  // by pension age with no more saving (lib/life-changes coastYear, as in
+  // Compare). Coast needs an age, so it is skipped without one.
+  const milestones = useMemo(() => {
+    if (!(fireTarget > 0) || yearBars.length < 2) return [];
+    const out: { year: number; value: number; label: string }[] = [];
+    const firstAt = (share: number) => yearBars.find((b) => b.value >= fireTarget * share);
+    const startValue = yearBars[0].value;
+    for (const [share, label] of [[0.25, "25%"], [0.5, "50%"]] as const) {
+      const b = firstAt(share);
+      if (b && startValue < fireTarget * share && b.year !== freeYear) out.push({ year: b.year, value: b.value, label });
+    }
+    const ahead = yearBars.filter((b) => b.year >= thisYear);
+    const coast = coastYear(ahead.map((b) => b.value), fireTarget, growthRate, fireAge, coastRetireAge, ahead.map(b => data[b.year - thisYear]?.["Cash"] ?? 0), baseInputs.cashGrowthRate);
+    const coastBar = coast != null && coast > 0 ? ahead[coast] : undefined;
+    if (coastBar && coastBar.year !== freeYear) out.push({ year: coastBar.year, value: coastBar.value, label: "Coast FIRE" });
+    // Labels sit above their dots, so two milestones a year or two apart would
+    // print over each other (and over "You" on a phone). Keep the earliest of
+    // any crowded pair: a fifth of the path apart, never closer than two years.
+    const span = (freeYear ?? yearBars[yearBars.length - 1].year) - thisYear;
+    const minGap = Math.max(2, Math.ceil(span / 5));
+    let last = thisYear;
+    return out.sort((a, b) => a.year - b.year).filter((m) => {
+      if (m.year - last < minGap) return false;
+      last = m.year;
+      return true;
+    });
+  }, [yearBars, fireTarget, fireAge, growthRate, thisYear, freeYear, coastRetireAge, data, baseInputs.cashGrowthRate]);
 
   // KPI trends — cashflow transactions only
   const hasActuals       = actualIncome > 0 || actualExpenses > 0;
 
-  // Status pill
-  const statusLabel = savingsRate >= 50 ? "Ahead of schedule" : savingsRate >= 25 ? "On track" : income > 0 ? "Needs attention" : "No data yet";
-  const statusColor = savingsRate >= 50 ? "var(--uf-pos)" : savingsRate >= 25 ? "var(--uf-green-700)" : income > 0 ? "var(--uf-warn)" : "var(--uf-ink-3)";
 
   const bestMove = nextMoveScenarios?.[0] ?? null;
   const actualOrPlannedIncome = hasActuals ? actualIncome : income;
   const actualOrPlannedExpenses = hasActuals ? actualExpenses : monthlyExpenses;
   const actualOrPlannedSavings = actualOrPlannedIncome - actualOrPlannedExpenses;
   const goalContribution = Math.max(annualSavings / 12, 0);
+  // This month the way Transactions reads it (D-31, D-32): the plan to date
+  // puts each bill on its day and spreads the rest of the budget evenly, and
+  // the month's forecast is spent so far, plus bills still due, plus everyday
+  // spending at the usual rate. Dividing spent-so-far by the share of the
+  // month gone spread rent across every day: $1,380 on the 2nd became $21,000.
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const todayIso = `${monthKey}-${String(now.getDate()).padStart(2, "0")}`;
+  const monthEndIso = `${monthKey}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, "0")}`;
+  const spendRows = useMemo(() => recentTransactions.filter((t) => t.transaction_type === "expense")
+    .map((t) => ({ date: t.date.slice(0, 10), usd: toUSD(netAmt(t), t.currency ?? displayCurrency, displayRates), description: t.description ?? "", category: t.category ?? "other" })),
+  [recentTransactions, displayCurrency, displayRates]);
+  const monthCategories: MonthCategory[] = useMemo(() => {
+    const byCat = new Map<string, number>();
+    for (const r of spendRows) if (r.date.startsWith(monthKey)) byCat.set(r.category, (byCat.get(r.category) ?? 0) + r.usd);
+    const customs = loadCatCustomizations();
+    return [...byCat].filter(([, usd]) => usd > 0).map(([key, usd]) => {
+      const def = EXPENSE_CATEGORIES.find((c) => c.key === key);
+      const { color } = resolveDisplay({ color: def?.color ?? "#8a7c68", emoji: def?.emoji ?? "📦" }, customs, key);
+      return { key, label: def?.label ?? key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()), color, usd };
+    }).sort((a, b) => b.usd - a.usd);
+  }, [spendRows, monthKey]);
+  const expectedSpendToDate = monthlyExpenses > 0 ? budgetPath([monthKey], monthlyExpenses, bills)[now.getDate() - 1] ?? 0 : 0;
   const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const elapsedFraction = Math.min(1, Math.max(now.getDate() / monthDays, 0.05));
-  const expectedSpendToDate = monthlyExpenses * elapsedFraction;
+  const elapsedFraction = monthlyExpenses > 0 ? Math.min(1, expectedSpendToDate / monthlyExpenses) : 0; // share of the plan due by today
   const spendingDeltaToDate = hasActuals ? actualExpenses - expectedSpendToDate : 0;
-  const projectedMonthSpend = hasActuals && elapsedFraction > 0 ? actualExpenses / elapsedFraction : monthlyExpenses;
+  const projectedMonthSpend = useMemo(() => {
+    if (!hasActuals) return monthlyExpenses;
+    const rate = everydayRate(spendRows, bills, monthKey) ?? rateSoFar(spendRows, bills, todayIso, Number(todayIso.slice(8, 10)));
+    return forecastPath(daysOfMonths([monthKey]), todayIso, actualExpenses, bills, rate).at(-1) ?? actualExpenses;
+  }, [hasActuals, monthlyExpenses, spendRows, bills, monthKey, todayIso, actualExpenses]);
+  // Bills in Upcoming still owed this month (from each one's stored due date), so "left" matches Transactions and Free to spend.
+  const billsDueThisMonth = bills.filter((b) => b.id).reduce((s, b) => s + occurrences(b, b.due, monthEndIso).length * b.usd, 0);
   const projectedSpendStatus = hasActuals
     ? spendingDeltaToDate > monthlyExpenses * 0.05
       ? "Running above plan"
@@ -969,21 +1188,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     : "Add transactions to compare against plan";
   const overspendProjection = useMemo(() => {
     if (!hasActuals || income <= 0 || fireYear === null) return null;
-    return calcProjection({
-      annualIncome: income * 12,
-      monthlyExpenses: Math.max(projectedMonthSpend, 0),
-      k401,
-      rothIRA,
-      taxable,
-      cashSavings: totalCash,
-      totalDebt,
-      mortgageBalance,
-      mortgageMonthly,
-      growthRate,
-      withdrawalRate,
-      targetMonthlyExpenses,
-    });
-  }, [hasActuals, income, fireYear, projectedMonthSpend, k401, rothIRA, taxable, totalCash, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
+    return calcProjection({ ...baseInputs, monthlyExpenses: Math.max(projectedMonthSpend, 0) });
+  }, [hasActuals, income, fireYear, projectedMonthSpend, baseInputs]);
   const spendingImpactYears = overspendProjection && fireYear !== null && overspendProjection.fireYear !== null
     ? overspendProjection.fireYear - fireYear
     : 0;
@@ -993,18 +1199,10 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       ? `Could bring freedom forward about ${Math.abs(spendingImpactYears) >= 1.5 ? `${Math.abs(spendingImpactYears).toFixed(1)} years` : `${Math.round(Math.abs(spendingImpactYears) * 12)} months`}`
       : "No meaningful change to your freedom date yet";
   const manualRetirementTotal = k401 + rothIRA;
-  const connectedRetirementTotal = plaidAccounts
-    .filter(isRetirementInvestmentAccount)
-    .reduce((sum, account) => sum + (account.balance_current ?? 0), 0);
-  const connectedBrokerageTotal = plaidAccounts
-    .filter(isBrokerageInvestmentAccount)
-    .reduce((sum, account) => sum + (account.balance_current ?? 0), 0);
-  const connectedCashTotal = plaidAccounts
-    .filter((account) => account.type === "depository")
-    .reduce((sum, account) => sum + (account.balance_current ?? 0), 0);
-  const retirementAccounts = connectedRetirementTotal > 0 ? connectedRetirementTotal : manualRetirementTotal;
-  const brokerageAssets = connectedBrokerageTotal > 0 ? connectedBrokerageTotal : taxable;
-  const displayCashAssets = connectedCashTotal > 0 ? connectedCashTotal : cashSavings;
+  // The same balances as the freedom date (effectiveBalances), so the ring and the hero agree.
+  const retirementAccounts = balances.k401 + balances.rothIRA;
+  const brokerageAssets = balances.taxable;
+  const displayCashAssets = balances.cash;
   const positiveMoneyTotal = Math.max(retirementAccounts, 0) + Math.max(brokerageAssets, 0) + Math.max(displayCashAssets, 0);
   const retirementPct = positiveMoneyTotal > 0 ? (Math.max(retirementAccounts, 0) / positiveMoneyTotal) * 100 : 0;
   const brokeragePct = positiveMoneyTotal > 0 ? (Math.max(brokerageAssets, 0) / positiveMoneyTotal) * 100 : 0;
@@ -1015,21 +1213,95 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const moneyMixSourceLabel = plaidAccounts.some((account) => account.type === "depository" || account.type === "investment")
     ? "Connected balances shown where available"
     : "Using manual balances";
-  const currentNetWorth = investable - totalDebt - mortgageBalance;
-  const growthSummary = retireYear
-    ? statusLabel === "Ahead of schedule"
-      ? `At this pace, you’re tracking a little ahead of ${retireYear}.`
-      : statusLabel === "On track"
-        ? `Your current path still points to ${retireYear}.`
-        : `Your current path needs a nudge to protect ${retireYear}.`
-    : "Finish your setup to see your projected freedom date.";
+  // Debts by the same rule as everywhere (effectiveDebts), cards included: they are owed.
+  const debtsNow = effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts });
+  // Net worth is everything owned less everything owed, all cash and a typed home included, the same
+  // figure as the Net worth tab and the phone (lib/net-worth). `investable` leaves out the safety pot (audit round 3).
+  const ownedNow = effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts });
+  const currentNetWorth = ownedNow.k401 + ownedNow.rothIRA + ownedNow.taxable + ownedNow.cashSavings + homeValue - debtsNow.otherDebt - debtsNow.mortgage - debtsNow.cards;
+  // The one "left", the same as Budget and the phone (lib/everyday-left, audit round 3).
+  const monthKeyNow = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  const monthRowsNow = recentTransactions.filter((t) => t.date.startsWith(monthKeyNow))
+    .map((t) => ({ ...t, usd: toUSD(netAmt(t), t.currency ?? displayCurrency, displayRates) }));
+  const monthLeft = everydayLeft({ budget: expenses as Record<string, number>, bills, spreadCategories, monthRows: monthRowsNow });
+  // The net worth tile's line: invested at each of the last 12 month ends (the snapshots behind the curve).
+  const investedByMonth = useMemo(() => {
+    const byMonth = new Map<string, number>();
+    for (const snap of [...nwSnapshots].sort((x, y) => x.captured_at.localeCompare(y.captured_at))) {
+      if (snap.portfolio_value > 0) byMonth.set(snap.captured_at.slice(0, 7), snap.portfolio_value);
+    }
+    return [...byMonth.values()].slice(-12);
+  }, [nwSnapshots]);
+  // Home's "Until payday" (D-90): cash less bills before payday, the phone's rule; the budget card stands in without one.
+  const paydayView = untilPayday(freeResult, bills.map((b) => b.description));
+  // Get set up (lib/setup-steps): read from what the account already has.
+  const setupFacts = useMemo<SetupFacts>(() => ({
+    income, bankLinked: plaidAccounts.length > 0, typedInvestments: k401 + rothIRA + taxable,
+    expected: expectedRows.map((r) => ({ type: r.transaction_type, recurrence: r.recurrence })), budget,
+  }), [income, plaidAccounts.length, k401, rothIRA, taxable, expectedRows, budget]);
+  const setupTxns = useMemo<RawTx[]>(() => recentTransactions
+    .filter((t) => t.transaction_type === "expense" || t.transaction_type === "income")
+    .map((t, i) => ({ id: String(i), date: t.date.slice(0, 10), amount: t.transaction_type === "expense" ? netAmt(t) : t.amount,
+      currency: t.currency, description: t.description ?? "", category: t.category ?? "", transaction_type: t.transaction_type as "expense" | "income" })),
+  [recentTransactions]);
+  // Its line (lib/payday-line): the counted accounts' rows since last pay, then the bills ahead.
+  const paydayLineView = useMemo(() => {
+    if (!paydayView || !freeResult?.cash) return null;
+    // Rows carry Plaid's own account id, so map the counted accounts to it.
+    const counted = new Set(freeResult.cash.accounts.map((a) => a.id));
+    const ids = new Set(plaidAccounts.filter((a) => counted.has(a.id)).map((a) => a.plaid_account_id).filter((v): v is string => !!v));
+    const linked = recentTransactions.some((t) => t.plaid_account_id && ids.has(t.plaid_account_id));
+    const rows = recentTransactions
+      .filter((t) => (linked ? !!t.plaid_account_id && ids.has(t.plaid_account_id) : !t.plaid_account_id))
+      .filter((t) => t.transaction_type === "expense" || t.transaction_type === "income")
+      .map((t) => {
+        const usd = toUSD(t.transaction_type === "expense" ? netAmt(t) : t.amount, t.currency ?? displayCurrency, displayRates);
+        return { date: t.date.slice(0, 10), out: t.transaction_type === "expense" ? usd : -usd, category: t.category ?? null };
+      });
+    const biggestPay = Math.max(0, ...rows.filter((r) => r.out < 0).map((r) => -r.out));
+    const ahead = paydayView.bills.map((b) => ({ iso: b.iso, usd: Math.abs(b.amount), description: b.description, category: b.category ?? guessBillCategory(b.description) }));
+    if (paydayView.cardsOwed > 0) ahead.unshift({ iso: todayIso, usd: paydayView.cardsOwed, description: "Card balance", category: "credit_card" });
+    return paydayLine({ today: now, cash: paydayView.cash, paydayIso: paydayView.payday.iso, bills: ahead, rows, payMin: biggestPay * 0.5 });
+  }, [paydayView, freeResult, plaidAccounts, recentTransactions, displayCurrency, displayRates, todayIso, now]);
+  const categoryIcon = (category: string | null, description?: string) => {
+    const key = category ?? guessBillCategory(description ?? null);
+    const def = EXPENSE_CATEGORIES.find((c) => c.key === key);
+    return key ? resolveDisplay({ color: def?.color ?? "#8a7c68", emoji: def?.emoji ?? "🧾" }, loadCatCustomizations(), key).emoji : "🧾";
+  };
+  // Home's pace line: everyday spend so far, day by day, by the same rule as "left".
+  const paceSoFar = everydayByDay({ bills, spreadCategories, monthRows: monthRowsNow, days: now.getDate() });
+  // The next three bills from today, for the date chips under the pace line.
+  const in45 = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 45);
+  const in45Iso = `${in45.getFullYear()}-${String(in45.getMonth() + 1).padStart(2, "0")}-${String(in45.getDate()).padStart(2, "0")}`;
+  const nextBills = bills
+    .flatMap((b) => occurrences(b, todayIso, in45Iso).slice(0, 1).map((date) => ({ label: b.description || "Bill", date, usd: b.usd })))
+    .sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3);
+  // Home's one next move (D-89): over-budget categories first, then a missing
+  // budget, then the contribution ladder's first step, then the best what-if.
+  // Bill and spread (yearly) categories are left out of "over": a bill landing is not overspending.
+  const [snoozeTick, setSnoozeTick] = useState(0);
+  const nextMove = useMemo(() => {
+    void snoozeTick;
+    const billKeys = new Set([...billCategorySet(bills), ...(spreadCategories ?? [])]);
+    const budgetMap = expenses as Record<string, number>;
+    const ladder = contributionFacts ? ladderViewFromPlan(contributionPlan, contributionFacts) : null;
+    return pickNextMove({
+      categories: monthCategories.filter((c) => !billKeys.has(c.key))
+        .map((c) => ({ key: c.key, label: c.label, budget: budgetMap[c.key] ?? 0, spent: c.usd })),
+      hasBudget: Object.entries(budgetMap).some(([k, v]) => !k.startsWith("_") && v > 0),
+      ladder: ladder ? ladder.waterfall.fills : null,
+      fallback: bestMove,
+      fmt: (n) => fmt(n, displayCurrency, displayRates),
+      snoozed: (key) => isSnoozed(key),
+    });
+  }, [snoozeTick, bills, spreadCategories, expenses, contributionFacts, contributionPlan, monthCategories, bestMove, displayCurrency, displayRates]);
   const spendingStatusColor = projectedSpendStatus === "Running above plan" ? "var(--uf-neg)" : projectedSpendStatus === "Running below plan" ? "var(--uf-pos)" : "var(--uf-ink-3)";
   const spendingBarColor = projectedSpendStatus === "Running above plan" ? "var(--uf-neg)" : projectedSpendStatus === "Running below plan" ? "var(--uf-pos)" : "var(--uf-green-700)";
   const spendingProgressPct = monthlyExpenses > 0 ? Math.min((actualOrPlannedExpenses / monthlyExpenses) * 100, 100) : 0;
-  const spendingExpectedPct = hasActuals ? Math.min(elapsedFraction * 100, 100) : 0;
+  const spendingExpectedPct = hasActuals ? Math.min(elapsedFraction * 100, 100) : 0; // the plan to date, bills on their days
   const spendingBarTrackColor = hasActuals ? "var(--uf-surface-2)" : "var(--uf-surface)";
   const investedBalance = Math.max(retirementAccounts, 0) + Math.max(brokerageAssets, 0);
-  const availableCash = Math.max(displayCashAssets, 0);
+  const availableCash = Math.max(ladderEf ? ladderEf.balance : displayCashAssets, 0);
   const emergencyFundHealthyNow = efMonthlyBase > 0 && (availableCash / efMonthlyBase) >= EMERGENCY_FUND_TARGET_MONTHS;
   const hasEverHealthyEmergencyFund = useEmergencyFundHistory(emergencyFundHealthyNow);
   const emergencyFundPlan = getEmergencyFundPlan(availableCash, efMonthlyBase, hasEverHealthyEmergencyFund);
@@ -1037,7 +1309,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const hasInvestmentAccounts = plaidAccounts.some((account) => account.type === "investment") || manualRetirementTotal > 0 || taxable > 0;
   const plannedContributionGap = Math.max(goalContribution - Math.max(actualOrPlannedSavings, 0), 0);
   const investingHeadline = goalContribution > 0
-    ? `Aim to add ${fmtMoney(goalContribution)} this month. Current invested balance is ${fmtMoney(investedBalance, true)}.`
+    // The plan's assumption, not an instruction: what to put in this month is
+    // the Next contribution card's, from cash actually free (D-34).
+    ? `Your plan assumes about ${fmtMoney(goalContribution)} a month invested. Current invested balance is ${fmtMoney(investedBalance, true)}.`
     : investedBalance > 0
       ? `You have ${fmtMoney(investedBalance, true)} invested right now.`
       : "Add an investment account to track this.";
@@ -1061,27 +1335,23 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       const key = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
       const bucket = byKey.get(key);
       if (!bucket) continue;
-      const amount = toUSD(tx.amount, tx.currency ?? displayCurrency, displayRates);
-      if (tx.transaction_type === "income") bucket.income += amount;
-      else bucket.expenses += amount;
+      if (tx.transaction_type === "income") bucket.income += toUSD(tx.amount, tx.currency ?? displayCurrency, displayRates);
+      else bucket.expenses += toUSD(netAmt(tx), tx.currency ?? displayCurrency, displayRates); // after refunds, as everywhere else
     }
 
     const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const prevKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, "0")}`;
-    const currentBucket = byKey.get(currentKey);
-    if (currentBucket && hasActuals) {
-      currentBucket.income = actualIncome;
-      currentBucket.expenses = actualExpenses;
-    }
     const prevBucket = byKey.get(prevKey);
     if (prevBucket && (prevIncome > 0 || prevExpenses > 0)) {
       prevBucket.income = prevIncome;
       prevBucket.expenses = prevExpenses;
     }
 
+    // Only finished months are judged: this month's savings so far against a
+    // whole month's goal read "needs a reset" every time rent went out (D-32).
     return months
-      .filter((month) => month.income > 0 || month.expenses > 0)
+      .filter((month) => month.key !== currentKey && (month.income > 0 || month.expenses > 0))
       .map((month) => {
         const savings = month.income - month.expenses;
         const metSavingsGoal = goalContribution > 0 ? savings >= goalContribution * 0.85 : savings >= 0;
@@ -1094,26 +1364,17 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       })
       .sort((a, b) => b.date.getTime() - a.date.getTime());
   })();
-  const consistencyRun = (() => {
-    let run = 0;
-    for (const month of consistencyMonths) {
-      if (!month.onTrack) break;
-      run += 1;
-    }
-    return run;
-  })();
   const onTrackMonths = consistencyMonths.filter((month) => month.onTrack).length;
   const trackedMonths = consistencyMonths.length;
+  // A count, not a streak (CLAUDE.md: no streaks): a run to protect turns one
+  // expensive month into "starting over", which is the wrong lesson.
   const consistencyLabel = trackedMonths === 0
     ? "Not enough history yet"
-    : consistencyRun >= 2
-      ? `${consistencyRun}-month run`
-      : consistencyMonths[0]?.onTrack
-        ? "On track this month"
-        : "Needs a reset";
+    : `${onTrackMonths} of ${trackedMonths} months on plan`;
   const consistencyDetail = trackedMonths === 0
-    ? "Shows after a few tracked months."
-    : `${onTrackMonths} of the last ${trackedMonths} tracked months were on plan.`;
+    ? "Shows after a few finished months."
+    : consistencyMonths[0]?.onTrack ? "Last month was on plan." : "Last month was off plan.";
+  const consistencyGood = trackedMonths > 0 && onTrackMonths * 2 >= trackedMonths;
   const consistencySupport = consistencyMonths[0]
     ? `${fmtMoney(Math.abs(consistencyMonths[0].savings))} ${consistencyMonths[0].savings >= 0 ? "saved" : "net short"} in ${consistencyMonths[0].date.toLocaleString("en-US", { month: "short" })}`
     : "Fills in as months pass.";
@@ -1201,7 +1462,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     }
 
     if (hasActuals && spendingDeltaToDate > monthlyExpenses * 0.05) {
-      const correction = Math.max(spendingDeltaToDate / Math.max(elapsedFraction, 0.05), 0);
+      // How far the month is forecast to end over plan, not the overspend so far scaled up.
+      const correction = Math.max(projectedMonthSpend - monthlyExpenses, spendingDeltaToDate, 0);
       addTask(
         `Reduce spending by about ${fmtMoney(correction, true)} this month`,
         "Your spending pace is currently above plan.",
@@ -1215,21 +1477,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       );
     }
 
-    if (targetMonthlyExpenses && monthlyExpenses > targetMonthlyExpenses * 1.05 && fireYear !== null) {
-      const cityAverageResult = calcProjection({
-        annualIncome: income * 12,
-        monthlyExpenses: targetMonthlyExpenses,
-        k401,
-        rothIRA,
-        taxable,
-        cashSavings: totalCash,
-        totalDebt,
-        mortgageBalance,
-        mortgageMonthly,
-        growthRate,
-        withdrawalRate,
-        targetMonthlyExpenses,
-      });
+    if (!plan?.retirementAnnualSpend && targetMonthlyExpenses && monthlyExpenses > targetMonthlyExpenses * 1.05 && fireYear !== null) {
+      const cityAverageResult = calcProjection({ ...baseInputs, monthlyExpenses: targetMonthlyExpenses });
       const deltaYears = cityAverageResult.fireYear !== null ? Math.max(0, fireYear - cityAverageResult.fireYear) : 0;
       addTask(
         `Reduce spending toward ${cityName || "your city"} average by ${fmtMoney(monthlyExpenses - targetMonthlyExpenses, true)}`,
@@ -1239,20 +1488,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     }
 
     if (plannedContributionGap > Math.max(goalContribution * 0.15, 100) && fireYear !== null) {
-      const contributionGapResult = calcProjection({
-        annualIncome: income * 12,
-        monthlyExpenses: Math.max(0, monthlyExpenses - plannedContributionGap),
-        k401,
-        rothIRA,
-        taxable,
-        cashSavings: totalCash,
-        totalDebt,
-        mortgageBalance,
-        mortgageMonthly,
-        growthRate,
-        withdrawalRate,
-        targetMonthlyExpenses,
-      });
+      const contributionGapResult = calcProjection({ ...baseInputs, monthlyExpenses: Math.max(0, monthlyExpenses - plannedContributionGap) });
       const deltaYears = contributionGapResult.fireYear !== null ? Math.max(0, fireYear - contributionGapResult.fireYear) : 0;
       addTask(
         `Add about ${fmtMoney(plannedContributionGap, true)} to stay on this month's target`,
@@ -1273,7 +1509,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         "Start with a retirement or brokerage account so your savings can compound.",
         bestMove?.deltaYears ?? 0,
       );
-    } else if (goalContribution > 0 && connectedRetirementTotal <= 0 && rothIRA <= 0 && emergencyFundPlan.priorityMode !== "protect") {
+    } else if (goalContribution > 0 && !plaidAccounts.some(isRetirementInvestmentAccount) && rothIRA <= 0 && emergencyFundPlan.priorityMode !== "protect") {
       addTask(
         "Add this month’s Roth IRA contribution",
         "Retirement contributions give your plan a steady long-term base.",
@@ -1364,251 +1600,115 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginBottom: editing ? 24 : 12 }}>
-        {editing && (
-          <button className="uf-dash-nudge" style={{ width: "auto", padding: "0 12px", height: 28 }}
-            onClick={() => persistLayout(defaultLayout())}>
-            Reset
-          </button>
-        )}
-        <button
-          className="uf-dash-nudge"
-          style={{ width: "auto", padding: "0 12px", height: 28 }}
-          onClick={() => setEditing((v) => !v)}
-        >
-          {editing ? (savingLayout ? "Saving\u2026" : "Done") : "Edit"}
-        </button>
-      </div>
-
     <div className="uf-dash-grid">
 
       {/* ── Greeting header ─────────────────────────────────────────────── */}
-      <DashSlot id="greeting" layout={layout} editing={editing} dragging={draggingId === "greeting"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="greeting">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
         <div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>
+          <div className="uf-t-h2" style={{ margin: 0 }}>
             {timeOfDay ? `Good ${timeOfDay}` : "Hello"}{firstName ? `, ${firstName}` : ""}
           </div>
-          <div style={{ fontSize: 13, color: "var(--uf-text-2)", marginTop: 3, fontFamily: "Manrope, sans-serif" }}>
+          <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginTop: 2 }}>
             {formattedDate ? `${formattedDate}${cityName ? ` · ${cityName}` : ""}` : "\u00A0"}
           </div>
         </div>
-        <span style={{ fontSize: 11, fontWeight: 700, padding: "5px 14px", borderRadius: 99, background: `${statusColor}18`, color: statusColor, fontFamily: "Manrope, sans-serif", border: `1px solid ${statusColor}35` }}>
-          {statusLabel}
-        </span>
       </div>
 
-      </DashSlot>
-      {/* ── Setup checklist (hidden once all 4 steps done) ─────────────── */}
-      <DashSlot id="setup" layout={layout} editing={editing} dragging={draggingId === "setup"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      </HomeSlot>
+      {/* ── Get set up: a box in the corner, not a slot (SetupChecklist). ── */}
       <SetupChecklist
-        income={income}
-        expenses={expenses}
-        k401={k401}
-        rothIRA={rothIRA}
-        taxable={taxable}
-        cashSavings={cashSavings}
-        cityName={cityName}
-        plaidAccounts={plaidAccounts}
-        onTabChange={onTabChange}
-        onOpenOnboarding={onOpenOnboarding}
+        userId={userId}
+        facts={setupFacts}
+        freedomYear={exactFreedomDate ? exactFreedomDate.getFullYear() : null}
+        untilPaydayUSD={paydayView ? paydayView.free : null}
+        fmt={(n) => fmtMoney(n)}
+        transactions={setupTxns}
+        rates={displayRates}
+        onAdded={(rows) => onExpectedAdded?.(rows)}
+        onOpen={(step) => onSetupStep?.(step)}
       />
-
-      </DashSlot>
       {/* ── Hero: chart-led progress card. Fixed dark treatment regardless of
           the dashboard's light/dark setting — a deliberate hero moment, same
           idea as the free-calculator reveal — so it forces the `.dark` token
           scope rather than following the ambient theme. ─────────────────── */}
-      <DashSlot id="hero" layout={layout} editing={editing} dragging={draggingId === "hero"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
-      <div className="uf-card dark" style={{ padding: 0, overflow: "hidden", background: "linear-gradient(180deg, var(--uf-green-50) 0%, var(--uf-ground) 100%)", borderColor: "transparent" }}>
-        <div style={{ padding: "22px 22px 0", position: "relative" }}>
-          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(circle at top right, rgba(53,201,174,0.14), transparent 38%)", pointerEvents: "none" }} />
-          <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--uf-green-900)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>
-                Your progress
-              </div>
-              <div style={{ fontSize: 15, color: "rgba(255,255,255,0.78)", fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>
-                Recent history and projected path to freedom.
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {(["5Y", "15Y", "All"] as const).map((period) => (
-                <button
-                  key={period}
-                  onClick={() => setChartPeriod(period)}
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: 999,
-                    border: chartPeriod === period ? "1px solid rgba(255,255,255,0.3)" : "1px solid rgba(255,255,255,0.14)",
-                    background: chartPeriod === period ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.06)",
-                    color: "#fff",
-                    fontSize: 12,
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    fontFamily: "Manrope, sans-serif",
-                  }}
-                >
-                  {period}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="uf-progress-metrics" style={{ display: "grid", gridTemplateColumns: holdingsUnrealizedGain !== null ? "repeat(4, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 14, position: "relative" }}>
-            {[
-              { label: "Net worth", value: fmtMoney(currentNetWorth, true), tone: "#fff" },
-              { label: "This month", value: hasActuals ? fmtMoney(actualOrPlannedSavings, true) : fmtMoney(goalContribution, true), tone: actualOrPlannedSavings >= 0 ? "var(--uf-teal)" : "var(--uf-neg)" },
-              ...(holdingsUnrealizedGain !== null ? [{ label: "Investment gains", value: fmtMoney(holdingsUnrealizedGain, true), tone: "var(--uf-teal)" }] : []),
-              { label: "Status", value: statusLabel, tone: "var(--uf-green-900)" },
-            ].map((item) => (
-              <div key={item.label} style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 14, padding: "12px 14px" }}>
-                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.58)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>{item.label}</div>
-                <div style={{ fontSize: item.label === "Status" ? 16 : 22, fontWeight: 800, color: item.tone, fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.1 }}>{item.value}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <style>{`@keyframes uf-chart-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}`}</style>
-        <div key={chartPeriod} style={{ animation: "uf-chart-enter 0.4s ease-out both", padding: "0 10px" }}>
-          <ResponsiveContainer width="100%" height={280}>
-            <ComposedChart data={periodData} margin={{ top: 4, right: 14, bottom: 0, left: 0 }}>
-              <defs>
-                <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--uf-teal)" stopOpacity={0.48} />
-                  <stop offset="55%" stopColor="var(--uf-teal)" stopOpacity={0.10} />
-                  <stop offset="100%" stopColor="var(--uf-teal)" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="contribGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--uf-green)" stopOpacity={0.65} />
-                  <stop offset="100%" stopColor="var(--uf-green)" stopOpacity={0.15} />
-                </linearGradient>
-                <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--uf-teal)" stopOpacity={0.45} />
-                  <stop offset="100%" stopColor="var(--uf-teal)" stopOpacity={0.05} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.10)" vertical={false} />
-              <XAxis
-                dataKey="shortLabel"
-                tick={{ fill: "rgba(255,255,255,0.68)", fontSize: 11, fontFamily: "Manrope" }}
-                axisLine={false}
-                tickLine={false}
-                interval="preserveStartEnd"
-                minTickGap={18}
-              />
-              <YAxis
-                tickFormatter={(value) => fmtMoney(value, true)}
-                tick={{ fill: "rgba(255,255,255,0.68)", fontSize: 10, fontFamily: "Manrope" }}
-                axisLine={false}
-                tickLine={false}
-                width={58}
-              />
-              <Tooltip
-                animationDuration={150}
-                content={({ active, payload }) => {
-                  if (!active || !payload?.length) return null;
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const entry = payload[0]?.payload as any;
-                  const actual = entry?.actual as number | undefined;
-                  const projected = entry?.projected as number | undefined;
-                  const contrib = entry?.Contributions as number | undefined;
-                  const gains = entry?.["Market Growth"] as number | undefined;
+      <HomeSlot id="hero">
+      <FreedomCard
+        dateLabel={exactFreedomDate ? exactFreedomDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : retireYear ? String(retireYear) : null}
+        yearsAway={exactFreedomDate ? Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5)) : fireYear}
+        age={fireAge > 0 && exactFreedomDate ? Math.round(fireAge + Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5))) : null}
+        onOpen={() => onTabChange?.("fire-calculator")}
+        route={retireCity ? {
+          from: cityName ? cityName.split(",")[0] : "",
+          fromFlag: cityName ? CITIES.find((c) => c.name === cityName)?.flag ?? "\u{1F3E0}" : "",
+          to: retireCity.split(",")[0],
+          toFlag: CITIES.find((c) => c.name === retireCity)?.flag ?? "\u{1F4CD}",
+          when: moveYear != null && moveYear !== freeYear ? `from ${moveYear}` : "when you're free",
+          onOpen: () => onTabChange?.("fire-calculator"),
+        } : undefined}
+      >
+        <ResponsiveContainer width="100%" height={220}>
+          <AreaChart data={yearBars} margin={{ top: 34, right: 24, bottom: 0, left: 24 }}>
+            <XAxis dataKey="label" tick={{ fill: "var(--uf-ink-3)", fontSize: 12, fontFamily: "var(--uf-font-mono)" }} axisLine={{ stroke: "var(--uf-border)" }} tickLine={false} interval="preserveStartEnd" minTickGap={28} />
+            <YAxis hide domain={[0, "auto"]} />
+            <Tooltip
+              animationDuration={150}
+              cursor={{ stroke: "var(--uf-border-2)" }}
+              content={({ active, payload }) => {
+                const b = active ? payload?.[0]?.payload as { year: number; value: number; actual: boolean } | undefined : undefined;
+                if (!b) return null;
+                return (
+                  <div className="uf-t-small" style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "8px 10px", boxShadow: "var(--uf-e2)" }}>
+                    <div style={{ color: "var(--uf-ink-2)" }}>{b.year}{b.year === thisYear ? " · counts toward freedom" : b.actual ? "" : " · projected"}{moveYear != null && b.year >= moveYear ? ` · in ${retireCity.split(",")[0]}` : ""}</div>
+                    <b style={{ fontFamily: "var(--uf-font-mono)", color: "var(--uf-ink)" }}>{fmtMoney(b.value, true)}</b>
+                  </div>
+                );
+              }}
+            />
+            <ReferenceLine y={fireTarget} stroke="var(--uf-ink-3)" strokeDasharray="4 5" label={{ value: "FIRE number", position: "insideTopLeft", fill: "var(--uf-ink-3)", fontSize: 12, fontFamily: "var(--uf-font-mono)" }} />
+            {moveYear != null && yearBars.some((b) => b.year === moveYear) && (
+              <ReferenceLine x={String(moveYear)} stroke="var(--uf-ink-3)" strokeDasharray="2 3"
+                label={(props: { viewBox?: { x?: number; y?: number } }) => {
+                  const x = props.viewBox?.x ?? 0, y = (props.viewBox?.y ?? 0) - 18;
                   return (
-                    <div style={{ background: "var(--uf-card)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 12, padding: "10px 12px", fontSize: 12, fontFamily: "Manrope, sans-serif", boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
-                      <div style={{ fontWeight: 800, marginBottom: 6, color: "var(--uf-ink)" }}>{entry?.label ?? ""}</div>
-                      {actual !== undefined && actual !== null && <div style={{ color: "rgba(255,255,255,0.86)", marginBottom: 4 }}>{entry?.phase === "today" ? "Current" : "History"}: {fmtMoney(actual, true)}</div>}
-                      {projected !== undefined && projected !== null && !showBreakdown && <div style={{ color: "var(--uf-teal)", marginBottom: 4 }}>{entry?.phase === "today" ? "Starting point" : "Projection"}: {fmtMoney(projected, true)}</div>}
-                      {showBreakdown && contrib !== undefined && <div style={{ color: "var(--uf-green-700)", marginBottom: 2 }}>Contributions: {fmtMoney(contrib, true)}</div>}
-                      {showBreakdown && gains !== undefined && <div style={{ color: "var(--uf-teal)", marginBottom: 4 }}>Market returns: {fmtMoney(gains, true)}</div>}
-                      <div style={{ color: "rgba(255,255,255,0.6)" }}>Target: {fmtMoney(fireTarget, true)}</div>
-                    </div>
+                    <g aria-label={`Move to ${retireCity} in ${moveYear}`}>
+                      <circle cx={x} cy={y} r={14} fill="var(--uf-card)" stroke="var(--uf-teal)" strokeWidth={1.5} />
+                      {moveFlagUri
+                        ? <image href={moveFlagUri} x={x - 9} y={y - 6} width={18} height={12} preserveAspectRatio="xMidYMid slice" />
+                        : <text x={x} y={y + 5} textAnchor="middle" fontSize={14}>{"\u{1F4CD}"}</text>}
+                    </g>
                   );
-                }}
-              />
-              <ReferenceLine y={fireTarget} stroke="rgba(167,243,208,0.95)" strokeDasharray="5 4" strokeWidth={1.3} />
-              <ReferenceLine x={periodData.find((entry) => entry.phase === "today")?.shortLabel} stroke="rgba(255,255,255,0.26)" strokeDasharray="4 4" strokeWidth={1.2} />
-              {milestoneDots.map((dot) => (
-                <ReferenceDot
-                  key={dot.label}
-                  x={dot.shortLabel}
-                  y={dot.chartValue}
-                  r={0}
-                  shape={({ cx, cy }: { cx?: number; cy?: number }) => {
-                    const x = cx ?? 0;
-                    const y = cy ?? 0;
-                    const w = Math.max(dot.label.length * 5.8 + 12, 40);
-                    return (
-                      <g>
-                        <rect x={x - w / 2} y={y - 30} width={w} height={16} rx={4} fill="rgba(8,8,14,0.82)" stroke="rgba(53,201,174,0.55)" strokeWidth={0.8} />
-                        <text x={x} y={y - 18} textAnchor="middle" fill="var(--uf-teal)" fontSize={9} fontWeight={700} fontFamily="Manrope, sans-serif">{dot.label}</text>
-                        <line x1={x} y1={y - 14} x2={x} y2={y - 5} stroke="rgba(53,201,174,0.65)" strokeWidth={1} />
-                        <circle cx={x} cy={y} r={4} fill={dot.achieved ? "rgba(53,201,174,0.25)" : "var(--uf-teal)"} stroke="var(--uf-teal)" strokeWidth={1.5} />
-                      </g>
-                    );
-                  }}
-                />
-              ))}
-              <Line type="monotone" dataKey="actual" stroke="rgba(255,255,255,0.88)" strokeWidth={2} connectNulls={false} dot={false} activeDot={{ r: 5, fill: "#fff" }} isAnimationActive animationBegin={0} animationDuration={900} animationEasing="ease-out" />
-              {!showBreakdown && (
-                <Area type="monotone" dataKey="projected" stroke="var(--uf-teal)" strokeWidth={2.5} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 5, fill: "var(--uf-teal)" }} isAnimationActive animationBegin={200} animationDuration={1300} animationEasing="ease-out" />
-              )}
-              {showBreakdown && (
-                <>
-                  <Area type="monotone" dataKey="Contributions" stroke="var(--uf-green)" strokeWidth={1.5} fill="url(#contribGrad)" dot={false} stackId="bd" isAnimationActive animationDuration={800} />
-                  <Area type="monotone" dataKey="Market Growth" stroke="var(--uf-teal)" strokeWidth={1.5} fill="url(#growthGrad)" dot={false} stackId="bd" isAnimationActive animationDuration={800} />
-                </>
-              )}
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div style={{ padding: "0 22px 22px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-            {/* Static items */}
-            {[
-              { color: "rgba(255,255,255,0.88)", label: "History", dashed: false },
-              { color: "rgba(167,243,208,0.95)", label: "FIRE target", dashed: true },
-            ].map(({ color, label, dashed }) => (
-              <span key={label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "rgba(255,255,255,0.72)", fontFamily: "Manrope, sans-serif" }}>
-                <svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke={color} strokeWidth="2" strokeDasharray={dashed ? "4 3" : undefined} /></svg>
-                {label}
-              </span>
+                }} />
+            )}
+            <Area type="monotone" dataKey="value" stroke="var(--uf-teal)" strokeWidth={3} fill="var(--uf-teal-soft)" fillOpacity={1} isAnimationActive={false}
+              dot={false} activeDot={{ r: 5, fill: "var(--uf-teal)", stroke: "var(--uf-card)", strokeWidth: 2 }} />
+            {todayPoint && (
+              <ReferenceDot x={todayPoint.label} y={todayPoint.value} r={7} fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2}
+                label={{ value: `You · ${fmtMoney(todayPoint.value, true)}`, position: "top", offset: 12, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
+            )}
+            {milestones.map((m) => (
+              <ReferenceDot key={m.label} x={String(m.year)} y={m.value} r={6} fill="var(--uf-card)" stroke="var(--uf-teal)" strokeWidth={3}
+                label={{ value: m.label, position: "top", offset: 10, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
             ))}
-            {/* Projection / Breakdown toggle */}
-            <button
-              onClick={() => setShowBreakdown(v => !v)}
-              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontFamily: "Manrope, sans-serif", background: "none", border: "none", cursor: "pointer", padding: "2px 0", color: showBreakdown ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.72)", textDecoration: "none" }}
-              title="Toggle contributions vs market returns breakdown"
-            >
-              {showBreakdown ? (
-                <>
-                  <span style={{ display: "flex", gap: 2 }}>
-                    <span style={{ width: 9, height: 8, borderRadius: 1, background: "var(--uf-green)", opacity: 0.8, display: "inline-block" }} />
-                    <span style={{ width: 9, height: 8, borderRadius: 1, background: "var(--uf-teal)", opacity: 0.6, display: "inline-block" }} />
-                  </span>
-                  <span>Contributions · Returns</span>
-                </>
-              ) : (
-                <>
-                  <svg width="18" height="8"><line x1="0" y1="4" x2="18" y2="4" stroke="var(--uf-teal)" strokeWidth="2" /></svg>
-                  Projection
-                </>
-              )}
-            </button>
-          </div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.78)", fontFamily: "Manrope, sans-serif", maxWidth: 300 }}>
-            {growthSummary}
-          </div>
+            {freeYear != null && yearBars.length > 1 && (
+              <ReferenceDot x={yearBars[yearBars.length - 1].label} y={yearBars[yearBars.length - 1].value} r={8} fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2} />
+            )}
+          </AreaChart>
+        </ResponsiveContainer>
+        <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", display: "flex", flexWrap: "wrap", gap: "4px 16px", marginTop: 8 }}>
+          <span>Investments {fmtMoney(investable - balances.cash, true)}</span>
+          <span>Safety cash {fmtMoney(balances.cash, true)}</span>
         </div>
-      </div>
+        <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 4 }}>
+          Cash uses saved APY (0% if unknown), less 3% inflation.
+        </div>
+      </FreedomCard>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── On-track score: not how independent you are (the freedom date
           answers that) — how well you're keeping up the habits that get you
           there. ─────────────────────────────────────────────────────────── */}
-      <DashSlot id="ontrack" layout={layout} editing={editing} dragging={draggingId === "ontrack"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="ontrack">
       <div className="uf-card" style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
         <div style={{ position: "relative", width: 96, height: 96, flexShrink: 0 }}>
           {(() => {
@@ -1650,11 +1750,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Your month: closes last month's loop and points at this month's
           move. Dismissible per calendar month (uf_checkin_dismissed_YYYY-MM)
           so it reads as a check-in ritual, not a permanent fixture. ────── */}
-      <DashSlot id="yourmonth" layout={layout} editing={editing} dragging={draggingId === "yourmonth"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="yourmonth">
       {!checkinDismissed && topTasks.length > 0 && (
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
@@ -1685,15 +1785,67 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       )}
 
-      </DashSlot>
+      </HomeSlot>
+      <HomeSlot id="free">
+      {freeResult && <FreeToSpendHome result={freeResult} fmt={(n) => fmtMoney(n)} onOpen={onOpenFreeToSpend} />}
+      </HomeSlot>
       {/* ── Freedom date + best move ─────────────────────────────────────── */}
-      <DashSlot id="contribution" layout={layout} editing={editing} dragging={draggingId === "contribution"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
-      {contributionFacts && (
+      <HomeSlot id="contribution">
+      {nextMove ? (
+        <NextMoveCard move={nextMove} fmt={(n) => fmtMoney(n)}
+          onOpen={() => onTabChange?.(nextMove.tab)}
+          onSnooze={() => { snooze(nextMove.key); setSnoozeTick((t) => t + 1); }} />
+      ) : contributionFacts && (
         <NextContributionCard facts={contributionFacts} onOpenPlan={() => onTabChange?.("contributions")} />
       )}
 
-      </DashSlot>
-      <DashSlot id="freedom" layout={layout} editing={editing} dragging={draggingId === "freedom"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      </HomeSlot>
+      <HomeSlot id="month">
+        {paydayView && paydayLineView ? (
+          <UntilPaydayCard
+            line={paydayLineView}
+            paydayIso={paydayView.payday.iso}
+            billCount={paydayView.bills.length}
+            billTotal={paydayView.bills.reduce((t, b) => t + Math.abs(b.amount), 0)}
+            icon={categoryIcon}
+            fmt={(n) => fmtMoney(n)}
+            onOpen={() => onTabChange?.("cashflow")}
+          />
+        ) : <MonthCard
+          spent={monthLeft.everydaySpent}
+          budget={monthLeft.everydayBudget}
+          left={monthLeft.left}
+          paceSoFar={paceSoFar}
+          monthDays={monthDays}
+          nextBills={nextBills}
+          fmt={(n) => fmtMoney(n)}
+          onOpen={() => onTabChange?.("cashflow")}
+        />}
+      </HomeSlot>
+      <HomeSlot id="today">
+        <TodayStrip
+          userId={userId}
+          bills={bills}
+          perDay={paydayView ? paydayView.perDay : monthLeft.everydayBudget > 0 ? Math.max(0, monthLeft.left / (monthDays - now.getDate() + 1)) : null}
+          fmt={(n) => fmtMoney(n)}
+          toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}
+          onOpen={() => onTabChange?.("cashflow")}
+          onWhatIf={onOpenCompare}
+        />
+      </HomeSlot>
+      <HomeSlot id="glance">
+        <GlanceRow
+          netWorth={currentNetWorth}
+          invested={investedByMonth}
+          safety={efMonthlyBase > 0 ? { months: emergencyFundPlan.coverageMonths, target: EMERGENCY_FUND_TARGET_MONTHS } : null}
+          savingsRate={income > 0 ? (annualSavings / (income * 12)) * 100 : null}
+          fmt={(n) => fmtMoney(n)}
+          onNetWorth={() => onTabChange?.("assets")}
+          onSafety={() => onTabChange?.("assets")}
+          onSavings={() => onTabChange?.("contributions")}
+        />
+      </HomeSlot>
+      <HomeSlot id="freedom">
       {efMonthlyBase > 0 && (
         <div className="uf-card" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 16, alignItems: "center" }}>
           <div>
@@ -1881,14 +2033,14 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Your goals: the measurable targets set via the PERMA intro flow
           or added by hand in Plan -> Goals. Read-only here — Home never
           gets its own inputs, per docs/design/app-structure.md. ───────── */}
-      <DashSlot id="compare" layout={layout} editing={editing} dragging={draggingId === "compare"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="compare">
         <CompareCard netWorthUsd={currentNetWorth} age={fireAge} currency={displayCurrency} onOpenAssumptions={() => onTabChange?.("fire-calculator")} />
-      </DashSlot>
-      <DashSlot id="goals" layout={layout} editing={editing} dragging={draggingId === "goals"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      </HomeSlot>
+      <HomeSlot id="goals">
       <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
@@ -1930,9 +2082,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         )}
       </div>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Monthly operating row ────────────────────────────────────────── */}
-      <DashSlot id="operating" layout={layout} editing={editing} dragging={draggingId === "operating"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="operating">
       <div className="uf-overview-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s investing</div>
@@ -1952,7 +2104,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
 
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s spending</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s expenses</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
             <div>
               <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>Planned</div>
@@ -1967,7 +2119,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
             <span>{hasActuals ? `${Math.round(spendingProgressPct)}% of plan used` : "Budget watch"}</span>
             {hasActuals && <span>Day {now.getDate()} of {monthDays}</span>}
           </div>
-          <div style={{ position: "relative", height: 12, borderRadius: 999, background: spendingBarTrackColor, overflow: "hidden" }} aria-label="Monthly spending progress">
+          <div style={{ position: "relative", height: 12, borderRadius: 999, background: spendingBarTrackColor, overflow: "hidden" }} aria-label="Monthly expenses progress">
             <div style={{ width: `${spendingProgressPct}%`, height: "100%", background: spendingBarColor, borderRadius: 999, transition: "width 240ms ease" }} />
             {hasActuals && (
               <div
@@ -1985,7 +2137,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           {hasActuals && (
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 11, color: "var(--uf-text-3)", fontFamily: "Manrope, sans-serif" }}>
               <span>Expected pace by today: {fmtMoney(expectedSpendToDate, true)}</span>
-              <span>{fmtMoney(Math.max(monthlyExpenses - actualExpenses, 0), true)} left</span>
+              <span>{fmtMoney(Math.max(monthlyExpenses - actualExpenses - billsDueThisMonth, 0), true)} left{billsDueThisMonth > 0 ? " after bills" : ""}</span>
             </div>
           )}
           <div style={{ fontSize: 14, color: spendingStatusColor, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>{projectedSpendStatus}</div>
@@ -2003,7 +2155,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Consistency</div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: consistencyRun >= 2 || consistencyMonths[0]?.onTrack ? "var(--uf-pos)" : "var(--uf-warn)", fontFamily: "Manrope, sans-serif", lineHeight: 1 }}>
+              <div style={{ fontSize: 28, fontWeight: 800, color: consistencyGood ? "var(--uf-pos)" : "var(--uf-warn)", fontFamily: "Manrope, sans-serif", lineHeight: 1 }}>
                 {consistencyLabel}
               </div>
               <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 6, lineHeight: 1.6 }}>
@@ -2018,15 +2170,15 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
             )}
           </div>
           <div style={{ height: 8, background: "var(--uf-border)", borderRadius: 999, overflow: "hidden" }}>
-            <div style={{ width: `${trackedMonths > 0 ? (onTrackMonths / trackedMonths) * 100 : 0}%`, height: "100%", background: consistencyRun >= 2 || consistencyMonths[0]?.onTrack ? "linear-gradient(90deg, var(--uf-pos), var(--uf-green-700))" : "linear-gradient(90deg, var(--uf-warn), var(--uf-warn))", borderRadius: 999 }} />
+            <div style={{ width: `${trackedMonths > 0 ? (onTrackMonths / trackedMonths) * 100 : 0}%`, height: "100%", background: consistencyGood ? "linear-gradient(90deg, var(--uf-pos), var(--uf-green-700))" : "linear-gradient(90deg, var(--uf-warn), var(--uf-warn))", borderRadius: 999 }} />
           </div>
           <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{consistencySupport}</div>
         </div>
       </div>
 
-      </DashSlot>
+      </HomeSlot>
       {/* ── Lower support row ────────────────────────────────────────────── */}
-      <DashSlot id="support" layout={layout} editing={editing} dragging={draggingId === "support"} onRegister={register} onDragStart={begin} onRemove={(id) => persistLayout(setCard(layout, id, { visible: false }))} onToggleWidth={(id) => persistLayout(setCard(layout, id, { span: layout.cards.find((c) => c.id === id)?.span === "full" ? "half" : "full" }))}>
+      <HomeSlot id="support">
       <div>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Where your money is</div>
@@ -2066,14 +2218,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         </div>
       </div>
 
-      </DashSlot>
+      </HomeSlot>
     </div>
-      {editing && (
-        <CardInventory
-          layout={layout}
-          onToggle={(id, visible) => persistLayout(setCard(layout, id, { visible }))}
-        />
-      )}
     </>
   );
 }
@@ -2152,7 +2298,7 @@ function _CalculatorsTab() {
 }
 
 // ─── Budget Tracker Tab ───────────────────────────────────────────────────────
-function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining = 0, committedByCat = {}, displayCurrency, displayRates, recentTransactions = [], freedomDateMonthYearLabel, onOpenTransactions }: {
+function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], bills = [], onOpenUpcoming, spreadCategories = [] }: {
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
   actuals: Record<string, number>;
@@ -2160,10 +2306,18 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   committedRemaining?: number;
   /** The same, split by category, so each dial can show what is still promised. */
   committedByCat?: Record<string, number>;
+  /** Free to spend until payday, cash against budget (D-29). */
+  freeResult?: FreeToSpend | null;
+  spendAccounts?: SpendAccount[];
+  spendToggles?: Record<string, boolean>;
+  onSpendToggle?: (id: string, on: boolean) => void;
   displayCurrency: string; displayRates: Record<string, number>;
-  recentTransactions?: { date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; category?: string; tags?: string[] }[];
-  freedomDateMonthYearLabel?: string | null;
-  onOpenTransactions?: () => void;
+  recentTransactions?: { date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; category?: string; tags?: string[]; description?: string }[];
+  /** Upcoming expense bills (USD): which categories are bills, and what falls due before payday. */
+  bills?: Bill[];
+  /** Categories judged over 12 months, set on the phone (FIRE profile spreadCategories). */
+  spreadCategories?: string[];
+  onOpenUpcoming?: () => void;
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
@@ -2178,66 +2332,28 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
 
   const totalExp = activeCats.reduce((s, c) => s + (expenses[c.key] || 0), 0);
 
-  // "Left this month" on its own overstates what is actually spendable, because
-  // some of it is already promised to bills. Free = left − committed, and can
-  // go negative, which is the single most useful thing this page can tell you.
-  const spentSoFar = activeCats.reduce((s, c) => s + (actuals[c.key] || 0), 0);
-  const leftThisMonth = totalExp - spentSoFar;
-  const freeToSpend = leftThisMonth - committedRemaining;
-  const savings  = income - totalExp;
-  const rate     = income > 0 ? (savings / income) * 100 : 0;
   const [budgetSetupOpen, setBudgetSetupOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  // Open by default. Collapsed, the left column is shorter than the sticky
-  // 260px sidebar beside it, so the page opens on a tall empty gap — and the
-  // categories that are fine are still the ones you check first.
-  const [onTrackOpen, setOnTrackOpen] = useState(true);
+  const [showEveryday, setShowEveryday] = useState(false);
+  const [editAll, setEditAll] = useState(false);
+  const [showHow, setShowHow] = useState(false);
+  const [showMonth, setShowMonth] = useState(false);
   const isEmpty = totalExp === 0;
-
-  const donutStops = useMemo(() => {
-    let acc = 0;
-    return activeCats.map(cat => {
-      const amt = expenses[cat.key] || 0;
-      const pct = totalExp > 0 ? (amt / totalExp) * 100 : 0;
-      const start = acc;
-      acc += pct;
-      return { ...cat, amt, pct, start, end: acc };
-    });
-  }, [activeCats, expenses, totalExp]);
-  const donutGradient = totalExp > 0
-    ? donutStops.map(s => `${s.color} ${s.start}% ${s.end}%`).join(", ")
-    : "var(--uf-border) 0% 100%";
-
-  const overBudgetCats = activeCats
-    .filter(cat => {
-      const budget = expenses[cat.key] || 0;
-      const spent = actuals[cat.key] || 0;
-      return budget > 0 && spent > budget;
-    })
-    .sort((a, b) => ((actuals[b.key] || 0) - (expenses[b.key] || 0)) - ((actuals[a.key] || 0) - (expenses[a.key] || 0)));
-  const onTrackCats = activeCats.filter(c => !overBudgetCats.includes(c));
-  const onTrackBudgetTotal = onTrackCats.reduce((s, c) => s + (expenses[c.key] || 0), 0);
 
   function suggestSlackCategories(excludeKey: string) {
     return activeCats
       .filter(c => c.key !== excludeKey)
-      .map(c => ({ label: c.label, slack: (expenses[c.key] || 0) - (actuals[c.key] || 0) }))
+      .map(c => ({ label: c.label, slack: (expenses[c.key] || 0) - (actuals[c.key] || 0) - (committedByCat[c.key] || 0) }))
       .filter(c => c.slack > 0.5)
       .sort((a, b) => b.slack - a.slack)
       .slice(0, 2)
       .map(c => c.label);
   }
 
-  // Needs vs Wants — current month, from the same transaction feed the rest of the dashboard uses
+  // This month's transactions, for the "is it a bill?" check below.
   const now = new Date();
   const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const monthTxns = recentTransactions.filter(t => t.date.startsWith(curMonth));
-  const expenseTxns = monthTxns.filter(t => (t.transaction_type ?? "expense") === "expense");
-  const taggedTxns = expenseTxns.filter(t => t.tags?.includes("need") || t.tags?.includes("want"));
-  const needsTotal = taggedTxns.filter(t => t.tags?.includes("need")).reduce((s, t) => s + toUSD(netAmt(t), t.currency, displayRates), 0);
-  const wantsTotal = taggedTxns.filter(t => t.tags?.includes("want")).reduce((s, t) => s + toUSD(netAmt(t), t.currency, displayRates), 0);
-  const classifiedTotal = needsTotal + wantsTotal;
-  const untaggedCount = expenseTxns.length - taggedTxns.length;
 
   const guidedSetupModal = budgetSetupOpen && (
     <BudgetSetupModal
@@ -2264,12 +2380,9 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
           <div style={{ color: "var(--uf-text-2)", fontSize: 13, maxWidth: "34ch", lineHeight: 1.5 }}>
             Takes about a minute — we&apos;ll suggest a starting number for each category from your spending history where we have it.
           </div>
-          <button
-            onClick={() => setBudgetSetupOpen(true)}
-            style={{ marginTop: 6, background: "#22d3a5", color: "#062018", border: "none", borderRadius: 10, padding: "11px 22px", fontSize: 13, fontWeight: 800, fontFamily: "Manrope, sans-serif", cursor: "pointer" }}
-          >
-            ✎ Set up my budget
-          </button>
+          <Button variant="primary" onClick={() => setBudgetSetupOpen(true)} style={{ marginTop: 6 }}>
+            Set up my budget
+          </Button>
         </div>
 
         <div className="uf-card" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -2301,255 +2414,186 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
     );
   }
 
-  function renderRow(cat: typeof activeCats[number], over: boolean) {
+  /* The focused Budget (D-41). One number first: free to spend until payday.
+     Then only what needs attention, bills as one row, and the everyday
+     categories folded. The full list is one tap away, for editing. */
+  // Repeating bills only, as on the phone (lib/bill-categories): a one-off doesn't make a category fixed.
+  const billCats = billCategorySet(bills);
+  const spreadCats = new Set(spreadCategories.filter((k) => !billCats.has(k)));
+  const spentOf = (k: string) => actuals[k] || 0;
+  const dueOf = (k: string) => committedByCat[k] || 0;
+  const daysIn = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const dayOfMonth = now.getDate();
+  // On pace: everyday spending so far, at the same daily rate, to the month's end.
+  // Bill categories are left out, because a rent payment on the 1st is not a rate.
+  const paceOf = (k: string) => !billCats.has(k) && dayOfMonth >= 5 ? (spentOf(k) / dayOfMonth) * daysIn : 0;
+  // Heading over only once spending is well ahead of the month: more than the
+  // share of the month gone plus a fifth of the budget. Projecting a week of
+  // data flagged half the categories on the 7th.
+  const headingOver = (k: string) => {
+    const budget = expenses[k] || 0;
+    return budget > 0 && !billCats.has(k) && spentOf(k) / budget > dayOfMonth / daysIn + 0.2 && paceOf(k) > budget;
+  };
+  const attention = activeCats.filter((c) => {
+    const budget = expenses[c.key] || 0;
+    return budget > 0 && (spentOf(c.key) + dueOf(c.key) > budget || headingOver(c.key));
+  }).sort((x, y) => (spentOf(y.key) + dueOf(y.key) - (expenses[y.key] || 0)) - (spentOf(x.key) + dueOf(x.key) - (expenses[x.key] || 0)));
+  const billGroup = activeCats.filter((c) => billCats.has(c.key) && !attention.includes(c));
+  const everyday = activeCats.filter((c) => !billCats.has(c.key) && !attention.includes(c));
+  const sum = (cs: typeof activeCats, f: (k: string) => number) => cs.reduce((t, c) => t + f(c.key), 0);
+  const billSpent = sum(activeCats.filter((c) => billCats.has(c.key)), (k) => spentOf(k) + dueOf(k));
+  /* The one "left" (D-86), the same as the phone's: everyday budget less
+     everyday spending. Bills are set aside, and spread-over-the-year
+     categories are judged over 12 months, not this one. */
+  const { everydayBudget, everydaySpent, left: leftInBudget } = everydayLeft({
+    budget: expenses, bills, spreadCategories,
+    monthRows: monthTxns.map((t) => ({ ...t, usd: toUSD(netAmt(t), t.currency, displayRates) })),
+  });
+  const billsStillDue = sum(billGroup, dueOf);
+  const shortDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+  // A payment this month that repeats one from last month (same name, within
+  // 10%) is probably a bill not yet in Upcoming. In an over category, say so
+  // rather than call it overspending.
+  const prevMonth = (() => { const d = new Date(now.getFullYear(), now.getMonth() - 1, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; })();
+  const looksLikeBill = (k: string) => {
+    if (billCats.has(k)) return null;
+    const usd = (t: typeof recentTransactions[number]) => toUSD(netAmt(t), t.currency, displayRates);
+    const name = (t: typeof recentTransactions[number]) => (t.description ?? "").trim().toLowerCase();
+    const last = recentTransactions.filter((t) => t.date.startsWith(prevMonth) && (t.category ?? "other") === k && name(t));
+    const repeat = monthTxns.filter((t) => (t.transaction_type ?? "expense") === "expense" && (t.category ?? "other") === k && name(t))
+      .find((t) => last.some((p) => name(p) === name(t) && Math.abs(usd(p) - usd(t)) <= usd(t) * 0.1));
+    return repeat ? { amount: usd(repeat), name: repeat.description ?? "" } : null;
+  };
+
+  function renderRow(cat: typeof activeCats[number]) {
     const budget = expenses[cat.key] || 0;
-    const spent = actuals[cat.key] || 0;
-    const expected = committedByCat[cat.key] || 0;
+    const spent = spentOf(cat.key), expected = dueOf(cat.key), pace = paceOf(cat.key);
     const isEditing = editingKey === cat.key;
-    const suggestions = over ? suggestSlackCategories(cat.key) : [];
-
-    // The dial. The ring is the budget; it fills with what is spent, then with
-    // a paler arc for what is promised but not yet paid. Over-budget fills the
-    // whole ring in red — a ring cannot show more than one turn without lying
-    // about the geometry, so the figure carries how far over.
     const hasBudget = budget > 0;
-    const committed = spent + expected;
-    const left = budget - committed;
-    const pctSpent = hasBudget ? Math.min(100, (spent / budget) * 100) : 0;
-    const pctExp = hasBudget ? Math.min(100 - pctSpent, (expected / budget) * 100) : 0;
-    const pctTotal = hasBudget ? Math.round((committed / budget) * 100) : 0;
-    const ring = !hasBudget
-      ? "var(--uf-border-2)"
-      : over
-        ? `conic-gradient(var(--uf-neg) 0 100%)`
-        : `conic-gradient(${cat.color} 0 ${pctSpent}%, ${cat.color}59 ${pctSpent}% ${pctSpent + pctExp}%, var(--uf-border-2) ${pctSpent + pctExp}% 100%)`;
-    const note = !hasBudget ? "no budget set"
-      : over ? `${fmtMoney(spent - budget)} over`
-      : left >= 1 ? `${fmtMoney(left)} left`
-      : "nothing left";
-    const noteColor = !hasBudget ? "var(--uf-text-3)"
-      : over ? "var(--uf-neg)"
-      : left >= 1 ? "var(--uf-pos)" : "var(--uf-text-2)";
-
+    const left = budget - spent - expected;
+    const over = hasBudget && left < 0;
+    const heading = !over && headingOver(cat.key);
+    const billGuess = over ? looksLikeBill(cat.key) : null;
+    const suggestions = over && !billGuess ? suggestSlackCategories(cat.key) : [];
     return (
-      <div key={cat.key}>
-        <div className="uf-budget-row" onClick={() => !isEditing && setEditingKey(cat.key)}>
-          <span style={{ width: 58, height: 58, borderRadius: "50%", background: ring, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{
-              width: 44, height: 44, borderRadius: "50%", background: "var(--uf-card)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums",
-              fontSize: 11.5, fontWeight: 500, letterSpacing: "-0.02em",
-              color: hasBudget ? (over ? "var(--uf-neg)" : "var(--uf-text)") : "var(--uf-text-3)",
-            }}>
-              {hasBudget ? `${pctTotal}%` : "—"}
-            </span>
-          </span>
-
-          <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
-            <span style={{ fontSize: 13.5, fontWeight: 700, color: "var(--uf-text)", display: "flex", alignItems: "center", gap: 7 }}>
-              <span style={{ fontSize: 14 }}>{cat.emoji}</span>{cat.label}
-              <span className="uf-budget-pencil" style={{ fontSize: 11, color: "var(--uf-text-3)" }}>✎</span>
-            </span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: noteColor }}>{note}</span>
-          </span>
-
-          {isEditing ? (
-            <div style={{ flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-              <NumberInput
-                value={budget}
-                onChange={v => setExpenses({ ...expenses, [cat.key]: v })}
-                prefix={currencyPrefix}
-                currency={displayCurrency}
-                rates={displayRates}
-              />
-            </div>
-          ) : (
-            <span className="uf-budget-figs">
-              <span style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", fontSize: 12.5, whiteSpace: "nowrap" }}>
-                {fmtMoney(spent)}
-                {hasBudget && <span style={{ color: "var(--uf-text-3)" }}> of {fmtMoney(budget)}</span>}
-              </span>
-              {expected > 0 && (
-                <span style={{ fontFamily: "var(--uf-font-mono)", fontSize: 10.5, color: "var(--uf-text-3)", whiteSpace: "nowrap" }}>
-                  + {fmtMoney(expected)} expected
-                </span>
-              )}
+      <MoneyRow
+        key={cat.key}
+        dot={over ? "var(--uf-neg)" : cat.color}
+        icon={cat.emoji}
+        name={cat.label}
+        meta={`${fmtMoney(spent)}${hasBudget ? ` of ${fmtMoney(budget)}` : ""}${expected > 0 ? ` · ${fmtMoney(expected)} due` : ""}${heading ? ` · on pace for ${fmtMoney(pace)}` : ""}`}
+        value={!hasBudget ? "No budget" : over ? `${fmtMoney(-left)} over` : left >= 1 ? `${fmtMoney(left)} left` : "Nothing left"}
+        valueTone={over ? "var(--uf-neg-ink)" : heading ? "var(--uf-warn-ink)" : hasBudget ? undefined : "var(--uf-ink-3)"}
+        strong={over || heading}
+        bar={hasBudget ? <MoneyTrack share={spent / budget} due={expected / budget} color={over ? "var(--uf-neg)" : cat.color} label={`${cat.label}: ${fmtMoney(spent)} spent${expected > 0 ? `, ${fmtMoney(expected)} due` : ""} of ${fmtMoney(budget)}`} /> : undefined}
+        onClick={() => setEditingKey(isEditing ? null : cat.key)}
+        after={<>
+          {billGuess != null && !isEditing && (
+            <span className="uf-t-small" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", color: "var(--uf-ink-2)" }}>
+              {billGuess.name} ({fmtMoney(billGuess.amount)}) was paid last month too. Is it a bill?
+              {onOpenUpcoming && <Button variant="secondary" size="sm" onClick={onOpenUpcoming}>Add it to Calendar</Button>}
             </span>
           )}
-        </div>
-        {over && suggestions.length > 0 && (
-          <div style={{ fontSize: 11, color: "#f97316", padding: "0 18px 10px", marginTop: -4 }}>
-            ↳ Cut {fmtMoney(spent - budget)} from {suggestions.join(" or ")} to stay on pace
-          </div>
-        )}
-        {isEditing && (
-          <div style={{ fontSize: 11, color: "var(--uf-text-3)", padding: "0 18px 10px", marginTop: -4 }}>
-            <button onClick={() => setEditingKey(null)} style={{ background: "none", border: "none", color: "var(--uf-text-3)", textDecoration: "underline", cursor: "pointer", fontSize: 11, padding: 0, fontFamily: "Manrope, sans-serif" }}>Done</button>
-          </div>
-        )}
-      </div>
+          {suggestions.length > 0 && !isEditing && (
+            <span className="uf-t-small" style={{ color: "var(--uf-warn-ink)" }}>Move {fmtMoney(-left)} from {suggestions.join(" or ")} to stay on budget</span>
+          )}
+          {isEditing && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Monthly budget</span>
+              <div style={{ width: 160 }}>
+                <NumberInput value={budget} onChange={v => setExpenses({ ...expenses, [cat.key]: v })} prefix={currencyPrefix} currency={displayCurrency} rates={displayRates} />
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setEditingKey(null)}>Done</Button>
+            </div>
+          )}
+        </>}
+      />
     );
   }
 
+  // The budget is monthly, so the page is too (D-41): what is left of this
+  // month after spending and bills still due, shared over the days left.
+  const monthName = now.toLocaleDateString("en-US", { month: "long" });
+  // Checking can be tighter than the budget before payday; say so when it is.
+  const cashTight = freeResult?.cash && freeResult.limitedBy === "cash" ? freeResult : null;
+  const daysLeftInMonth = daysIn - dayOfMonth + 1;
+  // The pace bar is everyday spending only; bills are set aside (everydayBudget, above).
+  const spentByDay: Record<string, number> = {};
+  // Everyday spending only: bills are the calendar's dots, and rent would set the scale.
+  for (const t of monthTxns) if ((t.transaction_type ?? "expense") === "expense" && !billCats.has(t.category ?? "other") && !spreadCats.has(t.category ?? "other")) spentByDay[t.date.slice(0, 10)] = (spentByDay[t.date.slice(0, 10)] ?? 0) + toUSD(netAmt(t), t.currency, displayRates);
   return (
-    <div className="uf-budget-grid">
-      {/* The answer this tab exists to give, before any of the detail.
-          "Left this month" alone overstates what is spendable, because part of
-          it is already promised to bills that have not gone out yet — which is
-          why paying one used to feel like it changed nothing here. */}
-      <div className="uf-card" style={{ padding: "16px 18px", gridColumn: "1 / -1" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 4 }}>
-          Free to spend
-        </div>
-        <div style={{
-          fontSize: 28, fontWeight: 500, fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums",
-          color: freeToSpend < 0 ? "var(--uf-neg)" : "var(--uf-text)",
-        }}>
-          {freeToSpend < 0 ? "−" : ""}{fmtMoney(Math.abs(freeToSpend))}
-        </div>
-        <div style={{ fontSize: 13, color: "var(--uf-text-2)", marginTop: 6, lineHeight: 1.6 }}>
-          {fmtMoney(leftThisMonth)} left in your budget
-          {committedRemaining > 0
-            ? <> &mdash; {fmtMoney(committedRemaining)} of it already committed to bills in Upcoming.</>
-            : <> this month.</>}
-          {freeToSpend < 0 && committedRemaining > 0 && " Your committed bills alone are over what is left."}
-        </div>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <MoneyHead
+        label={`Left to spend in ${monthName}`}
+        value={<span style={{ fontSize: 44, color: leftInBudget < 0 ? "var(--uf-neg-ink)" : undefined }}>{leftInBudget < 0 ? `Over by ${fmtMoney(-leftInBudget)}` : fmtMoney(leftInBudget)}</span>}
+        sub={leftInBudget > 0
+          ? <>About <Fig>{fmtMoney(leftInBudget / daysLeftInMonth)}</Fig> a day for {daysLeftInMonth} {daysLeftInMonth === 1 ? "day" : "days"} · of your <Fig>{fmtMoney(everydayBudget)}</Fig> day-to-day budget, bills set aside</>
+          : <>of your <Fig>{fmtMoney(everydayBudget)}</Fig> day-to-day budget, bills set aside</>}
+      >
+        {cashTight && (
+          <div className="uf-t-small" style={{ color: "var(--uf-warn-ink)" }}>
+            Your checking has <Fig tone="var(--uf-warn-ink)">{fmtMoney(cashTight.free)}</Fig> free until payday, {shortDate(cashTight.payday.iso)}, after bills: less than your budget allows for those days.
+          </div>
+        )}
+        {everydayBudget > 0 && <PaceBar spent={everydaySpent} budget={everydayBudget} day={dayOfMonth} daysInMonth={daysIn} fmt={fmtMoney} />}
+        <MoneyKey items={[
+          <>Bills <Fig>{fmtMoney(billSpent)}</Fig> set aside{billsStillDue > 0 ? <> · <Fig>{fmtMoney(billsStillDue)}</Fig> still due</> : null}</>,
+          <button key="cal" type="button" aria-expanded={showMonth} onClick={() => setShowMonth((v) => !v)}
+            style={{ background: "none", border: "none", padding: 0, font: "inherit", color: "var(--uf-pos-ink)", fontWeight: 700, cursor: "pointer" }}>
+            {showMonth ? "Hide" : "See"} {monthName} {showMonth ? "▴" : "▾"}
+          </button>,
+        ]} />
+        {showMonth && <MonthCalendar today={now} spentByDay={spentByDay} bills={bills} perDay={leftInBudget > 0 ? leftInBudget / daysLeftInMonth : 0} fmt={fmtMoney} />}
+      </MoneyHead>
 
-      <div className="uf-card" style={{ padding: "6px 18px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", margin: "0 -18px", borderBottom: "1px solid var(--uf-border)" }}>
-          <span style={{ fontSize: 13, fontWeight: 700 }}>Monthly Budget</span>
-          <button
-            onClick={() => setBudgetSetupOpen(true)}
-            style={{ background: "transparent", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "4px 11px", fontSize: 11, fontWeight: 600, color: "var(--uf-text-2)", cursor: "pointer" }}
-          >
-            ✎ Guided setup
-          </button>
-        </div>
+      {editAll ? (
+        <>
+          <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>Every category · tap one to change its budget</div>
+          <MoneyList footer={<div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <Button variant="primary" size="sm" onClick={() => { setEditAll(false); setEditingKey(null); }}>Done</Button>
+            <Button variant="secondary" size="sm" onClick={() => setBudgetSetupOpen(true)}>Guided setup</Button>
+            {editingKey === "income"
+              ? <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Monthly income</span><div style={{ width: 150 }}><NumberInput value={income} onChange={setIncome} placeholder="5000" prefix={currencyPrefix} currency={displayCurrency} rates={displayRates} /></div></div>
+              : <Button variant="ghost" size="sm" onClick={() => setEditingKey("income")}>Income {fmtMoney(income)}</Button>}
+          </div>}>
+            {[...activeCats].sort((x, y) => (expenses[y.key] || 0) - (expenses[x.key] || 0)).map(renderRow)}
+          </MoneyList>
+        </>
+      ) : (
+        <>
+          <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>Needs attention</div>
+          {attention.length > 0
+            ? <MoneyList>{attention.map(renderRow)}</MoneyList>
+            : <MoneyList><MoneyRow dot="var(--uf-teal)" icon="✓" name="Everything's on track" meta={`Nothing over budget or heading over in ${now.toLocaleDateString("en-US", { month: "long" })}`} value="" /></MoneyList>}
 
-        {/* The pale arc is the one part of the dial nobody guesses. */}
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center", padding: "12px 18px", margin: "0 -18px", borderBottom: "1px solid var(--uf-border)", fontSize: 11.5, color: "var(--uf-text-2)", fontWeight: 600 }}>
-          <span><i style={{ display: "inline-block", width: 11, height: 11, borderRadius: "50%", background: "var(--uf-text-2)", marginRight: 6, verticalAlign: -1 }} />spent</span>
-          <span><i style={{ display: "inline-block", width: 11, height: 11, borderRadius: "50%", background: "var(--uf-border-2)", marginRight: 6, verticalAlign: -1 }} />expected, not yet paid</span>
-          <span><i style={{ display: "inline-block", width: 11, height: 11, borderRadius: "50%", background: "var(--uf-surface-2)", marginRight: 6, verticalAlign: -1 }} />room left</span>
-          <span><i style={{ display: "inline-block", width: 11, height: 11, borderRadius: "50%", background: "var(--uf-neg)", marginRight: 6, verticalAlign: -1 }} />over</span>
-        </div>
-
-        {(classifiedTotal > 0 || untaggedCount > 0) && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", margin: "0 -18px", borderBottom: "1px solid var(--uf-border)", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: "var(--uf-text-2)" }}>
-              <span>Needs/Wants</span>
-              {classifiedTotal > 0 && (
-                <>
-                  <div style={{ width: 110, height: 6, borderRadius: 4, overflow: "hidden", display: "flex", background: "var(--uf-border)" }}>
-                    <div style={{ width: `${(needsTotal / classifiedTotal) * 100}%`, background: "#22d3a5" }} />
-                    <div style={{ width: `${(wantsTotal / classifiedTotal) * 100}%`, background: "#f97316" }} />
-                  </div>
-                  <span>{Math.round((needsTotal / classifiedTotal) * 100)}% / {Math.round((wantsTotal / classifiedTotal) * 100)}%</span>
-                </>
-              )}
-              {untaggedCount > 0 && <span>{untaggedCount} unclassified</span>}
-            </div>
-            {untaggedCount > 0 && (
-              <button
-                onClick={onOpenTransactions}
-                style={{ background: "transparent", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "4px 11px", fontSize: 11, fontWeight: 600, color: "var(--uf-text-2)", cursor: "pointer" }}
-              >
-                Tag in Transactions →
-              </button>
+          <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>This month</div>
+          <MoneyList footer={<div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <Button variant="secondary" size="sm" onClick={() => setEditAll(true)}>Edit budget</Button>
+            {freeResult && <Button variant="ghost" size="sm" aria-expanded={showHow} onClick={() => setShowHow((v) => !v)}>Free to spend until payday</Button>}
+          </div>}>
+            {billGroup.length > 0 && (
+              <MoneyRow dot="var(--uf-ink-3)" icon="🧾" name="Bills"
+                meta={billsStillDue > 0 ? `${fmtMoney(billsStillDue)} still due` : "All paid"}
+                value={`${fmtMoney(sum(billGroup, spentOf))} of ${fmtMoney(sum(billGroup, (k) => expenses[k] || 0))}`}
+                bar={<MoneyTrack share={sum(billGroup, spentOf) / Math.max(1, sum(billGroup, (k) => expenses[k] || 0))} due={billsStillDue / Math.max(1, sum(billGroup, (k) => expenses[k] || 0))} color="var(--uf-ink-3)" label="Bills paid and still due" />}
+                onClick={onOpenUpcoming} />
             )}
-          </div>
-        )}
+            {everyday.length > 0 && (
+              <MoneyRow dot="var(--uf-teal)" icon="✓" name={`${everyday.length} everyday ${everyday.length === 1 ? "category" : "categories"} on track`}
+                meta={`${fmtMoney(sum(everyday, spentOf))} of ${fmtMoney(sum(everyday, (k) => expenses[k] || 0))}`}
+                value={showEveryday ? "Hide" : "Show"} valueTone="var(--uf-pos-ink)" strong
+                onClick={() => setShowEveryday((v) => !v)}
+                after={showEveryday && <MoneyList>{everyday.map(renderRow)}</MoneyList>} />
+            )}
+          </MoneyList>
+        </>
+      )}
 
-        {overBudgetCats.length > 0 ? (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 18px 6px", margin: "0 -18px", fontSize: 11, fontWeight: 800, letterSpacing: "0.8px", textTransform: "uppercase", color: "#DC2626" }}>
-              Over budget <span style={{ background: "#DC2626", color: "#fff", fontSize: 10.5, fontWeight: 800, borderRadius: 999, padding: "1px 8px" }}>{overBudgetCats.length}</span>
-            </div>
-            {overBudgetCats.map(cat => renderRow(cat, true))}
-            <div style={{ height: 1, background: "var(--uf-border)", margin: "0 -18px" }} />
-          </>
-        ) : (
-          <div style={{ padding: "12px 18px", margin: "0 -18px", fontSize: 12, color: "#22d3a5", fontWeight: 600 }}>✓ Nothing over budget this month</div>
-        )}
-
-        {onTrackCats.length > 0 && (
-          <>
-            <button
-              onClick={() => setOnTrackOpen(v => !v)}
-              style={{ width: "calc(100% + 36px)", margin: "0 -18px", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 18px", fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)", background: "transparent", border: "none", cursor: "pointer" }}
-            >
-              <span>{onTrackCats.length} {overBudgetCats.length > 0 ? "more " : ""}on track — {fmtMoney(onTrackBudgetTotal)} budgeted</span>
-              <span style={{ color: "var(--uf-text-3)", transform: onTrackOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>▾</span>
-            </button>
-            {onTrackOpen && onTrackCats.map(cat => renderRow(cat, false))}
-          </>
-        )}
-      </div>
-
-      <div className="uf-card" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 16, position: "sticky", top: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ position: "relative", width: 80, height: 80, flexShrink: 0, borderRadius: "50%", background: `conic-gradient(${donutGradient})` }}>
-            <div style={{ position: "absolute", inset: 13, borderRadius: "50%", background: "var(--uf-card)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "var(--uf-text)" }}>{fmtMoney(totalExp)}</div>
-              <div style={{ fontSize: 7, color: "var(--uf-text-3)", textTransform: "uppercase", letterSpacing: "0.04em" }}>budgeted</div>
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 10.5, minWidth: 0 }}>
-            {[...donutStops].sort((a, b) => b.amt - a.amt).slice(0, 6).map(s => (
-              <div key={s.key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ width: 6, height: 6, borderRadius: 2, background: s.color, flexShrink: 0 }} />
-                <span style={{ color: "var(--uf-text-2)" }}>{s.label}</span>
-                <span style={{ marginLeft: "auto", color: "var(--uf-text-3)" }}>{Math.round(s.pct)}%</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{ height: 1, background: "var(--uf-border)" }} />
-
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 4 }}>Income</div>
-          {editingKey === "income" ? (
-            <div onClick={e => e.stopPropagation()}>
-              <NumberInput
-                value={income}
-                onChange={setIncome}
-                placeholder="5000"
-                prefix={currencyPrefix}
-                currency={displayCurrency}
-                rates={displayRates}
-              />
-            </div>
-          ) : (
-            <div onClick={() => setEditingKey("income")} style={{ fontSize: 22, fontWeight: 800, cursor: "pointer" }}>{fmtMoney(income)}</div>
-          )}
-        </div>
-
-        <div style={{ height: 1, background: "var(--uf-border)" }} />
-
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 4 }}>Monthly savings</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: savings >= 0 ? "#22d3a5" : "#DC2626" }}>{fmtMoney(Math.max(0, savings))}</div>
-        </div>
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 4 }}>Savings rate</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)" }}>{rate.toFixed(1)}%</div>
-        </div>
-
-        <div style={{ height: 1, background: "var(--uf-border)" }} />
-
-        <div style={{ fontSize: 12, lineHeight: 1.5, color: "var(--uf-text-2)" }}>
-          {rate >= 50 ? "🔥 " : ""}Saving {fmtMoney(Math.max(0, savings))}/mo ({rate.toFixed(1)}% rate)
-          {freedomDateMonthYearLabel
-            ? <> — projected freedom date <span style={{ color: "var(--uf-text)", fontWeight: 700 }}>{freedomDateMonthYearLabel}</span>.</>
-            : "."}
-          {overBudgetCats.length > 0 && (
-            <> {overBudgetCats.map(c => c.label).join(", ")} {overBudgetCats.length === 1 ? "is" : "are"} over budget this month.</>
-          )}
-        </div>
-      </div>
+      {/* Where free to spend comes from, and which accounts count (D-29). */}
+      {showHow && freeResult && (
+        <FreeToSpendRunway result={freeResult} fmt={fmtMoney} allAccounts={spendAccounts} toggles={spendToggles} onToggle={(id, on) => onSpendToggle?.(id, on)} />
+      )}
 
       {guidedSetupModal}
     </div>
@@ -2729,227 +2773,6 @@ function SurveyModal({ onSubmit, onDismiss }: {
             Skip for now
           </button>
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Onboarding Modal ─────────────────────────────────────────────────────────
-function OnboardingModal({ defaultCurrency, onComplete, onDismiss }: {
-  defaultCurrency: string;
-  onComplete: (income: number, spending: number, savings: number, taxKey: string) => void;
-  onDismiss: () => void;
-}) {
-  const [incomeMode, setIncomeMode] = useState<"monthly" | "annual">("monthly");
-  const [inc, setInc] = useState("");
-  const [spend, setSpend] = useState("");
-  const [save, setSave] = useState("");
-  const [taxCountry, setTaxCountry] = useState("");
-  const [taxSub, setTaxSub] = useState("");
-
-  const toNum = (s: string) => parseFloat(s.replace(/,/g, "")) || 0;
-  const fmtNum = (s: string) => {
-    const n = parseFloat(s.replace(/,/g, ""));
-    return isNaN(n) ? s : n.toLocaleString();
-  };
-
-  const monthlyIncome = incomeMode === "annual" ? Math.round(toNum(inc) / 12) : toNum(inc);
-
-  // Resolve STATE_TAX key from country + sub-picker
-  const resolvedTaxKey = taxCountry === "us" ? taxSub
-    : taxCountry === "ca" ? (taxSub || "ca_on")
-    : taxCountry || "";
-
-  const handleSubmit = () => {
-    onComplete(monthlyIncome, toNum(spend), toNum(save), resolvedTaxKey);
-  };
-
-  const selectStyle: React.CSSProperties = {
-    width: "100%", padding: "11px 14px", border: "1.5px solid #E5E7EB", borderRadius: 10,
-    fontSize: 14, fontWeight: 600, fontFamily: "Manrope, sans-serif", color: "#111827",
-    background: "#fff", outline: "none", cursor: "pointer", appearance: "auto",
-  };
-
-  const Field = ({ label, hint, value, onChange }: { label: string; hint: string; value: string; onChange: (v: string) => void }) => (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label style={{ fontSize: 12, fontWeight: 700, color: "#374151", fontFamily: "Manrope, sans-serif", letterSpacing: "0.02em" }}>{label}</label>
-      <div style={{ position: "relative" }}>
-        <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 600, color: "#6B7280", fontFamily: "Manrope, sans-serif" }}>{defaultCurrency}</span>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={value}
-          onChange={e => onChange(e.target.value.replace(/[^0-9.,]/g, ""))}
-          onBlur={e => onChange(fmtNum(e.target.value))}
-          placeholder="0"
-          style={{ width: "100%", paddingLeft: 52, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 16, fontWeight: 600, fontFamily: "Manrope, sans-serif", outline: "none", boxSizing: "border-box", color: "#111827" }}
-          onFocus={e => { e.target.style.borderColor = "#064E3B"; }}
-        />
-      </div>
-      <span style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "Manrope, sans-serif" }}>{hint}</span>
-    </div>
-  );
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" }}>
-      <div style={{ background: "#fff", borderRadius: 20, padding: "36px 32px 28px", maxWidth: 440, width: "100%", boxShadow: "0 24px 64px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 24, margin: "auto" }}>
-        {/* Header */}
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#20D4BF", marginBottom: 8, fontFamily: "Manrope, sans-serif" }}>Welcome to UntilFire</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px", lineHeight: 1.25 }}>
-            Let&apos;s find your FIRE number
-          </div>
-          <div style={{ fontSize: 13, color: "#6B7280", marginTop: 6, fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>
-            Income, spending, and current savings are enough to get started. You can refine everything later.
-          </div>
-        </div>
-
-        {/* Financial fields */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-            <button
-              type="button"
-              onClick={() => setIncomeMode("monthly")}
-              style={{ border: `1.5px solid ${incomeMode === "monthly" ? "#064E3B" : "#E5E7EB"}`, background: incomeMode === "monthly" ? "#F0FDF4" : "#fff", color: incomeMode === "monthly" ? "#064E3B" : "#6B7280", borderRadius: 10, padding: "10px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
-            >
-              Monthly take-home
-            </button>
-            <button
-              type="button"
-              onClick={() => setIncomeMode("annual")}
-              style={{ border: `1.5px solid ${incomeMode === "annual" ? "#064E3B" : "#E5E7EB"}`, background: incomeMode === "annual" ? "#F0FDF4" : "#fff", color: incomeMode === "annual" ? "#064E3B" : "#6B7280", borderRadius: 10, padding: "10px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
-            >
-              Gross annual
-            </button>
-          </div>
-          <Field
-            label={incomeMode === "annual" ? "Gross annual income" : "Monthly take-home pay"}
-            hint={incomeMode === "annual" ? "Before tax, per year — we’ll use a rough monthly estimate" : "After tax, per month"}
-            value={inc}
-            onChange={setInc}
-          />
-          <Field label="Monthly spending" hint="Rent, food, everything — rough total is fine" value={spend} onChange={setSpend} />
-          <Field label="Current savings / net worth" hint="Total across accounts and investments — 0 is okay" value={save} onChange={setSave} />
-        </div>
-
-        {/* Tax identity */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingTop: 4, borderTop: "1px solid #F1F5F9" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", fontFamily: "Manrope, sans-serif", letterSpacing: "0.02em" }}>
-              Where do you pay taxes?
-            </div>
-            <span style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "Manrope, sans-serif" }}>optional</span>
-          </div>
-          <div style={{ fontSize: 11, color: "#9CA3AF", fontFamily: "Manrope, sans-serif", marginTop: -4, lineHeight: 1.5 }}>
-            Helps us estimate your real FIRE number — taxes change what you actually need to save.
-          </div>
-          <select
-            value={taxCountry}
-            onChange={e => { setTaxCountry(e.target.value); setTaxSub(""); }}
-            style={selectStyle}
-          >
-            <option value="">Select country / region…</option>
-            {TAX_COUNTRIES.map(c => (
-              <option key={c.value} value={c.value}>{c.flag} {c.label}</option>
-            ))}
-          </select>
-          {taxCountry === "us" && (
-            <select value={taxSub} onChange={e => setTaxSub(e.target.value)} style={selectStyle}>
-              <option value="">Select state…</option>
-              {TAX_US_STATES.map(s => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          )}
-          {taxCountry === "ca" && (
-            <select value={taxSub} onChange={e => setTaxSub(e.target.value)} style={selectStyle}>
-              <option value="">Select province…</option>
-              {TAX_CA_PROVINCES.map(p => (
-                <option key={p.value} value={p.value}>{p.label}</option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
-          <button
-            onClick={handleSubmit}
-            disabled={!inc}
-            style={{ background: inc ? "#064E3B" : "#E5E7EB", color: inc ? "#fff" : "#9CA3AF", border: "none", borderRadius: 10, padding: "13px 20px", fontSize: 15, fontWeight: 700, cursor: inc ? "pointer" : "not-allowed", fontFamily: "Manrope, sans-serif", transition: "background 0.15s" }}
-          >
-            Get my FIRE number →
-          </button>
-          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: "4px 0" }}>
-            Skip for now
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Setup Checklist ──────────────────────────────────────────────────────────
-function SetupChecklist({ income, expenses, k401, rothIRA, taxable, cashSavings, cityName, plaidAccounts = [], onTabChange, onOpenOnboarding }: {
-  income: number; expenses: Record<string, number | undefined>;
-  k401: number; rothIRA: number; taxable: number; cashSavings: number;
-  cityName: string;
-  plaidAccounts?: PlaidAccount[];
-  onTabChange?: (tab: TabKey) => void;
-  onOpenOnboarding?: () => void;
-}) {
-  const hasExpenses = Object.values(expenses).some(v => (v ?? 0) > 0);
-  // Connected *or* entered. Plaid has no coverage in Hong Kong or mainland
-  // China, so keying this step on a Plaid connection left the people who
-  // cannot use it with a step that could never be completed — nagging them
-  // about something impossible, forever. The balances were already being
-  // passed to this component and ignored.
-  const hasAccounts = plaidAccounts.length > 0
-    || (k401 + rothIRA + taxable + cashSavings) > 0;
-  const steps = [
-    { label: "Set your income", done: income > 0, action: () => onOpenOnboarding?.(), cta: "Add income" },
-    { label: "Add your expenses", done: hasExpenses, action: () => onTabChange?.("cashflow"), cta: "Go to Cashflow" },
-    { label: "Add your accounts", done: hasAccounts, action: () => onTabChange?.("assets"), cta: "Add accounts" },
-    // Plan, not Profile: the assumptions moved there on 18 Sep and this step
-    // kept pointing at account settings, so the last thing a new user was
-    // asked to do sent them to a page that no longer had the field.
-    { label: "Set your city", done: cityName !== "", action: () => onTabChange?.("fire-calculator"), cta: "Go to Plan" },
-  ];
-  const completedCount = steps.filter(s => s.done).length;
-  if (completedCount === 4) return null;
-  const pct = (completedCount / 4) * 100;
-
-  return (
-    <div style={{ background: "var(--uf-card)", border: "1px solid rgba(34,211,165,0.2)", borderRadius: 14, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>Get started</div>
-          <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 2 }}>{completedCount} of 4 complete</div>
-        </div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#22d3a5", fontFamily: "Manrope, sans-serif" }}>{Math.round(pct)}%</div>
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ height: 4, background: "var(--uf-border)", borderRadius: 99, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${pct}%`, background: "#22d3a5", borderRadius: 99, transition: "width 0.4s ease" }} />
-      </div>
-
-      {/* Steps */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {steps.map(step => (
-          <div key={step.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 18, height: 18, borderRadius: "50%", background: step.done ? "#22d3a5" : "transparent", border: step.done ? "none" : "1.5px solid var(--uf-border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              {step.done && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#08080e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-            </div>
-            <span style={{ flex: 1, fontSize: 13, color: step.done ? "var(--uf-text-2)" : "var(--uf-text)", fontFamily: "Manrope, sans-serif", textDecoration: step.done ? "line-through" : "none" }}>{step.label}</span>
-            {!step.done && (
-              <button onClick={step.action} style={{ background: "transparent", border: "none", color: "#22d3a5", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: 0, whiteSpace: "nowrap" }}>
-                {step.cta} →
-              </button>
-            )}
-          </div>
-        ))}
       </div>
     </div>
   );
@@ -3143,52 +2966,118 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
     setGoals(prev => prev.filter(g => g.id !== id));
   }
 
-  const fmtAmt = (n: number) => formatMoney(n, { style: "compact" });
 
-  function goalStatus(g: Goal): { label: string; color: string; bg: string } {
-    const pct = g.target_amount > 0 ? g.current_saved / g.target_amount : 0;
-    if (pct >= 1) return { label: "Achieved! 🎉", color: "#059669", bg: "rgba(5,150,105,0.1)" };
-    if (!g.target_date) return { label: `${Math.round(pct * 100)}%`, color: "#22d3a5", bg: "transparent" };
-    const monthsLeft = Math.max(0, (new Date(g.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30));
-    const needed = (g.target_amount - g.current_saved) / Math.max(monthsLeft, 1);
-    if (monthsLeft <= 0) return { label: "Overdue", color: "#ef4444", bg: "rgba(239,68,68,0.1)" };
-    return { label: `$${Math.round(needed).toLocaleString()}/mo needed`, color: "#f97316", bg: "transparent" };
+  const fmtFull = (n: number) => formatMoney(n);
+  // Goals are categories here, so each takes a palette colour in order (D-42).
+  const goalColor = (i: number) => COLOR_PALETTE[i % (COLOR_PALETTE.length - 1)];
+  const [whyOpen, setWhyOpen] = useState(false);
+  const [openGoal, setOpenGoal] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  /** What a goal needs: done, a monthly amount to make its date, past its date, or no date. */
+  function goalPlan(g: Goal): { kind: "done" } | { kind: "monthly"; amount: number } | { kind: "late" } | { kind: "open" } {
+    if (g.target_amount > 0 && g.current_saved >= g.target_amount) return { kind: "done" };
+    if (!g.target_date) return { kind: "open" };
+    if (new Date(`${g.target_date.slice(0, 10)}T00:00:00`).getTime() < Date.now()) return { kind: "late" };
+    // The same monthly amount the contribution ladder's goals step takes (lib/goal-monthly).
+    return { kind: "monthly", amount: goalMonthly(g) ?? 0 };
   }
+  const monthlyNeeded = goals.reduce((t, g) => { const p = goalPlan(g); return t + (p.kind === "monthly" ? p.amount : 0); }, 0);
 
   if (loading) return <div style={{ padding: 40, color: "var(--uf-text-muted)", textAlign: "center" }}>Loading…</div>;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Fraunces, Georgia, serif", letterSpacing: "-0.4px" }}>Goals</div>
-          <div style={{ fontSize: 13, color: "var(--uf-text-muted)", marginTop: 2 }}>Save toward the things that matter</div>
-        </div>
-        <button
-          onClick={() => openAdd()}
-          style={{
-            display: "flex", alignItems: "center", gap: 7,
-            background: "#22d3a5", color: "#003527",
-            border: "none", borderRadius: 10, padding: "9px 18px",
-            fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-          }}
-        >
-          <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Add Goal
-        </button>
-      </div>
+      {/* The calm headline (D-42): saved toward every goal, one bar split by
+          goal, and what a month keeps the dated ones on time. */}
+      <MoneyHead
+        label={goals.length ? `Saved toward ${goals.length} ${goals.length === 1 ? "goal" : "goals"}` : "Goals"}
+        value={fmtFull(goals.reduce((t, g) => t + g.current_saved, 0))}
+        sub={goals.length
+          ? <>of <Fig>{fmtFull(goals.reduce((t, g) => t + g.target_amount, 0))}</Fig>{monthlyNeeded > 0 ? <> · <Fig>{fmtFull(monthlyNeeded)}</Fig> a month keeps the dated ones on time</> : null}</>
+          : "Save toward the things that matter"}
+        aside={<Button variant="primary" size="sm" onClick={() => openAdd()}>Add a goal</Button>}
+      >
+        {goals.length > 0 && (
+          <StackBar total={goals.reduce((t, g) => t + g.target_amount, 0)} label="Saved toward each goal"
+            parts={goals.map((g, i) => ({ key: g.id, color: goalColor(i), value: Math.min(g.current_saved, g.target_amount) }))} />
+        )}
+      </MoneyHead>
 
-      {/* Your why: one prompt per PERMA category with no linked goal yet.
+      {/* Empty state */}
+      {goals.length === 0 && (
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 16,
+          padding: "48px 20px", background: "var(--uf-card)", border: "1px dashed var(--uf-border)",
+          borderRadius: 16, textAlign: "center",
+        }}>
+          <div style={{ fontSize: 40 }}>🎯</div>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--uf-text)", marginBottom: 6 }}>No goals yet</div>
+            <div style={{ fontSize: 13, color: "var(--uf-text-muted)" }}>Pick something to save toward and track your progress.</div>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", maxWidth: 420 }}>
+            {QUICK_GOAL_PRESETS.slice(0, 8).map(p => (
+              <button
+                key={p.name}
+                onClick={() => openAdd(p)}
+                style={{
+                  background: "var(--uf-surface)", border: "1px solid var(--uf-border)",
+                  borderRadius: 99, padding: "6px 14px", fontSize: 13, fontWeight: 600,
+                  color: "var(--uf-text)", cursor: "pointer", fontFamily: "inherit",
+                  display: "flex", alignItems: "center", gap: 6,
+                }}
+              >
+                {p.emoji} {p.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {goals.length > 0 && (
+        <MoneyList>
+          {goals.map((g, i) => {
+            const pct = g.target_amount > 0 ? Math.min(1, g.current_saved / g.target_amount) : 0;
+            const plan = goalPlan(g);
+            const open = openGoal === g.id;
+            return (
+              <MoneyRow key={g.id} dot={goalColor(i)} icon={g.emoji} name={g.name}
+                meta={[
+                  `${fmtFull(g.current_saved)} of ${fmtFull(g.target_amount)}`,
+                  g.target_date ? `by ${new Date(g.target_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}` : null,
+                  plan.kind === "monthly" ? `${fmtFull(plan.amount)}/mo` : plan.kind === "late" ? "past its date" : null,
+                  g.perma_category ? PERMA_LABELS[g.perma_category] : null,
+                ].filter(Boolean).join(" · ")}
+                value={plan.kind === "done" ? "Done ✓" : `${Math.round(pct * 100)}%`} strong
+                valueTone={plan.kind === "done" ? "var(--uf-pos-ink)" : plan.kind === "late" ? "var(--uf-warn-ink)" : undefined}
+                bar={<MoneyTrack share={pct} color={goalColor(i)} label={`${g.name}: ${Math.round(pct * 100)}% saved`} />}
+                onClick={() => { setOpenGoal(open ? null : g.id); setConfirmDelete(null); }}
+                after={open && (
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <Button variant="secondary" size="sm" onClick={() => openEdit(g)}>Edit</Button>
+                    {confirmDelete === g.id
+                      ? <><Button variant="danger" size="sm" onClick={() => handleDelete(g.id)}>Delete {g.name}</Button><Button variant="ghost" size="sm" onClick={() => setConfirmDelete(null)}>Keep it</Button></>
+                      : <Button variant="danger" size="sm" onClick={() => setConfirmDelete(g.id)}>Delete</Button>}
+                  </div>
+                )} />
+            );
+          })}
+        </MoneyList>
+      )}
+
+      {/* Your why (below your goals since D-57, folded into one row): one
+          prompt per PERMA category with no linked goal yet.
           Describe it in your own words, get an estimate, nudge it until it
           feels right, then save — no popup, no typing a number cold. Once
           saved it drops off this list and shows up as a normal card below
           with a PERMA badge (see the goals grid). */}
       {remainingPermaPrompts.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>
-            Your why
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+          <MoneyList>
+            <MoneyRow dot="var(--uf-ink-3)" icon="💭" name="Find your why" meta={`${remainingPermaPrompts.length} questions to turn what matters into a goal`}
+              value={whyOpen ? "Hide" : "Open ›"} onClick={() => setWhyOpen(o => !o)} />
+          </MoneyList>
+          {whyOpen && <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
             {remainingPermaPrompts.map(p => {
               const card = permaCard(p.id);
               const saving = permaSavingId === p.id;
@@ -3222,7 +3111,7 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
                         disabled={!card.description.trim() || card.estimating}
                         style={{
                           alignSelf: "flex-start", background: "none", border: "none",
-                          color: card.description.trim() ? "#22d3a5" : "var(--uf-text-muted)",
+                          color: card.description.trim() ? "var(--uf-pos-ink)" : "var(--uf-text-muted)",
                           fontSize: 12, fontWeight: 700, cursor: card.description.trim() ? "pointer" : "default",
                           padding: 0, fontFamily: "inherit",
                         }}
@@ -3243,7 +3132,7 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
                         <button
                           onClick={() => confirmPermaGoal(p)}
                           disabled={saving}
-                          style={{ flex: 1, background: "#22d3a5", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700, color: "#003527", cursor: "pointer", fontFamily: "inherit" }}
+                          style={{ flex: 1, background: "var(--uf-green)", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 12, fontWeight: 700, color: "var(--uf-card)", cursor: "pointer", fontFamily: "inherit" }}
                         >
                           {saving ? "Saving…" : "Looks right"}
                         </button>
@@ -3256,142 +3145,7 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {goals.length === 0 && (
-        <div style={{
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 16,
-          padding: "48px 20px", background: "var(--uf-card)", border: "1px dashed var(--uf-border)",
-          borderRadius: 16, textAlign: "center",
-        }}>
-          <div style={{ fontSize: 40 }}>🎯</div>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--uf-text)", marginBottom: 6 }}>No goals yet</div>
-            <div style={{ fontSize: 13, color: "var(--uf-text-muted)" }}>Pick something to save toward and track your progress.</div>
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", maxWidth: 420 }}>
-            {QUICK_GOAL_PRESETS.slice(0, 8).map(p => (
-              <button
-                key={p.name}
-                onClick={() => openAdd(p)}
-                style={{
-                  background: "var(--uf-surface)", border: "1px solid var(--uf-border)",
-                  borderRadius: 99, padding: "6px 14px", fontSize: 13, fontWeight: 600,
-                  color: "var(--uf-text)", cursor: "pointer", fontFamily: "inherit",
-                  display: "flex", alignItems: "center", gap: 6,
-                }}
-              >
-                {p.emoji} {p.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Goals grid */}
-      {goals.length > 0 && (
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-          gap: 16,
-        }}>
-          {goals.map(g => {
-            const pct = g.target_amount > 0 ? Math.min(1, g.current_saved / g.target_amount) : 0;
-            const status = goalStatus(g);
-            const achieved = pct >= 1;
-            return (
-              <div
-                key={g.id}
-                style={{
-                  background: "var(--uf-card)", border: "1px solid var(--uf-border)",
-                  borderRadius: 16, padding: "20px 20px 16px",
-                  display: "flex", flexDirection: "column", gap: 14,
-                  position: "relative",
-                }}
-              >
-                {/* Edit/delete actions */}
-                <div style={{ position: "absolute", top: 14, right: 14, display: "flex", gap: 6 }}>
-                  <button
-                    onClick={() => openEdit(g)}
-                    style={{ background: "none", border: "none", color: "var(--uf-text-muted)", cursor: "pointer", fontSize: 16, padding: 2 }}
-                    title="Edit"
-                  >✏️</button>
-                  <button
-                    onClick={() => handleDelete(g.id)}
-                    style={{ background: "none", border: "none", color: "var(--uf-text-muted)", cursor: "pointer", fontSize: 16, padding: 2 }}
-                    title="Delete"
-                  >🗑️</button>
-                </div>
-
-                {/* Emoji + name */}
-                <div style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: 56 }}>
-                  <div style={{
-                    fontSize: 28, width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center",
-                    background: "var(--uf-surface)", borderRadius: 12, flexShrink: 0,
-                  }}>{g.emoji}</div>
-                  <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)", lineHeight: 1.3 }}>{g.name}</div>
-                    {g.perma_category && (
-                      <Badge tone="freedom" style={{ marginTop: 4 }}>{PERMA_LABELS[g.perma_category]}</Badge>
-                    )}
-                    {g.target_date && (
-                      <div style={{ fontSize: 11, color: "var(--uf-text-muted)", marginTop: 4 }}>
-                        🗓 {new Date(g.target_date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div>
-                  <div style={{
-                    height: 6, background: "var(--uf-surface)", borderRadius: 99, overflow: "hidden",
-                  }}>
-                    <div style={{
-                      height: "100%", width: `${pct * 100}%`,
-                      background: achieved ? "#059669" : "#22d3a5",
-                      borderRadius: 99, transition: "width 0.4s ease",
-                    }} />
-                  </div>
-                </div>
-
-                {/* Amounts + status */}
-                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
-                  <div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-text)", letterSpacing: "-0.03em" }}>
-                      {fmtAmt(g.current_saved)}
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--uf-text-muted)", marginTop: 1 }}>
-                      of {fmtAmt(g.target_amount)}
-                    </div>
-                  </div>
-                  <div style={{
-                    fontSize: 11, fontWeight: 700, color: status.color,
-                    background: status.bg, borderRadius: 99, padding: "3px 10px",
-                  }}>
-                    {status.label}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Add another card */}
-          <button
-            onClick={() => openAdd()}
-            style={{
-              background: "transparent", border: "1.5px dashed var(--uf-border)",
-              borderRadius: 16, padding: "20px", cursor: "pointer",
-              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-              gap: 8, color: "var(--uf-text-muted)", minHeight: 160, fontFamily: "inherit",
-            }}
-          >
-            <span style={{ fontSize: 24 }}>+</span>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>Add goal</span>
-          </button>
+          </div>}
         </div>
       )}
 
@@ -3462,7 +3216,7 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
 
             {/* Target amount */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Target Amount</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Target amount</label>
               <div style={{ position: "relative" }}>
                 <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--uf-text-muted)", fontSize: 14 }}>$</span>
                 <input
@@ -3482,7 +3236,7 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
 
             {/* Already saved */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <label style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Already Saved</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Already saved</label>
               <div style={{ position: "relative" }}>
                 <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--uf-text-muted)", fontSize: 14 }}>$</span>
                 <input
@@ -3531,13 +3285,13 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
                 onClick={handleSave}
                 disabled={saving || !draft.name.trim() || !draft.target_amount}
                 style={{
-                  flex: 2, padding: "11px", background: "#22d3a5",
+                  flex: 2, padding: "11px", background: "var(--uf-green)",
                   border: "none", borderRadius: 10,
-                  fontSize: 13, fontWeight: 700, color: "#003527",
+                  fontSize: 13, fontWeight: 700, color: "var(--uf-card)",
                   cursor: saving ? "default" : "pointer", fontFamily: "inherit",
                   opacity: saving || !draft.name.trim() || !draft.target_amount ? 0.6 : 1,
                 }}
-              >{saving ? "Saving…" : editingGoal ? "Save Changes" : "Add Goal"}</button>
+              >{saving ? "Saving…" : editingGoal ? "Save changes" : "Add Goal"}</button>
             </div>
           </div>
         </div>
@@ -3572,10 +3326,9 @@ function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => vo
   // that is theirs rather than the same outline as everybody else.
   const initials = (name ?? email ?? "")
     .split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
-  const handleSignOut = async () => { await supabase.auth.signOut(); window.location.href = "/"; };
 
   if (!email) return (
-    <Link href="/login" style={{ background: "#064E3B", color: "#fff", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Sign In</Link>
+    <Link href="/login" style={{ background: "#064E3B", color: "#fff", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Sign in</Link>
   );
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -3620,112 +3373,61 @@ function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => vo
           <span style={{ fontSize: 11, fontWeight: 400, color: "#94A3B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{email}</span>
         </div>
       </button>
-      <button onClick={handleSignOut} style={{ background: "transparent", border: "none", color: "#94A3B8", fontSize: 12, fontWeight: 500, cursor: "pointer", textAlign: "left", padding: "4px 14px", fontFamily: "Manrope, sans-serif" }}>
-        Sign out
-      </button>
     </div>
   );
 }
 
 // ─── Portfolio Overview Tab ───────────────────────────────────────────────────
-function PortfolioOverviewTab({ income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, lifestyleMultiplier = 1.0 }: {
-  income: number; expenses: Expenses; k401: number; rothIRA: number;
-  taxable: number; cashSavings?: number; totalDebt: number; mortgageBalance: number;
-  mortgageMonthly: number; growthRate: number; withdrawalRate: number;
+function PortfolioOverviewTab({ k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, displayCurrency, displayRates, plaidAccounts = [], homeValue = 0 }: {
+  k401: number; rothIRA: number; taxable: number; cashSavings?: number;
+  totalDebt: number; mortgageBalance: number;
   displayCurrency: string; displayRates: Record<string, number>;
-  retirementCityCol?: number; lifestyleMultiplier?: number;
   plaidAccounts?: PlaidAccount[];
+  /** Typed on the phone; in net worth so a mortgage isn't all minus, never toward freedom (audit round 2). */
+  homeValue?: number;
 }) {
-  const fmtMoney = (n: number, compact = false) => fmt(n, displayCurrency, displayRates, compact);
-  const monthlyExpenses = Object.entries(expenses)
-    .filter(([k]) => !k.startsWith("_"))
-    .reduce((s, [, v]) => s + (v || 0), 0);
+  const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
 
-  const targetMonthlyExpenses = retirementCityCol > 0 ? (retirementCityCol * lifestyleMultiplier) / 12 : undefined;
-
-  const { fireYear, fireTarget } = useMemo(() => calcProjection({
-    annualIncome: income * 12, monthlyExpenses,
-    k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly,
-    growthRate, withdrawalRate, targetMonthlyExpenses,
-  }), [income, monthlyExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, targetMonthlyExpenses]);
-
-  const plaidAssets       = plaidAccounts.filter(a => a.type === "depository" || a.type === "investment").reduce((s, a) => s + (a.balance_current ?? 0), 0);
-  const plaidLiabilities  = plaidAccounts.filter(a => a.type === "credit" || a.type === "loan").reduce((s, a) => s + (a.balance_current ?? 0), 0);
-  const investable = k401 + rothIRA + taxable + cashSavings + plaidAssets;
-  const netWorth   = investable - totalDebt - mortgageBalance - plaidLiabilities;
-  const progress   = fireTarget > 0 ? Math.min(100, (investable / fireTarget) * 100) : 0;
+  // Connected accounts replace typed balances of the same kind (effectiveBalances), as on Home.
+  const eff = effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts });
+  const investable = eff.k401 + eff.rothIRA + eff.taxable + eff.cashSavings;
+  // Debts by the same rule as Home (effectiveDebts): connected replaces typed, cards counted once.
+  const debts = effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts });
+  const netWorth   = investable + homeValue - debts.otherDebt - debts.mortgage - debts.cards;
+  const assets = Math.max(eff.k401, 0) + Math.max(eff.rothIRA, 0) + Math.max(eff.taxable, 0) + Math.max(eff.cashSavings, 0) + homeValue;
+  const owed = debts.otherDebt + debts.mortgage + debts.cards;
+  // Account types are categories here, so they get category colours (D-40).
+  const types = [
+    { key: "retirement", label: "Retirement", color: ACCOUNT_TYPE_COLORS.retirement, value: eff.k401 + eff.rothIRA },
+    { key: "brokerage", label: "Brokerage", color: ACCOUNT_TYPE_COLORS.brokerage, value: eff.taxable },
+    { key: "cash", label: "Cash", color: ACCOUNT_TYPE_COLORS.cash, value: eff.cashSavings },
+    ...(homeValue > 0 ? [{ key: "home", label: "Home", color: ACCOUNT_TYPE_COLORS.home, value: homeValue }] : []),
+  ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Net worth hero */}
-      <div className="uf-card" style={{ padding: "28px 32px", background: "#003527", borderColor: "transparent" }}>
-        <div style={{ fontSize: 10, fontFamily: "Manrope, sans-serif", letterSpacing: "1px", textTransform: "uppercase", color: "#62FAE3", marginBottom: 10, fontWeight: 700 }}>Net Worth</div>
-        <div style={{ fontSize: "clamp(36px, 6vw, 56px)", fontWeight: 800, color: netWorth >= 0 ? "#FFFFFF" : "#FCA5A5", fontFamily: "Manrope, sans-serif", letterSpacing: "-2px", lineHeight: 1 }}>
-          {fmtMoney(netWorth)}
-        </div>
-        <div style={{ marginTop: 8, fontSize: 14, color: "rgba(255,255,255,0.55)" }}>
-          {fmtMoney(investable, true)} investable assets · {fmtMoney(totalDebt + mortgageBalance, true)} total debt
-        </div>
-        <div style={{ marginTop: 24 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "rgba(255,255,255,0.45)", marginBottom: 8, fontFamily: "Manrope, sans-serif" }}>
-            <span>{fmtMoney(investable, true)} saved</span>
-            <span style={{ color: "#62FAE3", fontWeight: 700 }}>{progress.toFixed(1)}% to FIRE</span>
-            <span>{fmtMoney(fireTarget, true)} target</span>
-          </div>
-          <div style={{ height: 6, background: "rgba(255,255,255,0.15)", borderRadius: 99, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${progress}%`, background: "#62FAE3", borderRadius: 99, transition: "width 0.8s cubic-bezier(0.34,1.56,0.64,1)" }} />
-          </div>
-        </div>
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <MoneyHead
+        label="Net worth"
+        value={<span style={{ color: netWorth < 0 ? "var(--uf-neg-ink)" : undefined }}>{fmtMoney(netWorth)}</span>}
+        sub={<><Fig>{fmtMoney(assets)}</Fig> assets · <Fig>{fmtMoney(owed)}</Fig> debts</>}
+      >
+        <StackBar label={`Assets: ${types.map((t) => `${t.label} ${fmtMoney(t.value)}`).join(", ")}`} parts={types} />
+        <MoneyKey items={types.filter((t) => t.value > 0).map((t) => (
+          <span key={t.key}><i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 999, background: t.color, marginRight: 6 }} />{t.label} <Fig>{fmtMoney(t.value)}</Fig></span>
+        ))} />
+      </MoneyHead>
 
-      {/* KPI row */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-        {[
-          // Tone carries meaning rather than taste: a balance is a fact, debt
-          // reads negative, and FIRE progress is the one figure teal belongs to.
-          { label: "Investable Assets", val: fmtMoney(investable, true), tone: "default" as const, sub: "All accounts" },
-          { label: "Net Worth", val: fmtMoney(netWorth, true), tone: netWorth >= 0 ? ("positive" as const) : ("negative" as const), sub: "Assets − debt" },
-          { label: "Total Debt", val: fmtMoney(totalDebt + mortgageBalance, true), tone: "negative" as const, sub: "Consumer + mortgage" },
-          { label: "FIRE Progress", val: `${progress.toFixed(0)}%`, tone: "freedom" as const, sub: fireYear ? `${fireYear} yrs to FIRE` : "—" },
-        ].map(k => (
-          <KpiCard key={k.label} label={k.label} value={k.val} sub={k.sub} tone={k.tone} />
-        ))}
-      </div>
-
-      {/* Account breakdown table */}
-      <div className="uf-card">
-        <SectionLabel icon="🏦" text="Account Snapshot" color="#064E3B" />
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <tbody>
-            {[
-              { label: "401(k)",            val: k401,              color: "#059669" },
-              { label: "Roth IRA",          val: rothIRA,           color: "#20D4BF" },
-              { label: "Taxable Brokerage", val: taxable,           color: "#047857" },
-              null,
-              { label: "Consumer Debt",     val: -totalDebt,        color: "#DC2626" },
-              { label: "Mortgage Balance",  val: -mortgageBalance,  color: "#DC2626" },
-              null,
-              { label: "Net Worth",         val: netWorth, bold: true, color: netWorth >= 0 ? "#059669" : "#DC2626" },
-            ].map((row, i) => {
-              if (!row) return <tr key={`d${i}`}><td colSpan={2} style={{ borderTop: "1px solid #E2E8F0", padding: "4px 0" }} /></tr>;
-              return (
-                <tr key={row.label}>
-                  <td style={{ padding: "8px 0", fontSize: 14, color: row.bold ? "#19181E" : "#64748B", fontWeight: row.bold ? 600 : 400 }}>{row.label}</td>
-                  <td style={{ padding: "8px 0", textAlign: "right", fontFamily: "Manrope, sans-serif", fontSize: 14, color: row.color, fontWeight: row.bold ? 700 : 400 }}>
-                    {row.val >= 0 ? fmtMoney(row.val) : `−${fmtMoney(Math.abs(row.val))}`}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }
 
 // ─── Assets Tab ───────────────────────────────────────────────────────────────
-function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, onUpgradeClick, emergencyFundMonthlyBase = 0, plaidHoldings = [], plaidSecurities = {}, holdingsNeedsReconnect = [], holdingsLoading = false }: {
+function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, totalDebt = 0, mortgageBalance = 0, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, onUpgradeClick, emergencyFundMonthlyBase = 0, efOverride = null, plaidHoldings = [], plaidSecurities = {}, holdingsNeedsReconnect = [], holdingsLoading = false, accountShares = {}, onShareToggle }: {
+  accountShares?: AccountShares; onShareToggle?: (plaidAccountId: string, shared: boolean) => void;
+  /** An emergency fund amount set by hand on Contributions, which counts here too (D-37). */
+  efOverride?: number | null;
+  /** Typed debts, for What you owe (connected ones come from plaidAccounts). */
+  totalDebt?: number; mortgageBalance?: number;
   k401: number; setK401: (v: number) => void;
   rothIRA: number; setRothIRA: (v: number) => void;
   taxable: number; setTaxable: (v: number) => void;
@@ -3745,10 +3447,8 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
-  const total = k401 + rothIRA + taxable + cashSavings;
 
   const bankAssets = plaidAccounts.filter(a => a.type === "depository" || a.type === "investment");
-  const bankAssetsTotal = bankAssets.reduce((s, a) => s + (a.balance_current ?? 0), 0);
   const [hideZeroAssets, setHideZeroAssets] = useState(true);
   // Zero by the bank's own figure: a balance with no exchange rate reads $0
   // after conversion, and hiding it would hide the warning that it isn't counted.
@@ -3759,20 +3459,20 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
 
   // ── Account type metadata ────────────────────────────────────────────────
   const ACCOUNT_TYPE_META: Record<string, { label: string; emoji: string; color: string }> = {
-    checking:        { label: "Checking",      emoji: "🏧", color: "#3B82F6" },
-    savings:         { label: "Savings",       emoji: "🏦", color: "#059669" },
-    "money market":  { label: "Money Market",  emoji: "💰", color: "#0EA5E9" },
-    money_market:    { label: "Money Market",  emoji: "💰", color: "#0EA5E9" },
-    cd:              { label: "CD",            emoji: "📄", color: "#8B5CF6" },
-    "credit card":   { label: "Credit Card",   emoji: "💳", color: "#F97316" },
-    mortgage:        { label: "Mortgage",      emoji: "🏠", color: "#6366F1" },
-    auto:            { label: "Auto Loan",     emoji: "🚗", color: "#F59E0B" },
-    brokerage:       { label: "Brokerage",     emoji: "📈", color: "#059669" },
-    ira:             { label: "IRA",           emoji: "📈", color: "#059669" },
+    checking:        { label: "Checking",      emoji: "🏧", color: ACCOUNT_TYPE_COLORS.cash },
+    savings:         { label: "Savings",       emoji: "🏦", color: ACCOUNT_TYPE_COLORS.cash },
+    "money market":  { label: "Money market",  emoji: "💰", color: ACCOUNT_TYPE_COLORS.cash },
+    money_market:    { label: "Money market",  emoji: "💰", color: ACCOUNT_TYPE_COLORS.cash },
+    cd:              { label: "CD",            emoji: "📄", color: ACCOUNT_TYPE_COLORS.cash },
+    "credit card":   { label: "Credit card",   emoji: "💳", color: "var(--uf-ink-3)" },
+    mortgage:        { label: "Mortgage",      emoji: "🏠", color: "var(--uf-ink-3)" },
+    auto:            { label: "Auto loan",     emoji: "🚗", color: "var(--uf-ink-3)" },
+    brokerage:       { label: "Brokerage",     emoji: "📈", color: ACCOUNT_TYPE_COLORS.brokerage },
+    ira:             { label: "IRA",           emoji: "📈", color: ACCOUNT_TYPE_COLORS.retirement },
   };
   const getTypeMeta = (subtype: string | null, type: string) => {
     const key = (subtype ?? "").toLowerCase().replace(/-/g, " ");
-    return ACCOUNT_TYPE_META[key] ?? ACCOUNT_TYPE_META[type?.toLowerCase()] ?? { label: subtype ?? type, emoji: "💼", color: "#6B7280" };
+    return ACCOUNT_TYPE_META[key] ?? ACCOUNT_TYPE_META[type?.toLowerCase()] ?? { label: subtype ?? type, emoji: "💼", color: "var(--uf-ink-3)" };
   };
 
   // ── APY state (optimistic overrides while saving) ───────────────────────
@@ -3814,17 +3514,72 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
           onChange={e => setVal(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") setEditing(false); }}
           onBlur={commit}
-          style={{ width: 68, border: "1px solid #059669", borderRadius: 6, padding: "3px 6px", fontSize: 12, outline: "none", fontFamily: "inherit" }}
+          style={{ width: 68, border: "1px solid var(--uf-green)", borderRadius: 6, padding: "3px 6px", fontSize: 12, outline: "none", fontFamily: "inherit" }}
           placeholder="e.g. 4.8"
         />
-        <span style={{ fontSize: 12, color: "#64748B" }}>% APY</span>
+        <span style={{ fontSize: 12, color: "var(--uf-ink-2)" }}>% APY</span>
       </div>
     );
 
     return (
       <button onClick={() => setEditing(true)}
-        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#94A3B8", textAlign: "left", padding: 0, fontFamily: "inherit", marginTop: 2 }}>
+        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--uf-ink-3)", textAlign: "left", padding: 0, fontFamily: "inherit", marginTop: 2 }}>
         {currentApy != null ? `${currentApy}% APY ✏️` : "＋ Enter APY"}
+      </button>
+    );
+  }
+
+  // ── Monthly withdrawal limit (savings) ──────────────────────────────────
+  const [limitMap, setLimitMap] = useState<Record<string, number | null>>({});
+  const effectiveLimit = (a: PlaidAccount) => limitMap[a.id] !== undefined ? limitMap[a.id] : a.withdrawal_limit ?? null;
+
+  const handleSaveLimit = async (accountId: string, withdrawal_limit: number | null) => {
+    setLimitMap(prev => ({ ...prev, [accountId]: withdrawal_limit }));
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const res = await fetch(`/api/plaid/accounts/${accountId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ withdrawal_limit }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      const orig = plaidAccounts.find(a => a.id === accountId)?.withdrawal_limit ?? null;
+      setLimitMap(prev => ({ ...prev, [accountId]: orig }));
+    } else {
+      onRefreshAccounts?.();
+    }
+  };
+
+  function LimitField({ account }: { account: PlaidAccount }) {
+    const current = effectiveLimit(account);
+    const known = knownWithdrawalLimit(bankOf(account)?.institution_name);
+    const [editing, setEditing] = useState(false);
+    const [val, setVal] = useState(current != null ? String(current) : known != null ? String(known) : "");
+    useEffect(() => { setVal(current != null ? String(current) : known != null ? String(known) : ""); }, [current, known]);
+
+    const commit = () => {
+      handleSaveLimit(account.id, parseWithdrawalLimit(val));
+      setEditing(false);
+    };
+
+    if (editing) return (
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+        <input autoFocus type="number" step="1" min="1" max="99" value={val}
+          onChange={e => setVal(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") setEditing(false); }}
+          onBlur={commit}
+          aria-label="Withdrawals allowed per month"
+          style={{ width: 52, border: "1px solid var(--uf-green)", borderRadius: 6, padding: "3px 6px", fontSize: 12, outline: "none", fontFamily: "inherit" }}
+          placeholder="6"
+        />
+        <span style={{ fontSize: 12, color: "var(--uf-ink-2)" }}>withdrawals a month (blank for none)</span>
+      </div>
+    );
+
+    return (
+      <button onClick={() => setEditing(true)}
+        style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "var(--uf-ink-3)", textAlign: "left", padding: 0, fontFamily: "inherit", marginTop: 2 }}>
+        {current != null ? `${current} withdrawals a month ✏️` : known != null ? `＋ Track withdrawal limit (this bank usually allows ${known})` : "＋ Track withdrawal limit"}
       </button>
     );
   }
@@ -3843,7 +3598,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
     cashAccounts: toCashAccounts(bankAssets),
     manualCashSavings: cashSavings,
   });
-  const emergencyFundBalance = efMeasured.balance;
+  const emergencyFundBalance = efOverride ?? efMeasured.balance;
   const efIds = new Set(efMeasured.accounts.map((a) => a.id));
   // Toggle from what is ticked on screen, not from the stored list: after a
   // relink the stored ids match nothing and the savings default is showing.
@@ -3863,316 +3618,168 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   const efFloor = emergencyFundPlan.floorAmount;
   const efTarget = emergencyFundPlan.targetAmount;
   const efPct = emergencyFundPlan.progressToTargetPct;
-  const efTone = emergencyFundPlan.state === "healthy" ? "var(--uf-pos)"
-    : emergencyFundPlan.state === "fragile" ? "var(--uf-warn)"
-    : emergencyFundPlan.state === "rebuilding" ? "var(--uf-ink-3)"
-    : "var(--uf-neg)";
   const monthsCovered = emergencyFundPlan.coverageMonths;
   const avgApy = savingsAccts.length > 0
     ? savingsAccts.filter(a => effectiveApy(a) != null).reduce((s, a) => s + (effectiveApy(a) ?? 0), 0) /
       Math.max(1, savingsAccts.filter(a => effectiveApy(a) != null).length)
     : 0;
 
+  // Calm Net Worth (D-53): one row per account with its bank's logo, a typed
+  // row only for a kind with nothing connected (connected replaces typed, as
+  // in the headline), the emergency fund as one row, banks as rows.
+  const [banks, setBanks] = useState<PlaidItem[]>([]);
+  const [openRow, setOpenRow] = useState<string | null>(null);
+  const toggleRow = (k: string) => setOpenRow((o) => (o === k ? null : k));
+  const bankOf = (a: PlaidAccount) => banks.find((b) => b.id === a.plaid_item_id);
+  const cashConnected = bankAssets.some((a) => a.type === "depository");
+  const retirementConnected = plaidAccounts.some(isRetirementInvestmentAccount);
+  const brokerageConnected = plaidAccounts.some(isBrokerageInvestmentAccount);
+  const typedRows = [
+    { key: "cash", name: "Cash & savings", value: cashSavings, set: setCashSavings, show: !cashConnected, color: ACCOUNT_TYPE_COLORS.cash, icon: "🏦", note: "Savings and your emergency fund. Includes your safety pot toward freedom, at cash returns." },
+    { key: "k401", name: "401(k)", value: k401, set: setK401, show: !retirementConnected, color: ACCOUNT_TYPE_COLORS.retirement, icon: "🏖️", note: "Retirement savings through work." },
+    { key: "roth", name: "Roth IRA", value: rothIRA, set: setRothIRA, show: !retirementConnected, color: ACCOUNT_TYPE_COLORS.retirement, icon: "🏖️", note: "Your own retirement account." },
+    { key: "taxable", name: "Taxable brokerage", value: taxable, set: setTaxable, show: !brokerageConnected, color: ACCOUNT_TYPE_COLORS.brokerage, icon: "📈", note: "Investments outside retirement accounts." },
+  ].filter((t) => t.show);
+  const haveTotal = visibleAssets.reduce((sum, a) => sum + Math.max(0, a.balance_current ?? 0), 0) + typedRows.reduce((sum, t) => sum + Math.max(0, t.value), 0);
+  const eff = effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts });
+  const cards = plaidAccounts.filter((a) => a.type === "credit" && (a.balance_current ?? 0) !== 0);
+  const efInk = emergencyFundPlan.state === "healthy" ? "var(--uf-pos-ink)" : emergencyFundPlan.state === "rebuilding" ? "var(--uf-ink-2)" : "var(--uf-warn-ink)";
+  const nwSection = (t: string) => <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>{t}</div>;
+  // A joint account: half of it on your own figures; the household date counts it once (lib/account-share).
+  const isShared = (a: PlaidAccount) => shareOf(a.plaid_account_id, accountShares) < 1;
+  const sharedField = (a: PlaidAccount) => onShareToggle && (
+    <label className="uf-nw-ef">
+      <input type="checkbox" checked={isShared(a)} onChange={(e) => onShareToggle(a.plaid_account_id, e.target.checked)} />
+      <span style={{ flex: 1, minWidth: 0 }}>Shared with a partner. Count half of its balance and spending on my freedom date.</span>
+    </label>
+  );
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      <PlaidConnect onTransactionsImported={onRefreshAccounts} onUpgradeClick={onUpgradeClick} />
-      {bankAssets.length > 0 && (
-        <div className="uf-card" style={{ background: "rgba(5,150,105,0.04)", border: "1px solid rgba(5,150,105,0.2)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 16 }}>🏦</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-ink)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Connected Bank Accounts</span>
-            </div>
-            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              {hiddenAssetCount > 0 || !hideZeroAssets ? (
-                <button onClick={() => setHideZeroAssets(h => !h)} style={{ background: "none", border: "none", color: "var(--uf-ink-2)", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
-                  {hideZeroAssets ? `Show $0 (${hiddenAssetCount})` : "Hide $0"}
-                </button>
-              ) : null}
-              {onRefreshAccounts && (
-                <button onClick={onRefreshAccounts} style={{ background: "none", border: "none", color: "var(--uf-pos-ink)", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
-                  ↻ Refresh
-                </button>
-              )}
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))", gap: 10 }}>
-            {visibleAssets.map(a => {
-              const meta = getTypeMeta(a.subtype, a.type);
-              const isSavingsType = isSavingsAccount(a);
-              const isHysaAccount = isSavingsType && (effectiveApy(a) ?? 0) >= HYSA_THRESHOLD;
-              return (
-                <div key={a.id} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                    <span style={{ fontSize: 18, flexShrink: 0 }}>{meta.emoji}</span>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{a.name}</div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
-                    <span style={{ background: meta.color + "18", color: meta.color, borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{meta.label}</span>
-                    {isHysaAccount && <span style={{ background: "#DCFCE7", color: "#059669", borderRadius: 999, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>HYSA ✓</span>}
-                    {a.mask && <span style={{ fontSize: 11, color: "var(--uf-ink-2)" }}>•••• {a.mask}</span>}
-                  </div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: "#059669", marginTop: 2 }}>{fmtMoney(a.balance_current ?? 0)}</div>
-                  {a.balance_available != null && a.balance_available !== a.balance_current && (
-                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)" }}>{fmtMoney(a.balance_available)} available</div>
-                  )}
-                  {a.native_currency && a.native_currency !== "USD" && a.native_balance_current != null && (
-                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)", fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" }}>
-                      {a.native_balance_current.toLocaleString("en-US", { style: "currency", currency: a.native_currency, maximumFractionDigits: 0 })}
-                      {a.converted === false ? " · no exchange rate, not counted" : ""}
-                    </div>
-                  )}
-                  {(daysSinceSync(a.updated_at) ?? 0) > STALE_AFTER_DAYS && (
-                    <div style={{ fontSize: 11, color: "var(--uf-warn-ink)" }}>
-                      Balance from {new Date(a.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </div>
-                  )}
-                  {isSavingsType && <ApyField account={a} />}
-                  {a.type === "depository" && (
-                    <label className="uf-nw-ef">
-                      <input type="checkbox" checked={efIds.has(a.id)} onChange={() => toggleEfAccount(a.id)} />
-                      Emergency fund
-                    </label>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingTop: 10, borderTop: "1px solid rgba(5,150,105,0.2)" }}>
-            <span style={{ fontSize: 13, color: "var(--uf-ink-2)", fontWeight: 600 }}>Total from banks</span>
-            <span style={{ fontSize: 15, fontWeight: 800, color: "var(--uf-ink)" }}>{fmtMoney(bankAssetsTotal)}</span>
-          </div>
-          {bankAssets.some((a) => a.type === "depository") && (
-            <div className="uf-nw-ef-summary" data-testid="uf-nw-ef-summary">
-              <span>
-                <strong>Emergency fund {fmtMoney(emergencyFundBalance)}</strong>
-                {" — "}
-                {efMeasured.accounts.length > 0
-                  ? `${describeAccounts(efMeasured.accounts)}.`
-                  : "no accounts ticked."}
-                {" "}
-                {savedEfIds === null
-                  ? "Savings accounts count until you choose. Tick any account that holds your buffer; Contributions and Home use the same choice."
-                  : "Contributions and Home use the same choice."}
-              </span>
-              {savedEfIds !== null && (
-                <button type="button" className="uf-nw-ef-reset" onClick={() => chooseEfIds(null)}>
-                  Back to my savings accounts
-                </button>
-              )}
-              {efSaveState === "failed" && (
-                <span style={{ color: "var(--uf-warn-ink)" }}>Saved on this device — it didn&apos;t reach your account. It will retry when you change it again.</span>
-              )}
-            </div>
-          )}
-          <style>{`
-            .uf-nw-ef {
-              display: flex; align-items: center; gap: 8px; min-height: 32px;
-              margin-top: auto; padding-top: 6px; border-top: 1px solid var(--uf-border);
-              font-size: 12px; font-weight: 600; color: var(--uf-ink-2); cursor: pointer;
-            }
-            .uf-nw-ef input { width: 16px; height: 16px; margin: 0; accent-color: var(--uf-green); flex: none; cursor: pointer; }
-            .uf-nw-ef:has(input:checked) { color: var(--uf-ink); }
-            .uf-nw-ef input:focus-visible, .uf-nw-ef-reset:focus-visible {
-              outline: 2px solid var(--uf-green); outline-offset: 2px;
-            }
-            .uf-nw-ef-summary {
-              display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px;
-              margin-top: 10px; font-size: 12px; line-height: 1.5; color: var(--uf-ink-2);
-            }
-            .uf-nw-ef-summary strong { color: var(--uf-ink); font-weight: 700; }
-            .uf-nw-ef-reset {
-              background: none; border: none; padding: 4px 0; min-height: 24px; cursor: pointer;
-              font: inherit; font-weight: 600; color: var(--uf-ink); text-decoration: underline;
-            }
-          `}</style>
-        </div>
-      )}
-
-      {/* ── Emergency Fund card ──────────────────────────────────────────── */}
-      {emergencyFundMonthlyBase > 0 && (
-        /* The state's colour, faintly, mixed from theme tokens so the card
-           follows light and dark. Rebuilding is neutral, as its pill is. */
-        <div className="uf-card" style={{
-          background: `color-mix(in srgb, ${efTone} 4%, var(--uf-card))`,
-          border: `1px solid color-mix(in srgb, ${efTone} 24%, var(--uf-border))`,
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
-            <span style={{ fontSize: 16 }}>🛡️</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-ink)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Emergency Fund</span>
-            <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--uf-ink-2)", fontWeight: 500 }}>{EMERGENCY_FUND_FLOOR_MONTHS} month floor · {EMERGENCY_FUND_TARGET_MONTHS} month needs target</span>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-ink)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
-                {emergencyFundPlan.headline}
-              </div>
-              <span style={{
-                background: emergencyFundPlan.state === "healthy" ? "var(--uf-green-50)" : emergencyFundPlan.state === "fragile" ? "var(--uf-warn-bg)" : emergencyFundPlan.state === "rebuilding" ? "var(--uf-surface-2)" : "var(--uf-neg-bg)",
-                color: emergencyFundPlan.state === "healthy" ? "var(--uf-pos-ink)" : emergencyFundPlan.state === "fragile" ? "var(--uf-warn-ink)" : emergencyFundPlan.state === "rebuilding" ? "var(--uf-ink-2)" : "var(--uf-neg-ink)",
-                borderRadius: 999,
-                padding: "4px 10px",
-                fontSize: 12,
-                fontWeight: 800,
-                fontFamily: "Manrope, sans-serif",
-              }}>
-                {emergencyFundPlan.stateLabel}
-              </span>
-            </div>
-            <div style={{ fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.6, fontFamily: "Manrope, sans-serif" }}>
-              {emergencyFundPlan.guidance}
-            </div>
-          </div>
-
-          {/* Three-stat row */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, marginBottom: 8 }}>
-            {[
-              { label: "Current Reserve", value: fmtMoney(emergencyFundBalance), color: emergencyFundPlan.state === "healthy" ? "var(--uf-pos-ink)" : "var(--uf-ink)" },
-              { label: "Essential monthly needs", value: fmtMoney(emergencyFundMonthlyBase) },
-              { label: `Floor · ${EMERGENCY_FUND_FLOOR_MONTHS} months`, value: fmtMoney(efFloor) },
-              { label: `Target · ${EMERGENCY_FUND_TARGET_MONTHS} months`, value: fmtMoney(efTarget) },
-            ].map(s => (
-              <div key={s.label}>
-                <div style={{ fontSize: 11, color: "var(--uf-ink-2)", fontWeight: 600, marginBottom: 3 }}>{s.label}</div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: s.color ?? "var(--uf-ink)", fontVariantNumeric: "tabular-nums" }}>{s.value}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ fontSize: 11, color: "var(--uf-ink-2)", lineHeight: 1.45, marginBottom: 14 }}>
-            Need-tagged transactions if available; otherwise core budget needs. Wants and work costs are excluded.
-          </div>
-
-          <EmergencyFundProgressBar progressPct={efPct} state={emergencyFundPlan.state} height={6} />
-
-          {/* Status badge */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: hasHysa ? 0 : 12 }}>
-            {emergencyFundPlan.state === "healthy" && <span style={{ background: "var(--uf-green-50)", color: "var(--uf-pos-ink)", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>✅ Healthy ({monthsCovered.toFixed(1)} months covered)</span>}
-            {emergencyFundPlan.state === "fragile" && <span style={{ background: "var(--uf-warn-bg)", color: "var(--uf-warn-ink)", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>⚠️ Fragile ({monthsCovered.toFixed(1)} months covered)</span>}
-            {emergencyFundPlan.state === "rebuilding" && <span style={{ background: "var(--uf-surface-2)", color: "var(--uf-ink-2)", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>↺ Rebuilding ({monthsCovered.toFixed(1)} months covered)</span>}
-            {emergencyFundPlan.state === "missing" && <span style={{ background: "var(--uf-neg-bg)", color: "var(--uf-neg-ink)", borderRadius: 999, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>❌ Missing ({monthsCovered.toFixed(1)} months covered)</span>}
-            {hasHysa && avgApy > 0 && (
-              <span style={{ fontSize: 12, color: "var(--uf-pos-ink)", fontWeight: 600 }}>· earning ~{fmtMoney(Math.round(emergencyFundBalance * avgApy / 100 / 12))}/mo interest</span>
-            )}
-            {brokerageCashExcluded && (
-              <span style={{ fontSize: 12, color: "var(--uf-ink-2)", fontWeight: 500 }}>
-                · excludes {fmtMoney(connectedBreakdown.brokerageCash)} in connected brokerage / investment accounts
-              </span>
-            )}
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: hasHysa ? 0 : 12 }}>
-            <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "10px 12px" }}>
-              <div style={{ fontSize: 11, color: "var(--uf-ink-2)", fontWeight: 700, marginBottom: 4 }}>Next threshold</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "var(--uf-ink)", fontFamily: "Manrope, sans-serif" }}>
-                {emergencyFundPlan.priorityMode === "protect" ? fmtMoney(emergencyFundPlan.gapToFloor) : emergencyFundPlan.priorityMode === "balance" ? fmtMoney(emergencyFundPlan.gapToTarget) : fmtMoney(0)}
-              </div>
-              <div style={{ fontSize: 12, color: "var(--uf-ink-2)", lineHeight: 1.5, marginTop: 4 }}>
-                {emergencyFundPlan.priorityMode === "protect"
-                  ? `Needed to get back above your ${EMERGENCY_FUND_FLOOR_MONTHS}-month floor.`
-                  : emergencyFundPlan.priorityMode === "balance"
-                    ? `Needed to reach your ${EMERGENCY_FUND_TARGET_MONTHS}-month target.`
-                    : "Your safety target is covered right now."}
-              </div>
-            </div>
-            <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "10px 12px" }}>
-              <div style={{ fontSize: 11, color: "var(--uf-ink-2)", fontWeight: 700, marginBottom: 4 }}>App posture now</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "var(--uf-ink)", fontFamily: "Manrope, sans-serif", textTransform: "capitalize" }}>
-                {emergencyFundPlan.priorityMode === "protect" ? "Protect" : emergencyFundPlan.priorityMode === "balance" ? "Balance" : "Grow"}
-              </div>
-              <div style={{ fontSize: 12, color: "var(--uf-ink-2)", lineHeight: 1.5, marginTop: 4 }}>
-                {emergencyFundPlan.priorityMode === "protect"
-                  ? "Emergency fund refill should outrank extra investing for now."
-                  : emergencyFundPlan.priorityMode === "balance"
-                    ? "Split new surplus between reserve refill and steady investing."
-                    : "Emergency cash can step back while growth takes the lead."}
-              </div>
-            </div>
-          </div>
-
-          {/* HYSA recommendation banner */}
-          {!hasHysa && (
-            <div style={{ background: "var(--uf-warn-bg)", border: "1px solid color-mix(in srgb, var(--uf-warn) 35%, transparent)", borderRadius: 8, padding: "10px 14px", marginTop: 12 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-warn-ink)", marginBottom: 4 }}>💡 Consider a High-Yield Savings Account (HYSA)</div>
-              <div style={{ fontSize: 12, color: "var(--uf-ink)", lineHeight: 1.5 }}>
-                {plaidAccounts.length === 0
-                  ? "Connect a bank to track your emergency fund automatically. Using your manual Cash & Savings entry above."
-                  : !hasPlaidSavings
-                    ? "No savings account detected. A HYSA earns 10–20× more than a typical checking account — top rates are currently 4.5–5.0% APY."
-                    : "Enter your savings APY above. If it's below 3.5%, you may be leaving money on the table — top HYSA rates are currently 4.5–5.0% APY."}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div>
-        <div className="uf-card">
-          <SectionLabel icon="📈" text="Investment Accounts" color="#059669" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div>
-              <FieldRow label="Cash & Savings">
-                <NumberInput
-                  value={cashSavings}
-                  onChange={setCashSavings}
-                  placeholder="0"
-                  prefix={currencyPrefix}
-                  currency={displayCurrency}
-                  rates={displayRates}
-                />
-              </FieldRow>
-              <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>
-                Checking, HYSA, emergency fund
-                {actualNetCashflow !== 0 && (
-                  <span style={{ marginLeft: 8 }}>
-                    · Cashflow net this month:{" "}
-                    <span style={{ color: actualNetCashflow >= 0 ? "#059669" : "#DC2626", fontWeight: 600 }}>
-                      {actualNetCashflow >= 0 ? "+" : "−"}{fmtMoney(Math.abs(actualNetCashflow))}
-                    </span>
+    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 12 }}>
+      {(visibleAssets.length > 0 || typedRows.length > 0) && <>
+        {nwSection("What you have")}
+        <MoneyList footer={hiddenAssetCount > 0 || !hideZeroAssets ? (
+          <button type="button" onClick={() => setHideZeroAssets((h) => !h)} className="uf-t-small" style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "var(--uf-ink-2)", fontWeight: 600 }}>
+            {hideZeroAssets ? `Show ${hiddenAssetCount} account${hiddenAssetCount === 1 ? "" : "s"} at $0` : "Hide accounts at $0"}
+          </button>
+        ) : undefined}>
+          {visibleAssets.map((a) => {
+            const meta = getTypeMeta(a.subtype, a.type);
+            const bank = bankOf(a);
+            const apy = effectiveApy(a);
+            const stale = (daysSinceSync(a.updated_at) ?? 0) > STALE_AFTER_DAYS;
+            const native = a.native_currency && a.native_currency !== "USD" && a.native_balance_current != null
+              ? `${a.native_balance_current.toLocaleString("en-US", { style: "currency", currency: a.native_currency, maximumFractionDigits: 0 })}${a.converted === false ? ", no exchange rate, not counted" : ""}` : null;
+            const line = [bank?.institution_name, meta.label, a.mask ? `•••• ${a.mask}` : null, isShared(a) ? "Shared, your half" : null, apy != null ? `${apy}% APY` : null, native,
+              stale ? `balance from ${new Date(a.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : null].filter(Boolean).join(" · ");
+            const value = a.balance_current ?? 0;
+            const limit = effectiveLimit(a);
+            const used = a.withdrawals?.length ?? 0;
+            const countdown = limit != null && isSavingsAccount(a) ? withdrawalsLeftLabel(limit, used) : null;
+            return (
+              <MoneyRow key={a.id} dot={meta.color} name={a.name}
+                meta={countdown ? <>{line}<br /><span style={used > limit! ? { color: "var(--uf-neg-ink)", fontWeight: 600 } : undefined}>{countdown}</span></> : line} value={fmtMoney(value)}
+                icon={<BankLogo logo={bank?.institution_logo} name={bank?.institution_name ?? a.name} color={bank?.institution_color} />}
+                bar={haveTotal > 0 && value > 0 ? <MoneyTrack share={value / haveTotal} color={meta.color} label={`${a.name}: ${Math.round((value / haveTotal) * 100)}% of what you have`} /> : undefined}
+                onClick={() => toggleRow(a.id)}
+                after={openRow === a.id && <>{sharedField(a)}{isSavingsAccount(a) && <><ApyField account={a} /><LimitField account={a} /></>}
+                  {(a.withdrawals?.length ?? 0) > 0 && (
+                    <ul className="uf-t-small" style={{ margin: "4px 0 0", padding: 0, listStyle: "none", color: "var(--uf-ink-2)" }}>
+                      {a.withdrawals!.map((w, i) => (
+                        <li key={i}>{new Date(`${w.date}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })} · {w.description ?? "Transfer"} · <span className="uf-t-data">{fmtMoney(w.amount)}</span>{w.pending ? " · pending" : ""}</li>
+                      ))}
+                    </ul>
+                  )}</>} />
+            );
+          })}
+          {typedRows.map((t) => (
+            <MoneyRow key={t.key} dot={t.color} icon={t.icon} name={t.name} meta="Not connected · typed by you"
+              value={t.value ? fmtMoney(t.value) : "Add ›"} valueTone={t.value ? undefined : "var(--uf-ink-3)"} onClick={() => toggleRow(t.key)}
+              bar={haveTotal > 0 && t.value > 0 ? <MoneyTrack share={t.value / haveTotal} color={t.color} label={`${t.name}: ${Math.round((t.value / haveTotal) * 100)}% of what you have`} /> : undefined}
+              after={openRow === t.key && (
+                <div style={{ display: "grid", gap: 6, maxWidth: 320 }}>
+                  <NumberInput value={t.value} onChange={t.set} placeholder="0" prefix={currencyPrefix} currency={displayCurrency} rates={displayRates} />
+                  <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>
+                    {t.note}{t.key === "cash" && actualNetCashflow !== 0 ? <> Cashflow this month: <Fig tone={actualNetCashflow >= 0 ? "var(--uf-pos-ink)" : "var(--uf-neg-ink)"}>{actualNetCashflow >= 0 ? "+" : "−"}{fmtMoney(Math.abs(actualNetCashflow))}</Fig>.</> : null}
                   </span>
-                )}
+                </div>
+              )} />
+          ))}
+        </MoneyList>
+      </>}
+
+      {(cards.length > 0 || eff.otherDebt > 0 || eff.mortgage > 0) && <>
+        {nwSection("What you owe")}
+        <MoneyList footer={<span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Loans, and what each debt started at, are on Debts.</span>}>
+          {cards.map((a) => {
+            const bank = bankOf(a);
+            return <MoneyRow key={a.id} dot="var(--uf-ink-3)" name={a.name} value={`−${fmtMoney(Math.abs(a.balance_current ?? 0))}`}
+              icon={<BankLogo logo={bank?.institution_logo} name={bank?.institution_name ?? a.name} color={bank?.institution_color} />}
+              meta={[bank?.institution_name, "Credit card", isShared(a) ? "Shared, your half" : null, a.balance_limit ? `of ${fmtMoney(a.balance_limit)} limit` : null].filter(Boolean).join(" · ")}
+              onClick={() => toggleRow(a.id)} after={openRow === a.id && sharedField(a)} />;
+          })}
+          {eff.otherDebt > 0 && <MoneyRow dot="var(--uf-ink-3)" icon="🧾" name="Loans and other debt" meta={plaidAccounts.some((a) => a.type === "loan") ? "Connected" : "Typed on Debts"} value={`−${fmtMoney(eff.otherDebt)}`} />}
+          {eff.mortgage > 0 && <MoneyRow dot="var(--uf-ink-3)" icon="🏠" name="Mortgage" meta="On Debts" value={`−${fmtMoney(eff.mortgage)}`} />}
+        </MoneyList>
+      </>}
+
+      {emergencyFundMonthlyBase > 0 && <>
+        {nwSection("Safety net")}
+        <MoneyList>
+          <MoneyRow dot="var(--uf-teal)" icon="🛟" name="Emergency fund" strong onClick={() => toggleRow("ef")}
+            meta={<><Fig>{monthsCovered.toFixed(1)}</Fig> months of needs · {emergencyFundPlan.stateLabel}{hasHysa && avgApy > 0 && Math.round(emergencyFundBalance * avgApy / 100 / 12) > 0 ? <> · earning about <Fig>{fmtMoney(Math.round(emergencyFundBalance * avgApy / 100 / 12))}</Fig> a month</> : null}</>}
+            value={emergencyFundPlan.priorityMode === "protect" ? `${fmtMoney(emergencyFundPlan.gapToFloor)} to floor ›` : emergencyFundPlan.priorityMode === "balance" ? `${fmtMoney(emergencyFundPlan.gapToTarget)} to target ›` : `${fmtMoney(emergencyFundBalance)} ›`}
+            valueTone={efInk}
+            bar={<MoneyTrack share={Math.min(1, efPct / 100)} label={`${fmtMoney(emergencyFundBalance)} of a ${fmtMoney(efTarget)} target`} />}
+            after={openRow === "ef" && (
+              <div style={{ display: "grid", gap: 8 }}>
+                <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>
+                  {emergencyFundPlan.guidance} Floor <Fig>{fmtMoney(efFloor)}</Fig> ({EMERGENCY_FUND_FLOOR_MONTHS} months) and target <Fig>{fmtMoney(efTarget)}</Fig> ({EMERGENCY_FUND_TARGET_MONTHS} months) of <Fig>{fmtMoney(emergencyFundMonthlyBase)}</Fig> a month in needs, from need-tagged spending.
+                  {brokerageCashExcluded ? <> Investment accounts don&apos;t count.</> : null}
+                </span>
+                {bankAssets.some((a) => a.type === "depository") ? <>
+                  <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700 }}>Accounts that hold it</span>
+                  {bankAssets.filter((a) => a.type === "depository").map((a) => (
+                    <label key={a.id} className="uf-nw-ef">
+                      <input type="checkbox" checked={efIds.has(a.id)} onChange={() => toggleEfAccount(a.id)} />
+                      <span style={{ flex: 1, minWidth: 0 }}>{a.name}</span><Fig>{fmtMoney(a.balance_current ?? 0)}</Fig>
+                    </label>
+                  ))}
+                  <div className="uf-nw-ef-summary" data-testid="uf-nw-ef-summary">
+                    <span>
+                      <strong>Emergency fund {fmtMoney(emergencyFundBalance)}</strong>
+                      {" — "}
+                      {efMeasured.accounts.length > 0 ? `${describeAccounts(efMeasured.accounts)}.` : "no accounts ticked."}
+                      {" "}
+                      {savedEfIds === null ? "Savings accounts count until you choose. Contributions and Home use the same choice." : "Contributions and Home use the same choice."}
+                    </span>
+                    {savedEfIds !== null && <button type="button" className="uf-nw-ef-reset" onClick={() => chooseEfIds(null)}>Back to my savings accounts</button>}
+                    {efSaveState === "failed" && <span style={{ color: "var(--uf-warn-ink)" }}>Saved on this device — it didn&apos;t reach your account. It will retry when you change it again.</span>}
+                  </div>
+                </> : <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Using Cash &amp; savings above until you connect a bank.</span>}
+                {!hasHysa && hasPlaidSavings && <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Tap a savings account above to add its APY.</span>}
               </div>
-            </div>
-            <FieldRow label="401(k) Balance">
-              <NumberInput
-                value={k401}
-                onChange={setK401}
-                placeholder="0"
-                prefix={currencyPrefix}
-                currency={displayCurrency}
-                rates={displayRates}
-              />
-            </FieldRow>
-            <FieldRow label="Roth IRA Balance">
-              <NumberInput
-                value={rothIRA}
-                onChange={setRothIRA}
-                placeholder="0"
-                prefix={currencyPrefix}
-                currency={displayCurrency}
-                rates={displayRates}
-              />
-            </FieldRow>
-            <FieldRow label="Taxable Brokerage">
-              <NumberInput
-                value={taxable}
-                onChange={setTaxable}
-                placeholder="0"
-                prefix={currencyPrefix}
-                currency={displayCurrency}
-                rates={displayRates}
-              />
-            </FieldRow>
-          </div>
-        </div>
+            )} />
+        </MoneyList>
+      </>}
 
-      </div>
+      {nwSection("Banks")}
+      <PlaidConnect layout="rows" onItems={setBanks} onTransactionsImported={onRefreshAccounts} onUpgradeClick={onUpgradeClick} />
+      <style>{`
+        .uf-nw-ef { display: flex; align-items: center; gap: 10px; min-height: 36px; font-size: 14px; color: var(--uf-ink-2); cursor: pointer; }
+        .uf-nw-ef input { width: 18px; height: 18px; margin: 0; accent-color: var(--uf-green); flex: none; cursor: pointer; }
+        .uf-nw-ef:has(input:checked) { color: var(--uf-ink); }
+        .uf-nw-ef input:focus-visible, .uf-nw-ef-reset:focus-visible { outline: 2px solid var(--uf-green); outline-offset: 2px; }
+        .uf-nw-ef-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-size: 12px; line-height: 1.5; color: var(--uf-ink-2); }
+        .uf-nw-ef-summary strong { color: var(--uf-ink); font-weight: 700; }
+        .uf-nw-ef-reset { background: none; border: none; padding: 4px 0; min-height: 24px; cursor: pointer; font: inherit; font-weight: 600; color: var(--uf-ink); text-decoration: underline; }
+      `}</style>
 
-      {plaidAccounts.some(a => a.type === "investment") && (
+      {plaidAccounts.some(a => a.type === "investment") && (plaidHoldings.length > 0 || holdingsLoading || holdingsNeedsReconnect.length > 0) && (
         <div className="uf-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <SectionLabel icon="📊" text="Holdings" color="#059669" />
-            {holdingsLoading && <span style={{ fontSize: 11, color: "#94A3B8" }}>Refreshing…</span>}
+            <SectionLabel icon="📊" text="Holdings" />
+            {holdingsLoading && <span style={{ fontSize: 11, color: "var(--uf-ink-3)" }}>Refreshing…</span>}
           </div>
           {holdingsNeedsReconnect.length > 0 && (
             <Alert
@@ -4183,12 +3790,12 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
             />
           )}
           {plaidHoldings.length === 0 && !holdingsLoading ? (
-            <div style={{ fontSize: 13, color: "#94A3B8", textAlign: "center", padding: "20px 0" }}>
+            <div style={{ fontSize: 13, color: "var(--uf-ink-3)", textAlign: "center", padding: "20px 0" }}>
               No holdings data yet.{holdingsNeedsReconnect.length > 0 ? " Reconnect your account above." : ""}
             </div>
           ) : (
             <>
-              <div className="uf-holdings-grid" style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid #F1F5F9" }}>
+              <div className="uf-holdings-grid" style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-ink-3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid var(--uf-surface-2)" }}>
                 <span>Ticker</span><span className="uf-holdings-security">Security</span><span style={{ textAlign: "right" }}>Qty</span><span style={{ textAlign: "right" }}>Price</span><span style={{ textAlign: "right" }}>Value</span>
               </div>
               {[...plaidHoldings]
@@ -4196,168 +3803,177 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                 .map((h, i) => {
                   const sec = plaidSecurities[h.security_id];
                   return (
-                    <div key={i} className="uf-holdings-grid" style={{ fontSize: 13, padding: "7px 0", borderBottom: "1px solid #F8FAFC", alignItems: "center" }}>
-                      <span style={{ fontWeight: 700, color: "#059669", fontFamily: "monospace" }}>{sec?.ticker_symbol ?? "—"}</span>
-                      <span className="uf-holdings-security" style={{ color: "#334155", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sec?.name ?? "Unknown"}</span>
-                      <span style={{ textAlign: "right", color: "#64748B" }}>{h.quantity.toFixed(h.quantity % 1 === 0 ? 0 : 4)}</span>
-                      <span style={{ textAlign: "right", color: "#64748B" }}>{h.institution_price != null ? `$${h.institution_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}</span>
-                      <span style={{ textAlign: "right", fontWeight: 600, color: "#0F172A" }}>{h.institution_value != null ? `$${Math.round(h.institution_value).toLocaleString()}` : "—"}</span>
+                    <div key={i} className="uf-holdings-grid" style={{ fontSize: 13, padding: "7px 0", borderBottom: "1px solid var(--uf-surface)", alignItems: "center" }}>
+                      <span style={{ fontWeight: 700, color: "var(--uf-pos-ink)", fontFamily: "monospace" }}>{sec?.ticker_symbol ?? "—"}</span>
+                      <span className="uf-holdings-security" style={{ color: "var(--uf-ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sec?.name ?? "Unknown"}</span>
+                      <span style={{ textAlign: "right", color: "var(--uf-ink-2)" }}>{h.quantity.toFixed(h.quantity % 1 === 0 ? 0 : 4)}</span>
+                      <span style={{ textAlign: "right", color: "var(--uf-ink-2)" }}>{h.institution_price != null ? `$${h.institution_price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}</span>
+                      <span style={{ textAlign: "right", fontWeight: 600, color: "var(--uf-ink)" }}>{h.institution_value != null ? `$${Math.round(h.institution_value).toLocaleString()}` : "—"}</span>
                     </div>
                   );
                 })}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, paddingTop: 10, borderTop: "2px solid #E2E8F0", fontSize: 14, fontWeight: 700 }}>
-                <span style={{ color: "#64748B" }}>Total portfolio value</span>
-                <span style={{ color: "#059669" }}>${Math.round(plaidHoldings.reduce((s, h) => s + (h.institution_value ?? 0), 0)).toLocaleString()}</span>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, paddingTop: 10, borderTop: "2px solid var(--uf-border)", fontSize: 14, fontWeight: 700 }}>
+                <span style={{ color: "var(--uf-ink-2)" }}>Total portfolio value</span>
+                <span style={{ color: "var(--uf-pos-ink)" }}>${Math.round(plaidHoldings.reduce((s, h) => s + (h.institution_value ?? 0), 0)).toLocaleString()}</span>
               </div>
             </>
           )}
         </div>
       )}
 
-      {total > 0 && (
-        <div className="uf-card" style={{ background: "rgba(5,150,105,0.04)", border: "1px solid rgba(5,150,105,0.2)" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 }}>
-            {[
-              { label: "Cash", val: fmtMoney(cashSavings), pct: total > 0 ? (cashSavings / total * 100).toFixed(0) : "0", color: "#0ea5e9" },
-              { label: "401(k)", val: fmtMoney(k401), pct: total > 0 ? (k401 / total * 100).toFixed(0) : "0", color: "#059669" },
-              { label: "Roth IRA", val: fmtMoney(rothIRA), pct: total > 0 ? (rothIRA / total * 100).toFixed(0) : "0", color: "#20D4BF" },
-              { label: "Taxable", val: fmtMoney(taxable), pct: total > 0 ? (taxable / total * 100).toFixed(0) : "0", color: "#047857" },
-            ].map(a => (
-              <div key={a.label}>
-                <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{a.label}</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: a.color, fontFamily: "Manrope, sans-serif" }}>{a.val}</div>
-                <div style={{ fontSize: 11, color: "#94A3B8" }}>{a.pct}% of portfolio</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
 // ─── Liabilities Tab ──────────────────────────────────────────────────────────
-function LiabilitiesTab({ totalDebt, setTotalDebt, mortgageBalance, setMortgageBalance, mortgageMonthly, setMortgageMonthly, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts }: {
+function LiabilitiesTab({ totalDebt, setTotalDebt, mortgages, setMortgages, connectedMortgages, mortgageTerms, setMortgageTerms, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, originals = {}, onOriginal, planDebts = [] }: {
   totalDebt: number; setTotalDebt: (v: number) => void;
-  mortgageBalance: number; setMortgageBalance: (v: number) => void;
-  mortgageMonthly: number; setMortgageMonthly: (v: number) => void;
+  /** Typed mortgages, each with its own rate and payment (D-61), and the terms of connected ones by account id. */
+  mortgages: Mortgage[]; setMortgages: (next: Mortgage[]) => void;
+  connectedMortgages: { id: string }[];
+  mortgageTerms: MortgageTerms; setMortgageTerms: (next: MortgageTerms) => void;
   displayCurrency: string; displayRates: Record<string, number>;
   plaidAccounts?: PlaidAccount[];
   onRefreshAccounts?: () => void;
+  /** What each debt started at, in USD, by key (D-40). */
+  originals?: Record<string, number>;
+  onOriginal?: (key: string, usd: number) => void;
+  /** Debts with rates from Plan → Contributions, matched here by name. */
+  planDebts?: { name: string; balance: number; ratePct: number }[];
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
-  const totalLiabilities = totalDebt + mortgageBalance;
+  // The same rule as net worth (effectiveDebts): connected replaces typed, cards included.
+  const mortgageBalance = mortgages.reduce((s, m) => s + m.balance, 0);
+  const debtsEff = effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts });
+  const totalLiabilities = debtsEff.otherDebt + debtsEff.mortgage + debtsEff.cards;
+  const [hideZero, setHideZero] = useState(true);
+  const [editing, setEditing] = useState<string | null>(null);
 
-  const bankLiabilities = plaidAccounts.filter(a => a.type === "credit" || a.type === "loan");
-  const bankLiabilitiesTotal = bankLiabilities.reduce((s, a) => s + (a.balance_current ?? 0), 0);
-  const [hideZeroLiab, setHideZeroLiab] = useState(true);
-  const visibleLiabilities = hideZeroLiab ? bankLiabilities.filter(a => (a.balance_current ?? 0) !== 0) : bankLiabilities;
-  const hiddenLiabCount = bankLiabilities.length - visibleLiabilities.length;
+  const isMortgageAcct = (a: PlaidAccount) => a.type === "loan" && normalizePlaidSubtype(a.subtype).includes("mortgage");
+  const connected = plaidAccounts.filter(a => a.type === "credit" || a.type === "loan");
+  const hiddenCount = connected.filter(a => (a.balance_current ?? 0) === 0).length;
+  const rateFor = (name: string) => planDebts.find(d => d.name.trim().toLowerCase() === name.trim().toLowerCase())?.ratePct;
+
+  type Debt = { key: string; name: string; meta: string; balance: number; card: boolean; limit?: number | null; rate?: number; typed?: "debt" | "mortgage"; mortgageId?: string; plaidMortgageId?: string };
+  // Payment and payoff year beside a mortgage's rate, so each one reads as its own loan.
+  const mortgageMeta = (monthly: number, ratePct: number | undefined, balance: number) => {
+    const year = monthly > 0 ? payoffYear(balance, monthly, ratePct) : null;
+    return [`${ratePct ?? DEFAULT_MORTGAGE_RATE_PCT}%${ratePct == null ? " (assumed)" : ""}`, monthly > 0 ? `${fmtMoney(monthly)}/mo` : "Add payment", year ? `paid off ${year}` : null].filter(Boolean).join(" · ");
+  };
+  const connectedIds = new Set(connectedMortgages.map((m) => m.id));
+  const list: Debt[] = [
+    ...connected.filter(a => !hideZero || (a.balance_current ?? 0) !== 0).map(a => ({
+      key: `plaid:${a.id}`, name: a.name || a.official_name || "Account",
+      meta: connectedIds.has(a.id)
+        ? `Mortgage · Connected · ${mortgageMeta(mortgageTerms[a.id]?.monthly ?? 0, mortgageTerms[a.id]?.ratePct, Math.max(0, a.balance_current ?? 0))}`
+        : [(a.subtype?.replace(/-/g, " ") ?? a.type).replace(/^./, c => c.toUpperCase()), a.mask ? `•••• ${a.mask}` : null, "Connected"].filter(Boolean).join(" · "),
+      balance: Math.max(0, a.balance_current ?? 0), card: a.type === "credit", limit: a.balance_limit,
+      plaidMortgageId: connectedIds.has(a.id) ? a.id : undefined,
+      rate: (connectedIds.has(a.id) ? mortgageTerms[a.id]?.ratePct : undefined) ?? rateFor(a.name || ""),
+    })),
+    // Typed figures stand in only where nothing of that kind is connected, as net worth counts them.
+    ...(!connected.some(a => a.type === "loan" && !isMortgageAcct(a)) ? [{ key: "typed_debt", name: "Other debt", meta: "Typed · loans and cards not connected", balance: totalDebt, card: false, typed: "debt" as const }] : []),
+    ...(!connected.some(isMortgageAcct) ? mortgages.map((m) => ({ key: m.id === "m1" ? "mortgage" : `mortgage:${m.id}`, name: m.name, mortgageId: m.id,
+      meta: `Mortgage · ${mortgageMeta(m.monthly, m.ratePct, m.balance)}`, balance: m.balance, card: false, typed: "mortgage" as const, rate: m.ratePct })) : []),
+  ];
+  const rows = list.sort((x, y) => (y.rate ?? -1) - (x.rate ?? -1) || y.balance - x.balance);
+
+  // Paid off, across the debts whose starting balance is known.
+  const tracked = rows.filter(r => !r.card && (originals[r.key] ?? 0) > 0);
+  const startTotal = tracked.reduce((s, r) => s + originals[r.key], 0);
+  const paidTotal = tracked.reduce((s, r) => s + Math.max(0, originals[r.key] - r.balance), 0);
+
+  // Rate as a percent; empty means the default the plan uses.
+  const rateField = (value: number | undefined, onChange: (v: number | undefined) => void) => (
+    <label style={{ display: "grid", gap: 4 }}>
+      <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Rate (%)</span>
+      <Input aria-label="Interest rate, percent" numeric inputMode="decimal" placeholder={String(DEFAULT_MORTGAGE_RATE_PCT)} value={value ?? ""}
+        onChange={(e) => { const v = e.target.value.trim(); onChange(v === "" ? undefined : Math.max(0, Math.min(30, Number(v) || 0))); }} />
+    </label>
+  );
+  const addMortgage = () => {
+    const m: Mortgage = { id: newMortgageId(), name: mortgages.length ? `Mortgage ${mortgages.length + 1}` : "Mortgage", balance: 0, monthly: 0 };
+    setMortgages([...mortgages, m]);
+    setEditing(m.id === "m1" ? "mortgage" : `mortgage:${m.id}`);
+  };
+  const field = (label: string, value: number, onChange: (v: number) => void) => (
+    <label style={{ display: "grid", gap: 4 }}>
+      <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>{label}</span>
+      <NumberInput value={value} onChange={onChange} placeholder="0" prefix={currencyPrefix} currency={displayCurrency} rates={displayRates} />
+    </label>
+  );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {bankLiabilities.length > 0 && (
-        <div className="uf-card" style={{ background: "rgba(220,38,38,0.03)", border: "1px solid rgba(220,38,38,0.2)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: 16 }}>💳</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#991B1B", textTransform: "uppercase", letterSpacing: "0.06em" }}>Connected Cards & Loans</span>
-            </div>
-            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              {hiddenLiabCount > 0 || !hideZeroLiab ? (
-                <button onClick={() => setHideZeroLiab(h => !h)} style={{ background: "none", border: "none", color: "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
-                  {hideZeroLiab ? `Show $0 (${hiddenLiabCount})` : "Hide $0"}
-                </button>
-              ) : null}
-              {onRefreshAccounts && (
-                <button onClick={onRefreshAccounts} style={{ background: "none", border: "none", color: "#DC2626", fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0 }}>
-                  ↻ Refresh
-                </button>
-              )}
-            </div>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 10 }}>
-            {visibleLiabilities.map(a => (
-              <div key={a.id} style={{ background: "var(--uf-card)", border: "1px solid #FCA5A5", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.name}</div>
-                <div style={{ fontSize: 12, color: "#94A3B8" }}>
-                  <span style={{ textTransform: "capitalize" }}>{a.subtype?.replace(/-/g, " ") ?? a.type}</span>
-                  {a.mask && <span style={{ marginLeft: 6 }}>•••• {a.mask}</span>}
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <MoneyHead
+        label="Total debts"
+        value={fmtMoney(totalLiabilities)}
+        sub={startTotal > 0
+          ? <><Fig>{fmtMoney(paidTotal)}</Fig> paid off of <Fig>{fmtMoney(startTotal)}</Fig></>
+          : rows.some(r => r.rate != null) ? "Highest rate first" : "Tap a debt to add what it started at and see it paid down."}
+      >
+        {startTotal > 0 && <MoneyTrack share={paidTotal / startTotal} label={`${Math.round((paidTotal / startTotal) * 100)}% of tracked debt paid off`} />}
+        <MoneyKey items={[["c", "Cards", debtsEff.cards], ["l", "Loans and other", debtsEff.otherDebt], ["m", "Mortgage", debtsEff.mortgage]]
+          .filter(([, , v]) => Number(v) > 0)
+          .map(([k, l, v]) => <span key={String(k)}>{l} <Fig>{fmtMoney(Number(v))}</Fig></span>)} />
+      </MoneyHead>
+
+      <MoneyList footer={(hiddenCount > 0 || onRefreshAccounts || !connected.some(isMortgageAcct)) && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {hiddenCount > 0 && <Button variant="ghost" size="sm" onClick={() => setHideZero(h => !h)}>{hideZero ? `Show $0 accounts (${hiddenCount})` : "Hide $0 accounts"}</Button>}
+          {onRefreshAccounts && connected.length > 0 && <Button variant="ghost" size="sm" onClick={onRefreshAccounts}>Refresh balances</Button>}
+          {!connected.some(isMortgageAcct) && <Button variant="ghost" size="sm" onClick={addMortgage}>+ Add a mortgage</Button>}
+        </div>
+      )}>
+        {rows.map(r => {
+          const orig = originals[r.key] ?? 0;
+          const paid = orig > 0 ? Math.max(0, orig - r.balance) : 0;
+          const meta = [r.meta, r.rate != null && !r.mortgageId && !r.plaidMortgageId ? `${r.rate}%` : null,
+            r.card && r.limit ? `of ${fmtMoney(r.limit)} limit` : null,
+            !r.card && orig > 0 ? `${Math.round((paid / orig) * 100)}% paid off` : null].filter(Boolean).join(" · ");
+          const open = editing === r.key;
+          return (
+            <MoneyRow
+              key={r.key}
+              dot="var(--uf-ink-3)"
+              icon={r.card ? "💳" : r.typed === "mortgage" ? "🏠" : "🧾"}
+              name={r.name}
+              meta={meta}
+              value={r.typed && r.balance === 0 ? "Add" : fmtMoney(r.balance)}
+              valueTone={r.typed && r.balance === 0 ? "var(--uf-pos-ink)" : undefined}
+              bar={r.card
+                ? (r.limit ? <MoneyTrack share={r.balance / r.limit} color="var(--uf-ink-3)" label={`${r.name}: ${fmtMoney(r.balance)} of ${fmtMoney(r.limit)} limit`} /> : undefined)
+                : orig > 0 ? <MoneyTrack share={paid / orig} label={`${r.name}: ${fmtMoney(paid)} of ${fmtMoney(orig)} paid off`} /> : undefined}
+              onClick={r.card && !r.typed ? undefined : () => setEditing(open ? null : r.key)}
+              after={open && (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, alignItems: "end" }}>
+                  {r.typed === "debt" && field("Balance", totalDebt, setTotalDebt)}
+                  {r.mortgageId && (() => {
+                    const m = mortgages.find((x) => x.id === r.mortgageId)!;
+                    const set = (patch: Partial<Mortgage>) => setMortgages(mortgages.map((x) => (x.id === m.id ? { ...x, ...patch } : x)));
+                    return <>
+                      <label style={{ display: "grid", gap: 4 }}><span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Name</span>
+                        <Input aria-label="Mortgage name" value={m.name} onChange={(e) => set({ name: e.target.value })} /></label>
+                      {field("Balance", m.balance, (v) => set({ balance: v }))}
+                      {rateField(m.ratePct, (v) => set({ ratePct: v }))}
+                      {field("Monthly payment", m.monthly, (v) => set({ monthly: v }))}
+                    </>;
+                  })()}
+                  {r.plaidMortgageId && (() => {
+                    const id = r.plaidMortgageId, t = mortgageTerms[id] ?? {};
+                    const set = (patch: { monthly?: number; ratePct?: number }) => setMortgageTerms({ ...mortgageTerms, [id]: { ...t, ...patch } });
+                    return <>{rateField(t.ratePct, (v) => set({ ratePct: v }))}{field("Monthly payment", t.monthly ?? 0, (v) => set({ monthly: v }))}</>;
+                  })()}
+                  {field("Started at", orig, v => onOriginal?.(r.key, v))}
+                  <div style={{ display: "flex", gap: 6 }}><Button variant="ghost" size="sm" onClick={() => setEditing(null)}>Done</Button>
+                    {r.mortgageId && <Button variant="ghost" size="sm" onClick={() => { setMortgages(mortgages.filter((x) => x.id !== r.mortgageId)); setEditing(null); }}>Remove</Button>}</div>
                 </div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "#DC2626", marginTop: 4 }}>{fmtMoney(a.balance_current ?? 0)}</div>
-                {a.balance_limit != null && (
-                  <div style={{ fontSize: 11, color: "#94A3B8" }}>of {fmtMoney(a.balance_limit)} limit</div>
-                )}
-              </div>
-            ))}
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 14, paddingTop: 10, borderTop: "1px solid rgba(220,38,38,0.2)" }}>
-            <span style={{ fontSize: 13, color: "#64748B", fontWeight: 600 }}>Total from banks</span>
-            <span style={{ fontSize: 15, fontWeight: 800, color: "#991B1B" }}>{fmtMoney(bankLiabilitiesTotal)}</span>
-          </div>
-        </div>
-      )}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        <div className="uf-card">
-          <SectionLabel icon="💳" text="Consumer Debt" color="#DC2626" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <FieldRow label="Non-Mortgage Debt" hint="Credit cards, auto loans, student loans">
-              <NumberInput
-                value={totalDebt}
-                onChange={setTotalDebt}
-                placeholder="0"
-                prefix={currencyPrefix}
-                currency={displayCurrency}
-                rates={displayRates}
-              />
-            </FieldRow>
-          </div>
-        </div>
-
-        <div className="uf-card">
-          <SectionLabel icon="🏠" text="Mortgage" color="#DC2626" />
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <FieldRow label="Mortgage Balance">
-              <NumberInput
-                value={mortgageBalance}
-                onChange={setMortgageBalance}
-                placeholder="0"
-                prefix={currencyPrefix}
-                currency={displayCurrency}
-                rates={displayRates}
-              />
-            </FieldRow>
-            <FieldRow label="Monthly Payment">
-              <NumberInput
-                value={mortgageMonthly}
-                onChange={setMortgageMonthly}
-                placeholder="0"
-                prefix={currencyPrefix}
-                currency={displayCurrency}
-                rates={displayRates}
-              />
-            </FieldRow>
-          </div>
-        </div>
-      </div>
-
-      {totalLiabilities > 0 && (
-        <div className="uf-card" style={{ background: "rgba(220,38,38,0.04)", border: "1px solid rgba(220,38,38,0.2)" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
-            {[
-              { label: "Consumer Debt",  val: fmtMoney(totalDebt),           color: "#DC2626" },
-              { label: "Mortgage",       val: fmtMoney(mortgageBalance),      color: "#DC2626" },
-              { label: "Total Liabilities", val: fmtMoney(totalLiabilities), color: "#19181E" },
-            ].map(l => (
-              <div key={l.label}>
-                <div style={{ fontSize: 11, color: "#64748B", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4 }}>{l.label}</div>
-                <div style={{ fontSize: 20, fontWeight: 700, color: l.color, fontFamily: "Manrope, sans-serif" }}>{l.val}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+              )}
+            />
+          );
+        })}
+      </MoneyList>
     </div>
   );
 }
@@ -4563,7 +4179,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
     { label: "North America", pct: sel.geo.na },
     { label: "Europe", pct: sel.geo.eu },
     { label: "Asia-Pacific", pct: sel.geo.ap },
-    { label: "Emerging Mkts", pct: sel.geo.em },
+    { label: "Emerging markets", pct: sel.geo.em },
   ]).map(r => ({ label: r.label, pct: `${r.pct}%`, c: simGeoColor(r.pct) }));
 
   const range = SIM_GROWTH_RANGES.find(r => r.key === growthRange) ?? SIM_GROWTH_RANGES[0];
@@ -4608,7 +4224,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
 
       <div className="uf-scn-head">
         <div>
-          <div style={{ fontFamily: "Manrope, sans-serif", fontSize: 27, fontWeight: 800, color: "var(--uf-text)", letterSpacing: "-0.5px" }}>Investment Simulations</div>
+          <div style={{ fontFamily: "Manrope, sans-serif", fontSize: 27, fontWeight: 800, color: "var(--uf-text)", letterSpacing: "-0.5px" }}>Investment simulations</div>
           <div style={{ fontSize: 15, color: "var(--uf-text-2)", marginTop: 4 }}>Compare strategies side-by-side. Click a scenario to adjust its holdings.</div>
         </div>
         <button onClick={newScenario} style={{ flexShrink: 0, background: GREEN, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", fontFamily: "Manrope, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, boxShadow: "0 1px 2px rgba(22,160,106,0.3)" }}>
@@ -4619,7 +4235,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
       <div className="uf-scn-grid">
         {/* rail */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ ...uppercaseLabel, paddingLeft: 2 }}>Your Scenarios</div>
+          <div style={{ ...uppercaseLabel, paddingLeft: 2 }}>Your scenarios</div>
           {scenarios.map((s, i) => {
             const ret = simWeightedRet(s.holdings);
             const tot = railTot(s);
@@ -4704,7 +4320,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
           <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.05)", padding: "20px 22px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14, gap: 16, flexWrap: "wrap" }}>
               <div>
-                <div style={uppercaseLabel}>Geographic Diversification</div>
+                <div style={uppercaseLabel}>Geographic diversification</div>
                 <div style={{ fontSize: 15, fontWeight: 800, color: "var(--uf-text)", marginTop: 3 }}>Where {sel.name} is invested</div>
               </div>
               <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
@@ -4733,7 +4349,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
               </div>
             </div>
             <div style={{ display: "flex", gap: 18, marginBottom: 12, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "#64748B" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>Your Plan</span><span style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>{simFmtPct(baseRet)}</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "#64748B" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>Your plan</span><span style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>{simFmtPct(baseRet)}</span></div>
               <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: GREEN }} /><span style={{ fontSize: 12, fontWeight: 700, color: GREEN_TEXT }}>{sel.name}</span><span style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, color: GREEN_TEXT }}>{simFmtPct(selRet)}</span></div>
               <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "#CBD5E1" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{bench}</span><span style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{simFmtPct(benchRet)}</span></div>
             </div>
@@ -4760,7 +4376,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
           <div onClick={e => e.stopPropagation()} style={{ background: "var(--uf-card)", borderRadius: 16, width: 580, maxWidth: "100%", maxHeight: "88vh", overflowY: "auto", boxShadow: "0 24px 60px rgba(0,0,0,0.28)" }}>
             <div style={{ position: "sticky", top: 0, background: "var(--uf-card)", display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "24px 26px 16px", borderBottom: "1px solid var(--uf-border)" }}>
               <div>
-                <div style={uppercaseLabel}>Edit Holdings</div>
+                <div style={uppercaseLabel}>Edit holdings</div>
                 <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", marginTop: 3 }}>{draftName}</div>
               </div>
               <div style={{ textAlign: "right" }}>
@@ -4771,13 +4387,13 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
             <div style={{ padding: "18px 26px 6px" }}>
               <div className="uf-scn-modal-2" style={{ marginBottom: 18 }}>
                 <div>
-                  <div style={{ ...uppercaseLabel, letterSpacing: "0.7px", marginBottom: 6 }}>Starting Amount</div>
+                  <div style={{ ...uppercaseLabel, letterSpacing: "0.7px", marginBottom: 6 }}>Starting amount</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--uf-surface-2)", border: "1px solid var(--uf-border)", borderRadius: 9, padding: "11px 14px" }}>
                     <span style={{ color: "var(--uf-text-3)", fontWeight: 700 }}>$</span><span style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)" }}>10,000</span>
                   </div>
                 </div>
                 <div>
-                  <div style={{ ...uppercaseLabel, letterSpacing: "0.7px", marginBottom: 6 }}>Monthly Contribution</div>
+                  <div style={{ ...uppercaseLabel, letterSpacing: "0.7px", marginBottom: 6 }}>Monthly contribution</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, background: "var(--uf-surface-2)", border: "1px solid var(--uf-border)", borderRadius: 9, padding: "11px 14px" }}>
                     <span style={{ color: "var(--uf-text-3)", fontWeight: 700 }}>$</span><span style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)" }}>500</span><span style={{ marginLeft: "auto", fontSize: 12, color: "var(--uf-text-3)", fontWeight: 600 }}>/mo</span>
                   </div>
@@ -4821,7 +4437,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
             </div>
             <div style={{ position: "sticky", bottom: 0, background: "var(--uf-card)", display: "flex", justifyContent: "flex-end", gap: 10, padding: "16px 26px", borderTop: "1px solid var(--uf-border)" }}>
               <button onClick={closeModal} style={{ background: "var(--uf-card)", color: "var(--uf-text-2)", border: "1px solid var(--uf-border)", borderRadius: 9, padding: "11px 20px", fontFamily: "Manrope, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Cancel</button>
-              <button onClick={save} style={{ background: GREEN, color: "#fff", border: "none", borderRadius: 9, padding: "11px 22px", fontFamily: "Manrope, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Save Changes</button>
+              <button onClick={save} style={{ background: GREEN, color: "#fff", border: "none", borderRadius: 9, padding: "11px 22px", fontFamily: "Manrope, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Save changes</button>
             </div>
           </div>
         </div>
@@ -4884,7 +4500,7 @@ function TaxProfileCard({
             Tax Profile
           </div>
           <div style={{ fontSize: 14, color: "var(--uf-text-2)", marginTop: 2, fontFamily: "Manrope, sans-serif" }}>
-            {city?.flag ?? "🌍"} {jurisdictionLabel}
+            {city?.flag ? <Flag emoji={city.flag} size={11} /> : "🌍"} {jurisdictionLabel}
           </div>
         </div>
         <button
@@ -4999,7 +4615,7 @@ function TaxProfileCard({
                 <span style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(baseFireTarget, true)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>Tax-adjusted FIRE target</span>
+                <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>Tax-adjusted FIRE number</span>
                 <span style={{ fontSize: 14, fontWeight: 800, color: "#059669", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(adjFireTarget, true)}</span>
               </div>
               {delta > 500 && (
@@ -5026,30 +4642,47 @@ function TaxProfileCard({
  * changing growth, city or lifestyle here visibly did nothing: the date only
  * showed on Home. Same numbers as Home (freedomProjection).
  */
-function PlanFreedomDate({ date, fireAge, years, growthPct, deltaYears }: {
+function PlanFreedomDate({ date, fireAge, years, growthPct, deltaYears, invested = 0, target = 0 }: {
   date: Date | null; fireAge: number; years: number | null; growthPct: number; deltaYears: number | null;
+  /** For the bar to the FIRE number; optional so the summary renders without it. */
+  invested?: number; target?: number;
 }) {
   const label = date ? date.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null;
-  const age = date && fireAge > 0 && years !== null ? Math.floor(fireAge + years) : null;
+  const age = date && fireAge > 0 && years !== null ? freedomAgeAt(fireAge, years) : null;
+  const share = target > 0 ? Math.min(1, Math.max(0, invested / target)) : null;
+  const mono = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" } as const;
+  const compact = (n: number) => n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : `$${Math.round(n / 1000)}k`;
+  // The calm headline (D-42): self-contained, because a test renders it alone.
   return (
-    <section aria-live="polite" style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 24px" }}>
-      <div className="uf-t-label" style={{ color: "var(--uf-ink-2)", marginBottom: 6 }}>Your freedom date</div>
-      {label ? (
-        <>
-          <div style={{ fontFamily: "var(--uf-font-display)", fontSize: 34, fontWeight: 700, color: "var(--uf-ink)", lineHeight: 1.1 }}>{label}</div>
-          <div className="uf-t-body" style={{ color: "var(--uf-ink-2)", marginTop: 6 }}>
-            {age !== null ? <>At {age}, </> : null}at {growthPct.toFixed(1)}% growth a year after inflation.
-            {deltaYears !== null && Math.abs(deltaYears) >= 0.05 && (
-              <> That&apos;s <b style={{ color: "var(--uf-ink)" }}>{Math.abs(deltaYears).toFixed(1)} years {deltaYears > 0 ? "later" : "earlier"}</b> than at the {(REAL_RETURN * 100).toFixed(1)}% default.</>
-            )}
+    <section aria-live="polite" style={{ background: "var(--uf-card)", borderRadius: 20, padding: 22, boxShadow: "var(--uf-e1)", display: "grid", gap: 12 }}>
+      <div>
+        <div className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Your freedom date</div>
+        {label ? (
+          <>
+            <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(34px, 6vw, 44px)", fontWeight: 700, color: "var(--uf-teal)", lineHeight: 1.1 }}>{label}</div>
+            <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 4 }}>
+              {age !== null ? <>At {age}, </> : null}at {growthPct.toFixed(1)}% growth a year after inflation.
+              {deltaYears !== null && Math.abs(deltaYears) >= 0.05 && (
+                <> That&apos;s <b style={{ color: "var(--uf-ink)" }}>{Math.abs(deltaYears).toFixed(1)} years {deltaYears > 0 ? "later" : "earlier"}</b> than at the {(REAL_RETURN * 100).toFixed(1)}% default.</>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="uf-t-body" style={{ color: "var(--uf-ink-2)" }}>Not reached yet. Save more or spend less to bring it in.</div>
+        )}
+      </div>
+      {share !== null && (
+        <div style={{ display: "grid", gap: 6 }}>
+          <div role="progressbar" aria-label="Progress to your FIRE number" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(share * 100)}
+            style={{ position: "relative", height: 10, borderRadius: 5, background: "var(--uf-surface-2)", overflow: "hidden" }}>
+            <i style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${share * 100}%`, background: "var(--uf-teal)", borderRadius: 5 }} />
           </div>
-        </>
-      ) : (
-        <div className="uf-t-body" style={{ color: "var(--uf-ink-2)" }}>
-          Not reached yet. Save more or spend less to bring it in.
+          <div className="uf-t-small" style={{ display: "flex", justifyContent: "space-between", gap: 8, color: "var(--uf-ink-2)" }}>
+            <span><b style={{ ...mono, color: "var(--uf-ink)" }}>{compact(invested)}</b> of <span style={mono}>{compact(target)}</span> FIRE number</span>
+            <b style={mono}>{Math.round(share * 100)}%</b>
+          </div>
         </div>
       )}
-      <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginTop: 8 }}>Change anything below to move it.</div>
     </section>
   );
 }
@@ -5069,109 +4702,20 @@ function FireCalcMenuTab({
     } catch { /* ignore */ }
   }, []);
 
-  const tools = [
-    {
-      icon: "📈",
-      title: "Advanced Investing Simulator",
-      desc: "Model monthly investing with your own mix and inflation.",
-      meta: "Advanced / optional",
-      label: "Open Advanced →",
-      onClick: onOpenInvestSim,
-    },
-  ];
-
+  // Rows like every other Plan list (D-57), in place of three cards with
+  // gradient buttons. Neutral dots: these are links, not money.
+  const go = (href: string) => { window.location.href = href; };
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-      <div>
-        <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 22, fontWeight: 800, color: "#19181E", margin: "0 0 6px", letterSpacing: "-0.5px" }}>
-          More tools
-        </h2>
-        <p style={{ color: "#64748B", fontSize: 14, margin: 0 }}>
-          Optional checks beyond the freedom date above.
-        </p>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 18 }}>
-        {tools.map(tool => (
-          <div
-            key={tool.title}
-            style={{
-              background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16,
-              padding: "28px 24px", display: "flex", flexDirection: "column", gap: 16,
-            }}
-          >
-            <div style={{ fontSize: 48, lineHeight: 1 }}>{tool.icon}</div>
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", marginBottom: 8 }}>
-                {tool.title}
-              </div>
-              <div style={{ fontSize: 14, color: "var(--uf-text-2)", lineHeight: 1.7 }}>
-                {tool.desc}
-              </div>
-            </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#059669", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              {tool.meta}
-            </div>
-            <button
-              onClick={tool.onClick}
-              style={{
-                background: "linear-gradient(135deg, #059669, #064E3B)",
-                color: "#fff", border: "none", borderRadius: 10,
-                padding: "12px 0", fontWeight: 700, fontSize: 14,
-                cursor: "pointer", fontFamily: "inherit", marginTop: "auto",
-              }}
-            >
-              {tool.label}
-            </button>
-          </div>
-        ))}
-
-        {/* FIRE Type quiz card */}
-        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "28px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ fontSize: 48, lineHeight: 1 }}>🧭</div>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", marginBottom: 8 }}>
-              {fireTypeResult ? "Your FIRE Type" : "FIRE Type Quiz"}
-            </div>
-            <div style={{ fontSize: 14, color: "var(--uf-text-2)", lineHeight: 1.7 }}>
-              {fireTypeResult
-                ? "How you think about money shapes your path."
-                : "8 quick questions on how you think about money."}
-            </div>
-          </div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: "#059669", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            {fireTypeResult ? `${fireTypeResult.code} — ${fireTypeResult.name}` : "2 minutes · No login"}
-          </div>
-          <a
-            href={`/fire-type?source=dashboard-fire-calc${fireTypeResult ? `&type=${fireTypeResult.code}` : ""}`}
-            style={{
-              background: "linear-gradient(135deg, #059669, #064E3B)",
-              color: "#fff", border: "none", borderRadius: 10,
-              padding: "12px 0", fontWeight: 700, fontSize: 14,
-              cursor: "pointer", fontFamily: "inherit", marginTop: "auto",
-              textDecoration: "none", textAlign: "center", display: "block",
-            }}
-          >
-            {fireTypeResult ? "View / retake quiz →" : "Find my FIRE Type →"}
-          </a>
-        </div>
-      </div>
-
-      {/* Link to public calculators hub */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, paddingTop: 4 }}>
-        <span style={{ fontSize: 13, color: "var(--uf-text-3)" }}>More tools:</span>
-        <a
-          href="/calculators"
-          style={{ fontSize: 13, fontWeight: 700, color: "#059669", textDecoration: "none" }}
-        >
-          Browse all calculators →
-        </a>
-        <a
-          href="/calculators/purchase-impact"
-          style={{ fontSize: 13, fontWeight: 700, color: "#f97316", textDecoration: "none" }}
-        >
-          Purchase impact →
-        </a>
-      </div>
+    <div style={{ display: "grid", gap: 8 }}>
+      <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700 }}>More tools</div>
+      <MoneyList>
+        <MoneyRow dot="var(--uf-ink-3)" icon="📈" name="Investing simulator" meta="Model monthly investing with your own mix and inflation" value="Open ›" onClick={onOpenInvestSim} />
+        <MoneyRow dot="var(--uf-ink-3)" icon="🧭" name={fireTypeResult ? "Your FIRE type" : "FIRE type quiz"}
+          meta={fireTypeResult ? `${fireTypeResult.code} · ${fireTypeResult.name}` : "8 quick questions on how you think about money"}
+          value={fireTypeResult ? "View ›" : "Start ›"}
+          onClick={() => go(`/fire-type?source=dashboard-fire-calc${fireTypeResult ? `&type=${fireTypeResult.code}` : ""}`)} />
+        <MoneyRow dot="var(--uf-ink-3)" icon="🧮" name="All calculators" meta="Coast FIRE, the 4% rule, net worth by age and more" value="Browse ›" onClick={() => go("/calculators")} />
+      </MoneyList>
     </div>
   );
 }
@@ -5179,56 +4723,6 @@ function FireCalcMenuTab({
 // ─── Trends Tab (kept for reference, not wired to sidebar) ───────────────────
 
 // ─── Learning Hub Tab ────────────────────────────────────────────────────────
-function LearningHubTab({ recommendedStageId }: { recommendedStageId: LearnStageId }) {
-  const recommendedStage = LEARNING_STAGES.find(stage => stage.id === recommendedStageId) ?? LEARNING_STAGES[1];
-  const resources = [
-    { href: `/learn/stages/${recommendedStageId}`, label: `You're likely in: ${recommendedStage.label}`, desc: recommendedStage.whatMattersNow, icon: "🧭" },
-    { href: "/learn", label: "Choose your stage", desc: "Use the guided public learning hub instead of starting from a flat article list", icon: "🌱" },
-    { href: "/learn/articles", label: "All Articles", desc: "Browse the full library when you want every FIRE guide in one place", icon: "📄" },
-    { href: "/learn/topics", label: "Topics", desc: "Browse concepts: 4% rule, tax optimisation, coast FIRE", icon: "📚" },
-  ];
-  return (
-    <div>
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ fontSize: 12, color: "#059669", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 10 }}>Learning Hub</div>
-        <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", margin: "0 0 8px" }}>Build your knowledge by stage</h2>
-        <p style={{ fontSize: 15, color: "var(--uf-text-2)", margin: 0 }}>Start with the stage that fits your progress, then switch anytime if you want broader reading.</p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 18 }}>
-          {LEARNING_STAGES.map(stage => (
-            <Link
-              key={stage.id}
-              href={`/learn/stages/${stage.id}`}
-              style={{
-                textDecoration: "none",
-                padding: "10px 14px",
-                borderRadius: 999,
-                border: stage.id === recommendedStageId ? "1px solid #047857" : "1px solid var(--uf-border)",
-                background: stage.id === recommendedStageId ? "rgba(209,250,229,0.45)" : "var(--uf-card)",
-                color: stage.id === recommendedStageId ? "#065F46" : "var(--uf-text-2)",
-                fontSize: 13,
-                fontWeight: 700,
-              }}
-            >
-              {stage.label}
-            </Link>
-          ))}
-        </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
-        {resources.map(r => (
-          <Link key={r.href} href={r.href} style={{ textDecoration: "none" }}>
-            <div className="uf-card" style={{ padding: "24px", cursor: "pointer", transition: "box-shadow 0.15s" }}>
-              <div style={{ fontSize: 32, marginBottom: 14 }}>{r.icon}</div>
-              <div style={{ fontWeight: 700, fontSize: 17, marginBottom: 6 }}>{r.label}</div>
-              <div style={{ fontSize: 13, color: "#64748B", lineHeight: 1.6 }}>{r.desc}</div>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Sidebar items ────────────────────────────────────────────────────────────
 const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: string; activeTabs?: TabKey[] }[] = [
   {
@@ -5239,7 +4733,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
   {
     key: "cashflow",
     label: "Money",
-    activeTabs: ["cashflow", "reports", "assets", "liabilities"],
+    activeTabs: ["cashflow", "income", "reports", "assets", "liabilities", "offers"],
     svg: ICON_PATHS.money,
   },
   {
@@ -5256,21 +4750,26 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
 // See docs/design/app-structure.md — adding a tab means adding it here, nowhere else.
 const MONEY_SECTIONS: { label: string; tab: TabKey }[] = [
   { label: "Cashflow",  tab: "cashflow"    },
+  { label: "Income",    tab: "income"      },
   { label: "Net Worth", tab: "assets"      },
   { label: "Debts",     tab: "liabilities" },
   { label: "Insights",  tab: "reports"     },
+  // Where to keep your money: partner savings, bank and brokerage accounts.
+  { label: "Offers",    tab: "offers"      },
 ];
 
 // Plan's destinations. Two of them are sub-tab states of fire-calculator rather
 // than tabs of their own, hence the optional subTab. Feeds the sidebar sub-nav
 // and the mobile section switch — one array, per rule 6.
-type PlanSection = { label: string; tab: TabKey; subTab?: "menu" | "invest-sim" };
+type PlanSection = { label: string; tab: TabKey; subTab?: "menu" | "invest-sim" | "compare" };
 const PLAN_SECTIONS: PlanSection[] = [
   { label: "Freedom Date", tab: "fire-calculator", subTab: "menu"       },
+  // What if: life changes tried on top of your plan (D-69).
+  { label: "Compare",      tab: "fire-calculator", subTab: "compare"    },
   { label: "Scenarios",    tab: "fire-calculator", subTab: "invest-sim" },
   { label: "Goals",        tab: "goals"        },
   { label: "Contributions", tab: "contributions" },
-  { label: "Expat FIRE",   tab: "expat-fire"   },
+  { label: "Explore",      tab: "expat-fire"   },
   { label: "Citizenship",  tab: "citizenship"  },
   { label: "Learn",        tab: "learning-hub" },
 ];
@@ -5280,12 +4779,39 @@ type CashflowSubTab = "cashflow" | "categories" | "expected" | "budgets";
 // Single source of truth for the Cashflow sub-nav — the sidebar sub-sub-nav and
 // the horizontal switcher both render from this. They used to be two hand-kept
 // arrays, which is how Categories and Recurring ended up rendered but unreachable.
+// Mini line icons for the sidebar's second level, by page label (D-55).
+// Quiet ink-3 strokes; only the selected page's icon takes the green.
+const SUB_ICONS: Record<string, string> = {
+  Transactions: "M4 7h13l-3-3M20 17H7l3 3",
+  Calendar: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
+  Compare: "M8 4v16M16 4v16M3 8h5M16 16h5M3 16h5M16 8h5",
+  Categories: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+  Budget: "M12 3a9 9 0 1 0 9 9h-9zM15 3.5A9 9 0 0 1 20.5 9H15z",
+  Income: "M3 7h18v12H3zM8 7V5h8v2M3 12h18",
+  "Net Worth": "M12 3v18M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z",
+  Debts: "M3 6h18v12H3zM3 10h18M7 15h3",
+  Insights: "M4 20V10M10 20V4M16 20v-7M22 20H2",
+  "Freedom Date": "M3 18h18M6 18a6 6 0 0 1 12 0M12 4v3M4.9 8.9l2.1 2.1M19.1 8.9 17 11",
+  Scenarios: "M6 3v6a6 6 0 0 0 6 6h6M6 9v12M18 15l-3-3M18 15l-3 3",
+  Goals: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01",
+  Contributions: "M12 3v12M7 10l5 5 5-5M4 21h16",
+  "Explore": "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18",
+  Citizenship: "M6 3h12v18H6zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM9 17h6",
+  Learn: "M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2zM4 19V5M8 7h8",
+};
+function SubIcon({ label }: { label: string }) {
+  const d = SUB_ICONS[label];
+  return d ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="uf-sidebar-sub-icon"><path d={d} /></svg> : null;
+}
+
 const CASHFLOW_SUB_TABS: { key: CashflowSubTab; label: string }[] = [
   { key: "cashflow",   label: "Transactions" },
   // Recurring and Expected were one story told twice — what is coming and
   // when, once by guessing and once by being told. They are now one tab, and
   // detection feeds it as suggestions rather than as a second list.
-  { key: "expected",   label: "Upcoming"     },
+  // Upcoming became Calendar (D-61): the same list, plus the month with cash
+  // day by day and the invest day on it, which Contributions used to show.
+  { key: "expected",   label: "Calendar"     },
   { key: "categories", label: "Categories"   },
   { key: "budgets",    label: "Budget"       },
 ];
@@ -5318,10 +4844,16 @@ const MOBILE_PRIMARY_ITEMS: { key: MobilePrimaryKey; label: string; svg: string 
 // ─── Root ────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const [tab, setTab] = useState<TabKey>("overview");
+  // Keeps a used bank connected (lib/bank-cleanup drops idle free ones).
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => { if (session) stampActive(supabase as never, session.user.id); });
+  }, []);
   const [cashflowSubTab, setCashflowSubTab] = useState<CashflowSubTab>("cashflow");
   const [categoriesKey, setCategoriesKey] = useState(0);
-  const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "invest-sim">("menu");
+  const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "invest-sim" | "compare">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  // Set when a creator referred this account: its trial is 60 days, not 30 (D-27).
+  const [referredTrial, setReferredTrial] = useState(false);
   const [upgradeSource, setUpgradeSource] = useState("dashboard_upgrade_modal");
   const [upgradedBanner, setUpgradedBanner] = useState(false);
   const [isDark, setIsDark] = useState(false);
@@ -5346,7 +4878,7 @@ export default function Dashboard() {
   // hadSubscription, not just plan: someone who subscribed once and cancelled
   // cannot have another trial, and the upgrade modal has to know that before it
   // offers one. Same source of truth the checkout route uses.
-  const [subscription, setSubscription] = useState<{ plan: "free" | "pro"; hadSubscription: boolean } | null>(null);
+  const [subscription, setSubscription] = useState<{ plan: "free" | "pro"; hadSubscription: boolean; billing?: ProBilling } | null>(null);
   // As stored: each balance in its account's own currency. Everything below
   // reads `plaidAccounts`, the converted list defined after `rates`.
   const [rawPlaidAccounts, setPlaidAccounts] = useState<PlaidAccount[]>([]);
@@ -5360,8 +4892,8 @@ export default function Dashboard() {
     const params = new URLSearchParams(window.location.search);
     const t = params.get("tab") as TabKey | null;
     const valid: TabKey[] = [
-      "overview", "cashflow", "assets", "liabilities",
-      "fire-calculator", "expat-fire", "goals", "contributions", "citizenship", "reports", "learning-hub", "profile",
+      "overview", "cashflow", "income", "assets", "liabilities",
+      "fire-calculator", "expat-fire", "goals", "contributions", "citizenship", "reports", "offers", "learning-hub", "profile",
     ];
     if (t && valid.includes(t)) setTab(t);
     if (params.get("upgraded") === "true") {
@@ -5428,13 +4960,23 @@ export default function Dashboard() {
   const [taxable,         setTaxable]         = useState(0);
   const [cashSavings,     setCashSavings]     = useState(0);
   const [totalDebt,       setTotalDebt]       = useState(0);
-  const [mortgageBalance, setMortgageBalance] = useState(0);
-  const [mortgageMonthly, setMortgageMonthly] = useState(0);
+  // Every mortgage on its own (D-61); the totals the rest of the dashboard reads are summed from them.
+  const [mortgages, setMortgages] = useState<Mortgage[]>([]);
+  const [mortgageTerms, setMortgageTerms] = useState<MortgageTerms>({});
+  // The contribution marked as made on the Calendar (D-61): until the next one,
+  // nothing more is safe to invest, so the same money is never invested twice.
+  const [contributionDone, setContributionDone] = useState<{ iso: string; amount: number } | null>(null);
+  // Saved what-ifs from Plan → Compare (D-69), kept with the profile; never the plan itself.
+  const [comparisons, setComparisons] = useState<LifeVersion[]>([]);
+  const mortgageBalance = useMemo(() => mortgages.reduce((s, m) => s + m.balance, 0), [mortgages]);
+  const mortgageMonthly = useMemo(() => mortgages.reduce((s, m) => s + m.monthly, 0), [mortgages]);
   const [growthRate,      setGrowthRate]      = useState(REAL_RETURN);
   const [withdrawalRate,  setWithdrawalRate]  = useState(0.04);
   const [taxEnabled,        setTaxEnabled]        = useState(false);
   const [retirementTaxRate, setRetirementTaxRate] = useState(0.15);
   const [rothPct,           setRothPct]           = useState(0);
+  // Spending once free, pay growth, pension access and the rest (D-59); age joins from the profile.
+  const [planSettings, setPlanSettings] = useState<PlanSettings>({});
   const [cityName,            setCityName]            = useState("");
   const [retirementCityName,  setRetirementCityName]  = useState("");
   const [retirementCityCol,   setRetirementCityCol]   = useState(0);
@@ -5447,13 +4989,16 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState("");
   const [userJoinedAt, setUserJoinedAt] = useState("");
   const [defaultCurrency, setDefaultCurrency] = useState("USD");
+  const usTaxHome = TAX_US_STATES.some((t) => t.value === CITIES.find(c => c.name === cityName)?.state);
+  const planBase = useMemo<PlanSettings>(() => ({ ...planSettings, currentAge: fireAge || undefined,
+    taxFreeGainsLocked: taxFreeFor(defaultCurrency, usTaxHome)?.gainsLocked ?? true }), [planSettings, fireAge, defaultCurrency, usTaxHome]);
   const [preferredCurrencies, setPreferredCurrencies] = useState<string[]>([]);
 
   useEffect(() => {
     if (!userId) return;
     supabase
       .from("subscriptions")
-      .select("plan, stripe_subscription_id")
+      .select("plan, stripe_subscription_id, source, auto_renew, current_period_end")
       .eq("user_id", userId)
       .maybeSingle()
       .then(async ({ data }) => {
@@ -5461,6 +5006,13 @@ export default function Dashboard() {
         setSubscription({
           plan: ownPlan,
           hadSubscription: Boolean(data?.stripe_subscription_id),
+          // Only your own Pro can be cancelled here: not a household member's,
+          // not Apple's, not a reward month (D-99).
+          billing: ownPlan === "pro" ? {
+            source: data?.source === "apple" ? "apple" : data?.stripe_subscription_id ? "stripe" : "other",
+            renews: data?.auto_renew !== false,
+            endsAt: data?.current_period_end ?? null,
+          } : undefined,
         });
         // One Pro subscription covers the household. Checked only when this
         // user has none of their own, so the paying member never waits on it,
@@ -5497,8 +5049,9 @@ export default function Dashboard() {
   // because the assumptions card in Plan is now its only caller, and an
   // inline copy at the call site was how it read when Profile owned it.
   function handleTaxKeyChange(key: string) {
+    // Keep where they live when it is already in this tax home (D-82).
     const repCity = CITIES.find(c => c.state === key);
-    if (repCity) setCityName(repCity.name);
+    if (repCity && CITIES.find(c => c.name === cityName)?.state !== key) setCityName(repCity.name);
     const taxInfo = STATE_TAX[key];
     if (taxInfo) {
       const isUSKey = !key.startsWith("ca_");
@@ -5521,48 +5074,45 @@ export default function Dashboard() {
     if (url) window.location.href = url;
   }
 
-  const suggestedLearnStage = useMemo<LearnStageId>(() => {
-    const investable = k401 + rothIRA + taxable + cashSavings;
-    const monthlyExpenses = Object.entries(expenses)
-      .filter(([key]) => !key.startsWith("_"))
-      .reduce((sum, [, amount]) => sum + (amount || 0), 0);
-    const targetMonthlyExpenses = retirementCityCol > 0 ? (retirementCityCol * lifestyleMultiplier) / 12 : undefined;
-    const { fireYear, fireTarget } = calcProjection({
-      annualIncome: income * 12,
-      monthlyExpenses,
-      k401,
-      rothIRA,
-      taxable,
-      cashSavings,
-      totalDebt,
-      mortgageBalance,
-      mortgageMonthly,
-      growthRate,
-      withdrawalRate,
-      targetMonthlyExpenses,
-    });
-    const progress = fireTarget > 0 ? (investable / fireTarget) * 100 : 0;
-
-    if (progress >= 85 || (fireYear !== null && fireYear <= 5)) return "living-in-fire";
-    if (progress >= 45 || (fireYear !== null && fireYear <= 12)) return "approaching-fire";
-    if (investable > 0 || income > 0) return "building-momentum";
-    return "starting-out";
-  }, [cashSavings, expenses, growthRate, income, k401, lifestyleMultiplier, mortgageBalance, mortgageMonthly, retirementCityCol, rothIRA, taxable, totalDebt, withdrawalRate]);
   const [rawActuals, setRawActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
 
-  type CommittedRow = { amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null; category: string | null; description?: string | null; recurrence?: string | null };
+  type CommittedRow = { id?: string; match_merchant?: string | null; amount: number; currency: string | null; transaction_type: string; due_date: string; completed_at: string | null; category: string | null; description?: string | null; recurrence?: string | null;
+    sub_category?: string | null; lease_ends_on?: string | null; lease_rise_pct?: number | null };
   const [committedRows, setCommittedRows] = useState<CommittedRow[]>([]);
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
-  const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[]; category?: string; description?: string }[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[]; category?: string; description?: string; sub_category?: string | null; plaid_account_id?: string | null }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
+  /* The budget as typed in the account's own currency (D-86). USD stays stored
+     beside it for every other reader; this keeps ¥3,000 at ¥3,000 as rates move. */
+  const [budgetLocal, setBudgetLocal] = useState<{ currency?: string; values?: Record<string, number> } | null>(null);
+  const [ratesStatus, setRatesStatus] = useState<"loading" | "live" | "failed">("loading");
+  /* Pending until converted at the live rate: autosave keeps the stored copy
+     meanwhile, so a fallback-rate conversion is never written back as typed. */
+  const budgetLocalPending = useRef(false);
+  budgetLocalPending.current = budgetLocal !== null;
+  useEffect(() => {
+    if (!budgetLocal?.values || !budgetLocal.currency) { if (budgetLocal) setBudgetLocal(null); return; }
+    const cur = budgetLocal.currency;
+    const rate = (ratesStatus === "live" ? rates[cur] : undefined) ?? FALLBACK_RATES[cur];
+    if (rate) setExpenses((prev) => ({ ...prev, ...Object.fromEntries(Object.entries(budgetLocal.values!).filter(([, v]) => typeof v === "number").map(([k, v]) => [k, v / rate])) }));
+    if (!rate || ratesStatus !== "loading") setBudgetLocal(null);
+  }, [budgetLocal, rates, ratesStatus]);
   /* Every balance in dollars, converted once here so that every total built
      from them — net worth, cash, the emergency fund, the contribution
      forecast, the freedom-date projection — is in one currency. Adding them
      raw counted HK$20,000 as $20,000. Recomputed when rates arrive. */
+  // Joint accounts count at your share on your own figures (lib/account-share).
+  const [accountShares, setAccountShares] = useState<AccountShares>({});
   const plaidAccounts = useMemo(
-    () => rawPlaidAccounts.map((a) => accountInUSD(a, rates)),
-    [rawPlaidAccounts, rates],
+    () => applyAccountShares(rawPlaidAccounts.map((a) => accountInUSD(a, rates)), accountShares),
+    [rawPlaidAccounts, rates, accountShares],
   );
+  // The plan as every freedom date projects it: settings, age, and each mortgage at its own rate (D-61).
+  const connectedMortgages = useMemo(() => plaidAccounts
+    .filter((a) => a.type === "loan" && normalizePlaidSubtype(a.subtype).includes("mortgage") && (a.balance_current ?? 0) > 0)
+    .map((a) => ({ id: a.id, name: a.name || a.official_name || "Mortgage", balance: a.balance_current ?? 0 })), [plaidAccounts]);
+  const plan = useMemo<PlanSettings>(() => ({ ...planBase, mortgages: engineMortgages(mortgages, connectedMortgages, mortgageTerms) }),
+    [planBase, mortgages, connectedMortgages, mortgageTerms]);
   const [freedomDate, setFreedomDate] = useState<Date | null>(null);
   const freedomDateLabel = freedomDate
     ? freedomDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
@@ -5570,41 +5120,36 @@ export default function Dashboard() {
   const freedomDateCompactLabel = freedomDate
     ? freedomDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
     : null;
-  const freedomDateMonthYearLabel = freedomDate
-    ? freedomDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })
-    : null;
-  const [budgetMode, setBudgetMode] = useState<"manual" | "history">(() => {
-    try { return (localStorage.getItem("uf_budget_mode") as "manual" | "history") || "manual"; } catch { return "manual"; }
-  });
-  const histIncomeAvg = useMemo(() => {
+  /* Real spending per complete month over the last 12 (D-86): what the
+     freedom date runs on once there are three months, so trips and yearly
+     bills count. A mortgage payment is left out because the engine pays the
+     mortgage separately and would otherwise count it twice. */
+  // Real spending by the shared rule (lib/real-spending): same months, partial-month and mortgage handling as the phone.
+  const hasMortgage = mortgageMonthly > 0 || mortgages.some((m) => m.monthly > 0 || m.balance > 0)
+    || effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts }).mortgage > 0;
+  const realSpending = useMemo(() => {
     const now = new Date();
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const byMonth: Record<string, number> = {};
-    recentTransactions.filter(t => t.transaction_type === "income" && !t.date.startsWith(curMonth))
-      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(t.amount, t.currency, rates); });
-    const vals = Object.values(byMonth);
-    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
-  }, [recentTransactions, rates]);
-  const histExpensesAvg = useMemo(() => {
-    const now = new Date();
-    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const byMonth: Record<string, number> = {};
-    recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth))
-      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
-    const vals = Object.values(byMonth);
-    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
-  }, [recentTransactions, rates]);
+    const rows = recentTransactions.filter(t => t.transaction_type === "expense")
+      .map(t => ({ date: t.date, usd: toUSD(netAmt(t), t.currency, rates) * shareOf(t.plaid_account_id, accountShares), description: t.description, sub_category: t.sub_category }));
+    return spendingAverage(rows, curMonth, { excludeMortgage: hasMortgage, firstDate: recentTransactions[0]?.date ?? null });
+  }, [recentTransactions, rates, hasMortgage, accountShares]);
+  const histExpensesAvg = realSpending.average ?? 0;
   /* Needs per complete month, newest first. The average is what the emergency
      fund sizes itself against; the most recent month is what someone means
      when they say "what I spend", so the contribution ladder offers both. */
+  // Need or want by the shared rule (lib/needs): the category, or a tag on the row; the last 12 complete months.
+  const [categoryNeeds, setCategoryNeeds] = useState<NeedOverrides>({});
+  const [spreadCategories, setSpreadCategories] = useState<string[]>([]);
+  const [homeValue, setHomeValue] = useState(0);
   const needsByMonth = useMemo(() => {
     const now = new Date();
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const byMonth: Record<string, number> = {};
-    recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth) && (t.tags || []).includes("need"))
+    recentTransactions.filter(t => t.transaction_type === "expense" && inLastTwelve(t.date.slice(0, 7), curMonth) && transactionNeed(t, categoryNeeds) === "need")
       .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
     return Object.entries(byMonth).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [recentTransactions, rates]);
+  }, [recentTransactions, rates, categoryNeeds]);
   /* Last complete month's spending, split by tag, in dollars. The
      contribution forecast's day-to-day estimate is built from the needs; the
      wants and untagged totals are shown beside it so it is clear what was
@@ -5615,17 +5160,17 @@ export default function Dashboard() {
     const key = `${first.getFullYear()}-${String(first.getMonth() + 1).padStart(2, "0")}`;
     const month = recentTransactions.filter(t => t.transaction_type === "expense" && t.date.startsWith(key));
     const inUsd = (t: typeof month[number]) => toUSD(netAmt(t), t.currency, rates);
-    const has = (t: typeof month[number], tag: string) => (t.tags || []).includes(tag);
+    const filed = month.filter(t => !!t.category);
     return {
       year: first.getFullYear(),
       monthIndex: first.getMonth(),
-      needs: month.filter(t => has(t, "need")).map(t => ({
+      needs: filed.filter(t => transactionNeed(t, categoryNeeds) === "need").map(t => ({
         description: t.description ?? "", category: t.category ?? null, amountUSD: inUsd(t),
       })),
-      wants: month.filter(t => has(t, "want")).reduce((sum, t) => sum + inUsd(t), 0),
-      untagged: month.filter(t => !has(t, "need") && !has(t, "want")).reduce((sum, t) => sum + inUsd(t), 0),
+      wants: filed.filter(t => transactionNeed(t, categoryNeeds) === "want").reduce((sum, t) => sum + inUsd(t), 0),
+      untagged: month.filter(t => !t.category).reduce((sum, t) => sum + inUsd(t), 0),
     };
-  }, [recentTransactions, rates]);
+  }, [recentTransactions, rates, categoryNeeds]);
   const histNeedsAvg = useMemo(() => {
     const vals = needsByMonth.map(([, v]) => v);
     return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
@@ -5640,37 +5185,187 @@ export default function Dashboard() {
     const vals = Object.values(byMonth);
     return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
   }, [recentTransactions, rates]);
-  const histMonthsCount = useMemo(() => {
-    const now = new Date();
-    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    return new Set(recentTransactions.filter(t => t.transaction_type === "expense" && !t.date.startsWith(curMonth)).map(t => t.date.slice(0, 7))).size;
-  }, [recentTransactions]);
-  const effectiveIncome = budgetMode === "history" && histIncomeAvg > 0 ? histIncomeAvg : income;
+  const histMonthsCount = realSpending.months;
+  // Real spending, not the budget, once there are three months (D-86); the phone uses the same rule. Income stays the take-home typed in.
+  const budgetMode: "manual" | "history" = histExpensesAvg > 0 ? "history" : "manual";
+  const effectiveIncome = income;
   const effectiveExpenses = useMemo((): Expenses => {
-    if (budgetMode !== "history" || histExpensesAvg <= 0) return expenses;
+    if (histExpensesAvg <= 0) return expenses;
     const numericEntries = Object.entries(expenses).filter(([k, v]) => !k.startsWith("_") && typeof v === "number");
     const currentTotal = numericEntries.reduce((s, [, v]) => s + (v as number), 0);
     if (currentTotal <= 0) return { ...expenses, other: histExpensesAvg };
     const scale = histExpensesAvg / currentTotal;
     return { ...expenses, ...Object.fromEntries(numericEntries.map(([k, v]) => [k, Math.round((v as number) * scale)])) };
-  }, [budgetMode, histExpensesAvg, expenses]);
-  const manualEmergencyNeeds = useMemo(
-    () => EMERGENCY_FUND_BUDGET_NEED_KEYS.reduce((sum, key) => sum + (effectiveExpenses[key] || 0), 0),
-    [effectiveExpenses],
-  );
+  }, [histExpensesAvg, expenses]);
+  /* What the freedom date spends: before three months of data the budget, with
+     the mortgage payment taken out of Housing, since the engine pays it on its
+     own (D-86); the real-spending average already leaves it out. */
+  const freedomExpenses = useMemo((): Expenses => {
+    if (histExpensesAvg > 0 || !hasMortgage) return effectiveExpenses;
+    const payment = mortgageMonthly || mortgages.reduce((s, m) => s + (m.monthly || 0), 0);
+    return { ...effectiveExpenses, housing: Math.max(0, (effectiveExpenses.housing || 0) - payment) };
+  }, [effectiveExpenses, histExpensesAvg, hasMortgage, mortgageMonthly, mortgages]);
+  const manualEmergencyNeeds = useMemo(() => budgetNeeds(expenses, categoryNeeds), [expenses, categoryNeeds]);
   const emergencyFundMonthlyBase = histNeedsAvg > 0 ? histNeedsAvg : manualEmergencyNeeds;
+  const sharedPlan = useContributionPlan();
+  // Which accounts are spending money (D-29); the freedom date leaves them out too.
+  const [spendToggles, setSpendToggles] = useState<Record<string, boolean>>({});
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from("profiles").select("free_to_spend_accounts").eq("user_id", userId).single()
+      .then(({ data }) => { if (data?.free_to_spend_accounts) setSpendToggles(data.free_to_spend_accounts as Record<string, boolean>); });
+  }, [userId]);
+  const setSpendToggle = useCallback((id: string, on: boolean) => {
+    setSpendToggles((prev) => {
+      const next = { ...prev, [id]: on };
+      if (userId) supabase.from("profiles").update({ free_to_spend_accounts: next }).eq("user_id", userId)
+        .then(({ error }) => { if (error) console.error("[free-to-spend] saving account toggles", error); });
+      return next;
+    });
+  }, [userId]);
+  // Marked shared: half of a joint account on your own date. Written straight into the profile so autosave keeps it.
+  const setAccountShared = useCallback((plaidAccountId: string, shared: boolean) => {
+    setAccountShares((prev) => {
+      const next = { ...prev };
+      if (shared) next[plaidAccountId] = SHARED_PCT; else delete next[plaidAccountId];
+      if (userId) void (async () => {
+        const { data } = await supabase.from("user_budget").select("expenses").eq("user_id", userId).maybeSingle();
+        const ex = (data?.expenses as Record<string, unknown>) ?? {};
+        const { error } = await supabase.from("user_budget").update({
+          expenses: { ...ex, _fire_profile: { ...((ex._fire_profile as Record<string, unknown>) ?? {}), accountShares: next } },
+        }).eq("user_id", userId);
+        if (error) console.error("[account-share] saving", error);
+      })();
+      return next;
+    });
+  }, [userId]);
   // The freedom date Home shows, computed here too so Plan can show it beside
   // the assumptions that move it, and what the growth choice changed.
   const planFreedomInputs = useMemo(() => ({
-    income: effectiveIncome, expenses: effectiveExpenses as Record<string, number>, k401, rothIRA, taxable, cashSavings,
+    income: effectiveIncome, expenses: freedomExpenses as Record<string, number>, k401, rothIRA, taxable, cashSavings,
     totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier,
-    monthlyWorkCosts: histWorkAvg > 0 ? histWorkAvg : undefined, taxEnabled, retirementTaxRate, rothPct,
-  }), [effectiveIncome, effectiveExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, histWorkAvg, taxEnabled, retirementTaxRate, rothPct]);
+    monthlyWorkCosts: histWorkAvg > 0 ? histWorkAvg : undefined, currentCityCol: CITIES.find((c) => c.name === cityName)?.col ?? 0,
+    taxEnabled, retirementTaxRate, rothPct, plan, spendToggles, safetyNeeds: emergencyFundMonthlyBase, ladderDebts: sharedPlan?.ladder?.debts ?? [],
+  }), [sharedPlan, spendToggles, emergencyFundMonthlyBase, plan, effectiveIncome, freedomExpenses, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, withdrawalRate, plaidAccounts, retirementCityCol, lifestyleMultiplier, histWorkAvg, cityName, taxEnabled, retirementTaxRate, rothPct]);
   const planFreedom = useMemo(() => freedomProjection({ ...planFreedomInputs, growthRate }), [planFreedomInputs, growthRate]);
+  // Where Learn starts someone: from the freedom date itself (D-86), so it reads the same spending and cash.
+  const learnPlace = useMemo<{ stage: LearnStageId; progress: number | null; years: number | null }>(() => {
+    const inputs = projectionInputs({ ...planFreedomInputs, growthRate });
+    const investable = inputs.k401 + inputs.rothIRA + inputs.taxable + inputs.cashSavings;
+    const { fireYear, fireTarget } = planFreedom;
+    const progress = fireTarget > 0 ? (investable / fireTarget) * 100 : 0;
+    const place = (stage: LearnStageId) => ({ stage, progress: fireTarget > 0 && (investable > 0 || income > 0) ? Math.min(1, progress / 100) : null, years: fireYear });
+    if (progress >= 85 || (fireYear !== null && fireYear <= 5)) return place("living-in-fire");
+    if (progress >= 45 || (fireYear !== null && fireYear <= 12)) return place("approaching-fire");
+    if (investable > 0 || income > 0) return place("building-momentum");
+    return place("starting-out");
+  }, [planFreedomInputs, planFreedom, growthRate, income]);
+  // Plan → Compare (D-69): the plan with a set of life changes, on the same engine as the date (D-66).
+  const compareSpendNow = useMemo(() => Object.entries(effectiveExpenses).filter(([k, v]) => !k.startsWith("_") && typeof v === "number")
+    .reduce((t, [, v]) => t + (v as number), 0), [effectiveExpenses]);
+  // The lease on the Rent bill (lib/lease.ts), for Compare's renew-or-move tries. A what-if only.
+  const compareLease = useMemo(() => {
+    const r = committedRows.find((b) => b.transaction_type === "expense" && isRent(b) && b.lease_ends_on);
+    return r ? { endsOn: String(r.lease_ends_on).slice(0, 10), rentUsd: toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates), risePct: r.lease_rise_pct ?? null } : null;
+  }, [committedRows, rates]);
+  const compareRetireAge = planSettings.accessAge || pensionFor(defaultCurrency, usTaxHome).age || 60;
+  const runChanges = useCallback((changes: EngineChange[]) =>
+    freedomProjection({ ...planFreedomInputs, growthRate, changes }), [planFreedomInputs, growthRate]);
+  const compareCtx = useMemo(() => ({ thisYear: new Date().getFullYear(), currentAge: fireAge, takeHomeMonthly: effectiveIncome, spendMonthly: compareSpendNow }),
+    [fireAge, effectiveIncome, compareSpendNow]);
   const planFreedomAtDefault = useMemo(
     () => (growthRate === REAL_RETURN ? planFreedom : freedomProjection({ ...planFreedomInputs, growthRate: REAL_RETURN })),
     [planFreedomInputs, growthRate, planFreedom],
   );
+  /* Plan's tools (purchase impact, the tax card, Explore) use the freedom
+     date's own numbers (D-33): the same target, balances (connected replacing
+     typed), savings after mortgage and debt, growth, withdrawal rate and tax.
+     Each had its own copy of the math and inputs, so none matched the date
+     shown above it. */
+  /* What moves Plan's date most (D-42), worked out from Plan's own inputs so
+     the dates match the one above them. The same three moves as Home's. */
+  const planMoves = useMemo(() => {
+    if (!planFreedom.exactDate) return [];
+    const base = projectionInputs({ ...planFreedomInputs, growthRate });
+    if (!(base.annualIncome > 0)) return [];
+    const from = planFreedom.exactDate.getTime();
+    const run = (over: Partial<typeof base>) => { const r = calcProjection({ ...base, ...over }); return exactFreedomDateFrom(r.data, r.fireYear, r.fireTarget); };
+    return [
+      { key: "save", icon: "💰", color: COLOR_PALETTE[2], label: `Save ${fmt(500, defaultCurrency, rates)} more a month`, note: "", date: run({ monthlyExpenses: Math.max(0, base.monthlyExpenses - 500) }) },
+      { key: "spend", icon: "✂️", color: COLOR_PALETTE[1], label: "Spend 10% less", note: "", date: run({ monthlyExpenses: base.monthlyExpenses * 0.9 }) },
+      { key: "earn", icon: "📈", color: COLOR_PALETTE[6], label: "Earn 10% more", note: "if the raise is saved", date: run({ annualIncome: base.annualIncome * 1.1 }) },
+    ].map((m) => ({ ...m, years: m.date ? Math.max(0, (from - m.date.getTime()) / (365.25 * 864e5)) : 0 }))
+      .sort((x, y) => y.years - x.years);
+  }, [planFreedom, planFreedomInputs, growthRate, defaultCurrency, rates]);
+  const planFacts = useMemo(() => {
+    const inputs = projectionInputs({ ...planFreedomInputs, growthRate });
+    const retirementMonthly = inputs.targetMonthlyExpenses ?? inputs.monthlyExpenses;
+    return {
+      invested: inputs.k401 + inputs.rothIRA + inputs.taxable + inputs.cashSavings,
+      monthlySavings: Math.max(0, planFreedom.firstYearInvested / 12),
+      fireTarget: planFreedom.fireTarget,
+      retirementMonthly,
+      currentMonthly: inputs.monthlyExpenses,
+      // FIRE target per dollar of a year's retirement spending: 1 / withdrawal rate, with the tax gross-up.
+      targetPerDollar: retirementMonthly > 0 ? planFreedom.fireTarget / (retirementMonthly * 12) : 1 / withdrawalRate,
+    };
+  }, [planFreedomInputs, growthRate, planFreedom, withdrawalRate]);
+  // The one-page plan (D-60), built from the freedom date's own numbers when asked for.
+  const [report, setReport] = useState<ReportData | null>(null);
+  const reportMoney = useCallback((n: number) => fmt(n, defaultCurrency, rates), [defaultCurrency, rates]);
+  const reportCompact = useCallback((n: number) => fmt(n, defaultCurrency, rates, true), [defaultCurrency, rates]);
+  const openReport = useCallback(() => {
+    const date = planFreedom.exactDate;
+    if (!date) return;
+    const yearsTo = (d: Date | null) => (d ? (d.getTime() - Date.now()) / (365.25 * 864e5) : null);
+    const ageAt = (d: Date | null) => { const y = yearsTo(d); return y === null ? null : fireAge > 0 ? freedomAgeAt(fireAge, y) : Math.ceil(y); };
+    // Spending a round step either side (12,500 around 112,500), so the rows read as choices, not percentages.
+    const spend = planFacts.retirementMonthly * 12, mag = Math.pow(10, Math.floor(Math.log10(Math.max(1, spend * 0.11))));
+    const step = [1, 1.25, 2, 2.5, 5, 10].map((m) => m * mag).reduce((a, c) => (Math.abs(c - spend * 0.11) < Math.abs(a - spend * 0.11) ? c : a));
+    const spends = [Math.max(0, spend - step), spend, spend + step], growths = [growthRate - 0.01, growthRate, growthRate + 0.01];
+    const ages = spends.map((sp) => growths.map((g) => ageAt(freedomProjection({ ...planFreedomInputs, growthRate: g, plan: { ...plan, retirementAnnualSpend: sp } }).exactDate)));
+    const inputs = projectionInputs({ ...planFreedomInputs, growthRate });
+    const pension = planSettings.pensionAnnual ?? 0, employer = planSettings.employerAnnual ?? 0, afterTax = Math.max(0, planFreedom.annualSavings);
+    const pensionName = pensionFor(defaultCurrency, usTaxHome), account = taxFreeFor(defaultCurrency, usTaxHome);
+    const ownSplit = planSettings.taxFreeAnnual != null || pension > 0, taxFree = Math.min(afterTax, planSettings.taxFreeAnnual ?? 0);
+    const saving = ownSplit ? [
+      ...(pension > 0 ? [{ label: `${pensionName.payroll}, before tax`, value: pension }] : []),
+      ...(employer > 0 ? [{ label: `${pensionName.payroll}, employer`, value: employer }] : []),
+      ...(taxFree > 0 && account ? [{ label: account.name, value: taxFree }] : []),
+      { label: "Investing account", value: afterTax - taxFree },
+    ] : [...(employer > 0 ? [{ label: "Employer adds", value: employer }] : []), { label: "Saved from take-home", value: afterTax }];
+    const total = pension + employer + afterTax, gross = planSettings.grossAnnual ?? 0;
+    const fy = planFreedom.fireYear ?? 0, b = planFreedom.bridge;
+    const stateKey = CITIES.find(c => c.name === cityName)?.state ?? "";
+    const stateLabel = STATE_TAX[stateKey]?.label.split(" —")[0] ?? "";
+    setReport({
+      date, age: fireAge > 0 ? ageAt(date) : null, currentAge: fireAge || null,
+      place: usTaxHome ? `United States${stateLabel ? ` (${stateLabel})` : ""}` : stateLabel,
+      target: planFreedom.fireTarget, spend, spendIsGoal: (planSettings.retirementAnnualSpend ?? 0) > 0, withdrawalRate, growthRate,
+      invested: planFacts.invested,
+      balances: [{ label: "taxable", value: inputs.taxable }, { label: "cash", value: inputs.cashSavings }, { label: pensionName.payroll, value: inputs.k401 }, { label: account?.name ?? "tax-free", value: inputs.rothIRA }],
+      saving, savingTotal: total, savingPct: gross > 0 ? total / (gross + employer) : effectiveIncome > 0 ? total / (effectiveIncome * 12 + pension + employer) : null,
+      spendingToday: planFacts.currentMonthly * 12, gross: gross || null,
+      path: planFreedom.data.slice(0, Math.min(planFreedom.data.length, fy + 3)).map((r, i) => ({ age: fireAge > 0 ? fireAge + i : i, total: r["Investable"] ?? 0, reachable: r["Reachable"] ?? 0 })),
+      bridge: b && planSettings.accessAge ? { accessAge: ageLabel(planSettings.accessAge), at: planSettings.accessAge, years: b.years, needed: b.needed, reachable: b.reachable, locked: b.locked, ok: b.reachable >= b.needed, name: pensionName.payroll } : null,
+      grid: { spends, growths, ages },
+      conservative: [usTaxHome ? "No Social Security counted" : "No state pension counted",
+        ...((planSettings.payGrowth ?? 0) > 0 ? [] : [`No raises: saving stays at ${fmt(total, defaultCurrency, rates, true)} a year`]),
+        "Your home is not counted", `${+(withdrawalRate * 100).toFixed(1)}% a year withdrawal, a common long-run rule`],
+      notIncluded: [...(TAX_ESTIMATES_AVAILABLE && taxEnabled ? [] : ["Tax on withdrawals in retirement"]), ...(usTaxHome ? ["Health insurance before 65"] : []), "Year-to-year market swings"],
+    });
+  }, [planFreedom, planFacts, fireAge, growthRate, planFreedomInputs, plan, planSettings, defaultCurrency, usTaxHome, cityName, withdrawalRate, effectiveIncome, taxEnabled, rates]);
+  // Plan → Explore (D-58): every city at your plan's numbers, with the same
+  // lifestyle and tax in retirement as the freedom date (amounts are USD).
+  const explorePlan = useMemo(() => ({
+    saved: planFacts.invested, monthlySaving: planFacts.monthlySavings, age: fireAge || undefined,
+    realReturn: growthRate, targetMultiple: lifestyleMultiplier * planFacts.targetPerDollar,
+    // Freedom badges (D-67): take-home for Gold, money within reach before the pension opens, and when it opens.
+    // Spending itself, not take-home less saving: saving here includes pension money paid before take-home.
+    monthlyIncome: effectiveIncome, monthlySpend: Object.entries(effectiveExpenses).filter(([k, v]) => !k.startsWith("_") && typeof v === "number").reduce((t, [, v]) => t + (v as number), 0),
+    reachable: Math.min(planFacts.invested, taxable + cashSavings + rothIRA),
+    retireAge: planSettings.accessAge || undefined, withdrawalMultiple: 1 / withdrawalRate,
+  }), [planFacts, fireAge, growthRate, lifestyleMultiplier, effectiveIncome, effectiveExpenses, taxable, cashSavings, rothIRA, planSettings.accessAge, withdrawalRate]);
   /* The contribution ladder reads the emergency fund from real accounts, so
      it needs the accounts rather than a total: which ones count is the user's
      to decide, and a savings account and a current account are not the same
@@ -5679,30 +5374,87 @@ export default function Dashboard() {
   /* Expected outgoings in USD with their due dates. What is due before the
      next contribution is money already spoken for, so it is not available to
      invest — the same rule the committed total on Home already applies. */
-  const contributionItems = useMemo(
-    () => committedRows.map((r) => ({
-      description: r.description || (r.transaction_type === "income" ? "Income" : "Payment"),
-      amountUSD: toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates),
-      type: r.transaction_type === "income" ? "income" as const : "expense" as const,
-      dueDate: r.due_date,
-      recurrence: (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "")
-        ? r.recurrence : "none") as Recurrence,
-      category: r.category,
-    })),
-    [committedRows, rates],
-  );
+  // Upcoming expense bills for Home's month (the same shape Transactions uses).
+  const listedHomeBills: Bill[] = useMemo(() => committedRows
+    .filter((r) => r.transaction_type === "expense" && r.due_date)
+    .map((r) => ({ id: r.id, description: r.description ?? null, category: r.category, merchant: r.match_merchant ?? null,
+      usd: toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates), due: r.due_date.slice(0, 10),
+      recurrence: (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "") ? r.recurrence : "none") as Recurrence })),
+  [committedRows, rates]);
+  // A payment that looks like a listed bill counts as paying it until the
+  // person answers "Upcoming bill?" on Transactions (D-49), so Home, Budget
+  // and Free to spend do not count paid rent as still owed.
+  const homeBills: Bill[] = useMemo(() => presumePaid(listedHomeBills, unlinkedBillPayments(
+    recentTransactions.filter((t) => t.transaction_type === "expense")
+      .map((t, i) => ({ id: String(i), date: t.date.slice(0, 10), usd: toUSD(netAmt(t), t.currency, rates), description: t.description ?? "", category: t.category ?? null })),
+    listedHomeBills, (t) => !!recentTransactions[Number(t.id)]?.tags?.includes("ok:bill"))),
+  [listedHomeBills, recentTransactions, rates]);
+  // Each listed bill's due date once payments already made are counted, for the
+  // Calendar: null when a one-off is presumed paid. A bill missing from this map
+  // was added after load, so its own date stands.
+  const billDue = useMemo(() => {
+    const due = new Map(homeBills.map((b) => [b.id, b.due]));
+    return Object.fromEntries(listedHomeBills.filter((b) => b.id).map((b) => [b.id!, { from: b.due, due: due.get(b.id) ?? null }])) as Record<string, { from: string; due: string | null }>;
+  }, [homeBills, listedHomeBills]);
+  // Upcoming as Free to spend and Contributions read it: an expense bill takes
+  // the due date homeBills counts from, so a presumed-paid rent is not owed twice.
+  const contributionItems = useMemo(() => {
+    const counted = new Map(homeBills.map((b) => [b.id, b.due]));
+    return committedRows.flatMap((r) => {
+      const due = r.transaction_type === "expense" && r.id && r.due_date ? counted.get(r.id) : r.due_date;
+      if (!due) return [];
+      return [{
+        description: r.description || (r.transaction_type === "income" ? "Income" : "Payment"),
+        amountUSD: toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates),
+        type: r.transaction_type === "income" ? "income" as const : "expense" as const,
+        dueDate: due,
+        recurrence: (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "")
+          ? r.recurrence : "none") as Recurrence,
+        category: r.category,
+      }];
+    });
+  }, [committedRows, homeBills, rates]);
+  // Goals with a date take a rung on the ladder (lib/goal-monthly), the same list Plan -> Goals edits.
+  const [ladderGoals, setLadderGoals] = useState<GoalLike[]>([]);
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from("goals").select("name, target_amount, current_saved, target_date").eq("user_id", userId)
+      .then(({ data }) => setLadderGoals((data as GoalLike[] | null) ?? []));
+  }, [userId]);
+  const cardCharges = useMemo(() => recentTransactions.filter((t) => t.transaction_type === "expense" && t.plaid_account_id)
+    .map((t) => ({ plaid_account_id: t.plaid_account_id, date: t.date, usd: toUSD(t.amount, t.currency, rates) * shareOf(t.plaid_account_id, accountShares) })), [recentTransactions, rates, accountShares]);
   const contributionFacts: AccountFacts = useMemo(() => ({
     cashAccounts: contributionCashAccounts,
     manualCashSavings: cashSavings,
     lastMonthNeeds: lastMonthNeeds > 0 ? lastMonthNeeds : manualEmergencyNeeds,
     averageNeeds: histNeedsAvg > 0 ? histNeedsAvg : manualEmergencyNeeds,
     realReturn: growthRate,
+    // Debts the rest of the app knows of, offered on Contributions as rows (D-34).
+    knownDebts: [
+      // Cards paid in full each month aren't debts to clear (lib/freedom-debt carriedCards).
+      ...carriedCards(plaidAccounts.filter((a) => a.type === "credit").map((a) => ({ plaid_account_id: a.plaid_account_id, name: a.name || a.official_name || "Credit card", balance: a.balance_current ?? 0 })),
+        cardCharges).map(({ name, balance }) => ({ name, balance })),
+      ...plaidAccounts.filter((a) => a.type === "loan" && (a.balance_current ?? 0) > 0)
+        .map((a) => ({ name: a.name || a.official_name || "Loan", balance: a.balance_current ?? 0 })),
+      // Typed figures only where no connected account replaces them (effectiveDebts).
+      ...(((d) => [
+        ...(d.otherDebt === totalDebt && totalDebt > 0 ? [{ name: "Other debt", balance: totalDebt }] : []),
+        ...(d.mortgage === mortgageBalance ? mortgages.filter((m) => m.balance > 0).map((m) => ({ name: m.name, balance: m.balance })) : []),
+      ])(effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts }))),
+    ],
     expectedItems: contributionItems,
     lastMonthSpending,
     budgetMonthlySpending: Object.entries(effectiveExpenses)
       .filter(([k, v]) => !k.startsWith("_") && typeof v === "number")
       .reduce((sum, [, v]) => sum + (v as number), 0),
-  }), [contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate, contributionItems, effectiveExpenses, lastMonthSpending]);
+    contributionDone,
+    goals: goalRungs(ladderGoals),
+  }), [ladderGoals, contributionCashAccounts, cashSavings, lastMonthNeeds, histNeedsAvg, manualEmergencyNeeds, growthRate, contributionItems, effectiveExpenses, lastMonthSpending, plaidAccounts, cardCharges, totalDebt, mortgageBalance, mortgages, contributionDone]);
+  // The emergency fund as Contributions defines it (D-34): its needs basis and
+  // any amount set by hand. The Assets tab reads it too (D-37), so "months
+  // covered" is one number on Home, Contributions and Assets.
+  const sharedEf = useMemo(() => emergencyFundFromPlan(sharedPlan, contributionFacts), [sharedPlan, contributionFacts]);
+  const efNeedsBase = sharedEf.monthlyNeeds > 0 ? sharedEf.monthlyNeeds : emergencyFundMonthlyBase;
   // Already-committed outgoings still ahead of us this month, in USD.
   // Overdue rows count too: an unpaid bill is still owed.
   //
@@ -5710,24 +5462,77 @@ export default function Dashboard() {
   // because the contribution forecast needs both. These totals are the Budget
   // tab's "committed this month", so they filter back to this month's bills —
   // without that, widening the query quietly widened them too.
+  // Each bill's dates from its stored due date (an overdue one is still owed)
+  // to the end of this month, so a weekly bill counts every week, the same
+  // rule as Transactions' "left" (dueByCategory, D-35).
   const thisMonthBills = useMemo(() => {
     const now = new Date();
     const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, "0")}`;
-    return committedRows.filter((r) => r.transaction_type === "expense" && r.due_date <= end);
-  }, [committedRows]);
+    return homeBills.map((b) => ({ bill: b, owed: occurrences(b, b.due, end).length * b.usd })).filter((x) => x.owed > 0);
+  }, [homeBills]);
+  // Linked bills settle here as well as on Transactions, so Home, the Budget
+  // tab and Free to spend never count rent that is already paid as still owed
+  // (D-31). Conditional on the due date read, so it cannot roll twice.
+  const settledRef = useRef(new Set<string>());
+  useEffect(() => {
+    if (!committedRows.length || !recentTransactions.length) return;
+    const txs = recentTransactions.filter((t) => t.transaction_type === "expense")
+      .map((t, i) => ({ id: String(i), date: t.date.slice(0, 10), usd: toUSD(netAmt(t), t.currency, rates), description: t.description ?? "", category: t.category ?? null }));
+    for (const r of committedRows) {
+      if (!r.id || !r.match_merchant || r.transaction_type !== "expense") continue;
+      const recurrence = (["weekly", "biweekly", "monthly", "quarterly", "annual"].includes(r.recurrence ?? "") ? r.recurrence : "none") as Recurrence;
+      const patch = settleBill({ id: r.id, description: r.description ?? null, category: r.category, merchant: r.match_merchant,
+        usd: toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates), due: r.due_date.slice(0, 10), recurrence }, txs, new Date().toISOString());
+      const key = `${r.id}|${r.due_date}`;
+      if (!patch || settledRef.current.has(key)) continue;
+      settledRef.current.add(key);
+      supabase.from("expected_payments").update(patch).eq("id", r.id).eq("due_date", r.due_date).select("id").then(({ data, error }) => {
+        if (error || !data?.length) return;
+        setCommittedRows((prev) => "completed_at" in patch ? prev.filter((x) => x.id !== r.id) : prev.map((x) => (x.id === r.id ? { ...x, ...patch } : x)));
+      });
+    }
+  }, [committedRows, recentTransactions, rates]);
+
   const committedRemainingUSD = useMemo(
-    () => thisMonthBills.reduce((sum, r) => sum + toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates), 0),
-    [thisMonthBills, rates],
+    () => thisMonthBills.reduce((sum, x) => sum + x.owed, 0),
+    [thisMonthBills],
   );
 
   const committedByCat = useMemo(() => {
     const m: Record<string, number> = {};
-    for (const r of thisMonthBills) {
-      const k = r.category || "other";
-      m[k] = (m[k] || 0) + toUSD(Number(r.amount) || 0, r.currency ?? "USD", rates);
+    for (const { bill, owed } of thisMonthBills) {
+      // Uncategorised bills take the category their name suggests ("Rent" is
+      // housing), the same guess Transactions makes, not "other" (D-31).
+      const k = bill.category || guessBillCategory(bill.description) || "other";
+      m[k] = (m[k] || 0) + owed;
     }
     return m;
-  }, [thisMonthBills, rates]);
+  }, [thisMonthBills]);
+
+  /* Free to spend until payday (D-29): checking balance less bills before the
+     next paycheck, against what is left in the flexible budget. Categories
+     with a repeating bill in Upcoming are fixed, not flexible: their money is
+     already counted on the cash side as bills. */
+  // What each debt started at (D-40), so Debts can show how much is paid off.
+  const [debtOriginals, setDebtOriginals] = useState<Record<string, number>>({});
+  useEffect(() => {
+    if (!userId) return;
+    supabase.from("profiles").select("debt_originals").eq("user_id", userId).single()
+      .then(({ data }) => { if (data?.debt_originals) setDebtOriginals(data.debt_originals as Record<string, number>); });
+  }, [userId]);
+  const setDebtOriginal = useCallback((key: string, usd: number) => {
+    setDebtOriginals((prev) => {
+      const next = { ...prev };
+      if (usd > 0) next[key] = usd; else delete next[key];
+      if (userId) supabase.from("profiles").update({ debt_originals: next }).eq("user_id", userId)
+        .then(({ error }) => { if (error) console.error("[debts] saving original balances", error); });
+      return next;
+    });
+  }, [userId]);
+  const spendAccounts: SpendAccount[] = useMemo(() => plaidAccounts.map((a) => ({
+    id: a.id, name: a.name || a.official_name || "Account", type: a.type, subtype: a.subtype,
+    balanceUSD: a.type === "credit" ? (a.balance_current ?? 0) : (a.balance_available ?? a.balance_current ?? 0),
+  })), [plaidAccounts]);
 
   const actuals = useMemo(() => {
     const agg: Record<string, number> = {};
@@ -5736,6 +5541,15 @@ export default function Dashboard() {
       .forEach(e => { agg[e.category] = (agg[e.category] || 0) + toUSD(netAmt(e), e.currency, rates); });
     return agg;
   }, [rawActuals, rates]);
+  const freeResult: FreeToSpend | null = useMemo(() => {
+    const fixed = new Set(contributionItems.filter((i) => i.type === "expense" && i.recurrence !== "none")
+      .map((i) => i.category || guessBillCategory(i.description)).filter((c): c is string => !!c));
+    const labels = Object.fromEntries(EXPENSE_CATEGORIES.map((c) => [c.key, c.label]));
+    const budget = Object.entries(expenses)
+      .filter(([k, v]) => !k.startsWith("_") && typeof v === "number" && v > 0 && !fixed.has(k))
+      .map(([k, v]) => ({ key: k, label: labels[k] ?? k, budget: v, left: v - (actuals[k] || 0) - (committedByCat[k] || 0) }));
+    return freeToSpend({ today: new Date(), accounts: spendAccounts, toggles: spendToggles, expected: contributionItems, budget });
+  }, [contributionItems, expenses, actuals, committedByCat, spendAccounts, spendToggles]);
   const actualIncome = useMemo(
     () => rawActuals
       .filter(e => e.transaction_type === "income")
@@ -5796,8 +5610,8 @@ export default function Dashboard() {
   useEffect(() => {
     fetch("https://api.frankfurter.app/latest?from=USD")
       .then(r => r.json())
-      .then(d => { if (d.rates) setRates(d.rates); })
-      .catch(() => {});
+      .then(d => { if (d.rates) setRates(d.rates); setRatesStatus(d.rates ? "live" : "failed"); })
+      .catch(() => setRatesStatus("failed"));
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { window.location.href = "/login"; return; }
@@ -5875,7 +5689,7 @@ export default function Dashboard() {
       // is misleading without them: money earmarked for rent is not money you
       // can spend, and until now the two tabs never spoke to each other.
       supabase.from("expected_payments")
-        .select("amount, currency, transaction_type, due_date, completed_at, category, description, recurrence")
+        .select("id, amount, currency, transaction_type, due_date, completed_at, category, description, recurrence, match_merchant, sub_category, lease_ends_on, lease_rise_pct")
         .eq("user_id", session.user.id)
         .is("completed_at", null)
         // Both directions. The contribution forecast needs income — payday
@@ -5905,7 +5719,7 @@ export default function Dashboard() {
       const historyStart = `${historyStartDate.getFullYear()}-${String(historyStartDate.getMonth() + 1).padStart(2, '0')}-${String(historyStartDate.getDate()).padStart(2, '0')}`;
       // Every page: this read used to stop at the first 1,000 rows, oldest
       // first, so a busy account never loaded its recent months at all.
-      fetchAllPages((from, to) => supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type, tags, category, description")
+      fetchAllPages((from, to) => supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type, tags, category, sub_category, description, plaid_account_id")
         .eq("user_id", session.user.id)
         .gte("date", historyStart)
         .order("date", { ascending: true })
@@ -5921,6 +5735,9 @@ export default function Dashboard() {
               transaction_type: tx.transaction_type ?? "expense",
               tags: tx.tags || [],
               category: tx.category ?? "other",
+              description: tx.description ?? "",
+              sub_category: tx.sub_category ?? null,
+              plaid_account_id: tx.plaid_account_id ?? null,
             })));
           }
         });
@@ -5950,7 +5767,9 @@ export default function Dashboard() {
           setIncome(prefillIncome || data.income || 0);
           const raw = data.expenses || {};
           const fp  = raw._fire_profile || {};
-          const { _fire_profile: _, _custom_cats: _cc, _custom_subcats: _cs, ...budgetExpenses } = raw;
+          const { _fire_profile: _, _custom_cats: _cc, _custom_subcats: _cs, _budget_local: local, ...budgetExpenses } = raw;
+          // Typed in the account's own currency (D-86): converted to USD at today's rate, above.
+          if (local && typeof local === "object") setBudgetLocal(local);
           const mergedExpenses = Object.fromEntries(EXPENSE_CATEGORIES.map(c => [c.key, 0])) as Record<string, number>;
           Object.assign(mergedExpenses, budgetExpenses);
           setExpenses(mergedExpenses);
@@ -5966,8 +5785,14 @@ export default function Dashboard() {
           // Seed cashSavings from wizard portfolio balance when no existing data
           setCashSavings(fp.cashSavings || (prefill.portfolioBalance && prefill.portfolioBalance > 0 ? prefill.portfolioBalance : 0));
           setTotalDebt(fp.totalDebt || 0);
-          setMortgageBalance(fp.mortgageBalance || 0);
-          setMortgageMonthly(fp.mortgageMonthly || 0);
+          setMortgages(loadMortgages(fp));
+          setMortgageTerms(fp.mortgageTerms && typeof fp.mortgageTerms === "object" ? fp.mortgageTerms : {});
+          setHomeValue(Number(fp.homeValue) > 0 ? Number(fp.homeValue) : 0);
+          setSpreadCategories(Array.isArray(fp.spreadCategories) ? fp.spreadCategories.filter((k: unknown) => typeof k === "string") : []);
+          setAccountShares(readAccountShares(fp.accountShares));
+          setCategoryNeeds(fp.categoryNeeds && typeof fp.categoryNeeds === "object" && !Array.isArray(fp.categoryNeeds) ? fp.categoryNeeds : {});
+          setComparisons(Array.isArray(fp.comparisons) ? fp.comparisons.filter((c: LifeVersion) => c && typeof c.id === "string" && Array.isArray(c.changes)) : []);
+          setContributionDone(fp.contributionDone && typeof fp.contributionDone.iso === "string" ? { iso: fp.contributionDone.iso, amount: Number(fp.contributionDone.amount) || 0 } : null);
           // 0.07 was the typed default every profile saved before growth could be
           // chosen (D-24), so it means "never chosen": use today's measured default.
           setGrowthRate(fp.growthRate && fp.growthRate !== 0.07 ? fp.growthRate : (prefill.realReturn || REAL_RETURN));
@@ -5979,6 +5804,7 @@ export default function Dashboard() {
           setTaxEnabled(fp.taxEnabled ?? false);
           setRetirementTaxRate(fp.retirementTaxRate ?? 0.15);
           setRothPct(fp.rothPct ?? 0);
+          setPlanSettings(fp.plan && typeof fp.plan === "object" ? fp.plan : {});
         } else {
           // New user — no saved budget yet, seed everything from wizard
           if (prefillIncome) setIncome(prefillIncome);
@@ -5993,6 +5819,13 @@ export default function Dashboard() {
         if (!sessionStorage.getItem('uf_dv')) {
           sessionStorage.setItem('uf_dv', '1');
           trackDashboardFirstView({ hadCalculatorPrefill: hadPrefill, viaUpgrade: wasUpgradedRef.current });
+          // A creator's /r/<code> link left a cookie; the server credits this
+          // account to them if it is new (D-27). Fire and forget.
+          fetch("/api/referrals/claim", { method: "POST", headers: { Authorization: `Bearer ${session.access_token}` } })
+            .then((r) => r.json()).then((d) => { if (d?.referred) setReferredTrial(true); }).catch(() => {});
+        } else {
+          fetch("/api/referrals/claim", { headers: { Authorization: `Bearer ${session.access_token}` } })
+            .then((r) => r.json()).then((d) => { if (d?.referred) setReferredTrial(true); }).catch(() => {});
         }
       });
       // Load net worth snapshot history for the "actual progress" chart line.
@@ -6040,7 +5873,7 @@ export default function Dashboard() {
     saveTimer.current = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, taxEnabled, retirementTaxRate, rothPct };
+      const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, taxEnabled, retirementTaxRate, rothPct, plan: planSettings, mortgages, mortgageTerms, contributionDone, comparisons };
       // Read first so this write can't clobber _custom_cats/_custom_subcats written
       // independently (and asynchronously) by useCustomCategories().
       const { data: existingRow } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
@@ -6048,10 +5881,21 @@ export default function Dashboard() {
       const preserved: Record<string, unknown> = {};
       if (existingExpenses._custom_cats !== undefined) preserved._custom_cats = existingExpenses._custom_cats;
       if (existingExpenses._custom_subcats !== undefined) preserved._custom_subcats = existingExpenses._custom_subcats;
+      const localRate = defaultCurrency !== "USD" ? rates[defaultCurrency] ?? FALLBACK_RATES[defaultCurrency] : undefined;
+      if (budgetLocalPending.current) { if (existingExpenses._budget_local !== undefined) preserved._budget_local = existingExpenses._budget_local; }
+      else if (localRate) preserved._budget_local = {
+        currency: defaultCurrency,
+        values: Object.fromEntries(Object.entries(expenses).filter(([k, v]) => !k.startsWith("_") && typeof v === "number").map(([k, v]) => [k, Math.round((v as number) * localRate * 100) / 100])),
+      };
+      // This month's budget, so past months keep theirs on the phone too (D-86).
+      const now = new Date(), monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      preserved._budget_history = { ...((existingExpenses._budget_history as Record<string, unknown>) ?? {}),
+        [monthKey]: Object.fromEntries(Object.entries(expenses).filter(([k, v]) => !k.startsWith("_") && typeof v === "number")) };
       const { error: saveError } = await supabase.from("user_budget").upsert({
         user_id:     session.user.id,
         income,
-        expenses:    { ...expenses, ...preserved, _fire_profile: fireProfile },
+        // Keep fields the dashboard does not own (the app's Today progress, D-73) by layering this save over what is stored.
+        expenses:    { ...expenses, ...preserved, _fire_profile: { ...((existingExpenses._fire_profile as Record<string, unknown>) ?? {}), ...fireProfile } },
         fire_age:    fireAge,
         fire_assets: k401, // keep backwards-compatible
         updated_at:  new Date().toISOString(),
@@ -6079,7 +5923,7 @@ export default function Dashboard() {
         }
       }
     }, 1000);
-  }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier]);
+  }, [income, expenses, fireAge, k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, planSettings, mortgages, mortgageTerms, contributionDone, comparisons]);
 
   async function refreshPlaidAccounts() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -6171,6 +6015,11 @@ export default function Dashboard() {
         .dark .uf-sidebar-sub-item:hover { background: var(--uf-surface); color: var(--uf-ink); }
         .dark .uf-sidebar-sub-item.active { color: var(--uf-green-700); }
         .dark .uf-sidebar-sub-item.active::before { background: var(--uf-green); }
+        .uf-sidebar-sub-item:has(.uf-sidebar-sub-icon)::before { display: none; }
+        .uf-sidebar-sub-icon { flex: none; color: var(--uf-ink-3); transition: color 0.13s; }
+        .uf-sidebar-sub-item:hover .uf-sidebar-sub-icon { color: var(--uf-ink-2); }
+        .uf-sidebar-sub-item.active:has(.uf-sidebar-sub-icon) { background: var(--uf-surface-2); }
+        .uf-sidebar-sub-item.active .uf-sidebar-sub-icon { color: var(--uf-green-700); }
         /* Desktop has the sidebar, which already carries all three nav levels —
            the horizontal switches are the mobile equivalent and would just
            duplicate it. These class names must match the ones in the JSX:
@@ -6182,20 +6031,7 @@ export default function Dashboard() {
           .uf-cashflow-subtab-switch { display: none !important; }
         }
 
-        .expat-globe-wrap { position: relative; margin: 12px -36px -60px; height: calc(100svh - 48px); min-height: 480px; overflow: hidden; border-radius: 0; background: radial-gradient(ellipse at 50% 55%, #ffffff 0%, #eef2f7 75%); }
-        .dark .expat-globe-wrap { background: radial-gradient(ellipse at 50% 60%, #0d0e1a 0%, #08080e 70%); }
-        @media(max-width: 900px) { .expat-globe-wrap { margin: 12px -16px calc(-112px - env(safe-area-inset-bottom, 0px)); height: calc(100svh - 180px); min-height: 360px; } }
 
-        .uf-sidebar-sub-sub-nav { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 2px; padding: 0 0 0 16px; }
-        .uf-sidebar-sub-sub-item { display: flex; align-items: center; padding: 6px 10px; border-radius: 5px; font-size: 12px; font-weight: 600; color: var(--uf-text-2); cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-family: 'Manrope', sans-serif; transition: all 0.13s; position: relative; }
-        .uf-sidebar-sub-sub-item::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 3px; border-radius: 50%; background: var(--uf-border); transition: all 0.13s; }
-        .uf-sidebar-sub-sub-item:hover { background: var(--uf-surface); color: var(--uf-ink); }
-        .uf-sidebar-sub-sub-item:hover::before { background: var(--uf-green); }
-        .uf-sidebar-sub-sub-item.active { color: var(--uf-green-700); font-weight: 700; }
-        .uf-sidebar-sub-sub-item.active::before { background: var(--uf-green); width: 5px; height: 5px; }
-        .dark .uf-sidebar-sub-sub-item:hover { background: var(--uf-surface); color: var(--uf-ink); }
-        .dark .uf-sidebar-sub-sub-item.active { color: var(--uf-green-700); }
-        .dark .uf-sidebar-sub-sub-item.active::before { background: var(--uf-green); }
 
         select option { background: var(--uf-card); color: var(--uf-text); }
 
@@ -6217,7 +6053,7 @@ export default function Dashboard() {
           .uf-sidebar { display: none; }
           .uf-mobile-topbar { display: flex; position: fixed; top: 0; left: 0; right: 0; z-index: 120; height: calc(56px + env(safe-area-inset-top, 0px)); padding: calc(8px + env(safe-area-inset-top, 0px)) 16px 8px; background: var(--uf-topbar-glass); border-bottom: 1px solid var(--uf-border); backdrop-filter: blur(14px); align-items: center; gap: 12px; }
           .uf-mobile-menu-button { width: 40px; height: 40px; border: 1px solid var(--uf-border); background: var(--uf-card); color: var(--uf-text); border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
-          .uf-mobile-top-title { display: flex; flex-direction: column; min-width: 0; }
+          .uf-mobile-top-title { display: flex; flex-direction: column; min-width: 0; flex: 1; }
           .uf-mobile-top-title strong { font-size: 15px; font-weight: 800; color: var(--uf-ink); letter-spacing: -0.02em; }
           .uf-mobile-top-title span { font-size: 11px; color: var(--uf-text-2); font-weight: 600; }
           .uf-mobile-bottom-nav { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 120; background: var(--uf-topbar-glass); border-top: 1px solid var(--uf-border); padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); box-shadow: var(--uf-e2); }
@@ -6282,25 +6118,10 @@ export default function Dashboard() {
       {onboardingOpen && (
         <OnboardingModal
           defaultCurrency={defaultCurrency}
-          onComplete={(inc, spend, save, taxKey) => {
-            setIncome(inc);
-            setExpenses(prev => ({ ...prev, other: spend }));
-            setTaxable(save);
-            if (taxKey) {
-              // Find a representative city for this tax jurisdiction and set it as the current city
-              const repCity = CITIES.find(c => c.state === taxKey);
-              if (repCity) setCityName(repCity.name);
-              // Pre-seed retirement tax rate from jurisdiction (user can override in Plan tab)
-              const taxInfo = STATE_TAX[taxKey];
-              if (taxInfo) {
-                const isUS = taxKey.length <= 5 && !taxKey.startsWith("ca_");
-                const stateRate = taxInfo.rate;
-                const suggested = isUS
-                  ? Math.max(0.05, Math.min(stateRate + 0.12, 0.35))
-                  : Math.max(0.05, Math.min(stateRate * 0.75, 0.40));
-                setRetirementTaxRate(suggested);
-              }
-            }
+          onComplete={(inc, spend, save) => {
+            setIncome(toUSD(inc, defaultCurrency, rates));
+            setExpenses(prev => ({ ...prev, other: toUSD(spend, defaultCurrency, rates) }));
+            setTaxable(toUSD(save, defaultCurrency, rates));
             localStorage.setItem('uf_onboarding_dismissed', '1');
             setOnboardingOpen(false);
           }}
@@ -6316,10 +6137,14 @@ export default function Dashboard() {
 
       <header className="uf-mobile-topbar" aria-label="Mobile dashboard header">
         <Link href="/" className="uf-sidebar-logo" style={{ padding: "0 4px" }}><Logo variant="auto" size={22} /></Link>
+        {/* The logo already says UntilFire; the title says where you are (D-54). */}
         <div className="uf-mobile-top-title">
-          <strong>UntilFire</strong>
-          <span>{freedomDateCompactLabel ? `Free · ${freedomDateCompactLabel}` : tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Expat FIRE" : tab === "goals" ? "Goals" : tab === "contributions" ? "Contributions" : tab === "citizenship" ? "Citizenship" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Portfolio"}</span>
+          <strong>{tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Explore" : tab === "goals" ? "Goals" : tab === "contributions" ? "Contributions" : tab === "citizenship" ? "Citizenship" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Money"}</strong>
+          {freedomDateCompactLabel && <span>{`Free · ${freedomDateCompactLabel}`}</span>}
         </div>
+        <button type="button" onClick={() => window.dispatchEvent(new Event("uf:feedback"))} aria-label="Send feedback" className="uf-mobile-menu-button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </button>
         <button
           onClick={toggleDark}
           aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
@@ -6378,35 +6203,21 @@ export default function Dashboard() {
                     <span className="uf-nav-label-full">{item.label}</span>
                     <span className="uf-nav-label-mobile">{item.mobileLabel ?? item.label}</span>
                   </button>
+                  {/* Money's pages on one level: Cashflow's four, then the rest (D-55).
+                      Phones keep the section and Cashflow pills instead. */}
                   {isActive && item.key === "cashflow" && (
                     <div className="uf-sidebar-sub-nav">
-                      {MONEY_SECTIONS.map(sub => (
-                        <div key={sub.tab}>
-                          <button
-                            className={`uf-sidebar-sub-item ${tab === sub.tab ? "active" : ""}`}
-                            onClick={() => {
-                              openDashboardTab(sub.tab);
-                              if (sub.tab === "cashflow") setCashflowSubTab("cashflow");
-                            }}
-                          >
-                            {sub.label}
-                          </button>
-                          {sub.tab === "cashflow" && tab === "cashflow" && (
-                            <div className="uf-sidebar-sub-sub-nav">
-                              {CASHFLOW_SUB_TABS.map(ss => (
-                                <button
-                                  key={ss.key}
-                                  className={`uf-sidebar-sub-sub-item ${cashflowSubTab === ss.key ? "active" : ""}`}
-                                  onClick={() => {
-                                    setCashflowSubTab(ss.key);
-                                  }}
-                                >
-                                  {ss.label}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                      {CASHFLOW_SUB_TABS.map(page => (
+                        <button key={page.key} type="button"
+                          className={`uf-sidebar-sub-item ${tab === "cashflow" && cashflowSubTab === page.key ? "active" : ""}`}
+                          onClick={() => { setCashflowSubTab(page.key); openDashboardTab("cashflow"); }}>
+                          <SubIcon label={page.label} />{page.label}
+                        </button>
+                      ))}
+                      {MONEY_SECTIONS.filter(sub => sub.tab !== "cashflow").map(sub => (
+                        <button key={sub.tab} type="button" className={`uf-sidebar-sub-item ${tab === sub.tab ? "active" : ""}`} onClick={() => openDashboardTab(sub.tab)}>
+                          <SubIcon label={sub.label} />{sub.label}
+                        </button>
                       ))}
                     </div>
                   )}
@@ -6423,7 +6234,7 @@ export default function Dashboard() {
                             openDashboardTab(sub.tab);
                           }}
                         >
-                          {sub.label}
+                          <SubIcon label={sub.label} />{sub.label}
                         </button>
                       ))}
                     </div>
@@ -6498,7 +6309,7 @@ export default function Dashboard() {
             )}
             {PLAN_SECTIONS.some(s => s.tab === tab) && (
               <nav className="uf-section-switch uf-plan-section-switch" aria-label="Plan sections">
-                {PLAN_SECTIONS.map(item => (
+                {PLAN_SECTIONS.filter(item => TAX_ESTIMATES_AVAILABLE || item.tab !== "citizenship").map(item => (
                   <button
                     key={item.label}
                     className={`uf-section-button ${
@@ -6514,39 +6325,23 @@ export default function Dashboard() {
                 ))}
               </nav>
             )}
-            {tab === "overview" && histMonthsCount >= 1 && (
-              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-                <div style={{ display: "flex", background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 999, padding: 3, gap: 2 }}>
-                  {(["manual", "history"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => { setBudgetMode(mode); try { localStorage.setItem("uf_budget_mode", mode); } catch {} }}
-                      style={{
-                        background: budgetMode === mode ? "#047857" : "transparent",
-                        color: budgetMode === mode ? "#fff" : "var(--uf-text-2)",
-                        border: "none", borderRadius: 999, padding: "5px 14px",
-                        fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
-                        fontFamily: "inherit",
-                      }}
-                    >
-                      {mode === "manual" ? "Manual budget" : `${histMonthsCount}mo history`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
             {/* Household, on Home: it interprets both people's Money and Plan,
                 which is rule 3. Renders nothing without a household. */}
-            {tab === "overview" && (
+            {tab === "overview" && !profileLoading && (
               <div style={{ marginBottom: 24 }}>
                 <HouseholdCard displayCurrency={defaultCurrency} />
               </div>
             )}
-            {tab === "overview" && (
-              <DashTab
+            {profileLoading && <SavedPlanLoading />}
+            {tab === "overview" && !profileLoading && (
+              <DashTab homeValue={homeValue} spreadCategories={spreadCategories} coastRetireAge={compareRetireAge}
+                plan={plan}
                 contributionFacts={contributionFacts}
+                freeResult={freeResult}
+                bills={homeBills}
+                onOpenFreeToSpend={() => { setCashflowSubTab("budgets"); setTab("cashflow"); }}
                 userId={userId}
-                income={effectiveIncome} expenses={effectiveExpenses}
+                income={effectiveIncome} expenses={freedomExpenses}
                 k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
                 totalDebt={totalDebt} mortgageBalance={mortgageBalance}
                 mortgageMonthly={mortgageMonthly} growthRate={growthRate}
@@ -6562,6 +6357,7 @@ export default function Dashboard() {
                 displayRates={rates}
                 plaidAccounts={plaidAccounts}
                 retirementCityCol={retirementCityCol}
+                retirementCityName={retirementCityName}
                 lifestyleMultiplier={lifestyleMultiplier}
                 fireAge={fireAge}
                 nwSnapshots={nwSnapshots}
@@ -6571,43 +6367,35 @@ export default function Dashboard() {
                 histMonthsCount={histMonthsCount}
                 userJoinedAt={userJoinedAt}
                 monthlyNeedsExpenses={emergencyFundMonthlyBase > 0 ? emergencyFundMonthlyBase : undefined}
+                spendToggles={spendToggles}
                 monthlyWorkCosts={histWorkAvg > 0 ? histWorkAvg : undefined}
                 taxEnabled={taxEnabled}
                 retirementTaxRate={retirementTaxRate}
                 rothPct={rothPct}
                 onTabChange={setTab}
-                onOpenOnboarding={() => setOnboardingOpen(true)}
+                onOpenCompare={() => { setTab("fire-calculator"); setFireCalcSubTab("compare"); }}
                 onFreedomDateChange={setFreedomDate}
+                budget={expenses}
+                expectedRows={committedRows}
+                onExpectedAdded={(rows) => setCommittedRows((prev) => [...prev, ...rows])}
+                onSetupStep={(step) => {
+                  if (step === "income") setTab("income");
+                  else if (step === "bank") setTab("assets");
+                  else { setCashflowSubTab(step === "budget" ? "budgets" : "expected"); setTab("cashflow"); }
+                }}
               />
             )}
-            {tab === "cashflow" && (
+            {tab === "cashflow" && !profileLoading && (
               <div>
-                {/* Cashflow sub-tab nav */}
-                <div
-                  className="uf-cashflow-subtab-switch"
-                  style={{ display: "flex", gap: 28, borderBottom: "1px solid #E2E8F0", marginBottom: 28, overflowX: "auto", scrollbarWidth: "none" }}
-                >
-                  {CASHFLOW_SUB_TABS.map(t => (
-                    <button
-                      key={t.key}
-                      onClick={() => { setCashflowSubTab(t.key); }}
-                      style={{
-                        background: "none", border: "none", padding: "0 0 14px",
-                        fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-                        letterSpacing: "-0.3px", marginBottom: -1, whiteSpace: "nowrap",
-                        color: cashflowSubTab === t.key ? "#047857" : "#64748B",
-                        borderBottom: `2px solid ${cashflowSubTab === t.key ? "#047857" : "transparent"}`,
-                      }}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
+                {/* Cashflow sub-pages as pills, as on Home (D-40). */}
+                <div className="uf-cashflow-subtab-switch" style={{ marginBottom: 24 }}>
+                  <PillTabs label="Cashflow" options={CASHFLOW_SUB_TABS} value={cashflowSubTab} onChange={setCashflowSubTab} />
                 </div>
-                {cashflowSubTab === "cashflow" && <TransactionsTab defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
+                {cashflowSubTab === "cashflow" && <TransactionsTab budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
-                {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} />}
+                {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} plan={sharedPlan} facts={contributionFacts} billDue={billDue} onMarkDone={setContributionDone} onOpenTransactions={() => setCashflowSubTab("cashflow")} />}
                 {cashflowSubTab === "budgets" && (
-                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} displayRates={rates} recentTransactions={recentTransactions} freedomDateMonthYearLabel={freedomDateMonthYearLabel} onOpenTransactions={() => setCashflowSubTab("cashflow")} />
+                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} spreadCategories={spreadCategories} />
                 )}
               </div>
             )}
@@ -6620,20 +6408,15 @@ export default function Dashboard() {
             )}
             {tab === "assets" && !profileLoading && (
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-                <PortfolioOverviewTab
-                  income={income} expenses={expenses}
+                <PortfolioOverviewTab homeValue={homeValue}
                   k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
                   totalDebt={totalDebt} mortgageBalance={mortgageBalance}
-                  mortgageMonthly={mortgageMonthly} growthRate={growthRate}
-                  withdrawalRate={withdrawalRate}
                   displayCurrency={defaultCurrency}
                   displayRates={rates}
                   plaidAccounts={plaidAccounts}
-                  retirementCityCol={retirementCityCol}
-                  lifestyleMultiplier={lifestyleMultiplier}
                 />
-                <div style={{ borderTop: "1px solid #E2E8F0" }} />
-                <AssetsTab
+                <AssetsTab accountShares={accountShares} onShareToggle={setAccountShared}
+                  totalDebt={totalDebt} mortgageBalance={mortgageBalance}
                   k401={k401} setK401={setK401}
                   rothIRA={rothIRA} setRothIRA={setRothIRA}
                   taxable={taxable} setTaxable={setTaxable}
@@ -6646,13 +6429,26 @@ export default function Dashboard() {
                   plaidAccounts={plaidAccounts}
                   onRefreshAccounts={refreshPlaidAccounts}
                   onUpgradeClick={() => { setUpgradeSource("plaid_limit"); setUpgradeOpen(true); }}
-                  emergencyFundMonthlyBase={emergencyFundMonthlyBase}
+                  emergencyFundMonthlyBase={efNeedsBase}
+                  efOverride={sharedPlan?.ladder?.efOverride ?? null}
                   plaidHoldings={plaidHoldings}
                   plaidSecurities={plaidSecurities}
                   holdingsNeedsReconnect={holdingsNeedsReconnect}
                   holdingsLoading={holdingsLoading}
                 />
               </div>
+            )}
+            {report && <FreedomReport d={report} money={reportMoney} compact={reportCompact} onClose={() => setReport(null)} onExport={(format, branded) => trackFreedomReportExported({ format, branded })} />}
+            {tab === "income" && !profileLoading && (
+              <IncomeTab
+                income={income} setIncome={setIncome}
+                plan={planSettings} onPlanChange={setPlanSettings}
+                taxKey={CITIES.find(c => c.name === cityName)?.state ?? ""}
+                taxLabel={STATE_TAX[CITIES.find(c => c.name === cityName)?.state ?? ""]?.label ?? ""}
+                usTaxHome={usTaxHome}
+                displayCurrency={defaultCurrency}
+                displayRates={rates}
+              />
             )}
             {tab === "liabilities" && profileLoading && (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -6664,15 +6460,18 @@ export default function Dashboard() {
             {tab === "liabilities" && !profileLoading && (
               <LiabilitiesTab
                 totalDebt={totalDebt} setTotalDebt={setTotalDebt}
-                mortgageBalance={mortgageBalance} setMortgageBalance={setMortgageBalance}
-                mortgageMonthly={mortgageMonthly} setMortgageMonthly={setMortgageMonthly}
+                mortgages={mortgages} setMortgages={setMortgages}
+                connectedMortgages={connectedMortgages} mortgageTerms={mortgageTerms} setMortgageTerms={setMortgageTerms}
                 displayCurrency={defaultCurrency}
                 displayRates={rates}
                 plaidAccounts={plaidAccounts}
                 onRefreshAccounts={refreshPlaidAccounts}
+                originals={debtOriginals}
+                onOriginal={setDebtOriginal}
+                planDebts={sharedPlan?.ladder?.debts ?? []}
               />
             )}
-            {tab === "fire-calculator" && (
+            {tab === "fire-calculator" && !profileLoading && (
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
                 {fireCalcSubTab === "menu" && (
                   <>
@@ -6686,14 +6485,54 @@ export default function Dashboard() {
                       deltaYears={planFreedom.exactDate && planFreedomAtDefault.exactDate
                         ? (planFreedom.exactDate.getTime() - planFreedomAtDefault.exactDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
                         : null}
+                      invested={planFacts.invested}
+                      target={planFacts.fireTarget}
+                    />
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {planFreedom.exactDate && <Button variant="secondary" size="sm" onClick={openReport}>Share one-page plan</Button>}
+                      <Button variant="ghost" size="sm" onClick={() => setFireCalcSubTab("compare")}>Compare a different path ›</Button>
+                    </div>
+                    {planMoves.length > 0 && (
+                      <>
+                        <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>What moves it most</div>
+                        <MoneyList>
+                          {planMoves.map((m) => (
+                            <MoneyRow key={m.key} dot={m.color} icon={m.icon} name={m.label}
+                              meta={m.date ? `Lands in ${m.date.toLocaleDateString("en-US", { month: "short", year: "numeric" })}${m.note ? ` · ${m.note}` : ""}` : m.note}
+                              value={m.years >= 0.05 ? `−${m.years.toFixed(1)} yrs` : "No change"} valueTone={m.years >= 0.05 ? "var(--uf-pos-ink)" : "var(--uf-ink-3)"} strong={m.years >= 0.05}
+                              bar={<MoneyTrack share={planMoves[0].years > 0 ? m.years / planMoves[0].years : 0} color={m.color} label={`${m.label}: ${m.years.toFixed(1)} years sooner`} />} />
+                          ))}
+                        </MoneyList>
+                      </>
+                    )}
+                    <PlanGoalCard
+                      plan={planSettings}
+                      onChange={setPlanSettings}
+                      currentAnnualSpend={planFacts.currentMonthly * 12}
+                      withdrawalRate={withdrawalRate}
+                      fireAge={fireAge}
+                      freeYears={planFreedom.fireYear}
+                      totalYears={planFreedom.totalYear}
+                      bridge={planFreedom.bridge}
+                      usTaxHome={usTaxHome}
+                      displayCurrency={defaultCurrency}
+                      displayRates={rates}
                     />
                     <FireAssumptionsCard
                       freedomDateLabel={planFreedom.exactDate ? planFreedom.exactDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null}
+                      spendGoalSet={(planSettings.retirementAnnualSpend ?? 0) > 0}
                       fireAge={fireAge}
                       onFireAgeChange={setFireAge}
+                      currentCityName={cityName}
+                      onCurrentCityChange={setCityName}
+                      retirementMonthly={planFacts.retirementMonthly}
+                      moveYear={planSettings.moveYear}
+                      movePayMonthly={planSettings.movePayMonthly}
+                      onMoveChange={(moveYear, movePayMonthly) => setPlanSettings((p) => ({ ...p, moveYear, movePayMonthly }))}
+                      takeHomeMonthly={effectiveIncome}
                       retirementCityName={retirementCityName}
                       retirementCityCol={retirementCityCol}
-                      onRetirementCityChange={(name, col) => { setCityName(name); setRetirementCityName(name); setRetirementCityCol(col); }}
+                      onRetirementCityChange={(name, col) => { if (!cityName) setCityName(name); setRetirementCityName(name); setRetirementCityCol(col); }}
                       lifestyleMultiplier={lifestyleMultiplier}
                       onLifestyleChange={setLifestyleMultiplier}
                       taxKey={CITIES.find(c => c.name === cityName)?.state ?? ""}
@@ -6701,32 +6540,48 @@ export default function Dashboard() {
                       displayCurrency={defaultCurrency}
                       growthRate={growthRate}
                       onGrowthRateChange={setGrowthRate}
+                      taxRow={{
+                        on: taxEnabled,
+                        summary: taxEnabled ? `${Math.round(retirementTaxRate * 100)}% effective on withdrawals` : "Off: withdrawals counted before tax",
+                        editor: (
+                          <TaxProfileCard
+                        cityName={cityName}
+                        income={effectiveIncome}
+                        monthlyExpenses={planFacts.retirementMonthly}
+                        withdrawalRate={withdrawalRate}
+                        taxEnabled={taxEnabled}
+                        setTaxEnabled={setTaxEnabled}
+                        retirementTaxRate={retirementTaxRate}
+                        setRetirementTaxRate={setRetirementTaxRate}
+                        rothPct={rothPct}
+                        setRothPct={setRothPct}
+                        displayCurrency={defaultCurrency}
+                        displayRates={rates}
+                      />
+                        ),
+                      }}
                     />
+                    <PurchaseImpactPanel
+                      currentSavings={planFacts.invested}
+                      monthlyContribution={planFacts.monthlySavings}
+                      fireTarget={planFacts.fireTarget}
+                      annualReturn={growthRate}
+                    />
+
                     <FireCalcMenuTab
                       fireAge={fireAge}
                       onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
                     />
-                    <TaxProfileCard
-                      cityName={cityName}
-                      income={income}
-                      monthlyExpenses={monthlyExpenses}
-                      withdrawalRate={withdrawalRate}
-                      taxEnabled={taxEnabled}
-                      setTaxEnabled={setTaxEnabled}
-                      retirementTaxRate={retirementTaxRate}
-                      setRetirementTaxRate={setRetirementTaxRate}
-                      rothPct={rothPct}
-                      setRothPct={setRothPct}
-                      displayCurrency={defaultCurrency}
-                      displayRates={rates}
-                    />
-                    <PurchaseImpactPanel
-                      currentSavings={k401 + rothIRA + taxable + cashSavings}
-                      monthlyContribution={Math.max(income * 12 - monthlyExpenses * 12, 0) / 12}
-                      fireTarget={monthlyExpenses * 12 / withdrawalRate}
-                      annualReturn={growthRate}
-                    />
                   </>
+                )}
+                {fireCalcSubTab === "compare" && (
+                  <WhatIf run={runChanges} ctx={compareCtx} growth={growthRate} retireAge={compareRetireAge} lease={compareLease}
+                    m={{ money: (n) => fmt(n, defaultCurrency, rates, true), local: (n) => convertUSDAmount(n, defaultCurrency, rates),
+                      toUsd: (n) => (defaultCurrency === "USD" ? n : n / (rates[defaultCurrency] || 1)), currency: defaultCurrency }}
+                    saved={comparisons}
+                    onSave={(v) => setComparisons((prev) => [...prev.filter((x) => x.id !== v.id), v].slice(-6))}
+                    onDelete={(id) => setComparisons((prev) => prev.filter((x) => x.id !== id))}
+                    onTrack={(action) => trackPlanCompare({ action })} />
                 )}
                 {fireCalcSubTab === "invest-sim" && (
                   <InvestSimTab onBack={() => setFireCalcSubTab("menu")} />
@@ -6737,21 +6592,20 @@ export default function Dashboard() {
               <GoalsPageTab userId={userId} monthlyExpenses={monthlyExpenses} />
             )}
             {tab === "contributions" && (
-              <ContributionsTab {...contributionFacts} onChooseAccounts={() => setTab("assets")} />
+              <div style={{ display: "grid", gap: 24 }}>
+                <SavingSplitCard plan={planSettings} onChange={setPlanSettings}
+                  afterTaxSaving={planFreedom.annualSavings} takeHomeAnnual={effectiveIncome * 12} usTaxHome={usTaxHome}
+                  displayCurrency={defaultCurrency} displayRates={rates} onOpenIncome={() => setTab("income")} />
+                <ContributionsTab {...contributionFacts} onChooseAccounts={() => setTab("assets")} />
+              </div>
             )}
-            {tab === "citizenship" && <CitizenshipTab />}
-            {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} />}
-            {tab === "learning-hub" && <LearningHubTab recommendedStageId={suggestedLearnStage} />}
+            {tab === "citizenship" && (TAX_ESTIMATES_AVAILABLE ? <CitizenshipTab onOpenExpat={() => openDashboardTab("expat-fire")} /> : <div className="uf-card" style={{ padding: 24 }}>Passport tax comparisons are unavailable while we test them.</div>)}
+            {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar} />}
+            {tab === "offers" && <OffersTab />}
+            {tab === "learning-hub" && <LearnTab recommendedStageId={learnPlace.stage} progress={learnPlace.progress} yearsToGo={learnPlace.years} onOpenTab={openDashboardTab} />}
             {tab === "expat-fire" && (
-              <ExpatFireDashTab
-                portfolioBalance={k401 + rothIRA + taxable + cashSavings + plaidAccounts.filter(a => a.type === "depository" || a.type === "investment").reduce((s, a) => s + (a.balance_current ?? 0), 0)}
-                monthlySavings={Math.max(0, income * 12 - Object.entries(expenses).reduce((s, [, v]) => s + (v || 0), 0) * 12) / 12}
-                age={fireAge}
-                cityName={cityName}
-                isDark={isDark}
-                growthRate={growthRate}
-                onEditAssumptions={() => { setFireCalcSubTab("menu"); openDashboardTab("fire-calculator"); }}
-              />
+              <ExploreClient appPlan={explorePlan} displayCurrency={defaultCurrency} displayRates={rates}
+                onPlanFor={(key) => { const c = CITIES.find(x => x.key === key); if (c) { if (!cityName) setCityName(c.name); setRetirementCityName(c.name); setRetirementCityCol(c.col); } }} />
             )}
             {tab === "profile" && userId && (
               <ProfileTab
@@ -6764,6 +6618,9 @@ export default function Dashboard() {
                 subscription={subscription}
                 onUpgradeClick={() => { setUpgradeSource("profile"); setUpgradeOpen(true); }}
                 onManageBilling={handleManageBilling}
+                onBillingChange={(billing) => setSubscription((s) => s && { ...s, billing })}
+                freedomLabel={freedomDate ? freedomDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : null}
+                trialLabel={referredTrial ? REFERRED_TRIAL_LABEL : TRIAL_LABEL}
               />
             )}
           </div>
@@ -6775,538 +6632,9 @@ export default function Dashboard() {
         onClose={() => setUpgradeOpen(false)}
         source={upgradeSource}
         trialAvailable={subscription ? !subscription.hadSubscription : null}
+        trialLabel={referredTrial ? REFERRED_TRIAL_LABEL : TRIAL_LABEL}
       />
     </>
   );
 }
 
-// ─── Expat FIRE dashboard tab ─────────────────────────────────────────────────
-
-function ExpatFireDashTab({
-  portfolioBalance,
-  monthlySavings,
-  age,
-  cityName,
-  isDark,
-  onEditAssumptions,
-  growthRate,
-}: {
-  growthRate: number;
-  portfolioBalance: number;
-  monthlySavings: number;
-  age: number;
-  cityName: string;
-  isDark: boolean;
-  onEditAssumptions: () => void;
-}) {
-  const [panelOpen, setPanelOpen] = useState(true);
-  const [selectedCityKey, setSelectedCityKey] = useState<string | null>(null);
-
-  // Overlay chrome adapts to theme: on white space it must read dark, on dark
-  // space it reads light. The globe itself stays a dark-ocean / white-continent
-  // "night earth" in both modes.
-  const ui = isDark
-    ? {
-        title: "#fff",
-        titleShadow: "0 2px 16px rgba(0,0,0,0.6)",
-        panelBg: "rgba(8,8,14,0.58)",
-        panelBorder: "rgba(255,255,255,0.09)",
-        chipBg: "rgba(255,255,255,0.055)",
-        chipBorder: "rgba(255,255,255,0.08)",
-        chipLabel: "rgba(255,255,255,0.42)",
-        chipValue: "#fff",
-        toggleBg: "rgba(8,8,14,0.52)",
-        toggleBorder: "rgba(255,255,255,0.14)",
-        toggleText: "rgba(255,255,255,0.82)",
-      }
-    : {
-        title: "#0f172a",
-        titleShadow: "0 1px 10px rgba(255,255,255,0.7)",
-        panelBg: "rgba(255,255,255,0.72)",
-        panelBorder: "rgba(15,23,42,0.08)",
-        chipBg: "rgba(15,23,42,0.04)",
-        chipBorder: "rgba(15,23,42,0.06)",
-        chipLabel: "rgba(15,23,42,0.45)",
-        chipValue: "#0f172a",
-        toggleBg: "rgba(255,255,255,0.72)",
-        toggleBorder: "rgba(15,23,42,0.1)",
-        toggleText: "rgba(15,23,42,0.7)",
-      };
-
-  const currentCityKey = useMemo(() => {
-    const match = CITIES.find(c => c.name.toLowerCase() === cityName.toLowerCase());
-    return match?.key ?? "nyc";
-  }, [cityName]);
-
-  // ── Freedom timeline: fast-forward the projected portfolio and watch cities unlock ──
-  const [timelineYears, setTimelineYears] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [timelineOpen, setTimelineOpen] = useState(true);
-
-  // Per-city unlock schedule, computed with the same engine as the rest of the
-  // page so a city's "turns green" year matches its years-to-FIRE exactly.
-  const cityUnlocks = useMemo(() => {
-    return CITIES
-      .filter(c => CITY_COORDS[c.key])
-      .map(c => {
-        const r = calcFIRE(monthlySavings, c.col, age || undefined, portfolioBalance, growthRate);
-        return { key: c.key, name: c.name, flag: c.flag, col: c.col, years: r.years, age: r.age, year: r.retireYear };
-      })
-      .sort((a, b) => (a.years ?? Infinity) - (b.years ?? Infinity) || a.col - b.col);
-  }, [monthlySavings, portfolioBalance, age, growthRate]);
-
-  // Run the bar from today to roughly when the bulk of cities have unlocked.
-  const sliderMax = useMemo(() => {
-    const ys = cityUnlocks.map(c => c.years).filter((y): y is number => y !== null && y < 60).sort((a, b) => a - b);
-    if (!ys.length) return 5;
-    const p95 = ys[Math.floor(0.95 * (ys.length - 1))];
-    return Math.min(50, Math.max(5, Math.ceil(p95)));
-  }, [cityUnlocks]);
-
-  useEffect(() => {
-    if (timelineYears > sliderMax) setTimelineYears(sliderMax);
-  }, [sliderMax, timelineYears]);
-
-  useEffect(() => {
-    if (!playing) return;
-    const id = setInterval(() => {
-      setTimelineYears(y => {
-        if (y >= sliderMax) { setPlaying(false); return sliderMax; }
-        return y + 1;
-      });
-    }, 600);
-    return () => clearInterval(id);
-  }, [playing, sliderMax]);
-
-  const tlYears = Math.min(timelineYears, sliderMax);
-  const tlAnnual = Math.max(0, monthlySavings) * 12;
-  const projectedPortfolio = (portfolioBalance + tlAnnual / REAL_RETURN) * Math.pow(1 + REAL_RETURN, tlYears) - tlAnnual / REAL_RETURN;
-  const readyCount = cityUnlocks.filter(c => c.years !== null && c.years <= tlYears + 1e-9).length;
-  const projAge = age ? age + tlYears : undefined;
-  const tlThisYear = new Date().getFullYear();
-
-  function handleCitySelect(key: string) {
-    setSelectedCityKey(key);
-  }
-
-  const fmt = (n: number) => formatMoney(n, { style: "compact" });
-
-  if (selectedCityKey) {
-    return (
-      <ExpatCityDetail
-        growthRate={growthRate}
-        cityKey={selectedCityKey}
-        portfolioBalance={portfolioBalance}
-        monthlySavings={monthlySavings}
-        age={age}
-        currentCityName={cityName || "Your city"}
-        currentCityKey={currentCityKey}
-        isDark={isDark}
-        onBack={() => setSelectedCityKey(null)}
-      />
-    );
-  }
-
-  return (
-    <div className="expat-globe-wrap">
-      {/* Full-bleed globe */}
-      <GeoArbitrageGlobe
-        fillContainer
-        monthlySavings={monthlySavings}
-        portfolioBalance={Math.round(projectedPortfolio)}
-        currentAge={age}
-        currentCityKey={currentCityKey}
-        onCitySelect={handleCitySelect}
-      />
-
-      {/* Title overlay — top left */}
-      <div style={{ position: "absolute", top: 20, left: 24, zIndex: 10, pointerEvents: "none" }}>
-        <div style={{ fontSize: 10, color: "#22d3a5", fontWeight: 700, letterSpacing: "2.5px", textTransform: "uppercase", marginBottom: 5 }}>
-          Expat FIRE
-        </div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: ui.title, letterSpacing: "-0.03em", textShadow: ui.titleShadow, lineHeight: 1.15 }}>
-          Where else could<br />you retire?
-        </div>
-      </div>
-
-      {/* Panel toggle button */}
-      <button
-        onClick={() => setPanelOpen(v => !v)}
-        style={{
-          position: "absolute", top: 20,
-          right: panelOpen ? 244 : 16,
-          zIndex: 25, transition: "right 0.32s cubic-bezier(0.4,0,0.2,1)",
-          background: ui.toggleBg, backdropFilter: "blur(12px)",
-          border: `1px solid ${ui.toggleBorder}`, borderRadius: 999,
-          padding: "6px 14px", color: ui.toggleText, fontSize: 11,
-          fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-          letterSpacing: "0.03em",
-        }}
-      >
-        {panelOpen ? "‹ Hide" : "Stats ›"}
-      </button>
-
-      {/* Collapsible stats panel */}
-      <div style={{
-        position: "absolute", top: 16,
-        right: panelOpen ? 16 : -232,
-        zIndex: 20, width: 220,
-        transition: "right 0.32s cubic-bezier(0.4,0,0.2,1)",
-        background: ui.panelBg, backdropFilter: "blur(20px)",
-        border: `1px solid ${ui.panelBorder}`, borderRadius: 16,
-        padding: "16px 14px", display: "flex", flexDirection: "column", gap: 9,
-      }}>
-        <div style={{ fontSize: 9, color: "#22d3a5", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 2 }}>
-          Your snapshot
-        </div>
-        {([
-          { label: "Portfolio", value: fmt(portfolioBalance) },
-          { label: "Age", value: String(age) },
-        ] as const).map(({ label, value }) => (
-          <div key={label} style={{
-            background: ui.chipBg,
-            border: `1px solid ${ui.chipBorder}`,
-            borderRadius: 10, padding: "9px 12px",
-          }}>
-            <div style={{ fontSize: 9, color: ui.chipLabel, fontWeight: 700, textTransform: "uppercase", marginBottom: 3 }}>{label}</div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: ui.chipValue, letterSpacing: "-0.02em" }}>{value}</div>
-          </div>
-        ))}
-        <button
-          onClick={onEditAssumptions}
-          style={{
-            background: "rgba(34,211,165,0.11)", border: "1px solid rgba(34,211,165,0.22)",
-            borderRadius: 9, padding: "9px 0", color: "#22d3a5",
-            fontSize: 12, fontWeight: 700, cursor: "pointer",
-            fontFamily: "inherit", marginTop: 3, letterSpacing: "0.01em",
-          }}
-        >
-          Edit assumptions →
-        </button>
-      </div>
-
-      {/* Freedom timeline — scrub forward to watch cities turn green */}
-      <div style={{
-        position: "absolute", left: "50%", bottom: 14, transform: "translateX(-50%)",
-        zIndex: 22, width: "min(640px, calc(100% - 24px))",
-        background: ui.panelBg, backdropFilter: "blur(20px)",
-        border: `1px solid ${ui.panelBorder}`, borderRadius: 16,
-        padding: timelineOpen ? "12px 14px 14px" : "9px 14px",
-      }}>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ fontSize: 9, color: "#22d3a5", fontWeight: 700, letterSpacing: "2px", textTransform: "uppercase" }}>
-            Freedom timeline
-          </div>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#22d3a5" }}>
-            🟢 {readyCount}/{cityUnlocks.length}
-          </span>
-          <div style={{ flex: 1 }} />
-          {timelineOpen && (
-            <button
-              onClick={() => setPlaying(p => !p)}
-              style={{ background: "rgba(34,211,165,0.12)", border: "1px solid rgba(34,211,165,0.28)", borderRadius: 999, padding: "4px 12px", color: "#22d3a5", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-            >
-              {playing ? "❚❚ Pause" : "▶ Play"}
-            </button>
-          )}
-          <button
-            onClick={() => setTimelineOpen(v => !v)}
-            aria-label={timelineOpen ? "Collapse timeline" : "Expand timeline"}
-            style={{ background: ui.toggleBg, border: `1px solid ${ui.toggleBorder}`, borderRadius: 999, padding: "4px 11px", color: ui.toggleText, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", lineHeight: 1 }}
-          >
-            {timelineOpen ? "⌄" : "⌃"}
-          </button>
-        </div>
-
-        {timelineOpen && (
-          <>
-            {/* Scrubber */}
-            <input
-              type="range"
-              min={0}
-              max={sliderMax}
-              step={1}
-              value={tlYears}
-              onChange={e => { setPlaying(false); setTimelineYears(Number(e.target.value)); }}
-              aria-label="Years from today"
-              style={{ width: "100%", accentColor: "#22d3a5", marginTop: 12, cursor: "pointer" }}
-            />
-
-            {/* Readout */}
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginTop: 6 }}>
-              <span style={{ fontSize: 16, fontWeight: 800, color: ui.chipValue, letterSpacing: "-0.02em" }}>
-                {tlYears === 0 ? "Today" : projAge ? `Age ${projAge}` : `In ${tlYears} ${tlYears === 1 ? "year" : "years"}`}
-              </span>
-              {tlYears > 0 && (
-                <span style={{ fontSize: 12, color: ui.chipLabel, fontWeight: 600 }}>· {tlThisYear + tlYears}</span>
-              )}
-              <span style={{ marginLeft: "auto", fontSize: 12, color: ui.chipLabel, fontWeight: 600 }}>
-                ~{fmt(projectedPortfolio)}
-              </span>
-            </div>
-
-            {/* Ordered milestone strip — which cities turn green first */}
-            <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, marginTop: 10 }}>
-              {cityUnlocks.slice(0, 16).map(c => {
-                const unlocked = c.years !== null && c.years <= tlYears + 1e-9;
-                const badge = c.years === null ? "Not reached" : c.years < 0.5 ? "now" : projAge ? `age ${c.age}` : `${c.year}`;
-                return (
-                  <div key={c.key} style={{
-                    flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
-                    padding: "6px 10px", borderRadius: 10, minWidth: 72,
-                    background: unlocked ? "rgba(34,211,165,0.14)" : ui.chipBg,
-                    border: `1px solid ${unlocked ? "rgba(34,211,165,0.30)" : ui.chipBorder}`,
-                  }}>
-                    <span style={{ fontSize: 15, lineHeight: 1 }}>{c.flag}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: unlocked ? "#22d3a5" : ui.chipValue, whiteSpace: "nowrap" }}>
-                      {c.name.split(",")[0]}
-                    </span>
-                    <span style={{ fontSize: 10, fontWeight: 700, color: unlocked ? "#22d3a5" : ui.chipLabel, whiteSpace: "nowrap" }}>
-                      {unlocked ? "🟢 " : ""}{badge}
-                    </span>
-                  </div>
-                );
-              })}
-              {cityUnlocks.length > 16 && (
-                <div style={{ flexShrink: 0, display: "flex", alignItems: "center", padding: "0 10px", fontSize: 11, color: ui.chipLabel, fontWeight: 600 }}>
-                  +{cityUnlocks.length - 16}
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Expat city detail (inline, within dashboard shell) ───────────────────────
-
-function ExpatCityDetail({
-  cityKey,
-  portfolioBalance,
-  monthlySavings,
-  age,
-  currentCityName,
-  currentCityKey,
-  isDark,
-  onBack,
-  growthRate,
-}: {
-  growthRate: number;
-  cityKey: string;
-  portfolioBalance: number;
-  monthlySavings: number;
-  age: number;
-  currentCityName: string;
-  currentCityKey: string;
-  isDark: boolean;
-  onBack: () => void;
-}) {
-  const targetCity = CITIES.find(c => c.key === cityKey);
-  const currentCity = CITIES.find(c => c.key === currentCityKey);
-
-  const bg = isDark ? "#08080e" : "#f8fafc";
-  const cardBg = isDark ? "#111118" : "#ffffff";
-  const border = isDark ? "#23232d" : "#E2E8F0";
-  const textPrimary = isDark ? "#ffffff" : "#0F172A";
-  const textSecondary = isDark ? "rgba(255,255,255,0.45)" : "#6B7280";
-
-  if (!targetCity) {
-    return (
-      <div style={{ padding: 40, textAlign: "center", color: textSecondary }}>
-        <p>City not found.</p>
-        <button onClick={onBack} style={{ marginTop: 16, background: "none", border: "none", color: "#22d3a5", cursor: "pointer", fontSize: 14 }}>
-          ← Back to Globe
-        </button>
-      </div>
-    );
-  }
-
-  const currentCol = currentCity?.col ?? 60000;
-  const targetCol = targetCity.col;
-
-  const currentFire = calcFIRE(monthlySavings, currentCol, age || undefined, portfolioBalance, growthRate);
-  const targetFire = calcFIRE(monthlySavings, targetCol, age || undefined, portfolioBalance, growthRate);
-
-  const currentYears = currentFire.years;
-  const targetYears = targetFire.years;
-  const yearDiff = currentYears !== null && targetYears !== null ? Math.abs(currentYears - targetYears) : null;
-  const isFireNow = portfolioBalance >= targetCol * 25;
-  const monthlyDiff = Math.round((currentCol - targetCol) / 12);
-
-  const fmtUSD = (n: number) => formatMoney(n, { style: "compact" });
-
-  function readinessBadge() {
-    if (portfolioBalance >= targetCol * 25) return { label: "FIRE ready", color: "#003527", bg: "#A7F3D0" };
-    if (portfolioBalance >= targetCol * 12.5) return { label: "Barista FIRE", color: "#78350F", bg: "#FEF3C7" };
-    return { label: "Not yet", color: "#991B1B", bg: "#FEE2E2" };
-  }
-
-  const badge = readinessBadge();
-
-  function row(label: string, cur: string, tgt: string) {
-    return (
-      <div key={label} style={{
-        display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8,
-        padding: "12px 0", borderBottom: `1px solid ${border}`,
-        fontSize: 13, alignItems: "center",
-      }}>
-        <div style={{ color: textSecondary, fontWeight: 500 }}>{label}</div>
-        <div style={{ color: textPrimary, fontWeight: 700, textAlign: "center" }}>{cur}</div>
-        <div style={{ color: textPrimary, fontWeight: 700, textAlign: "center" }}>{tgt}</div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{
-      background: bg, minHeight: "100%", fontFamily: "Manrope, sans-serif",
-      overflowY: "auto",
-    }}>
-      {/* Back header */}
-      <div style={{
-        background: cardBg, borderBottom: `1px solid ${border}`,
-        padding: "14px 20px", display: "flex", alignItems: "center", gap: 12,
-        position: "sticky", top: 0, zIndex: 10,
-      }}>
-        <button
-          onClick={onBack}
-          style={{
-            background: "none", border: "none", cursor: "pointer",
-            fontSize: 14, fontWeight: 600, color: "#22d3a5",
-            display: "flex", alignItems: "center", gap: 6, padding: 0,
-            fontFamily: "inherit",
-          }}
-        >
-          ← Back to Globe
-        </button>
-      </div>
-
-      <div style={{ maxWidth: 560, margin: "0 auto", padding: "24px 20px 80px" }}>
-        {/* Title */}
-        <h1 style={{
-          fontFamily: "Fraunces, Georgia, serif", fontSize: 28, fontWeight: 800,
-          color: textPrimary, margin: "0 0 8px",
-        }}>
-          {targetCity.flag} {targetCity.name}
-        </h1>
-        <div style={{ marginBottom: 24 }}>
-          <span style={{
-            display: "inline-block", padding: "3px 12px", borderRadius: 99,
-            fontSize: 12, fontWeight: 700, color: badge.color, background: badge.bg,
-          }}>
-            {badge.label}
-          </span>
-        </div>
-
-        {/* Hero stat */}
-        {isFireNow ? (
-          <div style={{
-            textAlign: "center", background: isDark ? "rgba(5,150,105,0.1)" : "#F0FDF4",
-            border: "1px solid #A7F3D0", borderRadius: 16, padding: "24px 20px", marginBottom: 24,
-          }}>
-            <div style={{ fontSize: 28, fontWeight: 800, color: "#059669", fontFamily: "Fraunces, Georgia, serif" }}>
-              You could FIRE here NOW
-            </div>
-            <div style={{ fontSize: 14, color: isDark ? "#6ee7b7" : "#065F46", marginTop: 8 }}>
-              Your portfolio covers {targetCity.name} expenses at the 4% rule.
-            </div>
-          </div>
-        ) : yearDiff === null ? (
-          <div style={{ textAlign: "center", padding: 24 }}>
-            <strong>{targetYears === null ? "Not reached under these assumptions" : "Target reached within the projection"}</strong>
-            <p>At least one location does not reach FIRE within 65 years, so a years-saved comparison is unavailable.</p>
-          </div>
-        ) : targetYears !== null && currentYears !== null && targetYears < currentYears ? (
-          <div style={{
-            textAlign: "center", background: isDark ? "rgba(34,211,165,0.08)" : "#F0FDF4",
-            border: isDark ? "1px solid rgba(34,211,165,0.25)" : "1px solid #A7F3D0",
-            borderRadius: 16, padding: "24px 20px", marginBottom: 24,
-          }}>
-            <div style={{ fontSize: 42, fontWeight: 800, color: "#22d3a5", fontFamily: "Fraunces, Georgia, serif", lineHeight: 1 }}>
-              {yearDiff.toFixed(1)} years sooner
-            </div>
-            <div style={{ fontSize: 14, color: textSecondary, marginTop: 8 }}>
-              by moving to {targetCity.name}
-            </div>
-          </div>
-        ) : (
-          <div style={{
-            textAlign: "center", background: isDark ? "rgba(239,68,68,0.08)" : "#FFF5F5",
-            border: isDark ? "1px solid rgba(239,68,68,0.25)" : "1px solid #FECACA",
-            borderRadius: 16, padding: "24px 20px", marginBottom: 24,
-          }}>
-            <div style={{ fontSize: 42, fontWeight: 800, color: "#ef4444", fontFamily: "Fraunces, Georgia, serif", lineHeight: 1 }}>
-              {yearDiff.toFixed(1)} years later
-            </div>
-            <div style={{ fontSize: 14, color: textSecondary, marginTop: 8 }}>
-              {targetCity.name} has a higher cost of living than your current city
-            </div>
-          </div>
-        )}
-
-        {/* Comparison table */}
-        <div style={{
-          background: cardBg, borderRadius: 16, border: `1px solid ${border}`,
-          padding: "0 20px", marginBottom: 20,
-        }}>
-          <div style={{
-            display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8,
-            padding: "14px 0 10px", borderBottom: `2px solid ${border}`,
-          }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: textSecondary }}>Metric</div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: textSecondary, textAlign: "center" }}>Current</div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#22d3a5", textAlign: "center" }}>{targetCity.flag} Target</div>
-          </div>
-          <div style={{
-            display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8,
-            padding: "12px 0", borderBottom: `1px solid ${border}`,
-            fontSize: 13, alignItems: "center",
-          }}>
-            <div style={{ color: textSecondary, fontWeight: 500 }}>City</div>
-            <div style={{ color: textPrimary, fontWeight: 700, textAlign: "center", fontSize: 12 }}>{currentCityName}</div>
-            <div style={{ color: textPrimary, fontWeight: 700, textAlign: "center", fontSize: 12 }}>{targetCity.name}</div>
-          </div>
-          {row("Annual cost of living", `${fmtUSD(currentCol)}/yr`, `${fmtUSD(targetCol)}/yr`)}
-          {row("FIRE number", fmtUSD(currentFire.fireTarget), fmtUSD(targetFire.fireTarget))}
-          {row("Years to FIRE", currentYears === null ? "Not reached" : `${currentYears.toFixed(1)} yrs`, targetYears === null ? "Not reached" : `${targetYears.toFixed(1)} yrs`)}
-          {row("Freedom year", String(currentFire.retireYear ?? "—"), String(targetFire.retireYear ?? "—"))}
-        </div>
-
-        {/* Monthly impact */}
-        <div style={{
-          background: cardBg, borderRadius: 14, border: `1px solid ${border}`,
-          padding: "16px 20px", marginBottom: 20,
-          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-        }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: textSecondary, marginBottom: 4 }}>
-              Monthly cost impact
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: monthlyDiff >= 0 ? "#059669" : "#ef4444" }}>
-              {monthlyDiff >= 0
-                ? `Moving saves $${Math.abs(monthlyDiff).toLocaleString()}/mo`
-                : `Moving costs $${Math.abs(monthlyDiff).toLocaleString()}/mo more`}
-            </div>
-          </div>
-          <div style={{ fontSize: 28 }}>{targetCity.flag}</div>
-        </div>
-
-        {/* Back button */}
-        <button
-          onClick={onBack}
-          style={{
-            width: "100%", background: "#22d3a5", border: "none",
-            borderRadius: 10, padding: "14px 20px",
-            fontSize: 14, fontWeight: 700, color: "#003527",
-            cursor: "pointer", fontFamily: "inherit", textAlign: "center",
-          }}
-        >
-          ← Back to Globe
-        </button>
-      </div>
-    </div>
-  );
-}

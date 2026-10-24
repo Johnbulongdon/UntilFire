@@ -14,6 +14,12 @@ const TYPE_OPTIONS: { key: FeedbackType; label: string }[] = [
 
 export default function FeedbackWidget() {
   const [open, setOpen] = useState(false);
+  // On phones the top bar opens this; the floating button would cover rows (D-54).
+  useEffect(() => {
+    const show = () => setOpen(true);
+    window.addEventListener("uf:feedback", show);
+    return () => window.removeEventListener("uf:feedback", show);
+  }, []);
   const [type, setType] = useState<FeedbackType>("general");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<Status>("idle");
@@ -95,18 +101,7 @@ export default function FeedbackWidget() {
       <style>{`
         .uf-feedback-btn { transition: transform 0.15s, box-shadow 0.15s; }
         .uf-feedback-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(6,78,59,0.35) !important; }
-        @media(max-width: 900px) {
-          .uf-feedback-btn {
-            bottom: calc(56px + 12px + env(safe-area-inset-bottom, 0px)) !important;
-            right: 12px !important;
-            width: 44px !important;
-            height: 44px !important;
-            padding: 0 !important;
-            justify-content: center !important;
-            border-radius: 999px !important;
-          }
-          .uf-feedback-label { display: none !important; }
-        }
+        @media(max-width: 900px) { .uf-feedback-btn { display: none !important; } }
       `}</style>
 
       {/* Floating button */}

@@ -51,7 +51,10 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   const shared = yearsToTarget(50000, 24000, 1_250_000);
   check('freedom date and the shared projection agree', near(engine.years, shared), `${engine.years} vs ${shared}`);
   check('purchase impact measures on the same clock', near(monthsToFire(50000, 2000, 1_250_000, REAL_RETURN) / 12, shared), String(monthsToFire(50000, 2000, 1_250_000, REAL_RETURN) / 12));
-  check('age in the freedom year rounds like the year (30 + 20.7 years → 50)', engine.age === 30 + Math.floor(engine.years), `${engine.age} after ${engine.years}`);
+  // D-65: the age is rounded and the year is the freedom date's own, so neither reads a year early.
+  check('age at freedom is rounded (30 + 20.8 years → 51)', engine.age === Math.round(30 + engine.years), `${engine.age} after ${engine.years}`);
+  check('freedom year is the calendar year of the date, not this year plus whole years',
+    engine.retireYear === new Date(Date.now() + engine.years * 365.25 * 864e5).getFullYear(), `${engine.retireYear}`);
   check('already there is zero years', yearsToTarget(2_000_000, 0, 1_000_000) === 0);
   check('never reached within the cap is null', yearsToTarget(0, 0, 1_000_000) === null);
   const own = [
@@ -64,7 +67,9 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
     check(`${file.split('/').pop()} uses the shared projection, not its own loop`, src.includes(needle) && !/monthlyReturn|GROWTH_MONTHLY|annualRate \/ 12/.test(src));
   }
   check('city pages use the shared return, not a typed 0.07', !read('app/fire-number/[slug]/page.tsx').includes('= 0.07'));
-  check('purchase impact logo follows the theme', read('app/calculators/purchase-impact/PurchaseImpactCalculator.tsx').includes('<Logo variant="auto"'));
+  // Calculators use the shared site header; its logo follows the theme.
+  check('site header logo follows the theme', read('app/components/SiteHeader.tsx').includes('<Logo variant="auto"'));
+  check('calculators keep no page bar of their own', !read('app/calculators/purchase-impact/PurchaseImpactCalculator.tsx').includes('<Logo'));
 }
 
 // ── Growth after inflation is a factor, grounded in S&P 500 history (D-24)
@@ -98,11 +103,13 @@ check('nothing needed and nothing saved is 0, not NaN', fireProgress(0, 0) === 0
   const yearsAt = (rate) => Math.round(yearsToTarget(0, rate, 25 * (1 - rate)));
   check('savings rate title: 50% is 15 years, 10% is 42', yearsAt(0.5) === 15 && yearsAt(0.1) === 42 && srMeta.includes('Save 50%, Retire in 15 Years') && srMeta.includes('Save 10% and FIRE takes about 42 years'), `${yearsAt(0.5)} ${yearsAt(0.1)}`);
   const home = read('app/HomeClient.tsx');
-  check('free result: growth is state, and every projection uses it', home.includes('useState<number>(DEFAULT_RETURN_PCT)') && home.includes('const marketReturn = returnPct / 100;') && !home.includes('const marketReturn = REAL_RETURN'));
+  // D-30 took growth editing out of onboarding: the free result uses the
+  // sourced default, and every projection on it reads that one value.
+  check('free result: the sourced default growth, used by every projection', home.includes('const returnPct = DEFAULT_RETURN_PCT;') && home.includes('const marketReturn = returnPct / 100;') && !home.includes('const marketReturn = REAL_RETURN'));
   check('free result: the choice carries into the dashboard', home.includes('realReturn: marketReturn') && read('app/dashboard/page.tsx').includes('prefill.realReturn'));
-  check('free result: age rounds like the year', home.includes('planningAge + Math.floor(result.years)') && !home.includes('planningAge + Math.round(projection.years)'));
+  check('free result: age at freedom from the shared rounding (D-65)', home.includes('freedomAgeAt(planningAge, result.years)') && !home.includes('planningAge + Math.floor(result.years)'));
   const flow = read('app/components/RevealFlow.tsx');
-  check('free result states its growth in one line and opens the history to change it', flow.includes('growth</b> a year after inflation') && flow.includes('as we recommend') && flow.includes('"Change"') && home.includes('growthPicker={<GrowthChoicePicker'));
+  check('free result states its growth in one line, with no picker in onboarding (D-30)', flow.includes('growth</b> a year after inflation') && flow.includes('as we recommend') && !home.includes('growthPicker={<GrowthChoicePicker'));
   const card = read('app/dashboard/FireAssumptionsCard.tsx');
   check('Plan assumptions: growth in one line, the history one tap away', card.includes('<GrowthSetting') && !card.includes('<GrowthChoicePicker'));
   check('dashboard treats the old typed 0.07 as never chosen', read('app/dashboard/page.tsx').includes('fp.growthRate !== 0.07'));

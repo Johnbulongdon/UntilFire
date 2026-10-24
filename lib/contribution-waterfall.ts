@@ -32,6 +32,7 @@ export type RungKind =
   | "employer-match"
   | "high-interest-debt"
   | "emergency-target"
+  | "goals"
   | "tax-advantaged"
   | "low-interest-debt"
   | "taxable";
@@ -96,6 +97,8 @@ export interface LadderInputs {
   taxAdvantagedRoom: number;
   /** Deliberate extra against cheap debt, per month. Off by default. */
   lowInterestExtra: number;
+  /** Goals with a date, and what each needs a month to make it (lib/goal-monthly). */
+  goals?: { name: string; monthly: number }[];
   /** Rungs the user has switched off, by kind. */
   disabled?: RungKind[];
 }
@@ -116,6 +119,7 @@ export function buildLadder(inputs: LadderInputs): Rung[] {
   const { high } = splitDebts(inputs.debts, inputs.highInterestThresholdPct);
   const highBalance = sum(high.map((d) => d.balance));
   const highNames = high.map((d) => d.name).filter(Boolean).join(", ");
+  const goals = (inputs.goals ?? []).filter((g) => g.monthly > 0);
 
   const rungs: Rung[] = [
     {
@@ -145,6 +149,13 @@ export function buildLadder(inputs: LadderInputs): Rung[] {
       why: "The expensive debt is gone, so the buffer can now go from survivable to comfortable.",
       capacity: Math.max(0, inputs.emergencyGapToTarget - Math.max(0, inputs.emergencyGapToFloor)),
       enabled: true,
+    },
+    {
+      kind: "goals",
+      label: goals.length ? `Your goals — ${goals.map((g) => g.name).join(", ")}` : "Your goals",
+      why: "What each goal with a date needs this month to arrive on time. It comes after the buffer and expensive debt, and before long-term investing.",
+      capacity: sum(goals.map((g) => g.monthly)),
+      enabled: goals.length > 0,
     },
     {
       kind: "tax-advantaged",

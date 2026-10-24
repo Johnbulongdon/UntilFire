@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { callerKey, rateLimit } from "@/lib/rate-limit";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MODEL = "mistralai/mistral-7b-instruct";
 
 export async function POST(req: NextRequest) {
+  const limited = rateLimit(callerKey(req, "categorise"), 20);
+  if (limited) return limited;
   if (!process.env.OPENROUTER_API_KEY) {
     return NextResponse.json({ category: "other", tags: [] }, { status: 200 });
   }

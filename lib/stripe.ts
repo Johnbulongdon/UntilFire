@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { STRIPE_PRICE_IDS } from "./pricing";
 
 let _stripe: Stripe | null = null;
 
@@ -21,15 +22,24 @@ export const stripe = new Proxy({} as Stripe, {
   },
 });
 
-export const STRIPE_PRO_PRICE_ID = process.env.STRIPE_PRO_PRICE_ID ?? "";
-export const STRIPE_PRO_ANNUAL_PRICE_ID = process.env.STRIPE_PRO_ANNUAL_PRICE_ID ?? "";
-
 /**
- * Which Stripe price to charge. Annual falls back to monthly when the annual
- * price isn't configured, so a missing env var downgrades the plan rather than
- * sending someone to a checkout with no line item.
+ * Which Stripe price to charge: the IDs beside the display prices in
+ * lib/pricing.ts, so what the page promises and what checkout bills cannot
+ * drift apart. The STRIPE_PRO_PRICE_ID and STRIPE_PRO_ANNUAL_PRICE_ID
+ * variables in Vercel are no longer read.
  */
 export function priceIdFor(interval: "month" | "year"): string {
-  if (interval === "year" && STRIPE_PRO_ANNUAL_PRICE_ID) return STRIPE_PRO_ANNUAL_PRICE_ID;
-  return STRIPE_PRO_PRICE_ID;
+  return STRIPE_PRICE_IDS[interval];
+}
+
+/**
+ * When the paid (or trial) period ends. Since API version 2025-03-31 Stripe
+ * keeps it on each subscription item, not on the subscription, so reading
+ * `sub.current_period_end` gave undefined and `new Date(NaN).toISOString()`
+ * threw before the row was saved (D-99).
+ */
+export function periodEndIso(sub: Stripe.Subscription): string | null {
+  const ends = sub.items?.data?.[0]?.current_period_end
+    ?? (sub as unknown as { current_period_end?: number }).current_period_end;
+  return typeof ends === "number" ? new Date(ends * 1000).toISOString() : null;
 }

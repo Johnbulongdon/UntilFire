@@ -58,6 +58,27 @@ Gold was considered and rejected: it sits next to the warning amber, so a
 "2.4 years earlier" badge and a "due in 5d" badge read as the same temperature in
 the same Cashflow list.
 
+### Illustration colour
+
+`--uf-sun` and `--uf-sun-soft` exist only for the onboarding scene's sun and
+path (D-50). They are not a fourth semantic colour: never use them for buttons,
+text, numbers or status.
+
+`--uf-bronze`, `--uf-silver`, `--uf-gold` and their `-deep` partners exist only
+for the freedom badge medals in Explore (D-67, `app/explore/Medal.tsx`). They
+draw an object, so they stay the same in both themes, and a medal never carries
+meaning by colour alone: it has its stars, and its label on hover or once a city
+is opened. Placeholder art; a drawn medal can replace the disc later.
+
+### Sunny and the drawn icons (app)
+
+The iOS app has a character, **Sunny** (the logo sun with a face, D-76), and its
+own two-tone icon set. Sunny is drawn in its fixed warm palette in both themes,
+like the medals: it is an object, not a status colour, and never the only
+carrier of meaning (every Sunny moment has its words). Use `EmptyState` for any
+empty or error screen, and `Icon` names from `components/icon-set.tsx` before an
+SF Symbol or emoji. Emoji stay only where a person picked them.
+
 ### Contrast
 
 Badge text is 11px and needs 4.5:1 contrast. Use the `--uf-*-ink` variants
@@ -110,6 +131,13 @@ import { Button, Card, Field, Input, Badge, Stat } from "@/components/ui";
   Pass `numeric` on anything holding a figure.
 - **Badge** — `positive | negative | warning | freedom | muted`.
 - **Stat** — label, figure, delta. The shape you render on nearly every screen.
+- **InfoTip** — a small "i" that shows an explanation on hover, focus or tap.
+  Where a sentence would explain a number, put it here instead (rule 7).
+
+Category colours are `COLOR_PALETTE` in `lib/categories.ts`: eight hues
+checked for colour-blind separation and contrast on the cream and warm-dark
+cards, plus a neutral for Other (D-31). They mark identity only, always next
+to a label or emoji; charts show the top six categories and fold the rest.
 
 ## Rules for new code
 
@@ -134,6 +162,22 @@ import { Button, Card, Field, Input, Badge, Stat } from "@/components/ui";
    (articles, city guides, the text below a calculator) may run long for search.
    The founder set this on 2026-09-26 after comparing the site with Duolingo
    and Liftoff. Before, result steps ran 38–130 words and the growth list 248.
+8. **Fixed money words.** Money coming in is **Income**, money going out is
+   **Expenses**, the difference is **Saved** (and its share of income the
+   savings rate), and the two kinds of expense are **Needs** and **Wants**.
+   Not Earned, Spent, In, Out or Money in/out, in any label, chip, key,
+   tooltip or email. The founder set this on 2026-10-06 after the
+   Transactions page said Spent/Earned in one place and In/Out in another.
+   Headings and labels for money going out say Expenses; "spending" stays
+   for prose and onboarding questions ("What do you spend a month?").
+9. **Sentence case and one name per thing.** Labels, headings and buttons are
+   sentence case ("Total debts", not "Total Debts"). Menu names (Net Worth,
+   Expat FIRE, Freedom Date) and badge names are names and keep theirs. A
+   thing has one name everywhere: the FIRE number (not target or freedom
+   number), Upcoming payments (not expected payments), Debts (not
+   liabilities). Amounts in copy use the display currency, never a typed "$".
+10. **Counts, not streaks.** Progress is a count ("4 of 6 months on plan",
+   "18 of 30 days complete"), never a run to protect or lose (D-73).
 
 ## Interaction and verification
 
@@ -146,7 +190,7 @@ tooling rather than assuming fixed browser installation paths.
 Navigation follows `docs/design/app-structure.md`: Money includes operational
 budgets and upcoming payments as well as recorded finances; Plan handles
 long-term projections and scenarios. Home owns no independent financial inputs,
-but its card layout can be customised.
+and its card layout is fixed (D-94).
 
 ## Migration
 

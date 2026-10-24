@@ -1,14 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase-admin";
 import { CAMPAIGNS, sendTagged } from "@/lib/email-send";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, periodEndIso } from "@/lib/stripe";
 import Stripe from "stripe";
 import { trackCheckoutSucceededServer } from "@/lib/analytics-server";
 import { Resend } from "resend";
 import { buildTrialReminderEmail } from "@/lib/email-html";
 import { LIFECYCLE_EVENTS, recordEvent } from "@/lib/lifecycle";
+import { recordReferralCommission, reverseReferralCommission } from "@/lib/referrals-server";
 
 export const dynamic = "force-dynamic";
+
+function willRenew(sub: Stripe.Subscription): boolean {
+  return !sub.cancel_at_period_end && !sub.cancel_at;
+}
 
 
 export async function POST(req: NextRequest) {
@@ -43,12 +48,14 @@ export async function POST(req: NextRequest) {
       const sub = await stripe.subscriptions.retrieve(subscriptionId);
 
       await supabaseAdmin.from("subscriptions").upsert({
+        source: "stripe",
         user_id: userId,
         stripe_customer_id: customerId,
         stripe_subscription_id: subscriptionId,
         status: "active",
         plan: "pro",
-        current_period_end: new Date((sub as any).current_period_end * 1000).toISOString(),
+        current_period_end: periodEndIso(sub),
+        auto_renew: willRenew(sub),
         updated_at: new Date().toISOString(),
       }, { onConflict: "user_id" });
 
@@ -82,12 +89,16 @@ export async function POST(req: NextRequest) {
 
       const isActive = ["active", "trialing"].includes(sub.status);
       await supabaseAdmin.from("subscriptions").upsert({
+        source: "stripe",
         user_id: existing.user_id,
         stripe_customer_id: customerId,
         stripe_subscription_id: sub.id,
         status: isActive ? "active" : sub.status,
         plan: isActive ? "pro" : "free",
-        current_period_end: new Date((sub as any).current_period_end * 1000).toISOString(),
+        current_period_end: periodEndIso(sub),
+        // Cancelled in the app or the Stripe portal: Pro stays until the period
+        // ends, and Profile shows the date instead of "$9 a month" (D-99).
+        auto_renew: willRenew(sub),
         updated_at: new Date().toISOString(),
       }, { onConflict: "user_id" });
 
@@ -105,7 +116,7 @@ export async function POST(req: NextRequest) {
 
       await supabaseAdmin
         .from("subscriptions")
-        .update({ status: "inactive", plan: "free", updated_at: new Date().toISOString() })
+        .update({ status: "inactive", plan: "free", auto_renew: false, updated_at: new Date().toISOString() })
         .eq("stripe_customer_id", customerId);
       break;
     }
@@ -168,6 +179,26 @@ export async function POST(req: NextRequest) {
           { user_id: existing.user_id, trial_reminder_sent_at: new Date().toISOString() },
           { onConflict: "user_id" },
         );
+      break;
+    }
+
+    // Creator referrals (D-27). Money collected earns the referring creator
+    // their share; a refund or a dispute takes it back before it is paid.
+    case "invoice.paid": {
+      const result = await recordReferralCommission(supabaseAdmin, event.data.object as Stripe.Invoice, stripe);
+      if (result.startsWith("error")) console.error("[webhook] referral commission:", result);
+      break;
+    }
+    case "charge.refunded":
+    case "charge.dispute.created": {
+      const obj = event.data.object as Stripe.Charge | Stripe.Dispute;
+      const pi = typeof obj.payment_intent === "string" ? obj.payment_intent : obj.payment_intent?.id ?? null;
+      try {
+        const result = await reverseReferralCommission(stripe, supabaseAdmin, pi, event.type === "charge.refunded" ? "refunded" : "disputed");
+        if (result.startsWith("error")) console.error("[webhook] referral reversal:", result);
+      } catch (err) {
+        console.error("[webhook] referral reversal failed:", err);
+      }
       break;
     }
   }

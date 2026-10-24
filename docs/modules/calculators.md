@@ -21,6 +21,7 @@ A suite of standalone financial calculators optimised for SEO. Serves as top-of-
 | v1.0 | 2026-04-10 | Sprint 02 | Hub page + 5 calculators: APY, Compound Interest, Savings Rate, Coast FIRE, 4% Rule. Sitemap updated. |
 | v1.1 | 2026-04-10 | Sprint 02b | Renamed "4% Rule Calculator" → "FIRE Number Calculator" (better UX + keyword) |
 | v1.2 | — | Sprint 09 | Nav coherence: /calculators link added to main nav, cross-links between calculators |
+| v1.3 | 2026-09-27 | — | Hub rewritten as a signpost: calculators grouped by question (When can I retire? / Am I on track? / How will my money grow?), one line each, 3 collapsed FAQs. Explanations live on each calculator page. |
 
 ## Calculators
 

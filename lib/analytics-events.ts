@@ -16,6 +16,7 @@ export const PRO_PLAN_ANALYTICS = {
 
 export const FunnelEvents = {
   LANDING_VIEWED: 'funnel_landing_viewed',
+  CITY_PLAN_STARTED: 'funnel_city_plan_started',
   CALCULATOR_STEP_VIEWED: 'funnel_calculator_step_viewed',
   CALCULATOR_REVEALED: 'funnel_calculator_revealed',
   // The reveal's own CTA, which is not the same moment as SIGNUP_STARTED:
@@ -49,12 +50,34 @@ export const FunnelEvents = {
   NEXT_MOVE_OPENED: 'funnel_next_move_opened',
   SCENARIO_TESTED: 'funnel_scenario_tested',
   SCENARIO_ACCEPTED: 'funnel_scenario_accepted',
+  // Transactions page (D-31): whether longer ranges, the chart views, the
+  // review and the "Worth a look" flags get used. Counts and enums only.
+  TX_RANGE_CHANGED: 'funnel_tx_range_changed',
+  TX_VIEW_CHANGED: 'funnel_tx_view_changed',
+  TX_REVIEW_OPENED: 'funnel_tx_review_opened',
+  TX_FLAG_RESOLVED: 'funnel_tx_flag_resolved',
+  // Profile → Export your data (D-56): which file, and whether it worked. Never contents.
+  DATA_EXPORTED: 'funnel_data_exported',
+  EXPLORE_VIEWED: 'funnel_explore_viewed',
+  EXPLORE_CITY_OPENED: 'funnel_explore_city_opened',
+  EXPLORE_MODE_CHANGED: 'funnel_explore_mode_changed',
+  EXPLORE_STARRED: 'funnel_explore_starred',
+  EXPLORE_PLAN_STARTED: 'funnel_explore_plan_started',
+  // The one-page plan saved as a PDF (D-60), with or without the UntilFire name.
+  FREEDOM_REPORT_EXPORTED: 'funnel_freedom_report_exported',
+  FREEDOM_YEAR_SHARED: 'funnel_freedom_year_shared',
+  // Plan → Compare (D-69): what was done with life changes. Never ages, years, amounts or names.
+  PLAN_COMPARE: 'funnel_plan_compare',
+  // Profile → Cancel Pro (D-99): each step, and the one reason picked. Never the free-text note.
+  CANCEL_FLOW: 'funnel_cancel_flow',
+  // Home → Get set up: each step as it is finished, and the one-tap confirms. Never amounts or names.
+  SETUP_CHECKLIST: 'funnel_setup_checklist',
 } as const;
 
 export type FunnelEventName =
   (typeof FunnelEvents)[keyof typeof FunnelEvents];
 
-export type CalculatorStepId = 'goal' | 'city' | 'currency' | 'income' | 'savings' | 'portfolio';
+export type CalculatorStepId = 'goal' | 'city' | 'currency' | 'income' | 'savings' | 'portfolio' | 'age';
 
 export const CALCULATOR_STEP_INDEX: Record<CalculatorStepId, number> = {
   city: 1,
@@ -62,6 +85,7 @@ export const CALCULATOR_STEP_INDEX: Record<CalculatorStepId, number> = {
   income: 3,
   savings: 4,
   portfolio: 5,
+  age: 6, // its own step since D-50; portfolio no longer includes age
   goal: 0, // added after city/income/savings/portfolio were indexed; kept separate so historical data is untouched
 };
 
@@ -110,7 +134,7 @@ export type RevealCtaPlacement = 'reveal_save_step' | 'unreachable';
  *  screen shown instead when the inputs never reach the freedom number. */
 export type RevealStepId =
   | 'freedom_age' | 'life_years' | 'freedom_number' | 'stack_up' | 'expat' | 'save'
-  | 'unreachable';
+  | 'savings_pace' | 'unreachable';
 
 export const REVEAL_STEP_IDS: Record<number, RevealStepId> = {
   2: 'freedom_age',
@@ -119,11 +143,12 @@ export const REVEAL_STEP_IDS: Record<number, RevealStepId> = {
   5: 'stack_up',
   6: 'expat',
   7: 'save',
+  8: 'savings_pace',
 };
 
 export interface RevealStepViewedProperties extends BaseFunnelProperties {
   step_id: RevealStepId;
-  /** RevealFlow's step number, 2–7 (1 is the loading screen). */
+  /** RevealFlow's stable step index, 2–8 (1 is loading; 8 precedes save at 7). */
   step_index: number;
 }
 
@@ -198,8 +223,8 @@ export interface FireTypeCtaClickedProperties extends BaseFunnelProperties {
 }
 
 export interface HysaEmptyStateCtaClickedProperties extends BaseFunnelProperties {
-  cta: 'learn_more' | 'connect_account';
-  destination: 'apy_calculator' | 'plaid_connect';
+  cta: 'learn_more' | 'connect_account' | 'see_offers';
+  destination: 'apy_calculator' | 'plaid_connect' | 'offers';
   placement: 'assets_empty_state';
 }
 
@@ -239,4 +264,50 @@ export function withVersion<P extends Record<string, unknown>>(
   props: P,
 ): P & BaseFunnelProperties {
   return { ...props, funnel_event_version: FUNNEL_EVENT_VERSION };
+}
+
+export interface TxRangeChangedProperties extends BaseFunnelProperties {
+  range_preset: string; // "1" | "3" | "6" | "12" | "ytd" | "custom"
+  range_months: number;
+}
+export interface TxViewChangedProperties extends BaseFunnelProperties {
+  view: 'line' | 'bars' | 'cal';
+  range_months: number;
+}
+export interface TxReviewOpenedProperties extends BaseFunnelProperties {
+  need_count: number;
+  range_months: number;
+}
+export interface TxFlagResolvedProperties extends BaseFunnelProperties {
+  flag: 'card_payment' | 'duplicate' | 'large' | 'bill';
+  confirmed: boolean;
+}
+export interface DataExportedProperties extends BaseFunnelProperties {
+  file: 'transactions_csv' | 'everything_json';
+  ok: boolean;
+}
+
+/** Explore (D-58). No city names or amounts: what was used, not what was looked at. */
+export interface ExploreViewedProperties extends BaseFunnelProperties { has_plan: boolean }
+export interface ExploreCityOpenedProperties extends BaseFunnelProperties { mode: 'monthly' | 'year' | 'age' | 'badge' }
+export interface ExploreModeChangedProperties extends BaseFunnelProperties { mode: 'monthly' | 'year' | 'age' | 'badge' }
+export interface PlanCompareProperties extends BaseFunnelProperties {
+  action: 'added' | 'saved' | 'used' | 'discarded';
+}
+export interface ExploreStarredProperties extends BaseFunnelProperties { starred: boolean }
+export interface FreedomReportExportedProperties extends BaseFunnelProperties { format: 'page' | 'poster' | 'timeline' | 'reddit'; branded: boolean }
+/** D-98: the year itself is never sent, only how it was shared. */
+export interface FreedomYearSharedProperties extends BaseFunnelProperties { share_method: 'native' | 'clipboard' }
+/** D-99: `reason` is a key from lib/cancel-reasons, only once one is picked. */
+export interface CancelFlowProperties extends BaseFunnelProperties {
+  step: 'opened' | 'reason' | 'kept' | 'cancelled' | 'resumed';
+  reason?: string;
+}
+/** Get set up: `step` is a lib/setup-steps id; `done_count` is how many of the five are done after it. */
+export interface SetupChecklistProperties extends BaseFunnelProperties {
+  action: 'step_done' | 'found_confirmed' | 'opened' | 'folded' | 'finished';
+  step?: 'income' | 'bank' | 'payday' | 'bills' | 'budget';
+  done_count?: number;
+  /** found_confirmed only: how many found items were added. */
+  added?: number;
 }

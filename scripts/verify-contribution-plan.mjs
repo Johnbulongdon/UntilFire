@@ -118,6 +118,14 @@ for (const row of SHEET) {
     Math.abs(empty.assets[0].adjusted - 300) < 1e-6 && Math.abs(empty.assets[1].adjusted - 200) < 1e-6,
     empty.assets.map((a) => `${a.symbol} $${a.adjusted.toFixed(0)}`).join(", "));
 
+  // A week's money bought weekly is one purchase of that week's money (D-34).
+  const weekIn = planContribution(targets, [], 500, { frequency: "weekly", budgetFrequency: "weekly" });
+  check("paid weekly and buying weekly: each purchase is the week's $500, not $115",
+    Math.abs(weekIn.perPeriod - 500) < 1e-6, weekIn.perPeriod.toFixed(2));
+  const paidMonthly = planContribution(targets, [], 500, { frequency: "weekly" });
+  check("paid monthly and buying weekly: the month's $500 split across the weeks",
+    Math.abs(paidMonthly.perPeriod - 500 / (365.25 / 7 / 12)) < 1e-6, paidMonthly.perPeriod.toFixed(2));
+
   const wild = planContribution(pct({ A: 0.5, B: 0.5 }), val({ A: 0, B: 100000 }), 100);
   check("an asset far over target is never given a negative contribution",
     wild.assets.every((a) => a.adjusted >= 0),
@@ -387,9 +395,10 @@ for (const row of SHEET) {
   check("following-my-savings is stored as null, not as today's account list",
     ladderToStored({ ...EMPTY_LADDER }).efAccountIds === null &&
     storedToLadder(ladderToStored({ ...EMPTY_LADDER })).efAccountIds === null);
-  check("an unknown expense source falls back to the last complete month",
-    sanitiseLadder({ expenseSource: "whenever" }).expenseSource === "last-month" &&
-    sanitiseLadder({}).expenseSource === "last-month");
+  check("an unknown expense source falls back to average needs (audit round 3)",
+    sanitiseLadder({ expenseSource: "whenever" }).expenseSource === "average" &&
+    sanitiseLadder({}).expenseSource === "average" &&
+    sanitiseLadder({ expenseSource: "last-month" }).expenseSource === "last-month");
   check("a junk account id list does not become a live selection",
     sanitiseLadder({ efAccountIds: "all" }).efAccountIds === null &&
     sanitiseLadder({ efAccountIds: ["a", 7, null] }).efAccountIds.join(",") === "a",

@@ -1,8 +1,1002 @@
 # Changelog
 
+## 2026-10-24 — Phone app updates go out by themselves
+
+- Every merge that changes the phone app is sent to the preview version of the app within minutes, like the website (D-102). Saying "ship" sends that same update to everyone; phones pick it up quietly on their next open.
+- Changes that need a new store build (new native package or native setting) are caught and flagged instead of being sent.
+
+## 2026-10-24 — Android Explore crash
+
+- On Android the phone app's Explore opens as the city list and has no Map toggle. The map uses Google Maps on Android, which needs an API key the app doesn't have, so opening Explore crashed (Sentry UNTILFIRE-APP-1/-2, build 13, seen on Play's pre-launch test devices). iPhone keeps the map (Apple Maps, no key). Add an Android Maps key later only if the map earns its place.
+
+## 2026-10-23 — Android build fix
+
+- The Android app now needs Android 7.1 (API 25) or newer, which the Plaid bank library requires. The first two Android builds failed at the manifest step because the app allowed Android 7.0. It targets Android 16 (API 36), as Google Play requires.
+
+## 2026-10-23 — Get set up checklist
+
+- Home has a "Get set up" checklist: income, bank, payday, bills and budget, each ticked by itself from your data, with "2 of 5 done" (D-101). On the website it sits in the bottom-right corner and folds to a small pill; on the phone it is a slim card at the top of Home that opens all five.
+- Finishing a step shows what it changed: "Your date moved 2043 → 2041", or your new Until payday amount after payday or bills.
+- After a bank links, the paycheck and repeating bills it shows are offered as one-tap confirms ("We found 3 bills"). Untick any that aren't bills; they aren't offered again.
+- Once all five are done, "You're set up" shows your date once and the checklist is gone for good. It replaces the old "Get started" card.
+
+## 2026-10-23 — Node.js security patch
+
+- After Stripe's Node.js security notice, the website now states its Node line (24.x, the same as the Vercel setting) in `package.json`, so a fresh deploy picks up Vercel's patched 24 runtime. The journey screenshot workflow pins the patched Node 22.23.4.
+
+## 2026-10-23 — Delete-account page
+
+- New public page untilfire.com/delete-account with the steps to delete an account in the app or on the website, what is deleted and what is kept. Google Play links to it from the store listing.
+
+## 2026-10-22 — Android build of the phone app
+
+- The phone app can now be built for Android and replaces the June website wrapper inside the existing Play listing, under the same package `com.untilfire.app` (D-100).
+- Android is free-only for now: no Pro screen or "See Pro", and a second bank says "One bank on the free plan". Pro bought on the website still works there.
+- Android says "Lock with fingerprint" (or face unlock) and sends "Update" to Google Play.
+
+## 2026-10-22 — Lease questions on the website
+
+- Home's Today strip asks "Your lease: stay or move?" 30 days before the notice deadline, and "Do you rent or pay a mortgage?" while anything is on the old combined tag, the same as the phone. An answer on either counts on both. Move opens Plan → Compare.
+- Plan → Compare offers "Renew at +x%" and "Move, $y less rent" from the year the lease ends, when the Rent bill has a lease. Tries only; the freedom date stays on real spending (D-88).
+
+## 2026-10-22 — Phone app sends its funnel to PostHog
+
+- App Store and preview builds now send the phone's funnel (onboarding questions, freedom date, sign-up, Pro screen, purchase) into the same PostHog project as the website. Before, the key was missing from the build, so nothing arrived.
+- The phone's events use the website's property names (`step_id`, `years_to_fire_bucket`, `auth_provider`), so one funnel or breakdown covers both; split them with `surface = ios_app`.
+
+## 2026-10-22 — Journeys map covers the whole app
+
+- Admin → Journeys now also shows the Home tour (website and phone), every Money and Plan page with their sub-pages, and the phone's Profile pages, as paths that branch off Home or Profile. Longer paths get rows of their own on the map. Every PR that changes the journeys now screenshots the signed-in and phone screens as a test, without replacing the live pictures.
+
+## 2026-10-22 — Cancel Pro in three short steps
+
+- Profile → Cancel Pro opens three steps: one reason (five choices, no "Other"), what stays free (your freedom date, budget, plan, one bank), and a goodbye with the date Pro ends and "No more charges". Cancelling is one tap from every step; nothing ends early (D-99).
+- After cancelling, Profile shows "Pro · ends Nov 12, 2026 · Won't renew" with a Keep Pro button that undoes it. Before, it kept saying "$9 a month".
+- The Stripe portal stays for invoices and the card, renamed "Invoices and card". Pro billed by Apple says to change it in iPhone Settings.
+- Stripe webhook: reads the period end from the subscription item (Stripe's current API), which it failed on before, and records whether Pro will renew.
+- Admin → Journeys: the Cancel Pro journey shows the new steps; the portal has its own "Invoices and card" journey.
+
+## 2026-10-22 — Zoom the journey map with the mouse wheel
+
+- Admin → Journeys: scrolling over the map now zooms in and out toward the mouse pointer, and a trackpad pinch does the same. The page no longer scrolls while the pointer is on the map. The buttons and keys still work.
+
+## 2026-10-22 — Share your freedom year
+
+- The calculator's Freedom age page has a "Share my freedom year" button. Phones open the share sheet; computers copy the link. The link's preview reads "Free to stop working in 2041" and leads friends to the calculator. It shares the year only, never amounts, age or city (D-98).
+
+## 2026-10-22 — Try a different savings pace
+
+- Add an editable monthly savings slider before reveal sign-up on desktop and phone browsers. Income stays fixed; spending, target and date recalculate together using the existing projection. Keep one original/updated-plan button and carry the selected numbers into sign-up. Native Expo onboarding is unchanged.
+
+
+## 2026-10-21 — Journey canvas panning
+
+- Prevent text selection and native image dragging inside the map so dragging labels pans without getting stuck. Show a grabbing cursor during a pan and reset it on release or cancellation. Keep screenshot inspection and keyboard controls.
+
+## 2026-10-21 — Connected admin journey canvas
+
+- Replace the repeated numbered Journeys rows with one dotted canvas of shared screens, branching transitions and visible return loops. Keep website and phone states distinct.
+- Add drag-to-pan, zoom, Fit map, keyboard movement, path highlighting and a text connection list. Retain screenshot inspection with a focused, Escape-dismissable dialog.
+- Give Journeys more room in the admin shell; preserve the existing journey manifest, screenshot capture and admin access checks.
+
+## 2026-10-21 — Save and sign up are one page
+
+- The calculator's last step is now the sign-up card itself: "{year} is just your starting point" over a blurred view of the real Home (its own cards, filled with the visitor's numbers where it has them), with Save with Google, Save with Apple and an email code. Back to results, Adjust inputs and Share stay underneath. There is no separate stop at /login after the calculator.
+- /login uses the same card and blurred Home on every visit, not only after the calculator. A direct visit reads "Start your journey to freedom" (it can be a first visit, so no "Welcome back").
+- Apple is a placeholder until it is set up in Supabase: tapping it says it is coming soon. Email shows on the card instead of behind "Use email instead" (still behind `NEXT_PUBLIC_EMAIL_SIGNIN`, D-18).
+- The admin Journeys map merges "Save" and "Sign up" into one step.
+
+## 2026-10-21 — Journeys: zoom and the last boxes
+
+- Clicking a screenshot on the admin Journeys tab now opens it full size (Esc or click to close) instead of opening the page.
+- New pictures: the phone's launch screen for "Open app", "Home, Pro on" and the Pro profile (the browser is told the test account has Pro; nothing is saved), and Stripe checkout and the billing portal (the script stops on Stripe's page; nothing is paid or cancelled). The Stripe pages need the test account's Stripe customer saved once in `subscriptions.stripe_customer_id`, so runs reuse it instead of creating customers.
+
+## 2026-10-20 — Phone app screens on the Journeys tab
+
+- Phone app steps are now real screenshots: each run builds the app for the browser from `mobile/`, walks onboarding with sample answers, then opens Home, Profile, Pro, Data and account and Delete as the test account. Opening Delete deletes nothing.
+- The website's email-code step and the landing page steps are screenshotted too; the code request is stubbed, so no email is sent. Google, Stripe, "Home, Pro on" and the phone's blank "Open app" redirect stay as boxes.
+
+## 2026-10-20 — More Journeys screenshots
+
+- The screenshot run now answers the calculator with sample numbers, capturing every question and result page, and signs in as a test account (`journeys-bot@untilfire.com`, unsubscribed from emails) for Home, Profile, the upgrade box and the delete-account confirm box. It never pays or deletes.
+- PRs that change the journeys run the capture as a dry run first.
+
+## 2026-10-20 — Start buttons open the calculator
+
+- "Start free" on the FIRE number pages, "Get started free" on Pricing and "Use with my profile" on Purchase Impact now open the calculator. They went to the dashboard or sign-up, so signed-out visitors landed on an empty Home and skipped onboarding. Signed-in visitors still go straight to the dashboard. Guarded by `npm run test:start-ctas`.
+
+## 2026-10-20 — Admin Journeys tab
+
+- New admin tab maps 14 user journeys (website and phone app, new and returning), with arrows, step labels and what to tap. Desktop and phone sizes.
+- Steps live in `lib/journeys.ts`; `npm run test:journeys` fails when a step's page or the phone onboarding order changes. Signed-out pages are re-screenshotted after each production deploy (`.github/workflows/journeys.yml`); signed-in, Google, Stripe and phone app steps are labelled boxes for now.
+
+## 2026-10-20 — Safety cash in retirement progress
+
+- Include the safety pot in web and phone freedom progress; spending cash stays separate.
+- Cash grows at saved APY (0% if unknown), adjusted for 3% inflation, instead of investment returns. Early-access checks and Coast FIRE milestones use separate cash and investment returns.
+- Show investments and safety cash below the Home chart. The spending-based target and safety-months measure stay unchanged.
+
+## 2026-10-20 — Fixed Home layout (review branch)
+
+- Approved loading revision: use the existing sun animation directly on the app surface, with a static logo for reduced motion or playback failure. Loading text remains available to screen readers only.
+
+- Remove dashboard reordering, resizing, hiding, inventory and restore controls instead of repairing the editor. Use the standard Home for old customized accounts too; preserve stored preferences.
+- Retire the old phone layout editor route. Keep the approved continuous number-entry fix and the previously requested tax pause.
+- Replace component-only visual evidence with full app-route captures; review-only captions stay outside the app. Other proposed replay repairs remain draft pending review.
+
+## 2026-10-19 — Replay repairs and tax-estimate pause (review branch)
+
+- Pause tax estimators, retirement-tax adjustments, passport tax comparisons, and public tax-derived examples pending QA. Preserve saved tax settings.
+- Ask for take-home income; keep onboarding inputs mounted while typing and support decimal entry and Enter to submit.
+- Home derives its duration and age from the same exact freedom date as Plan, including already-reached targets.
+- Give dashboard edit controls their own row and 44px targets; label selected conditional cards honestly and offer Add cards / Restore default dashboard.
+- Wait for saved profile/layout data before showing financial or setup results; serialize layout writes and show retryable save errors.
+- City search selects existing text on focus, offers Clear search, and supports keyboard/click selection. State-page Start opens the calculator; suppress duplicate landing-entry events.
+- Local verification is recorded in docs/handoffs/2026-10-19-replay-repairs.md. Not merged or deployed.
+
 All notable changes to UntilFire are documented here.
 
-## [Unreleased] - 2026-09-26
+The site deploys to production on every merge to `main`, so there is no
+unreleased queue: each section is the day its changes shipped. Add new entries
+under today's date, creating the heading if it is not there yet.
+
+## 2026-10-18
+
+### Home: Until payday (D-90)
+- The month card is now "Until payday": cash in your spending accounts less
+  bills before your next paycheck, drawn as a line from your last paycheck to
+  the next, dropping at each bill with its icon. A shortfall reads "−$164" in
+  red with the area under zero striped. Without a bank balance or a paycheck,
+  the card shows day-to-day spending against the budget instead.
+- Safe to spend today uses the same until-payday number.
+- "Everyday" is now "Day-to-day" in Budget and on Home.
+- Fixes: the "You" label no longer sits on the freedom curve, the pace dot is
+  round again, the next move's split no longer repeats "Emergency fund", and
+  the savings rate is the plan's (it ran high mid-month).
+
+### Profile (website)
+- Sign out now sits at the bottom of Profile and asks before signing out,
+  like the phone. Export and Delete account are folded into one "Data and
+  account" row; the delete confirmation shows only after "Delete account…".
+- The sidebar no longer has its own Sign out link; Sign out lives in Profile.
+
+### Sign-up page
+- After the calculator, sign-up reads "{year} is just your starting point"
+  over a blurred dashboard drawn from the visitor's own numbers, with one
+  button, "Start your journey to freedom" (Google). Email sits behind "Use
+  email instead". "Free, no card, delete anytime" is gone.
+
+### Home: one next move, and every card is a door (D-89)
+- Freedom date: a curve to the FIRE number with 25%, 50% and Coast FIRE marks,
+  replacing the 5-year bars.
+- Your next move: over-budget categories, then a budget, then the contribution
+  ladder's first step, then the best what-if. "Not now" hides it for a week.
+- Left this month: a pace line against an even pace and the next three bills.
+- Today on the website: need or want, bills due tomorrow and safe to spend
+  today, sharing progress with the phone.
+- Net worth, safety pot (6 segments) and savings rate tiles replace the
+  glance row; "Months on plan" is gone.
+- Phone: the freedom chart becomes a curve with 25% and 50% marks, Home shows
+  your next move, and Left this month adds a pace line and the next big bill.
+
+### Flags on Windows
+- Website: country flags are drawn as images everywhere (FIRE number pages,
+  geo-arbitrage, landing city picker, Plan assumptions, Home's move chip),
+  not emoji, which Windows shows as letters like "AU". The tax-country
+  dropdown drops its flags, since a dropdown can only hold text.
+
+## 2026-10-17
+
+### Launch readiness: security, crashes, store setup
+- Phone: the sign-in session lives in the iOS Keychain / Android Keystore
+  instead of plain storage; signed-in people move over without signing out.
+- Website: per-instance rate limits on the AI, email, feedback, survey,
+  household invite and Plaid link routes (three AI routes needed no login),
+  plus a `frame-ancestors 'none'` content security policy.
+- Phone: crash reporting through Sentry, in real builds only. Reports carry
+  the account id only, mask money amounts and drop console and tap text.
+- Version check: `/api/app-version` publishes the oldest phone version the
+  website supports; older apps show "Update UntilFire".
+- iOS privacy manifest, expo-updates for quick fixes (EAS project linked).
+- Banks that log in on their own site (Plaid OAuth): iOS returns through the
+  `/plaid-oauth` universal link (needs `PLAID_IOS_REDIRECT_URI` and
+  `APPLE_TEAM_ID`), Android by package name.
+- App Review login: a fixed code for `REVIEW_LOGIN_EMAIL` only, off unless
+  `REVIEW_LOGIN_EMAIL` and `REVIEW_LOGIN_CODE` are set.
+- Phone: Profile shows the app version (and any quick-fix update); tapping
+  it opens "What's new", kept in `mobile/src/lib/update-log.ts`.
+
+### Lease tracking
+- Housing's "Rent/Mortgage" is now two sub-categories, Rent and Mortgage.
+  Bank rent payments arrive tagged Rent; Today asks once about older
+  "Rent/Mortgage" rows.
+- A Rent bill or Rent transaction offers "When does your lease end?": end
+  date, notice to give (30/60/90 days) and the expected rise. The bill then
+  shows the days left to decide and a timeline to the lease end. The
+  website's Upcoming form has the same three fields on a Rent bill.
+- Today asks "Stay or move?" 30 days before the notice deadline, and once
+  more in the last week if the answer was "Not sure".
+- What if (phone) adds "Move, $X less rent" and "Renew at +X%" when a lease is
+  set. The freedom date itself doesn't move on a guessed rise (D-88).
+
+## 2026-10-16
+
+### Phone app
+- Categories shows one month at a time (‹ month ›, back 12 months), each
+  category against its usual month, sorted by spend; tap one to see its
+  transactions for that month.
+- New day-to-day card: Food + Transport in a typical month, the money to keep
+  in checking apart from the emergency fund, and how much of it is usually wants.
+- Transactions: picking a category now changes the summary to that category's
+  total, usual and bars, and the filter stays on when you change month.
+- Money shows the top three categories under "Spent this month".
+- Emergency fund shows a target (six months of needs). Without need budgets,
+  needs come from what your needs usually cost instead of 60% of the budget.
+  The safety chip and Home's Safety tile now use the same figure, so they
+  match the emergency fund page they open.
+- Account first: signed out, the app opens on the welcome screen instead of
+  Home, and both its buttons go to sign-in. A new account answers the
+  onboarding questions next, and their plan saves to the account; an account
+  with a plan goes straight to Home. Signing out returns to the welcome screen.
+- Profile reordered: everyday account rows and settings first, Help, then one
+  "Data and account" row (export, replay onboarding, delete account last) and
+  Sign out on its own at the bottom.
+- FIRE type quiz: each question has its own picture, and the five answers are
+  matching pictured rectangles (the two sides, "a little more this" either way,
+  and "both equally") instead of five wordy buttons, over soft background
+  panels. The progress bar now sits below the iPhone status bar.
+- FIRE type result: each strength and watch-out is its own box with a picture
+  and one short line, instead of two dense paragraphs.
+- Fix: a bill already paid this month (a matching transaction within 3%, same
+  name) is no longer set aside again in Budget's "left for everyday spending",
+  "free to spend until payday", or Home's free-to-spend card.
+- Calendar: "Mark paid" and "Mark received" now offer Undo, so a mistaken tap
+  can be taken back.
+- Categories: merge a category into another. Its transactions, bills, merchant
+  rules and (if the target has none) budget move across, and the old one is
+  removed. Leftover labels nothing defines any more, like an old "Dog" still on
+  transactions or the budget, now show under "Your own" so they can be merged.
+- Budget and Categories are one screen, Budget: a month switcher, what's
+  left, then one row per category with spent against its budget (or a "+ Set
+  budget" button). Tap a row for its transactions; ••• holds Change budget,
+  Merge and Remove. The separate Categories page is gone.
+
+## 2026-10-15
+
+### Household
+- Fix: an invitation that could not be accepted (expired, cancelled, already
+  used) no longer sends the invitee back to the error page on every dashboard
+  visit.
+- The invitation link now asks "Join John's household?" before joining,
+  instead of joining as soon as it opens.
+- Partners can no longer read each other's transactions, accounts, goals or
+  other raw rows through the database; the combined freedom date is unchanged
+  (D-84, migration 0057).
+- Fix: confirming a shared checking account no longer subtracts its balance
+  from the household's investments. Linked investment accounts now count in the
+  combined total the same way they do on each person's own dashboard.
+- Security: the waitlist is no longer readable with the public key (0057).
+
+### Dashboard
+- New (D-83): savings withdrawal countdown. Tap a savings account in Money to
+  set its monthly withdrawal limit; the account then shows "4 of 6 withdrawals
+  left this month" and lists this month's transfers out (migrations 0055,
+  0056). The phone shows the same line under Net worth.
+- New: Money → Offers, "Where to keep your money": savings, bank and
+  brokerage accounts UntilFire lists, each with its rate, any current bonus
+  and a line saying who earns from the link (D-81). Admin → Offers adds,
+  edits, shows and hides offers and counts clicks.
+- New (D-82): Plan → Assumptions has "Live in" and "Retire in". A retirement
+  city now scales your own spending by how its prices compare with where you
+  live, instead of replacing it with the city's average.
+- New: "When do you move?" When you're free (the default) or earlier, in a
+  year you choose, with an optional take-home there. Pay never follows a city
+  unless you type it.
+- Fix: choosing a retirement city or a tax home no longer overwrites where you
+  live.
+- Home's freedom chart is one bar a year, as on the phone. A planned move
+  shows as a route chip under the date and a flag on the move year, with the
+  years in the new city striped.
+- Admin: the Census sync also stores household income by rank for each city
+  (migration 0054), ready for suggesting pay after a move (D-82).
+- New: "Suggest by rank" in the move form fills take-home in the new city at
+  the same household-income rank as where you live, after its taxes (D-82).
+  US cities only; labelled and editable.
+
+### iOS app (in development)
+- The freedom date uses the same retirement-city and move rules (D-82).
+- Fix: Home no longer says you'd be free sooner without your rent or other
+  essentials. The line only picks optional repeating payments, and the
+  Recurring list marks housing, food, care and anything tagged Need as
+  "Essential" without a "sooner" number.
+
+## 2026-10-13
+
+### Dashboard
+- Fix: saving on the dashboard no longer erases profile fields it does not
+  own, such as the app's finished Today days.
+
+### iOS app (in development)
+- New: Today, a short daily list of one-tap items made from your recent money
+  (a category, need or want, a big spend, a bill tomorrow, payday, your number
+  for the day). One item per screen; finishing marks the day, and days are
+  counted, never streaked (D-73). Optional 9pm reminder.
+- New look (D-74): a light top bar of chips on every tab, a colour per tab,
+  chunky buttons everywhere, the Today bar above the tabs, Home as a teal hero
+  card with four round actions, Money as an icon grid, Plan as tiles.
+- New onboarding: sunrise welcome, a globe you spin to pick your city, pay on a
+  wheel, savings on a keypad, five reveals one at a time, and a welcoming join
+  page. The monthly check-in reminder is retired.
+- Adding a transaction asks need or want, so it is filed straight away.
+- Fix: the app called untilfire.com, which redirects to www and drops the
+  sign-in on the way, so banks, net worth and household came back empty. It
+  now calls www.untilfire.com directly.
+- New (D-76): Sunny, the logo's sun with a face, on the welcome sunrise, the
+  year reveal (with a chime and confetti), "All caught up", a goal reached, and
+  empty and error screens. A first-visit Home tour where Sunny points at each
+  part. One drawn two-tone icon set in place of system symbols and emoji.
+- Today: Undo for five seconds after each answer; "Anything to add?" daily
+  without a bank; one-time steps to connect a bank and name a goal. Home says
+  once why the date moved after sign-in. Free accounts see Pro before a second
+  bank.
+- The globe is drawn with Skia on the UI thread, with momentum, and fits the
+  screen. Onboarding answers sit mid-screen; the FIRE type quiz has five big
+  answer rows; currency pickers show flags; calmer bounces.
+- Pro through Apple in-app purchase (D-75), Sign in with Apple and native
+  Plaid, built and switched on in the app's own build; until then "Connect a
+  bank" opens untilfire.com. The admin Users page shows Apple and Stripe
+  subscribers.
+- Fix (D-77): Today answers and Review approvals move on instantly with a
+  tick instead of waiting for the save; a failed save puts the item back.
+- New (D-77): Home's actions are Add, Budget, Invest and What if; Review is
+  redesigned (grouped by day, category sheet, swipe to skip); the Invest
+  ladder is drawn to scale; the globe no longer cuts a line across the land.
+- Fix (D-77): a bigger city globe that zooms further, a faster Review with
+  subcategories (tap, or hold and drag), the freedom ring filling from empty,
+  and no globe flashing.
+- New (D-77): "I already have an account" on Welcome; Calendar shows category
+  icons; Home's freedom chart is a bar per year; Pro purchases are picked up
+  from launch and never hang; screens show loading instead of looking empty.
+  Launch audit in docs/launch-gaps.md.
+
+## 2026-10-11
+
+### Privacy policy and terms
+- New: plain-English privacy policy at /privacy and terms of use at /terms,
+  linked from the homepage footer. Both cover the website and the iOS app.
+
+### Deleting your account
+- Before an account can be deleted, a Pro subscription that would renew has
+  to be cancelled and every connected bank disconnected. Profile says so up
+  front, and the request explains what is left if anything is.
+
+### iOS app (in development)
+- A native iOS app in `mobile/`, built with Expo, signed in with the same
+  UntilFire account. Not in the App Store yet.
+- The app now has Before you buy and Worth a look on Home, and Household in
+  Profile (invite, accept, disconnect, and the shared date on Home).
+
+### Compare UntilFire
+- New: side-by-side pages for UntilFire vs ProjectionLab & Boldin, FI Calc,
+  FIRECalc and Monarch Money, with a hub at /vs linked from the homepage.
+  Each shows what you get, what it costs per year, and where each tool
+  specialises.
+
+## 2026-10-10
+
+### What if…
+- New in Plan: Compare. Try life changes on top of your plan, in your own
+  numbers: work less, take a break, pay for college, buy a home, a side income,
+  a windfall or a one-off cost. See your new freedom date against your plan,
+  what each change costs, and what comes out of savings year by year.
+- Changes can start when you reach Coast or end when you're free, and move
+  with your plan. Save the what-ifs you want to come back to.
+
+### Freedom badges in Explore
+- Turn on 🏅 Badges in Explore to see, for every city, how you could be free
+  by 59½: 🥉 keep working full time, 🥈 stop saving now, or 🥇 work half time.
+- Stars show how you could live there: ★ frugal, ★★ medium, ★★★ wealthy.
+  Hover a medal to read it, or open a city for the full picture.
+
+### A more honest freedom age
+- Your age at freedom is now rounded rather than rounded down, and the year
+  is the year your date actually falls in. Both used to read a little early.
+- Money you need before your pension opens is counted from the start of
+  each year, so the check that you can reach enough is stricter.
+- Most dates stay put; some move a year later. None move earlier.
+
+### Calendar shows your real cash
+- The daily balance is all your cash, savings included, with a line saying
+  what you have today in each account. What is safe to invest still keeps
+  your emergency fund aside.
+- Coming in and going out are for the month you are looking at, so one
+  salary counts once.
+- Bills you already paid this month are no longer taken off again.
+- Day-to-day spending now follows your Budget (less listed bills) rather
+  than last month's tagged needs, here and in what is safe to invest.
+- A brighter month: each day is shaded from Tight to Plenty by the cash
+  you will have, with payments as dots and your invest day marked.
+- Click a day to see it beside the month: what was recorded on a past day,
+  what is expected on a future one, and add an upcoming payment right there.
+  On a phone it opens as a sheet. Payment names now show on the month.
+
+## 2026-10-09
+
+### Calendar: your cash, day by day
+- Money → Upcoming is now Calendar. The month shows every payment on its
+  day and the cash you will have at the end of each day until you next
+  invest, with your emergency fund left aside. Tap a day to add a payment;
+  it can repeat. The list is still there under List.
+- Your invest day is on the calendar with what is safe to invest. Mark it
+  as done and nothing more shows as safe until next payday, so the same
+  money is never invested twice.
+
+### Every mortgage, with its own rate
+- Money → Debts takes as many mortgages as you have, each with its own
+  balance, rate and payment, and the year it is paid off. Your freedom date
+  counts each at its rate, and saves its payment once it is paid off.
+
+### Share your plan on one page
+- Plan → Freedom Date → Share one-page plan: your freedom date, the numbers
+  it uses, the formula, the path, whether you can reach your money before your
+  pension opens, how the age moves with spending and growth, and what it
+  leaves out. Save as PDF, with or without the UntilFire name.
+- Or share it lighter, with no branding: a poster or a life timeline as a
+  PNG (straight to the share sheet on a phone), or a Reddit-ready comment to
+  copy as Markdown.
+
+### An exact plan after a simple start
+- Money → Income: salary to take-home, with the pension taken before tax and
+  what your employer adds. Both count as saving in your freedom date.
+- Plan → Freedom Date has "Your goal": what you plan to spend once free (it
+  sets your FIRE number), pay growth (off until you choose), and when your
+  pension opens. Confirm the age and the date checks you can reach enough
+  money before then, and moves later if you cannot.
+- Plan → Contributions shows where your saving goes: pension, employer,
+  tax-free account (Roth IRA, ISA, NISA, TFSA) and the rest. Your split
+  replaces the old fixed one once you set it; mortgage interest uses your rate (set
+  it on Money → Debts).
+- The calculator's savings step says what counts: stocks, funds, retirement
+  accounts and cash savings.
+
+### Explore keeps the globe in view
+- On a computer, Explore fits the window: the globe stays put and only the
+  city cards scroll, in their own column. Phones scroll as before.
+- Scroll over the globe to zoom in and out.
+- Zoomed in, each pin keeps its flag and adds the city's name (🇵🇹 Porto
+  2041); before, the flag dropped off and the pins showed only a number.
+- Zooming in leans toward where your pointer is, like a map app.
+- The globe zooms in further (40×, was 12×), enough to pull apart
+  neighbours like Dallas and Fort Worth.
+- Zoomed in, every country shows its states or provinces (Natural Earth,
+  grouped to regions where a road map would), under firmer country borders,
+  and land has a light tint instead of plain white. The border data loads only
+  once you zoom in.
+- The globe is about three times smoother to drag: the land is drawn on a
+  canvas, only borders in view are projected, a drag moves once per frame,
+  and the list catches up when the globe settles. Fixed: the currency symbol
+  was worked out afresh for every pin on every frame.
+- The map and the list follow each other: tap a pin and its card scrolls into
+  view; tap a card and the globe turns to the city. Zoomed in, the list shows
+  only the cities in view ("15 cities in view · Show all").
+- Explore opens on the US (or the whole world if you use another currency).
+- Cards are compact, so a column shows five or six places; Open and Plan
+  sit inside the card you chose.
+- Without your numbers, one line offers to add them instead of an open form;
+  filters wrap instead of scrolling sideways.
+
+### Explore: one globe, your currency
+- US and abroad are one globe now: one pin per country until you zoom in
+  (the US is a single pin), then every city, with state lines up close. US
+  and Abroad are filters that also turn the globe.
+- The map is on the left and the cards on the right.
+- Money shows in your currency: the app's default currency, or the one you
+  used in the calculator.
+- Fixed: flags showed as letters ("us") on Windows; they're drawn now.
+
+### Explore replaces Expat FIRE
+- Plan → Expat FIRE is now Explore: the same map and city cards as the
+  public Explore page, at your plan's numbers. "Plan for" a city still sets
+  your retirement city. The public Expat FIRE calculator now opens Explore.
+- Your numbers carry over: after the calculator shows your result, Explore
+  already knows them. Each city is priced at your way of spending, so your
+  own city gives the same year as your result.
+- Cards show income tax as an effective-rate range (US: federal, payroll and
+  state on $50k–$150k earned), not one state rate.
+- Fixed: Explore's year could be a year later than the calculator's for the
+  same numbers. An age you skipped is no longer saved as 30.
+
+### Explore: every city on one map
+- New Explore page (in the top bar): every US and international city on a
+  map, with a card for each. Pins and cards show the monthly cost, or, once
+  you add what you've saved and save each month, the year (or your age) each
+  city could set you free.
+- Star a city to keep it on the map and in your Starred list. Abroad, the
+  globe shows one pin per country until you zoom in.
+- Each card links to that city's page, and "Plan" starts the calculator
+  with the city filled in. Your numbers and stars stay in this browser.
+
+### Fixes on Insights, Freedom Date and Goals
+- Insights: this month shows "so far" with no savings rate until it ends,
+  instead of −999%. A month that spent over twice its income shows "< −100%".
+- Freedom Date: Before you buy has its own price field, then one sentence
+  with the result. More tools is now three simple rows below it.
+- Goals: your goals come first; the Your why questions fold into one row.
+
+### Onboarding shows only the questions
+- Once you tap Start, the homepage's about section (how it works, calculator
+  and city links, FAQ) no longer appears below each question. It still shows
+  on the landing screen.
+
+### Export your data
+- Profile → Your data → Export your data: your transactions as a spreadsheet
+  file (CSV), or everything as one file (JSON): transactions, upcoming bills,
+  budget, goals, accounts, net worth history and your plan. Free, anytime,
+  whether or not you're on Pro. Bank connection details are never included.
+- Sign-in, pricing, the bank connect step and the FAQ now say you can export
+  or delete your data anytime.
+
+### Upcoming, Categories and Budget are back on desktop
+- Fixed: on a computer, Cashflow's Upcoming, Categories and Budget pages had
+  no way in. The sidebar now lists all of Money's pages on one level:
+  Transactions, Upcoming, Categories, Budget, Net Worth, Debts and Insights.
+- Each page under Money and Plan in the sidebar has a small icon.
+
+### Small fixes across the dashboard
+- On phones the top bar shows the logo once and the page you are on, with
+  Feedback next to dark mode instead of a button floating over your rows.
+- Going over a category budget is drawn in dark stripes, so a bill still due
+  in an amber or red category no longer looks like overspending.
+- The Money and Plan sub-tabs fit narrow phones better; when they still
+  scroll, the strip fades at the side with more and keeps your tab in view.
+
+### Calm Net Worth
+- Net Worth is one headline and short lists: what you have, what you owe,
+  your safety net and your banks, each account on one row with its bank's
+  logo.
+- Fixed: typed balances no longer show next to connected ones. A balance you
+  typed appears only for a kind of account with nothing connected, so cash no
+  longer reads $2,528 at the top and $660 lower down.
+- The emergency fund is one row; tap it for the floor, the target and the
+  accounts that hold it. Banks are rows with Sync now and Disconnect under
+  Manage. The empty Holdings box and the summary strip are gone.
+
+### Clearer category bars on Transactions
+- Every budget is now a black line in the same place on each row, so going
+  over always shows as amber hatching past it, in any category colour.
+- Past months is a shaded band showing where your recent months landed, not
+  a thin tick: wide when a category varies, narrow when it is steady.
+- Fixed: after a move or a new lease, a category with rent listed in Upcoming
+  counts from the first month that rent was paid, at today's amounts, so
+  housing no longer compares US rent with months of rent paid abroad.
+
+### Typing amounts in the calculator
+- Pay, savings and net worth fields open the number keyboard on phones, keep
+  what you type as you type it, and tidy it when you leave the field: leading
+  zeros go and thousands separators appear ("0140000" becomes "140,000").
+- A cleared field means "not answered" and waits for an amount, instead of
+  counting as $0. Zero is still a valid answer.
+- Saving more than your pay now says it was set to your pay, rather than
+  changing the number silently.
+- Net worth explains that investments, retirement accounts and cash all count
+  as invested, and that your home is left out.
+- Removed the old city-page calculator component, unused since the city
+  guides (D-43).
+
+## 2026-10-08
+
+### A new way in: five questions under a rising sun
+- The free calculator now asks one thing per screen: where you live, your
+  take-home pay, what you save, what you have so far, and your age. A small
+  landscape sits above each question; the sun rises and a path fills from
+  home with every answer, and a tag shows what you just entered.
+- Suggestions come from your earlier answers: pay around your city's living
+  costs, saving as a share of your pay, and savings so far in months of pay.
+  Every step has an "Other amount" field instead of an "enter a different
+  amount" link.
+- Where you live: search 390+ cities, a city near you from your time zone
+  (nothing is sent anywhere), popular cities, or your own town, which uses
+  your own spending. Skip is in the header.
+- Age is its own step, on a wheel you can swipe, scroll, click or type into.
+  It is still optional.
+- Back is an arrow at the top left; each screen's footer holds only its main
+  button.
+
+### Calm Profile
+- Profile opens on your name, email and plan, with Try Pro or Manage billing.
+- Name, household, currency and banks are rows that open in place; sharing
+  and deleting your account are rows too.
+
+### Rent is not counted twice
+- Fixed: a rent payment that looks like your Upcoming rent, but isn't linked to
+  it yet, now counts as paying it while "Upcoming bill?" asks you. Housing no
+  longer shows the rent as both paid and still due, and "Over by" no longer
+  includes it twice.
+- Housing and other bill categories compare whole past months, so rent paid
+  later in the month no longer makes "Past months" look like $0.
+
+### Cleanup
+- Removed an unused old Learn component; Learn is `app/dashboard/LearnTab.tsx`.
+
+### Calm Learn
+- Learn opens on your stage, why you're there and how far through the four
+  stages you are, then one article to read next.
+- Each stage's articles are rows with full titles; ones you've opened are ticked.
+- "Try it on your numbers" opens the matching Plan page instead of a public
+  calculator.
+- Fixed: long names in Money and Plan rows could make the page wider than a phone.
+
+### Calm Citizenship
+- Citizenship asks which passport you hold first, then shows its score, rank
+  and weakest part, with one bar split into tax, retirement accounts and investing.
+- What it means for you: accounts, capital gains and income tax as rows, then
+  what to watch out for and what's good for FIRE.
+- Other passports are a sortable list; tap one for its page.
+
+### Calm Expat FIRE
+- Expat FIRE opens on the soonest place work becomes optional, how many years
+  before your plan's city, and a bar to that place's FIRE number.
+- A list shows when each place opens up, one per country, with your plan's
+  city always in it; the globe is one tap away.
+- Drag the slider to see how many places are in reach by a year.
+- A city's page shows how much sooner or later it makes your date and how its
+  costs compare. "Plan for" makes it your retirement city.
+
+### Answer-first city guides with map comparisons
+- Apply the approved Austin layout to all 230 existing city guides: one FIRE
+  estimate, a clear personal-plan action, coordinate-backed map comparisons,
+  and expandable sources and scenarios. Preserve metadata and canonical links.
+- Keep map labels distinct on phones and provide text comparison links when
+  tiles fail. Do not invent neighbors or neighborhood-level precision.
+- Carry the chosen city into existing onboarding and record the plan-link
+  event; signup remains optional until the save-plan step.
+
+### Location explorer
+- Add a reusable public city/globe explorer with visible-area city choices,
+  search/filter recovery, three-city comparisons, animated selection and
+  reduced-motion controls. Phone map is optional; keyboard city buttons and
+  comparison-removal focus provide an alternative to canvas interaction.
+- Pilot on Austin and the public Expat FIRE calculator using main's current
+  costs and shared FIRE calculations. On Austin it replaces the city guide's
+  comparison map. The dashboard's Expat FIRE globe is unchanged.
+- Bundle licensed US state boundaries; no external map service or API key.
+
+## 2026-10-07
+
+### Calm Plan
+- Freedom date shows your progress to your FIRE number, what moves the date most with the month each move lands, and your assumptions as rows you tap to change.
+- Before you buy says in one line how much later a purchase makes your freedom date.
+- Goals show what you've saved toward all of them and what a month keeps them on time; deleting a goal asks first.
+- Contributions open on the next amount, your mix now against your target, and the steps it goes through.
+
+### Focused Budget
+- Budget opens on what's left to spend this month and about how much a day, with a pace bar showing whether everyday spending is ahead of or under an even pace. Tap "See October" for the month as a calendar. If checking is tighter than your budget before payday, it says so.
+- Fixed: when your budget was the limit, free to spend counted the whole month's remainder as spendable before payday, overstating the daily amount. It now takes the days before payday's share.
+- Only categories that are over or heading over are listed; bills are one row and everyday categories fold into one. Edit budget shows them all.
+- If an over category holds a payment you also made last month, Budget asks whether it's a bill.
+- Money rows show category icons, as on Transactions. Deleting an upcoming payment asks first. The sidebar no longer repeats Cashflow's pages.
+- Insights' summary cards follow your theme.
+
+### Calm Money
+- Budget, Upcoming, Net worth and Debts share one calm layout: a headline with one number and its bar, then simple rows with a dot, a name, the amount and a bar.
+- Cashflow's sub-pages switch with pills.
+- Upcoming shows the next 30 days as dots on a strip; tap a payment to mark it paid, link it, edit or delete it.
+- Debts: add what a loan started at to see how much is paid off. Cards show their balance against the limit.
+- Net worth uses connected balances throughout, matching Home.
+
+### Calm Home
+- A fresh Home shows four things: your freedom date with a bar to your FIRE number and a 5-year chart, this month's contribution as a step bar, this month's spending by category against your budget, and one row with net worth, safety runway and months on plan.
+- The other Home cards are hidden by default, not removed; add them back with Edit. Layouts you saved keep what they had.
+- The hero is no longer forced dark, and follows your theme.
+
+### Copy and labels
+- The welcome tour describes the app as it is today.
+- Home's "what if" moves show amounts in your currency, and the consistency
+  card counts months on plan instead of a streak.
+- Money words are consistent: Income, Expenses, Saved, Needs, Wants.
+- One name per thing (FIRE number, Upcoming payment, Debts), and labels in
+  sentence case.
+- Removed eight unused old components that still used the old wording.
+
+### Free calculator and the rest of the app agree
+- The free result's "retire abroad" ages are right for visitors outside the
+  US: their figures are converted to dollars before comparing with city costs.
+- The embeddable calculator shows the same freedom year as the free result.
+- The Assets tab's emergency fund months match Home and Contributions.
+- The purchase-impact calculator starts at the same 6.9% growth as the rest.
+
+### Expat FIRE uses your numbers everywhere
+- The globe's colours and hover card use your own target and growth, not a
+  fixed 25x and 5%.
+- If your city is not in the list, comparisons use your own spending
+  instead of New York or a made-up $60,000.
+- City costs include your lifestyle, so each card adds up, and money shows
+  in your display currency.
+
+### Money's numbers agree
+- Net worth counts each debt once, everywhere: a linked loan or mortgage
+  replaces what you typed, and credit card balances are included.
+- The Net Worth page's progress matches Home's.
+- Insights averages only finished months, and its categories include your
+  custom ones.
+- Budget's savings rate is after your mortgage payment, and a category is
+  "over" when spending plus bills still due passes its budget, the same as
+  Transactions.
+- "Committed every month" and Insights' FIRE-target line use your own
+  withdrawal rate and tax setting.
+
+### Contributions math
+- Paid weekly: each purchase is your week's money, not a quarter of it, and
+  the employer match and loan overpayment take a week's share, not a
+  month's every week.
+- Debt counts as expensive when its rate beats your expected return before
+  inflation (9.6% by default), so a cheap loan no longer jumps ahead of
+  investing.
+- Home's safety runway uses the emergency fund you set on Contributions, so
+  the two agree.
+- Home states the plan's monthly investing as an assumption. What to put in
+  this month is the Next contribution card's.
+- Contributions offers the debts from Liabilities and your connected loan and
+  card accounts, so you don't have to type them twice.
+
+### Plan's tools agree with your freedom date
+- "What would this cost your freedom?" uses your real balances (connected
+  accounts included), your savings after mortgage and debt, and the same
+  target as your freedom date.
+- The Tax Profile card shows the extra on your actual retirement target.
+- Expat FIRE no longer counts linked accounts twice. It uses your withdrawal
+  rate, taxes and lifestyle for each city, and its timeline grows at the rate
+  you chose.
+
+### Home's math matches your freedom date
+- Debt is paid out of your savings instead of on top of investing all of
+  them, so freedom dates for people with debt are no longer too early.
+- "What if" moves and the spending warning use the same model as the
+  freedom date, tax settings included.
+- A connected account replaces the balance you typed for the same kind of
+  money instead of adding to it, everywhere on Home and Net Worth.
+- This month on Home is forecast like Transactions: rent on its day no
+  longer reads as overspending, and "left" subtracts bills still due.
+- The consistency streak only judges finished months.
+
+### Upcoming bills match their payments
+- Upcoming bills take a category and sub-category like a transaction; the
+  category is guessed from the name ("Rent" is Housing) until you pick one.
+- When a payment looks like one of your Upcoming bills, Worth a look asks
+  once ("Upcoming bill? → Rent"). Say yes and it is linked by name from then
+  on, so the bill is counted once in the forecast and budget line.
+- Once linked, the bill marks itself paid when its payment arrives: a
+  repeating bill moves to its next date, a one-off is completed.
+- The forecast no longer counts rent twice when you pay it under another
+  name (a person, or a card like BILT): past payments that match a bill's
+  category and amount are kept out of your everyday spending rate.
+- Repeating bills no longer end up under Completed: paying one moves it to
+  its next date, and ones completed before now are back in Upcoming.
+- "Link payment" on an Upcoming bill lets you pick the past expense that was
+  that bill. Later payments with the same name and a similar amount or date
+  mark it paid, even when paid early or late, and the forecast stops
+  adding a bill you have already paid this month.
+
+### The numbers agree with each other
+- "On track to save" counts this month's expected income until all of it
+  has arrived, instead of one paycheck against a whole month of expenses.
+- A new account's forecast no longer spreads rent across every day left.
+- Past months and the forecast both use your last six months.
+- Over or under budget compares only budgeted categories; spending without
+  a budget shows separately. "Bills exceed budget" now shows when it applies.
+- A category's "left" subtracts bills still due this month, the same as
+  Free to spend, and shows them as a striped "Still due" segment.
+- Bills without a category are treated the same everywhere ("Rent" counts
+  as Housing in Free to spend too), and rent you have linked and paid stops
+  reducing Free to spend.
+- The budget line shows bills at their real size. If bills add up to more
+  than your budget, a chip says by how much instead of shrinking them.
+
+## 2026-10-06
+
+### Transactions shows any time range, with graphics instead of text
+- One date control replaces the month arrows: this month, the last 3, 6 or 12
+  months, this year, or a custom span. The arrows step by the range's length,
+  and the page remembers the choice.
+- A review bar shows how much is filed and how much still needs you; its
+  green part starts the review, which is now free when it comes from your own
+  history. Connected banks fold into one "synced" line that opens the list.
+- A summary card shows spent or earned, what you saved and your savings rate,
+  drawn as a running total against your usual pace, as bars, or as a calendar
+  shaded by how much went out each day (up to 6 months on a phone). Category
+  bars mark your usual and filter the list; tap several to combine them,
+  and Clear appears while a filter is on.
+- "Worth a look" flags rows that may be wrong: card bill payments, possible
+  duplicates and unusually large charges, each answered in one tap.
+- The list covers the whole range with a total per month, and its header
+  shows what the rows on screen add up to.
+- Categories move to eight colours that stay distinguishable for colour-blind
+  readers and in dark mode; tap a category's dot to change it.
+- After first use: the line and bar charts have a key, the review button
+  reads "to review", info tips are no longer clipped inside the review bar,
+  flagged rows show the amount in its original currency, the exchange-rate
+  label is gone, and a duplicate now means the same day (or a bank and an
+  import overlapping), not the same coffee two days running.
+- Your budget now sits beside your past months: the line chart has a thin
+  budget line (spread the way your months usually are, so rent on the 1st
+  does not read as overspending), bars show a budget level, and each
+  category bar has a budget track with what is left or over. "Usual" is
+  now called "Past months", and how far you are from each is shown above
+  the chart instead of inside it.
+- Hover over (or tap) the line or bars to read the exact amounts for that
+  day, week or month, against past months and your budget.
+- Months with no income recorded use the expected income from your Budget
+  tab, so the savings rate no longer swings to extreme numbers; the income
+  figure is starred when it does.
+- One set of words everywhere: Income, Expenses, Saved, Needs and Wants
+  (the list filters said In/Out, the card said Spent/Earned).
+- The line chart forecasts the rest of the period ("On track for $3,511",
+  with how far over or under budget that lands), drawn as a dotted line,
+  and has faint gridlines with amounts. Ranges longer than a month open on
+  bars, which read better than a long running line.
+- The forecast and the budget line now use the bills you listed in
+  Upcoming: each bill counts on its own due date, and everything else runs
+  at your usual everyday rate. Before, a rent paid on the 1st was counted
+  again from past months that paid it on the 28th.
+- While a month is running, saved reads "On track to save", comparing a
+  full month's income with the forecast, instead of a partial month.
+- Once everything is filed, the review bar shows this month's expenses and
+  what is free to spend until payday (the same figure as Home).
+- Regular payments found in your history (rent paid through the same card
+  every month, subscriptions) count as bills even when they are not listed
+  in Upcoming, so they are no longer forecast twice.
+- The budget line steps up on the date of every Upcoming payment, whatever
+  its repeat (weekly, monthly, yearly or one-off, paid ones included), in
+  past months as well as this one, instead of only monthly ones. A bill in
+  Upcoming and the same payment found in your history count once.
+
+### Reviewing suggested classifications learns from your history
+- Suggestions now come from how you filed the same merchant before: category,
+  sub-category and need/want, shown as "from your history (N×)". Reference
+  numbers in descriptions are ignored, and Chinese merchant names match. The AI
+  is only asked for need/want where history has no answer.
+- What you approve is remembered automatically, because the approved
+  transaction becomes next month's evidence. The unreliable "always classify"
+  checkbox is replaced by "Apply to all N from this merchant".
+- The review window keeps a fixed height as rows are approved or skipped. The
+  category picker opens inline instead of being clipped, and sub-categories can
+  be chosen. Rows that are already filed and tagged are no longer shown again.
+
+## 2026-10-05
+
+### Monthly update emails take a banner
+- The admin email editor has two new optional fields for monthly updates: a
+  banner image shown full width at the top (linked to the button's page), and
+  the inbox preview line. With a banner, the repeated "Monthly update" label
+  is dropped. September's banner is `public/email/september/banner.png`.
+- Update items can carry an icon from the app's own set (PNG chips in
+  `public/email/icons/`, since Gmail and Outlook drop SVG), chosen per item in
+  the editor; the section headings get one too. September adds screenshots of
+  the Next Contribution card, the household card and the Coast FIRE result.
+
+## 2026-10-02
+
+### Free to spend until payday
+- Money → Cashflow → Budget now opens with how much is free to spend until
+  your next paycheck: your checking balance less the bills due before payday,
+  or what is left in your budget if that is lower. A runway shows the balance
+  stepping down as each bill leaves; weekly, two-weekly and monthly pay all
+  work. Choose which accounts count; credit card balances are shown, and their
+  payments count from Upcoming.
+- Home has a new "Free to spend" card that says it in one sentence ("Of the
+  $2,400 in your account, $412 is yours to spend before Thursday"), with a
+  bar of where the balance goes and what is left in each budget category.
+  It can be moved or hidden like any Home card.
+
+## 2026-09-27
+
+### Sourced FIRE-by-state reference
+- `/fire-number/fire-by-state` now states exactly what its figures measure:
+  city-sample averages built from 2024 Census ACS rent data plus the documented
+  non-housing baseline. It shows the review date, sample size, city range,
+  calculation steps, limitations, official sources, FAQ and downloadable CSV.
+- New York City is grouped into New York for state comparisons instead of
+  appearing as a 52nd jurisdiction. Its distinct city tax key remains unchanged;
+  the best-states ranking uses the same grouping, and the obsolete
+  `/fire-number/states/newyorkcity` path redirects to New York.
+
+### /invite, redesigned
+- A dark hero where the key visual is the one bright thing, so the eye
+  lands there first: a creator's post with the live calculator and a
+  "+$23.70 · a reader subscribed" toast. The details follow on light bands
+  (how you earn and the earnings estimate, four "what you get" tiles,
+  three FAQs), and a dark band closes. Shorter than before, with every
+  card in a row the same size.
+
+### Creator program in the dashboard; a pitch page that shows the deal
+- Profile → Creator program is a short card: your link, Copy and More.
+  More opens `/invite`, which for a signed-in user shows their own program
+  (join, link, stats, progress to the 40% tier, embed, payouts) above how it
+  works. The link stays inside the app, so no "leave site?" prompt.
+- `/invite` now shows the offer at a glance (30% · 12 months · 60 days for
+  readers), the 30% → 40% → 10% ladder, an earnings estimate slider, the
+  real calculator a creator can embed, what readers get, and a short FAQ.
+- Profile section titles have icons and use theme colours, so dark mode
+  reads properly.
+
+### Creator program: no look-alike links, remove and hold
+- Codes can't contain "untilfire", "official", "support", "staff" or "admin".
+- `/admin` → Referrals can **Remove** a creator who breaks the terms (link
+  stops, code freed, unpaid earnings forfeited) and **Hold** a code for a
+  creator being pitched, which only their email can claim.
+- The terms add: don't pick a link that suggests you're UntilFire or someone
+  you're not. D-27 amended.
+
+### Embeddable calculator: sliders and a growth curve
+- `/embed/<code>` shows the freedom year first, then a curve of invested
+  money rising to the dashed target line, then three sliders (take-home,
+  spending, invested). The footer is one line: the reader's trial, "by
+  UntilFire" and an "estimate" note whose assumptions show on hover. Fits
+  the 520px snippet on phones and wide blog columns.
+- `freedomPath` in `lib/quick-freedom.ts` draws the curve from the same
+  growth and target as the year; test:referrals checks they end together.
+
+### Calculators page, shorter and grouped
+- `/calculators` groups the nine calculators by the question they answer,
+  one line each, instead of long cards. The internal "how these fit
+  together" note and the city cards are gone (one link to FIRE number by
+  city instead); the FAQ is three collapsed questions. About a third of
+  the old length.
+
+### Learn page, one stage at a time
+- `/learn` opens with four stage buttons (Starting Out, Building Momentum,
+  Approaching FIRE, Living in FIRE). Each stage shows one line, three reads
+  by title and read time, one calculator and a link to the full stage page.
+  The per-stage paragraphs, tool sidebars and city cards are gone, no
+  article repeats, and the page uses the warm site style. All four stages
+  stay in the HTML for search.
+- Calculator links say where they go: "Safe Withdrawal Calculator" (six
+  places, all opening the FIRE Number calculator, which sets the
+  withdrawal rate) is now "FIRE Number Calculator". Approaching FIRE
+  points to the full FIRE Calculator, so stages 3 and 4 no longer share
+  one link.
+
+### One header across the public site
+- Every public page now has the homepage's top bar: logo, How it works,
+  Calculators, Learn, Pricing, and Get started (Dashboard when signed in).
+  City and state pages, Learn, pricing and the invite page had none; the
+  calculators each had their own. On phones the links fold into a menu.
+- Get started from another page opens the homepage calculator with
+  `source=nav-<page>`, keeping the per-calculator attribution the old bars sent.
+
+## 2026-09-26
+
+### Creator referral program: 30% for 12 months
+- `untilfire.com/invite`: creators get a link (`/r/<code>`), choose PayPal
+  or Wise, and see visits, signups, paying customers and earnings.
+- Earnings are 30% of what each referred customer pays, excluding tax, for
+  their first 12 months of paying, held 30 days for refunds, paid monthly
+  once $20 is ready. `/invite/terms` spells it out.
+- `/admin` → Referrals: what each creator is owed, "mark paid" with the
+  PayPal or Wise transaction id, pause a creator, reverse a commission.
+- Profile links to the program. Sign-in can now return to `/invite`. D-27.
+- Readers who come through a creator's link get Pro 60 days free instead of
+  30, and the landing page and upgrade screen say so.
+- Creators can put a freedom-year calculator in their own posts
+  (`/embed/<code>`, copy the code from `/invite`); readers who continue are
+  credited to them.
+- "Give a month, get a month" in Profile: friends get Pro 60 days free, and
+  when one subscribes the sharer gets a month free, taken off their next bill.
+- Creators see readers in their free trial and what they could earn, get
+  their first payout at any amount, earn 40% from their 10th paying customer,
+  and 10% for as long as a customer stays after their first year.
+
+### Pro is $9 a month or $79 a year, with a 30-day free trial
+- New prices for new subscribers. Anyone already on $3 or $30 keeps it.
+- The free trial is 30 days, down from 90.
+- Every price and trial mention reads `lib/pricing.ts`; the two hard-coded
+  "3 months free" texts (landing page, Profile) now do too. D-26.
+
+### Housekeeping
+- State pages with one city say "1 city" (and "1 City" in the search title)
+  instead of "1 cities".
+- This changelog drops its fourteen "Unreleased" headings for plain ship
+  dates: every merge deploys, so nothing here was ever unreleased.
 
 ### Search titles that show the answer
 - Singapore, Dubai, London and Shanghai now show their FIRE number in the
@@ -117,7 +1111,7 @@ All notable changes to UntilFire are documented here.
 - The free result's freedom age now rounds like its year (the engine was fixed
   yesterday; the result screen had its own copy). Recorded as D-24.
 
-## [Unreleased] - 2026-09-25
+## 2026-09-25
 
 ### US city estimate sources
 - The 226 generic US city FIRE guides now show when their cost baselines were
@@ -227,7 +1221,7 @@ All notable changes to UntilFire are documented here.
   permanently. Hawaii's cities now appear in the West Coast region. `test:seo`
   fails if a US state with cities has no name.
 
-## [Unreleased] - 2026-09-24
+## 2026-09-24
 
 ### SEO content
 - Repaired learning-article dark-mode colors and added visible breadcrumb
@@ -372,7 +1366,7 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - **Real regressions found and fixed:** custom categories never syncing (above), the unlabelled currency select (above), and `categories-management` now also fails if the sync is left unexecuted.
 - `test:seo`'s FIRE Type check had been passing against `HeroScreen.tsx`, which has not been rendered since the landing redesign (`274a215`), and the redesign had dropped the link. The guard now reads the hero that renders, and it passes because the link was restored (D-13).
 
-## [Unreleased] - 2026-09-23
+## 2026-09-23
 
 ### Added
 - **Next contribution.** A tab under Plan that works out where this period's money should go, and a Home card that says it without being gone looking for. The order is a published convention — emergency floor, employer match, expensive debt, emergency target, tax-advantaged, cheap-debt overpayment, then invest the rest — and every rung can be moved or switched off. The allocation maths is ported from the spreadsheet it replaces, guarded against the sheet's own figures.
@@ -387,21 +1381,21 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 ### Added — guards
 - `npm run test:contribution-plan`, `test:contribution-waterfall`, `test:contribution-ladder`, `test:contribution-schedule`, `test:emergency-fund-accounts`, `test:classification-rules`.
 
-## [Unreleased] - 2026-09-20
+## 2026-09-20
 
 ### Added
 - **Transactions can carry a time of day, and never have to.** Plaid supplies one for the institutions that send it, a statement import recovers the one already sitting in its date column, and the add/edit form has an optional **Time** field next to the date. The time shows in the transaction list when there is one and nothing at all when there isn't — a blank stays blank rather than becoming midnight.
 - Stored as an instant, not a wall clock, so "14:30" typed in Hong Kong still reads 14:30 there and shifts correctly for a household partner elsewhere. `date` remains the field everything groups and totals by; where the two disagree at a day boundary, the date wins.
 - `npm run test:transaction-time` — covers the ways a time goes wrong quietly: Plaid's 00:00 placeholder must not become a confident midnight, `authorized_datetime` must win over `datetime`, a time buried in an ISO or WeChat date cell must be recovered, and a round trip through the form must come back unchanged.
 
-## [Unreleased] - 2026-09-19
+## 2026-09-19
 
 ### Added
 - **Home is arrangeable.** An **Edit** button turns Home's cards into draggable tiles: drag by the grip to reorder, press × to remove one, press the width control to make it narrow or wide, and put anything you removed back from the tray underneath. Saved per user in `profiles.dashboard_layout`. Defaults are exactly the current layout, so nothing changes until you change it.
 - Dragging is pointer-based rather than HTML5 drag-and-drop, which never fires on touch. Reordering still happens through CSS `order`, so a card's contents never move in the DOM mid-drag. Card content is inert while editing, so a drag can't also press something inside a card.
 - `npm run test:dashboard-layout` — covers the layout merge, which fails silently in every direction: a card added later must appear for someone who customised before it existed, an id since removed must drop, a corrupt value must fall back rather than empty the page, and a required card must stay visible however it was stored.
 
-## [Unreleased] - 2026-09-18
+## 2026-09-18
 
 ### Added
 - **Household (P1)** — invite one partner to share a household, from `Profile → Household`. They create their own account, keep their own login and their own numbers; joining adds a shared view on top rather than merging anything. Invite by email, one live invitation at a time (re-inviting supersedes rather than stacks, so a corrected address cannot leave an old link redeemable), 14-day expiry, and **Disconnect** — one symmetric action either person can take instantly without the other's approval, because at two members with symmetric visibility "I leave" and "I remove you" have the same outcome.
@@ -424,23 +1418,23 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - A household holds exactly two people, enforced by `member_slot` + `UNIQUE (household_id, member_slot)` — a slot rather than a count trigger, because a unique index cannot be raced.
 - `0035_household_revoke_anon` — Supabase grants EXECUTE on new `public` functions to `anon` individually, so `REVOKE ... FROM PUBLIC` in 0016 did not achieve what its comment claimed.
 
-## [Unreleased] - 2026-09-12
+## 2026-09-12
 
 ### Added
 - Per-month spending analysis on `Money → Insights` (`MonthInsight`) — pick any month with data, see its categories ranked by size, and switch individual categories off. The comparison baseline recomputes with the same exclusions applied to every other month, so excluding Travel drops both the headline and the median it is measured against rather than comparing a filtered month against an unfiltered one. Median rather than mean, since the outlier month is what the exclusions exist to see past. A conditional line translates the result into the FIRE target at 25× annual spending — phrased as "if every month looked like this one", because one month is not a rate.
 
-## [Unreleased] - 2026-08-29
+## 2026-08-29
 
 ### Added
 - "Your month" check-in card on Home (`DashTab`) — closes the monthly loop by combining last month's actual result (`consistencyMonths`, on-track or off-plan, savings vs. short) with this month's top recommendation (`topTasks[0]`) into one verdict, with a CTA that scrolls to the existing top-tasks card. Dismissible per calendar month (`uf_checkin_dismissed_YYYY-MM`), so it reappears as a fresh check-in each month rather than sitting as a permanent fixture.
 - `funnel_next_move_opened` analytics event — fires when the check-in card's CTA is clicked, giving the top-tasks recommendations their first real click target (previously informational only).
 
-## [Unreleased] - 2026-08-16
+## 2026-08-16
 
 ### Removed
 - Monte Carlo "Confidence Check" page (`FIRE Calculator → Simulate`) — the success-probability copy overclaimed 10,000 simulations while the code ran 1,000, and "before your target age" was actually a flat 40-year horizon from today regardless of the user's real age. Removed rather than patched pending a redesign that ties it correctly into the plan's real freedom date. `MonteCarloCard`, `SimulationsTab`, and `lib/fire/monte-carlo.ts` deleted.
 
-## [Unreleased] - 2026-07-10
+## 2026-07-10
 
 ### Added
 - Transaction import now accepts Excel (.xlsx/.xls) files through the same column-mapping, duplicate-detection, and currency-inference pipeline as CSV
@@ -451,7 +1445,7 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 ### Fixed
 - Excel imports with title/metadata rows before the real header (e.g. WeChat Pay Excel exports) now correctly detect the real header row instead of leaving all column-mapping dropdowns blank — ported the same header-row scan already used for CSV imports
 
-## [Unreleased] - 2026-06-15
+## 2026-06-15
 
 ### Added
 - CSV import modal: full column-mapping UI with a step machine (upload → map → review → importing → done), batch insert in chunks of 50
@@ -473,7 +1467,7 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - FIRE Type share card content simplified and avatar crop tightened for cleaner framing
 - Wordmark: orange removed from "Fire" text on the FIRE Type page to fix branding inconsistency
 
-## [Unreleased] - 2026-05-26
+## 2026-05-26
 
 ### Changed
 - Dashboard emergency-fund logic now excludes brokerage cash reserved for investing from the emergency-fund "Current Savings" figure, while still counting that money in total cash/assets.
@@ -483,7 +1477,7 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 ### Verification
 - `npm run build` passed after the dashboard emergency-fund update and Google-login callback cleanup.
 
-## [Unreleased] - 2026-05-02
+## 2026-05-02
 
 ### Changed
 - `supabase-setup.sql` rewritten to match the live app: drops the legacy `user_plans` schema and now creates `user_budget`, `expenses`, `subscriptions`, and `waitlist` with RLS policies + `updated_at` triggers. Idempotent — safe to re-run.

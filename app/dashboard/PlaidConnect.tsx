@@ -1,12 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { usePlaidLink } from "react-plaid-link";
 import { trackHysaEmptyStateCtaClicked } from "@/lib/analytics";
 import { isPro, supabase } from "@/lib/supabase";
+import { Button } from "@/components/ui";
+import { BankLogo, MoneyList, MoneyRow } from "./MoneyCards";
 
-type PlaidItem = {
+export type PlaidItem = {
   id: string;
   institution_name: string;
   institution_logo: string | null;
@@ -16,9 +17,18 @@ type PlaidItem = {
 
 type SyncResult = { added: number; modified: number; removed: number };
 
+export type BankStatus = { loaded: boolean; banks: number; lastSynced: string | null };
+
 type Props = {
   onTransactionsImported?: () => void;
   onUpgradeClick?: () => void;
+  /** Hide the connected-banks list; the caller shows a one-line status and can expand it. */
+  collapsed?: boolean;
+  onStatus?: (status: BankStatus) => void;
+  /** Rows in the calm style (Net Worth) instead of tiles (D-53). */
+  layout?: "tiles" | "rows";
+  /** The connected banks, so the caller can show their logos on account rows. */
+  onItems?: (items: PlaidItem[]) => void;
 };
 
 async function getSession() {
@@ -28,7 +38,7 @@ async function getSession() {
   return session;
 }
 
-function fmtSynced(ts: string | null): string {
+export function fmtSynced(ts: string | null): string {
   if (!ts) return "never synced";
   const diff = Date.now() - new Date(ts).getTime();
   const mins = Math.floor(diff / 60_000);
@@ -39,7 +49,7 @@ function fmtSynced(ts: string | null): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }: Props) {
+export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, collapsed = false, onStatus, layout = "tiles", onItems }: Props) {
   const [items, setItems] = useState<PlaidItem[]>([]);
   const [itemsLoaded, setItemsLoaded] = useState(false);
   const [isProUser, setIsProUser] = useState<boolean | null>(null);
@@ -71,6 +81,12 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
       setItemsLoaded(true);
     })();
   }, []);
+
+  useEffect(() => {
+    const latest = items.map((i) => i.last_synced_at).filter(Boolean).sort().at(-1) ?? null;
+    onStatus?.({ loaded: itemsLoaded, banks: items.length, lastSynced: latest });
+  }, [items, itemsLoaded, onStatus]);
+  useEffect(() => { if (itemsLoaded) onItems?.(items); }, [items, itemsLoaded, onItems]);
 
   const handleConnectClick = async () => {
     if (items.length === 0) {
@@ -249,7 +265,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
   const showEmptyStateCard = itemsLoaded && items.length === 0;
 
   return (
-    <div style={{ marginBottom: 24 }}>
+    <div style={{ marginBottom: collapsed && items.length > 0 ? 0 : 24 }}>
       <style>{`
         @keyframes plaid-spin { to { transform: rotate(360deg); } }
         @keyframes plaid-slide-in { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
@@ -360,7 +376,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
               </div>
               {showEmptyStateCard && (
                 <div style={{ fontSize: 12, color: "#64748B", marginTop: 1 }}>
-                  Auto-import transactions via Plaid
+                  Auto-import transactions via Plaid. Read-only access; export or delete your data anytime.
                 </div>
               )}
             </div>
@@ -435,7 +451,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
               </div>
               <p style={{ fontSize: 13, lineHeight: 1.6, color: "#475569", margin: "6px 0 0" }}>
                 A high-yield savings account can help idle cash earn interest while staying easy to reach for true emergencies.
-                We are not recommending any bank here yet — first we want to learn whether people want education or account connection.
+                At about 4%, every $10,000 earns roughly $400 a year. Offers lists accounts we picked, and says who earns from each link.
               </p>
             </div>
           </div>
@@ -462,12 +478,13 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
-            <Link
-              href="/calculators/apy?source=dashboard-hysa-card"
+            {/* A full load: the dashboard reads ?tab= when it mounts. */}
+            <a
+              href="/dashboard?tab=offers"
               onClick={() =>
                 trackHysaEmptyStateCtaClicked({
-                  cta: 'learn_more',
-                  destination: 'apy_calculator',
+                  cta: 'see_offers',
+                  destination: 'offers',
                 })
               }
               style={{
@@ -485,8 +502,8 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
                 minWidth: 0,
               }}
             >
-              Learn more
-            </Link>
+              See savings accounts
+            </a>
             <button
               onClick={handleConnectClick}
               disabled={loadingLink}
@@ -498,7 +515,35 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick }:
         </div>
       )}
 
-      {items.length > 0 && (
+      {items.length > 0 && !collapsed && layout === "rows" && (
+        <MoneyList footer={
+          <Button variant="secondary" size="sm" onClick={atFreeLimit ? onUpgradeClick : handleConnectClick} disabled={!atFreeLimit && loadingLink}>
+            {atFreeLimit ? "Upgrade to add another bank" : loadingLink ? "Opening…" : "Connect a bank"}
+          </Button>
+        }>
+          {items.map((item) => {
+            const open = selectedItemId === item.id;
+            const result = syncResults[item.id];
+            const isSyncing = syncingId === item.id;
+            const isDisconnecting = disconnectingId === item.id;
+            const meta = isSyncing ? "Syncing…" : importing && open ? "Importing transactions…"
+              : result && result.added > 0 ? `${result.added} new transactions` : result ? "Up to date" : `Synced ${fmtSynced(item.last_synced_at)}`;
+            return (
+              <MoneyRow key={item.id} dot={item.institution_color || "var(--uf-ink-3)"} name={item.institution_name} meta={meta}
+                icon={<BankLogo logo={item.institution_logo} name={item.institution_name} color={item.institution_color} />}
+                value={open ? "Close" : "Manage ›"} valueTone="var(--uf-ink-3)" onClick={() => setSelectedItemId(open ? null : item.id)}
+                after={open && (
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <Button variant="secondary" size="sm" onClick={() => handleSync(item.id)} disabled={isSyncing || isDisconnecting}>{isSyncing ? "Syncing…" : "Sync now"}</Button>
+                    <Button variant="danger" size="sm" onClick={() => handleDisconnect(item.id, item.institution_name)} disabled={isSyncing || isDisconnecting}>{isDisconnecting ? "Disconnecting…" : "Disconnect"}</Button>
+                  </div>
+                )} />
+            );
+          })}
+        </MoneyList>
+      )}
+
+      {items.length > 0 && !collapsed && layout === "tiles" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {importing && (
             <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#047857", fontSize: 13, fontWeight: 600 }}>

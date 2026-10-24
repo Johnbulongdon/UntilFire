@@ -11,8 +11,10 @@
  * assumptions that live in the dashboard's own model, and reimplementing them
  * here is exactly how two numbers drift apart.
  *
- * No imports, so the email builder can use it without gaining dependencies.
+ * Imports only the shared money rules, so it agrees with the apps: cash in
+ * the safety pot is included in retirement progress (D-95).
  */
+import { freedomCash } from "./freedom-cash.ts";
 
 /** The shape of user_budget.expenses: category totals, plus underscore-prefixed metadata. */
 type BudgetBlob = Record<string, unknown> | null | undefined;
@@ -20,7 +22,7 @@ type BudgetBlob = Record<string, unknown> | null | undefined;
 export interface FireSummary {
   /** Monthly spending, summed across real categories. */
   monthlySpend: number;
-  /** Everything they have saved, across all four asset buckets. */
+  /** What they have invested: the four buckets, including safety cash. */
   assets: number;
   /** Annual spend ÷ safe withdrawal rate. Zero when they have no spending yet. */
   target: number;
@@ -49,7 +51,7 @@ export function summarise(expenses: BudgetBlob): FireSummary {
     .filter(([k]) => !k.startsWith("_"))
     .reduce((sum, [, v]) => sum + num(v), 0);
 
-  const assets = ASSET_KEYS.reduce((sum, k) => sum + num(profile[k]), 0);
+  const assets = ASSET_KEYS.reduce((sum, k) => sum + (k === "cashSavings" ? freedomCash(num(profile[k])) : num(profile[k])), 0);
 
   // Stored as a fraction (0.04), not a percentage. Reading it as 4 turns a
   // $1.7M target into $171M, which is how this was found.

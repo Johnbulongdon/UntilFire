@@ -1,0 +1,119 @@
+# Keeps the admin Journeys tab true to the code: every PR checks that each
+# journey step's page still exists, and every production deploy re-takes the
+# screenshots. Capture needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY as
+# repository secrets and a public `journeys` storage bucket.
+name: Journeys
+
+on:
+  pull_request:
+  deployment_status:
+
+jobs:
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+      - run: npm run test:journeys
+      - run: npm run test:start-ctas
+
+  # Changed calculator journeys must be tested against the PR, not the older live site.
+  # Full authenticated/native captures still run after production deployment below.
+  capture-dry-run:
+    if: github.event_name == 'pull_request'
+    # ubuntu-latest became 26.04 on 2026-10-22; Playwright 1.56.1 has no Chromium for it.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: changed
+        run: echo "journeys=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- lib/journeys.ts scripts/capture-journeys.ts | wc -l)" >> "$GITHUB_OUTPUT"
+      - if: steps.changed.outputs.journeys != '0'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+      - if: steps.changed.outputs.journeys != '0'
+        run: npm ci --no-audit --no-fund
+      - if: steps.changed.outputs.journeys != '0'
+        run: npm install --no-save --no-audit --no-fund playwright@1.56.1 && npx playwright install --with-deps chromium
+      - if: steps.changed.outputs.journeys != '0'
+        run: npm run build
+      - if: steps.changed.outputs.journeys != '0'
+        run: |
+          npm run start -- --hostname 127.0.0.1 --port 3000 > /tmp/journey-server.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3000/ > /dev/null; then break; fi
+            sleep 1
+          done
+          npm run journeys:capture
+        env:
+          JOURNEY_DRY_RUN: '1'
+          JOURNEY_CALCULATOR_ONLY: '1'
+          JOURNEY_BASE_URL: http://127.0.0.1:3000
+      - if: failure()
+        run: cat /tmp/journey-server.log 2>/dev/null || true
+
+  # Signed-in and phone screens, taken from the live site and the PR's phone build
+  # without replacing the live shots; the pictures are kept as a run artifact.
+  capture-screens-dry-run:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: changed
+        run: echo "journeys=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- lib/journeys.ts scripts/capture-journeys.ts | wc -l)" >> "$GITHUB_OUTPUT"
+      - if: steps.changed.outputs.journeys != '0'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+      - if: steps.changed.outputs.journeys != '0'
+        run: npm install --no-save --no-audit --no-fund playwright@1.56.1 && npx playwright install --with-deps chromium
+      - if: steps.changed.outputs.journeys != '0'
+        run: npm ci --no-audit --no-fund && npx expo export --platform web --output-dir ../journey-app
+        working-directory: mobile
+      - if: steps.changed.outputs.journeys != '0'
+        run: npm run journeys:capture
+        env:
+          JOURNEY_DRY_RUN: '1'
+          JOURNEY_SKIP_CALCULATOR: '1'
+          JOURNEY_APP_DIR: journey-app
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - if: always() && steps.changed.outputs.journeys != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: journey-shots
+          path: journey-shots
+          if-no-files-found: ignore
+
+  capture:
+    if: >-
+      github.event_name == 'deployment_status' &&
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment.environment == 'Production'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.deployment.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+      # Playwright stays out of package.json so Vercel builds don't carry it.
+      - run: npm install --no-save --no-audit --no-fund playwright@1.56.1 && npx playwright install --with-deps chromium
+      # The phone app's screens come from its web build (no analytics keys, so no events).
+      - run: npm ci --no-audit --no-fund && npx expo export --platform web --output-dir ../journey-app
+        working-directory: mobile
+      - run: npm run journeys:capture
+        env:
+          JOURNEY_APP_DIR: journey-app
+          JOURNEY_BASE_URL: https://www.untilfire.com
+          GITHUB_SHA: ${{ github.event.deployment.sha }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

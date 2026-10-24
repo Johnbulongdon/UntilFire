@@ -10,25 +10,14 @@ when useful; gstack and another agent's local tool paths are not prerequisites.
 ## Integration responsibility
 
 Follow the [shared handoff SOP](AGENTS.md#codex-and-claude-handoff-sop).
-Claude is the default integration owner; either agent can implement any task.
-Use separate worktrees and task branches during concurrent work.
+Whoever codes a task merges it, only when John says "merge"; John may also
+merge himself (D-91). Either agent can implement any task. Work on a task
+branch in the main project folder, without extra worktrees.
 
-Check open PRs for overlap before starting. Before finishing an authorized
-publishing task, check for non-draft Codex PRs whose bodies contain
-`Handoff: ready for Claude`. Confirm the user-authorized scope, reviewed head
-and publication authorization; older open PRs are not an automatic merge queue.
-
-Publish your own verified work without waiting for a pending Codex task. Then
-integrate eligible handoffs one at a time from a clean workspace: incorporate
-latest main, preserve both contributions, resolve conflicts and verify the
-combined result before publishing. Leave blocked PRs pending with a clear reason.
-Ask the user for incompatible product choices, not routine Git conflict handling.
-Never force-push main.
-
-Report what merged and confirm the resulting production deployment before telling
-the user to test the live site. These checks happen during active tasks; this file
-does not wake an idle session or create background automation. If GitHub access
-is missing, report the limitation instead of claiming the queue was checked.
+Check open PRs for overlap before starting and before merging. Never
+force-push main. Report what merged and confirm the resulting production
+deployment before telling John to test the live site. If GitHub access is
+missing, report the limitation instead of claiming the queue was checked.
 
 ## Product constraints
 
@@ -48,7 +37,8 @@ retention, trust, and acquisition. Keep work bounded to the user's request.
   flow in Profile, not required onboarding or a projection input.
 - Lead with freedom and the guided path; city/tax detail supports trust.
   Prefer deterministic calculations and actual user data before AI recommendations.
-  No streaks or daily-engagement mechanics.
+  The core loop is daily: a short "Today" list of one-tap items from yesterday's
+  money (D-73). Count completed days; never streaks, guilt or loss mechanics.
 
 ## Current navigation and design
 
@@ -56,12 +46,12 @@ retention, trust, and acquisition. Keep work bounded to the user's request.
 [design system](docs/design/design-system.md) owns visual contracts.
 
 - **Money:** actual finances plus operational budgets and upcoming/expected
-  payments. Cashflow (Transactions, Upcoming, Categories, Budget), Net Worth,
-  Debts, Insights.
+  payments. Cashflow (Transactions, Calendar, Categories, Budget), Income,
+  Net Worth, Debts, Insights.
 - **Plan:** long-term projections, assumptions, scenarios, and targets. Freedom
-  Date, Scenarios, Goals, Contributions, Expat FIRE, Citizenship, Learn.
+  Date, Compare, Scenarios, Goals, Contributions, Explore, Citizenship, Learn.
 - **Home:** synthesis and next moves, with no independent financial inputs.
-  Layout customisation is allowed.
+  Home uses a fixed layout; no reorder, resize, hide or restore controls (D-94).
 - **Profile:** account settings, billing, household setup, and FIRE personality/type.
   Planning assumptions live in Plan (`FireAssumptionsCard`), not ProfileTab.
 
@@ -97,6 +87,8 @@ free. Documentation edits alone do not authorize a redesign.
 - [Cost of living](docs/cost-of-living.md) — read before changing city pricing or
   Census/BEA/housing imports.
 - [Analytics contract](docs/analytics/EVENTS.md), `lib/analytics-events.ts` — events.
+- `lib/journeys.ts` — the admin Journeys map; update it when a sign-up,
+  onboarding, billing or account flow changes (`npm run test:journeys`).
 - [Search Console](docs/search-console.md) — source setup and analysis caveats.
 - [Roadmap](docs/ROADMAP.md) — planning and implementation notes, not proof of
   missing features or live correctness; [changelog](CHANGELOG.md) and code provide

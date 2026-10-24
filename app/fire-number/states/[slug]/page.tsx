@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import { getStatePage, statePages } from '@/lib/state-pages'
 import { formatMoney } from "@/lib/money";
 import { cityPagePath } from "@/lib/city-pages";
+import { getRegionForState } from '@/lib/regions'
+import Flag from '@/app/components/Flag'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -54,6 +56,8 @@ export default async function StateFireNumberPage({ params }: Props) {
     notFound()
   }
 
+  const region = getRegionForState(page.stateKey)
+
   return (
     <>
       <style>{`
@@ -87,7 +91,8 @@ export default async function StateFireNumberPage({ params }: Props) {
             {page.heroTitle}
           </h1>
           <p style={{ fontSize: 17, color: 'var(--uf-ink-2)', margin: '0 0 32px', lineHeight: 1.65, maxWidth: 700 }}>
-            Explore FIRE baselines across {page.cities.length} cities in {page.stateName}. {page.noIncomeTax ? `No state income tax means more savings turn into invested capital.` : `State taxes affect your take-home, so we show local tax context for each city.`} Find your target and compare retirement timelines.
+            Explore FIRE baselines across {page.cityCountLabel} in {page.stateName}. {page.noIncomeTax ? `No state income tax means more savings turn into invested capital.` : `State taxes affect your take-home, so we show local tax context for each city.`} Find your target and compare retirement timelines.
+            {region && <> Compare {page.stateName} with the broader <Link href={`/fire-number/regions/${region.slug}`} style={{ color: 'var(--uf-green)', fontWeight: 700 }}>{region.name} FIRE guide</Link>.</>}
           </p>
 
           {/* Key stats */}
@@ -132,7 +137,7 @@ export default async function StateFireNumberPage({ params }: Props) {
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                  <span style={{ fontSize: 24 }}>{city.flag}</span>
+                  <Flag emoji={city.flag} size={18} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--uf-green-900)' }}>{city.name}</div>
                   </div>

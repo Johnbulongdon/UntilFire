@@ -9,6 +9,10 @@ interface AdminUser {
   createdAt: string;
   lastSignInAt: string | null;
   plan: string;
+  /** Who bills a Pro account: "stripe" (website) or "apple" (iOS app). D-75. */
+  billing?: string | null;
+  periodEnd?: string | null;
+  autoRenew?: boolean | null;
   unsubscribed: boolean;
 }
 
@@ -76,6 +80,16 @@ export default function UsersTab({ token }: { token: string }) {
               <td style={{ padding: "10px 14px", color: "#64748B", whiteSpace: "nowrap" }}>{u.lastSignInAt ? new Date(u.lastSignInAt).toLocaleDateString() : "—"}</td>
               <td style={{ padding: "10px 14px" }}>
                 <span style={{ fontWeight: 700, color: u.plan === "pro" ? "#059669" : "#94A3B8" }}>{u.plan === "pro" ? "Pro" : "Free"}</span>
+                {u.plan === "pro" && u.billing && (
+                  <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: u.billing === "apple" ? "#E5E7EB" : "#EDE9FE", color: u.billing === "apple" ? "#111827" : "#5B21B6" }}>
+                    {u.billing === "apple" ? "Apple" : "Stripe"}
+                  </span>
+                )}
+                {u.plan === "pro" && u.periodEnd && (
+                  <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
+                    {u.autoRenew === false ? "Ends" : "Renews"} {new Date(u.periodEnd).toLocaleDateString()}
+                  </div>
+                )}
               </td>
               <td style={{ padding: "10px 14px", color: u.unsubscribed ? "#DC2626" : "#94A3B8", whiteSpace: "nowrap" }}>{u.unsubscribed ? "Unsubscribed" : "Subscribed"}</td>
               <td style={{ padding: "10px 14px" }}>

@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import Logo from '@/app/components/Logo'
 import { Badge, Card, Field, Input, Progress, SegmentedControl } from '@/components/ui'
 import {
   DEFAULT_WITHDRAWAL_RATE, RECOMMENDED_TAX_RATE, TAX_RATES, WITHDRAWAL_RATES,
@@ -59,10 +58,6 @@ export default function FourPercentRuleCalculator() {
 
   return (
     <div className={styles.page} style={{ background: 'var(--uf-ground)', color: 'var(--uf-ink)' }}>
-      <nav style={{ borderBottom: '1px solid var(--uf-border)', padding: 'var(--uf-s4) var(--uf-s6)', background: 'var(--uf-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--uf-s4)', flexWrap: 'wrap' }}>
-        <Link href="/" style={{ textDecoration: 'none' }}><Logo variant="auto" size={22} /></Link>
-        <Link href="/calculators" className="uf-t-body" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>← All calculators</Link>
-      </nav>
 
       <div style={{ maxWidth: 1040, margin: '0 auto', padding: 'var(--uf-s7) var(--uf-s6) var(--uf-s5)' }}>
         <header style={{ marginBottom: 'var(--uf-s6)', maxWidth: 680 }}>

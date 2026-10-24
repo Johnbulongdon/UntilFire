@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import Logo from '@/app/components/Logo'
 import { calcPurchaseImpact, formatDelay, formatFV } from '@/lib/purchase-impact'
+import { DEFAULT_RETURN_PCT } from '@/lib/fire-number'
 
 const C = {
   bg: 'var(--uf-surface)',
@@ -43,7 +43,8 @@ export default function PurchaseImpactCalculator() {
   const [savings,  setSavings]  = useState('50000')
   const [monthly,  setMonthly]  = useState('1000')
   const [target,   setTarget]   = useState('1000000')
-  const [rate,     setRate]     = useState('7')
+  // The app's default growth (S&P 500 since 1928, after inflation), as on every other calculator.
+  const [rate,     setRate]     = useState(String(DEFAULT_RETURN_PCT))
 
   const result = useMemo(() => {
     const p  = parseFloat(price)
@@ -58,16 +59,6 @@ export default function PurchaseImpactCalculator() {
   return (
     <div style={{ background: C.bg, minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
       {/* Nav */}
-      <nav style={{ borderBottom: `1px solid ${C.border}`, background: C.card }}>
-        <div style={{ maxWidth: 960, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 24 }}>
-          <Link href="/" style={{ textDecoration: 'none', color: C.accent }}>
-            <Logo variant="auto" size={24} />
-          </Link>
-          <Link href="/calculators" style={{ fontSize: 13, color: C.muted, textDecoration: 'none', fontWeight: 600 }}>
-            ← All calculators
-          </Link>
-        </div>
-      </nav>
 
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '48px 24px 80px' }}>
         <header style={{ marginBottom: 36 }}>
@@ -156,7 +147,7 @@ export default function PurchaseImpactCalculator() {
                   <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.7 }}>
                     <strong style={{ color: C.text }}>Want a personalised calculation?</strong> Log in to UntilFire and this tool fills from your real savings, contribution, and FIRE target automatically.
                   </div>
-                  <Link href="/dashboard" style={{ display: 'inline-block', marginTop: 12, background: C.accent, color: 'var(--uf-card)', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
+                  <Link href="/?source=purchase-impact&start=onboarding" style={{ display: 'inline-block', marginTop: 12, background: C.accent, color: 'var(--uf-card)', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
                     Use with my profile →
                   </Link>
                 </div>

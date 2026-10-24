@@ -19,6 +19,7 @@ import { HOUSEHOLD_INVITE_KEY } from "@/lib/household-invite";
 type State =
   | { kind: "loading" }
   | { kind: "needs-auth"; token: string }
+  | { kind: "confirm"; token: string; accessToken: string; from: string | null }
   | { kind: "accepting" }
   | { kind: "done" }
   | { kind: "error"; message: string; wrongAccount?: boolean };
@@ -38,12 +39,19 @@ function JoinInner() {
       });
       const body = (await res.json()) as { error?: string; wrongAccount?: boolean };
       if (!res.ok) {
+        // Keep the saved token only for a wrong account, where signing in again
+        // retries it. Any other failure is final, and a saved token would send
+        // every dashboard visit back to this error.
+        if (!body.wrongAccount) {
+          try { localStorage.removeItem(HOUSEHOLD_INVITE_KEY); } catch { /* private mode */ }
+        }
         setState({ kind: "error", message: body.error ?? "Could not accept the invitation.", wrongAccount: body.wrongAccount });
         return;
       }
       try { localStorage.removeItem(HOUSEHOLD_INVITE_KEY); } catch { /* private mode */ }
       setState({ kind: "done" });
     } catch {
+      try { localStorage.removeItem(HOUSEHOLD_INVITE_KEY); } catch { /* private mode */ }
       setState({ kind: "error", message: "Could not reach UntilFire. Check your connection and try again." });
     }
   }, []);
@@ -65,9 +73,19 @@ function JoinInner() {
         setState({ kind: "needs-auth", token });
         return;
       }
-      void accept(token, session.access_token);
+      // Joining shares this person's numbers too, so it waits for a tap. The
+      // inviter's name comes from status, which only returns an invite
+      // addressed to the signed-in person.
+      const accessToken = session.access_token;
+      fetch("/api/household/status", { headers: { Authorization: `Bearer ${accessToken}` } })
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null)
+        .then((view: { incomingInvite?: { token: string; fromName: string | null; fromEmail: string | null } | null } | null) => {
+          const inc = view?.incomingInvite?.token === token ? view.incomingInvite : null;
+          setState({ kind: "confirm", token, accessToken, from: inc?.fromName || inc?.fromEmail || null });
+        });
     });
-  }, [params, accept]);
+  }, [params]);
 
   return (
     <main style={{ minHeight: "100vh", background: "var(--uf-ground)", display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--uf-s4)" }}>
@@ -87,11 +105,36 @@ function JoinInner() {
               Sign in to accept
             </Button>
           </>
+        ) : state.kind === "confirm" ? (
+          <>
+            <h1 className="uf-t-h2" style={{ margin: "0 0 var(--uf-s3)" }}>
+              {state.from ? `Join ${state.from}’s household?` : "Join this household?"}
+            </h1>
+            <p className="uf-t-body" style={{ margin: "0 0 var(--uf-s5)", color: "var(--uf-ink-2)" }}>
+              You&rsquo;ll see one combined freedom date and your spending together. Your
+              own account stays yours, neither of you can change the other&rsquo;s numbers,
+              and either of you can disconnect at any time from Profile.
+            </p>
+            <Button variant="primary" fullWidth onClick={() => void accept(state.token, state.accessToken)}>
+              Join household
+            </Button>
+            <div style={{ height: "var(--uf-s3)" }} />
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => {
+                try { localStorage.removeItem(HOUSEHOLD_INVITE_KEY); } catch { /* private mode */ }
+                router.push("/dashboard");
+              }}
+            >
+              Not now
+            </Button>
+          </>
         ) : state.kind === "done" ? (
           <>
             <h1 className="uf-t-h2" style={{ margin: "0 0 var(--uf-s3)" }}>You&rsquo;re connected</h1>
             <p className="uf-t-body" style={{ margin: "0 0 var(--uf-s5)", color: "var(--uf-ink-2)" }}>
-              You can each see the other&rsquo;s numbers from now on. Either of you can
+              Your combined freedom date is on Home from now on. Either of you can
               disconnect at any time from Profile, without asking the other.
             </p>
             <Button variant="primary" fullWidth onClick={() => router.push("/dashboard")}>

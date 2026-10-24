@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import Logo from '@/app/components/Logo'
+import { siteUrl } from '@/lib/site'
 
 interface Props {
   searchParams: Promise<{ city?: string; year?: string; years?: string }>
@@ -15,6 +16,8 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   return {
     title: `Freedom date for ${safeCity} — work optional around ${year}`,
     description: `${years} years away on a typical income. Free, no-login calculator — find out when work could become optional in your city.`,
+    robots: { index: false, follow: true },
+    alternates: { canonical: siteUrl('/share') },
     openGraph: {
       title: `Freedom date for ${safeCity} — work optional around ${year}`,
       description: `${years} years away on a typical income. Free, no-login calculator — find out when work could become optional in your city.`,

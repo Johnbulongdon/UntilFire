@@ -44,11 +44,11 @@ const keyLinks = [...walk('app'), ...walk('components')]
   .flatMap((file) => [...readFileSync(file, 'utf8').matchAll(/href=\{`\/fire-number\/\$\{[\w.]*key\}`\}/g)].map((m) => `${file}: ${m[0]}`))
 assert.deepEqual(keyLinks, [], 'city links should use cityPagePath(key), not /fire-number/${key}')
 
-assert.match(
-  source,
-  /FIRE Number Calculator\{['"]\s['"]\}\s*<br \/>for \{data\.name\}/,
-  'generic city H1 should include a real text space before the line break so crawlers read “Calculator for …”, not “Calculatorfor …”',
-)
+const sharedHero = readFileSync('app/fire-number/CityGuideStart.tsx', 'utf8')
+assert.match(sharedHero, /<h1>What would it take to retire in \{city.name\}\?<\/h1>/,
+  'shared city H1 must remain city-specific and readable without joined words')
+assert.match(source, /CityGuideStart city=\{data\}/, 'generic cities must use the approved shared layout')
+assert.match(source, /CityGuideStart city=\{page.city\}/, 'curated cities must use the same shared layout')
 
 assert.match(
   austinSeed,
@@ -149,8 +149,8 @@ if (existsSync(builtGenericCityPage)) {
 
   assert.equal(
     h1,
-    'FIRE Number Calculator for Idaho Falls, ID',
-    'built generic city H1 should be crawler-readable with a space between Calculator and for',
+    'What would it take to retire in Idaho Falls, ID?',
+    'built city H1 should preserve the approved question and city name',
   )
   for (const expected of [
     'How the Idaho Falls, ID estimate is built',

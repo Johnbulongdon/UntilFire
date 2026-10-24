@@ -28,16 +28,35 @@ import {
   type FireTypeStartedProperties,
   type FireTypeCompletedProperties,
   type FireTypeSharedProperties,
+  type FreedomYearSharedProperties,
   type FireTypeCtaClickedProperties,
   type HysaEmptyStateCtaClickedProperties,
   type NextMoveViewedProperties,
   type NextMoveOpenedProperties,
   type ScenarioTestedProperties,
   type ScenarioAcceptedProperties,
+  type TxRangeChangedProperties,
+  type TxViewChangedProperties,
+  type TxReviewOpenedProperties,
+  type TxFlagResolvedProperties,
+  type DataExportedProperties,
+  type ExploreViewedProperties,
+  type FreedomReportExportedProperties,
+  type ExploreCityOpenedProperties,
+  type ExploreModeChangedProperties,
+  type PlanCompareProperties,
+  type CancelFlowProperties,
+  type SetupChecklistProperties,
+  type ExploreStarredProperties,
 } from './analytics-events';
 
 function isClient(): boolean {
   return typeof window !== 'undefined';
+}
+
+/** Public city keys only; no visitor's finances or precise location. */
+export function trackCityPlanStarted(cityKey: string, citySlug: string) {
+  capture(FunnelEvents.CITY_PLAN_STARTED, withVersion({ city_key: cityKey, city_slug: citySlug, source: `fire-number-${citySlug}`, placement: 'city_guide' }));
 }
 
 /**
@@ -273,6 +292,11 @@ export function trackFireTypeShared(input: { fireTypeCode: string; shareMethod: 
   capture(FunnelEvents.FIRE_TYPE_SHARED, props);
 }
 
+export function trackFreedomYearShared(input: { shareMethod: 'native' | 'clipboard' }) {
+  const props: FreedomYearSharedProperties = withVersion({ share_method: input.shareMethod });
+  capture(FunnelEvents.FREEDOM_YEAR_SHARED, props);
+}
+
 export function trackFireTypeCtaClicked(input: { fireTypeCode: string; source?: string }) {
   const props: FireTypeCtaClickedProperties = withVersion({
     fire_type_code: input.fireTypeCode,
@@ -283,8 +307,8 @@ export function trackFireTypeCtaClicked(input: { fireTypeCode: string; source?: 
 }
 
 export function trackHysaEmptyStateCtaClicked(input: {
-  cta: 'learn_more' | 'connect_account';
-  destination: 'apy_calculator' | 'plaid_connect';
+  cta: 'learn_more' | 'connect_account' | 'see_offers';
+  destination: 'apy_calculator' | 'plaid_connect' | 'offers';
   placement?: 'assets_empty_state';
 }) {
   const props: HysaEmptyStateCtaClickedProperties = withVersion({
@@ -312,7 +336,7 @@ export function trackRevealCtaClicked(input: {
     placement: input.placement,
     ...(input.landingSource ? { landing_source: input.landingSource } : {}),
   });
-  // sendInstantly: the click navigates to /login immediately after, and a
+  // sendInstantly: sign-in or /login follows immediately, and a
   // queued event can lose the race with the unload.
   capture(FunnelEvents.REVEAL_CTA_CLICKED, props, { sendInstantly: true });
 }
@@ -351,4 +375,74 @@ export function trackScenarioAccepted(input: { scenarioIndex: number; scenarioLa
   // queued events would otherwise be dropped on page unload, same reasoning
   // as trackSignupCompleted above.
   capture(FunnelEvents.SCENARIO_ACCEPTED, props, { sendInstantly: true });
+}
+
+// Transactions page (D-31). Counts and enums only: no amounts, no merchants.
+const PRESETS = new Set(['1', '3', '6', '12', 'ytd']);
+export function trackTxRangeChanged(input: { preset: number | 'ytd'; months: number }) {
+  const preset = String(input.preset);
+  const props: TxRangeChangedProperties = withVersion({ range_preset: PRESETS.has(preset) ? preset : 'custom', range_months: input.months });
+  capture(FunnelEvents.TX_RANGE_CHANGED, props);
+}
+export function trackTxViewChanged(input: { view: 'line' | 'bars' | 'cal'; months: number }) {
+  const props: TxViewChangedProperties = withVersion({ view: input.view, range_months: input.months });
+  capture(FunnelEvents.TX_VIEW_CHANGED, props);
+}
+export function trackTxReviewOpened(input: { needCount: number; months: number }) {
+  const props: TxReviewOpenedProperties = withVersion({ need_count: input.needCount, range_months: input.months });
+  capture(FunnelEvents.TX_REVIEW_OPENED, props);
+}
+export function trackTxFlagResolved(input: { flag: 'card_payment' | 'duplicate' | 'large' | 'bill'; confirmed: boolean }) {
+  const props: TxFlagResolvedProperties = withVersion({ flag: input.flag, confirmed: input.confirmed });
+  capture(FunnelEvents.TX_FLAG_RESOLVED, props);
+}
+export function trackDataExported(input: { file: 'transactions_csv' | 'everything_json'; ok: boolean }) {
+  const props: DataExportedProperties = withVersion({ file: input.file, ok: input.ok });
+  capture(FunnelEvents.DATA_EXPORTED, props);
+}
+
+/** The one-page plan saved as a PDF (D-60). Never the plan's numbers. */
+export function trackFreedomReportExported(input: { format: FreedomReportExportedProperties['format']; branded: boolean }) {
+  const props: FreedomReportExportedProperties = withVersion({ format: input.format, branded: input.branded });
+  capture(FunnelEvents.FREEDOM_REPORT_EXPORTED, props);
+}
+
+export function trackExploreViewed(input: { has_plan: boolean }) {
+  const props: ExploreViewedProperties = withVersion({ has_plan: input.has_plan });
+  capture(FunnelEvents.EXPLORE_VIEWED, props);
+}
+
+export function trackExploreCityOpened(input: { mode: 'monthly' | 'year' | 'age' | 'badge' }) {
+  const props: ExploreCityOpenedProperties = withVersion({ mode: input.mode });
+  capture(FunnelEvents.EXPLORE_CITY_OPENED, props);
+}
+
+export function trackExploreModeChanged(input: { mode: 'monthly' | 'year' | 'age' | 'badge' }) {
+  const props: ExploreModeChangedProperties = withVersion({ mode: input.mode });
+  capture(FunnelEvents.EXPLORE_MODE_CHANGED, props);
+}
+
+export function trackExploreStarred(input: { starred: boolean }) {
+  const props: ExploreStarredProperties = withVersion({ starred: input.starred });
+  capture(FunnelEvents.EXPLORE_STARRED, props);
+}
+
+/** Plan → Compare (D-69): a change added, a what-if saved, used as the plan, or discarded. Never the numbers. */
+export function trackPlanCompare(input: { action: PlanCompareProperties['action'] }) {
+  const props: PlanCompareProperties = withVersion({ action: input.action });
+  capture(FunnelEvents.PLAN_COMPARE, props);
+}
+
+export function trackCancelFlow(input: { step: CancelFlowProperties['step']; reason?: string }) {
+  const props: CancelFlowProperties = withVersion({ step: input.step, ...(input.reason ? { reason: input.reason } : {}) });
+  capture(FunnelEvents.CANCEL_FLOW, props);
+}
+
+export function trackSetupChecklist(input: Omit<SetupChecklistProperties, 'funnel_event_version'>) {
+  const props: SetupChecklistProperties = withVersion(input);
+  capture(FunnelEvents.SETUP_CHECKLIST, props);
+}
+
+export function trackExplorePlanStarted() {
+  capture(FunnelEvents.EXPLORE_PLAN_STARTED, withVersion({}));
 }

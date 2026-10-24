@@ -2,9 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import YearCubes from "@/components/ui/YearCubes";
 import Logo from "@/app/components/Logo";
 import PercentileTrack from "@/app/components/PercentileTrack";
 import type { RevealCtaPlacement } from "@/lib/analytics-events";
+import type { CalculatorPrefill } from "@/lib/journey";
+import SavingsPace from '@/app/components/SavingsPace';
+import { saveCalculatorPrefill } from '@/lib/journey';
+import HomeBackdrop from "@/app/components/auth/HomeBackdrop";
+import SignInCard from "@/app/components/auth/SignInCard";
+import ShareFreedomYear from "@/app/components/ShareFreedomYear";
 import type { NetWorthComparison } from "@/lib/net-worth-compare";
 import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
 import { CAUTIOUS_RETURN_PCT, DEFAULT_RETURN_PCT } from "@/lib/fire-number";
@@ -51,6 +58,10 @@ export interface RevealFlowProps {
   /** Compact money formatter, e.g. 1_240_000 -> "$1.24M". */
   formatCompact: (n: number) => string;
   onSave: (placement: RevealCtaPlacement) => void;
+  /** The result as the dashboard will read it, for the save step's backdrop. */
+  prefill: CalculatorPrefill;
+  /** Keeps the result in this browser; runs as sign-up starts on the save step. */
+  onKeepResult: () => void;
   onAdjust: () => void;
   onShare: () => void;
   /** Called once per result step per reveal: step 2–7, or `unreachable` when
@@ -65,6 +76,7 @@ const BG = "var(--uf-ground)";
 // bright teal "free years" — --uf-green is too close in hue to teal at this
 // lightness and the two read as one colour in the dot grid.
 const WORKING = "var(--uf-ink-3)";
+const linkPlain: React.CSSProperties = { background: "none", border: "none", color: "var(--uf-ink-2)", font: "600 13px Manrope, sans-serif", cursor: "pointer", padding: "6px 2px" };
 const linkButton: React.CSSProperties = { background: "none", border: "none", padding: 0, color: "var(--uf-green)", font: "700 13px Manrope, sans-serif", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 };
 // Mirrors --uf-teal in .dark — needed for translucent glows/tints, which
 // rgba() can't derive from a CSS var.
@@ -144,20 +156,22 @@ export default function RevealFlow(props: RevealFlowProps) {
     freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, returnPct, growthPicker, futureDollars, isAlreadyFire,
     fireTarget, pctThere, savingsRatePct, usBaselineRate, fireBenchmarkRate, netWorthComparison,
     expatHome, expatBaseAge, expatCities, formatCompact,
-    onSave, onAdjust, onShare, onStepViewed,
+    onSave, prefill, onKeepResult, onAdjust, onShare, onStepViewed,
   } = props;
 
   const prefersReducedMotion = useReducedMotion();
   // The reveal is an automatic presentation; Replay is optional.
-  const [playMotion, setPlayMotion] = useState(true);
+  const [playMotion, setPlayMotion] = useState(false);
   const reduce = prefersReducedMotion && !playMotion;
   const [step, setStep] = useState(1);
+  const [selectedPlan, setSelectedPlan] = useState<CalculatorPrefill | null>(null);
+  const savedPlan = selectedPlan ?? prefill;
   const [showGrowth, setShowGrowth] = useState(false);
   const [showFuture, setShowFuture] = useState(false);
 
   const replay = () => { setPlayMotion(true); setStep(1); };
   const goTo = (n: number) => setStep(Math.min(7, Math.max(2, n)));
-  const next = () => setStep((s) => Math.min(7, s + 1));
+  const next = () => setStep((s) => s === 6 ? 8 : s === 8 ? 7 : Math.min(7, s + 1));
   const back = () => setStep((s) => Math.max(2, s - 1));
 
   // Keyboard navigation between result steps.
@@ -237,11 +251,42 @@ export default function RevealFlow(props: RevealFlowProps) {
         {reduce && <p style={subtle}>Animations are off because your device requests reduced motion.</p>}
         <div style={eyebrow}>YOUR STARTING POINT</div>
         <h1 style={{ fontSize: "clamp(28px, 6vw, 42px)", lineHeight: 1.15, margin: 0 }}>Not reached under these assumptions</h1>
-        <p style={subtle}>Your current inputs do not reach your freedom number within our 65-year projection. This is a snapshot of today, not a verdict on your future.</p>
-        <div style={{ fontSize: 28, fontWeight: 800 }}>Freedom number: {formatCompact(fireTarget)}</div>
+        <p style={subtle}>Your current inputs do not reach your FIRE number within our 65-year projection. This is a snapshot of today, not a verdict on your future.</p>
+        <div style={{ fontSize: 28, fontWeight: 800 }}>FIRE number: {formatCompact(fireTarget)}</div>
         <p style={subtle}>Save your starting point, then choose a goal that fits your situation.</p>
         <button onClick={() => onSave("unreachable")} style={{ background: "var(--uf-green)", color: "var(--uf-card)", border: "none", borderRadius: 10, padding: 18, font: "800 18px Manrope, sans-serif", cursor: "pointer" }}>Save my starting point →</button>
         <button onClick={onAdjust} style={{ background: "none", border: "none", color: "var(--uf-ink)", textDecoration: "underline", padding: 12, cursor: "pointer" }}>Adjust inputs</button>
+      </main>
+    </div>
+  );
+
+  if (step === 8) return <SavingsPace prefill={prefill} value={savedPlan.monthlySavings ?? 0}
+    onBack={() => setStep(6)} onUse={plan => { setSelectedPlan(plan); setStep(7); }} />;
+
+  // 7 — save: the sign-up card itself, over the blurred Home, so saving the
+  // result and signing up are one page (no separate /login stop).
+  if (step === 7) return (
+    <div className="rf-root" style={{ minHeight: "100vh", position: "relative", background: BG, display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 0" }}>
+      <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
+      <HomeBackdrop prefill={savedPlan} />
+      <main style={{ width: "100%", maxWidth: 400, padding: "0 24px", position: "relative", zIndex: 1, ...anim("rf-up .55s ease both") }}>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{ marginBottom: 10 }}><Logo variant="auto" size={28} /></div>
+          <h1 className="uf-t-h1" style={{ margin: 0, color: "var(--uf-ink)", textWrap: "balance" }}>
+            {(selectedPlan ? selectedPlan.retireYear != null : freedomYear !== null)
+              ? <><span style={{ color: TEAL }}>{selectedPlan ? selectedPlan.retireYear : freedomYear}</span> is just your starting point</>
+              : <>Your starting point is ready</>}
+          </h1>
+        </div>
+        <SignInCard verb="Save" onStart={() => {
+          onKeepResult();
+          if (selectedPlan) saveCalculatorPrefill({ ...selectedPlan, generatedAt: new Date().toISOString() });
+        }} />
+        <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 18, marginTop: 16 }}>
+          <button onClick={() => setStep(8)} style={linkPlain}>← Back to results</button>
+          <button onClick={onAdjust} style={linkPlain}>Adjust inputs</button>
+          {!selectedPlan && <button onClick={onShare} style={linkPlain}>Share result</button>}
+        </div>
       </main>
     </div>
   );
@@ -315,6 +360,11 @@ export default function RevealFlow(props: RevealFlowProps) {
                   Based on an assumed age of {planningAge} — add yours for a sharper date →
                 </button>
               )}
+              {!isAlreadyFire && freedomYear !== null && (
+                <div style={{ marginTop: 6, position: "relative", ...anim("rf-up .7s 2s ease both") }}>
+                  <ShareFreedomYear year={freedomYear} />
+                </div>
+              )}
             </div>
           )}
 
@@ -323,14 +373,7 @@ export default function RevealFlow(props: RevealFlowProps) {
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, textAlign: "center" }}>
               <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(22px, 4vw, 28px)", fontWeight: 800, letterSpacing: "-0.02em", ...anim("rf-up .5s ease both") }}>Here&apos;s your life, in years</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(20, 1fr)", gap: 7, width: "min(520px, 82vw)" }}>
-                {dots.map((c, i) => (
-                  <div key={i} style={{
-                    width: "100%", aspectRatio: "1", borderRadius: 3, background: c,
-                    opacity: reduce ? 1 : 0,
-                    animation: reduce ? undefined : "rf-dot .34s ease both",
-                    animationDelay: reduce ? undefined : `${Math.min(i * 13, 1250)}ms`,
-                  }} />
-                ))}
+                <YearCubes colors={dots} reduce={reduce} />
               </div>
               <div style={{ display: "flex", gap: 22, flexWrap: "wrap", justifyContent: "center", marginTop: 4 }}>
                 <Legend color="var(--uf-border-2)" label={`Lived (${lived})`} />
@@ -448,25 +491,6 @@ export default function RevealFlow(props: RevealFlowProps) {
             </div>
           )}
 
-          {/* 7 — save */}
-          {step === 7 && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, textAlign: "center", maxWidth: 480, ...anim("rf-up .55s ease both") }}>
-              <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(24px, 5vw, 32px)", fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.15 }}>
-                Save your starting point.
-              </div>
-              <div style={subtle}>Keep the numbers you entered so you can choose a goal and track your progress.</div>
-
-              <button onClick={() => onSave("reveal_save_step")} style={{ width: "100%", background: "var(--uf-green)", color: "var(--uf-card)", border: "none", borderRadius: 10, padding: 18, font: "800 18px Manrope, sans-serif", cursor: "pointer" }}>
-                Save my starting point →
-              </button>
-              <div style={{ fontSize: 13, color: "var(--uf-ink-2)" }}>Free to start · No credit card · Takes 30 seconds</div>
-              <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
-                <button onClick={onShare} style={{ background: "none", border: "none", color: "var(--uf-ink-2)", font: "600 13px Manrope, sans-serif", cursor: "pointer" }}>Share result</button>
-                <button onClick={onAdjust} style={{ background: "none", border: "none", color: "var(--uf-ink-2)", font: "600 13px Manrope, sans-serif", cursor: "pointer" }}>Adjust inputs</button>
-                <button onClick={() => goTo(2)} style={{ background: "none", border: "none", color: "var(--uf-ink-2)", font: "600 13px Manrope, sans-serif", cursor: "pointer" }}>← Back to results</button>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -477,7 +501,7 @@ export default function RevealFlow(props: RevealFlowProps) {
         )}
         {step >= 2 && step < 7 && (
           <button onClick={next} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border-2)", color: "var(--uf-ink)", borderRadius: 10, padding: "15px 40px", font: "700 16px Manrope, sans-serif", cursor: "pointer" }}>
-            {step === 6 ? "Save my starting point →" : "Continue →"}
+            {step === 6 ? "Try a different pace →" : "Continue →"}
           </button>
         )}
       </div>

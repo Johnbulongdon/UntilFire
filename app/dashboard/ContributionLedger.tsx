@@ -214,7 +214,7 @@ export default function ContributionLedger({
       ) : basis?.kind === "needs" ? (
         <div className="uf-t-small uf-ledger-note" data-testid="uf-ledger-basis">
           <p style={{ margin: 0 }}>
-            <strong>Day-to-day needs</strong> are an estimate from what you actually spent: needs in{" "}
+            <strong>Day-to-day needs</strong> are an estimate from your actual expenses: needs in{" "}
             {basis.monthLabel} came to <span style={mono}>{fmt(basis.monthly)}</span> over {basis.days} days,
             about <span style={mono}>{fmt(basis.perDay)}</span> a day
             {basis.counted.length > 0 && <> — {basis.counted.map((c) => `${label(c.category)} ${fmt(c.amount)}`).join(", ")}</>}.

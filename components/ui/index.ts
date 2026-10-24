@@ -26,6 +26,8 @@ export type { CardProps, CardElevation } from "./Card";
 export { default as Field, Input, Select, inputStyle } from "./Field";
 export type { FieldProps, InputProps, SelectProps } from "./Field";
 
+export { default as InfoTip } from "./InfoTip";
+
 export { default as Badge } from "./Badge";
 export type { BadgeProps, BadgeTone } from "./Badge";
 

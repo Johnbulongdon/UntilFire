@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import Logo from '@/app/components/Logo'
 import Link from 'next/link'
 import { Card, Field, Input, Stat } from '@/components/ui'
 import styles from './SavingsRateCalculator.module.css'
@@ -62,17 +61,6 @@ export default function SavingsRateCalculator() {
 
   return (
     <div className={styles.page} style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Manrope', sans-serif" }}>
-      <nav className={styles.nav} style={{ borderBottom: `1px solid ${C.border}`, padding: '16px 24px', background: 'var(--uf-card)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 'var(--uf-s4)' }}>
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <Logo variant="auto" size={22} />
-        </Link>
-        <div className={styles.navLinks}>
-          <Link href="/calculators" style={{ color: C.muted, textDecoration: 'none', fontSize: 14 }}>← All calculators</Link>
-          <Link href="/?source=calculator-savings-rate" className={styles.secondaryLink}>
-            Find my freedom date →
-          </Link>
-        </div>
-      </nav>
 
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '48px 24px 80px' }}>
         <div style={{ marginBottom: 36 }}>

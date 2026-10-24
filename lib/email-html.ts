@@ -100,9 +100,13 @@ function heroCard(eyebrow: string, headline: string, subtext: string, greeting =
   const hello = greeting
     ? `<p style="margin:0 0 10px;font-size:15px;font-weight:700;color:${INK_2};font-family:${BODY}">${greeting}</p>`
     : "";
+  // No eyebrow when a banner above already names the email.
+  const label = eyebrow
+    ? `<p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:${TEAL};font-family:${BODY}">${eyebrow}</p>`
+    : "";
   return `
   <tr><td style="background:${CARD};border:1px solid ${BORDER};border-radius:20px;padding:40px 36px 36px">
-    <p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:${TEAL};font-family:${BODY}">${eyebrow}</p>${hello}
+    ${label}${hello}
     <h1 style="margin:0 0 14px;font-size:34px;font-weight:700;color:${INK};letter-spacing:-0.8px;line-height:1.15;font-family:${DISPLAY}">${headline}</h1>
     <p style="margin:0;font-size:15px;color:${INK_2};line-height:1.7;font-family:${BODY}">${subtext}</p>
   </td></tr>`;
@@ -117,8 +121,23 @@ function sectionCard(content: string): string {
   </td></tr>`;
 }
 
-function sectionLabel(text: string): string {
-  return `<p style="margin:0 0 18px;font-size:11px;font-weight:700;color:${GREEN};text-transform:uppercase;letter-spacing:1.5px;font-family:${BODY}">${text}</p>`;
+/**
+ * Icons an update item can carry: the app's own icon set, exported as 64px
+ * PNG chips under /email/icons. PNG because Gmail and Outlook drop SVG.
+ */
+export const EMAIL_ICONS = [
+  "target", "users", "sliders", "gift", "card", "bank", "plan", "megaphone",
+  "positive", "calendar", "money", "home", "profile", "info",
+] as const;
+const iconUrl = (name?: string) =>
+  name && (EMAIL_ICONS as readonly string[]).includes(name) ? `${SITE}/email/icons/${name}.png` : "";
+
+function sectionLabel(text: string, icon?: string): string {
+  const src = iconUrl(icon);
+  const img = src
+    ? `<img src="${src}" alt="" width="20" height="20" style="display:inline-block;width:20px;height:20px;vertical-align:middle;margin-right:8px;border:0" />`
+    : "";
+  return `<p style="margin:0 0 18px;font-size:11px;font-weight:700;color:${GREEN};text-transform:uppercase;letter-spacing:1.5px;font-family:${BODY}">${img}<span style="vertical-align:middle">${text}</span></p>`;
 }
 
 const escapeAttr = (s: string) =>
@@ -147,8 +166,9 @@ function safeImageUrl(raw?: string): string {
   return url.replace(/&/g, "&amp;");
 }
 
-function bulletRow(title: string, desc: string, last = false, image?: string): string {
+function bulletRow(title: string, desc: string, last = false, image?: string, icon?: string): string {
   const src = safeImageUrl(image);
+  const ico = iconUrl(icon);
   // 560px shell − 28px card padding × 2 − 24px bullet gutter = 480px usable.
   // Export the asset at 960px so it stays sharp on retina; alt carries the
   // title because most clients block images by default and the reader should
@@ -158,8 +178,10 @@ function bulletRow(title: string, desc: string, last = false, image?: string): s
     : "";
   return `
   <tr>
-    <td style="vertical-align:top;padding-bottom:${last ? "0" : "18px"};width:10px">
-      <div style="width:6px;height:6px;border-radius:50%;background:${TEAL};margin-top:7px"></div>
+    <td style="vertical-align:top;padding-bottom:${last ? "0" : "18px"};width:${ico ? "32px" : "10px"}">
+      ${ico
+        ? `<img src="${ico}" alt="" width="32" height="32" style="display:block;width:32px;height:32px;border:0" />`
+        : `<div style="width:6px;height:6px;border-radius:50%;background:${TEAL};margin-top:7px"></div>`}
     </td>
     <td style="vertical-align:top;padding-left:14px;padding-bottom:${last ? "0" : "18px"}">
       <p style="margin:0 0 3px;font-size:14px;font-weight:700;color:${INK};line-height:1.4;font-family:${BODY}">${title}</p>
@@ -441,7 +463,7 @@ export function buildDay3Email(ask: NudgeAsk, unsubscribeUrl: string, ctx: Nudge
 
 export function buildTrialReminderEmail(
   trialEndDate: string,
-  /** What Stripe will actually charge, e.g. "$3/month" or "$30/year". */
+  /** What Stripe will actually charge, e.g. "$9/month" or "$79/year". */
   priceLabel: string = `${PRO_MONTHLY_LABEL}/month`,
 ): string {
   const hero = heroCard(
@@ -612,6 +634,8 @@ export interface UpdateItem {
   desc: string;
   /** Absolute https URL to a screenshot. Optional — most items are text only. */
   image?: string;
+  /** One of EMAIL_ICONS, shown in place of the bullet. Optional. */
+  icon?: string;
 }
 
 /**
@@ -644,6 +668,9 @@ export function buildMonthlyUpdateEmail({
   ctaHref,
   unsubscribeUrl,
   recipientName,
+  heroImage,
+  heroAlt,
+  preheader,
 }: {
   monthLabel: string;
   intro: string;
@@ -653,22 +680,37 @@ export function buildMonthlyUpdateEmail({
   ctaHref?: string;
   unsubscribeUrl: string;
   recipientName?: string | null;
+  /** The month's key visual: absolute https, exported 1120px wide. Optional. */
+  heroImage?: string;
+  /** What the image shows, for the many clients that block images by default. */
+  heroAlt?: string;
+  /** The inbox preview line. Defaults to the heading. */
+  preheader?: string;
 }): string {
   const heading = `What's new in ${monthLabel}`;
   const name = firstNameFor(recipientName);
-  const hero = heroCard("Monthly Update", heading, intro, `Hi ${name || "there"},`);
+  const hero = heroCard(safeImageUrl(heroImage) ? "" : "Monthly Update", heading, intro, `Hi ${name || "there"},`);
+  // The key visual leads, full width above the hero, linked to the button's
+  // destination so a tap on the picture goes where the button does.
+  const kvSrc = safeImageUrl(heroImage);
+  const kvLink = safeLinkUrl(ctaHref);
+  const kvImg = kvSrc
+    ? `<img src="${kvSrc}" alt="${escapeAttr(heroAlt || heading)}" width="560" style="display:block;width:100%;max-width:560px;height:auto;border:0;border-radius:20px" />`
+    : "";
+  const kv = kvImg ? `
+  <tr><td style="padding:0 0 16px">${kvLink ? `<a href="${kvLink}" style="display:block">${kvImg}</a>` : kvImg}</td></tr>` : "";
 
   const itemList = (items: UpdateItem[]) => `
     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-      ${items.map((it, i) => bulletRow(it.title, it.desc, i === items.length - 1, it.image)).join("")}
+      ${items.map((it, i) => bulletRow(it.title, it.desc, i === items.length - 1, it.image, it.icon)).join("")}
     </table>`;
 
   const newSection = newItems.length
-    ? sectionCard(`${sectionLabel("New this month")}${itemList(newItems)}`)
+    ? sectionCard(`${sectionLabel("New this month", newItems.some((it) => it.icon) ? "megaphone" : undefined)}${itemList(newItems)}`)
     : "";
 
   const fixSection = fixItems.length
-    ? sectionCard(`${sectionLabel("Fixed & improved")}${itemList(fixItems)}`)
+    ? sectionCard(`${sectionLabel("Fixed & improved", fixItems.some((it) => it.icon) ? "positive" : undefined)}${itemList(fixItems)}`)
     : "";
 
   const cta = ctaHref && ctaLabel ? ctaBlock(ctaHref, ctaLabel) : "";
@@ -680,7 +722,7 @@ export function buildMonthlyUpdateEmail({
 
   const footer = sectionCard(`${founderSignoff(false)}${unsubscribeNote(unsubscribeUrl)}`);
 
-  return base(heading, hero + newSection + fixSection + cta + ask + footer);
+  return base(escapeAttr(preheader?.trim() || heading), kv + hero + newSection + fixSection + cta + ask + footer);
 }
 
 // ─── Household invitation ────────────────────────────────────────────────────

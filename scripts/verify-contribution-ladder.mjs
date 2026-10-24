@@ -60,15 +60,31 @@ check("expenses follow the month the user picked",
     view.next.label.includes("Visa"), view.next.label);
 }
 
-// ── The threshold follows the user's own growth assumption
+// ── The threshold follows the user's own growth assumption, before inflation
+// (D-34): a loan's rate is before inflation, the return after it, so the
+// threshold is (1 + real) × (1 + inflation) − 1. At 2.5% inflation, 5.5%
+// real is 8.1% and 7% real is 9.7%.
 {
-  const car = [{ id: "d", name: "Car loan", balance: "9000", ratePct: "6" }];
-  const atFiveAndAHalf = buildLadderView(stored({ debts: car }), 1800, FACTS);
-  const atSeven = buildLadderView(stored({ debts: car }), 1800, { ...FACTS, realReturn: 0.07 });
-  check("a 6% loan is expensive against a 5.5% assumption",
-    atFiveAndAHalf.next.kind === "high-interest-debt", atFiveAndAHalf.next?.kind);
-  check("and cheap against a 7% one",
+  const car = [{ id: "d", name: "Car loan", balance: "9000", ratePct: "9" }];
+  const atFiveAndAHalf = buildLadderView(stored({ debts: car }), 1800, { ...FACTS, inflation: 0.025 });
+  const atSeven = buildLadderView(stored({ debts: car }), 1800, { ...FACTS, realReturn: 0.07, inflation: 0.025 });
+  check("a 9% loan is expensive against a 5.5% real return (8.1% before inflation)",
+    atFiveAndAHalf.next.kind === "high-interest-debt" && atFiveAndAHalf.thresholdPct === 8.1, `${atFiveAndAHalf.next?.kind} ${atFiveAndAHalf.thresholdPct}`);
+  check("and cheap against a 7% one (9.7%)",
     atSeven.next.kind === "taxable", atSeven.next?.kind);
+  const sixPct = buildLadderView(stored({ debts: [{ ...car[0], ratePct: "6" }] }), 1800, { ...FACTS, inflation: 0.025 });
+  check("a 6% loan no longer counts as expensive against 5.5% real: after inflation it costs less than investing earns",
+    sixPct.next.kind === "taxable", sixPct.next?.kind);
+}
+
+// ── A weekly contribution gets a week's share of the monthly match (D-34)
+{
+  const weekly = { cadence: "weekly", anchorDay: 5 };
+  const monthly = buildLadderView(stored({ monthlyMatch: "200" }), 1000, FACTS);
+  const wk = buildLadderView(stored({ monthlyMatch: "200" }), 1000, FACTS, weekly);
+  const match = (v) => v.waterfall.fills.find((f) => f.kind === "employer-match").amount;
+  check("monthly: the whole $200 match", match(monthly) === 200, match(monthly));
+  check("weekly: about $46 of it each week, not $200", Math.round(match(wk)) === 46, match(wk));
 }
 
 // ── An empty buffer comes first
@@ -173,6 +189,15 @@ check("expenses follow the month the user picked",
     fixed.budget === 500 && fixed.budgetIsCustom === true);
   check("and a live amount is not marked as custom", live.budgetIsCustom === false);
 
+  // Marked as invested (D-61): the money has gone even if the bank has not
+  // caught up, so nothing more is safe until the next contribution date.
+  const marked = buildLadderView(stored(), null, { ...facts, contributionDone: { iso: "2026-03-25", amount: 700 } }, sched);
+  check("a contribution marked as made leaves nothing more safe to invest",
+    marked.available.free === 0 && marked.available.done?.amount === 700, `${marked.available.free}`);
+  const stale = buildLadderView(stored(), null, { ...facts, contributionDone: { iso: "2026-02-25", amount: 700 } }, sched);
+  check("and last cycle's mark does not carry into this one",
+    stale.available.free === 700 && stale.available.done === null, `${stale.available.free}`);
+
   check("owing more than you hold contributes nothing rather than a negative",
     buildLadderView(stored(), null,
       { ...facts, expectedItems: [{ description: "Bills", amountUSD: 9000, type: "expense", dueDate: "2026-03-22", recurrence: "none" }] }, sched).budget === 0);
@@ -209,10 +234,14 @@ check("expenses follow the month the user picked",
     ],
     wants: 400, untagged: 900,                     // a trip, say — not a daily cost
   };
-  const facts = { ...FACTS, today, expectedItems: bills, budgetMonthlySpending: 3000, lastMonthSpending };
+  // D-62: the Budget comes first; last month's needs stand in without one.
+  const budgeted = dayToDayAllowance({ ...FACTS, today, expectedItems: bills, budgetMonthlySpending: 3000, lastMonthSpending }, bills);
+  check("with a budget set, the estimate is the budget less repeating bills, not last month",
+    budgeted?.kind === "budget" && budgeted.monthly === 1800, `${budgeted?.kind} ${budgeted?.monthly}`);
+  const facts = { ...FACTS, today, expectedItems: bills, budgetMonthlySpending: 0, lastMonthSpending };
 
   const basis = dayToDayAllowance(facts, bills);
-  check("the estimate comes from last month's needs when they are tagged",
+  check("with no budget, the estimate comes from last month's needs when they are tagged",
     basis?.kind === "needs" && Math.abs(basis.perDay - 310 / 31) < 1e-9,
     `${basis?.kind} $${basis?.perDay.toFixed(2)}/day`);
   check("wants and untagged spending are reported, not counted",
@@ -223,8 +252,8 @@ check("expenses follow the month the user picked",
     Math.abs(view.available.forecast.dailyAllowance - 310 / 31) < 1e-9);
 
   const noTags = dayToDayAllowance({ ...facts, lastMonthSpending: { ...lastMonthSpending, needs: [] } }, bills);
-  check("with no tagged needs it falls back to the budget less repeating bills",
-    noTags?.kind === "budget" && noTags.monthly === 1800, `${noTags?.kind} ${noTags?.monthly}`);
+  check("with no budget and no tagged needs, there is no estimate",
+    noTags === null, `${noTags?.kind}`);
   check("with neither, there is no estimate rather than a made-up one",
     dayToDayAllowance({ ...FACTS, today }, bills) === null);
 }
@@ -233,7 +262,7 @@ check("expenses follow the month the user picked",
 {
   const today = new Date(2026, 8, 24);
   const facts = {
-    ...FACTS, today, expectedItems: [], budgetMonthlySpending: 3000,
+    ...FACTS, today, expectedItems: [], budgetMonthlySpending: 0,
     lastMonthSpending: { year: 2026, monthIndex: 7, wants: 0, untagged: 0, needs: [
       { description: "Market", category: "food", amountUSD: 310 },
       { description: "Flight", category: "travel", amountUSD: 620 },

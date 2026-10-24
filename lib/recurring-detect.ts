@@ -105,9 +105,16 @@ export function detectRecurring(
     const lastSeenDate = sortedDates[sortedDates.length - 1];
     const mostRecent = group.find((t) => t.date === lastSeenDate)!;
 
-    const nextDate = new Date(new Date(lastSeenDate + "T00:00:00").getTime() + frequencyToDays(frequency) * 86_400_000);
-    const nextDueDate = nextDate.toISOString().split("T")[0];
+    // The next date after today, not one interval after the last payment, which can
+    // already have passed ("next around Sep 21" on Oct 17). Missed more than twice in
+    // a row, it has stopped, so it isn't suggested (audit round 3).
+    const step = frequencyToDays(frequency) * 86_400_000;
     const today = new Date(); today.setHours(0, 0, 0, 0);
+    let nextDate = new Date(new Date(lastSeenDate + "T00:00:00").getTime() + step);
+    let missed = 0;
+    while (nextDate.getTime() < today.getTime()) { nextDate = new Date(nextDate.getTime() + step); missed++; }
+    if (missed > 2) continue;
+    const nextDueDate = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}-${String(nextDate.getDate()).padStart(2, "0")}`;
     const daysUntilDue = Math.round((nextDate.getTime() - today.getTime()) / 86_400_000);
 
     results.push({

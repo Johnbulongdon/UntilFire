@@ -166,6 +166,8 @@ existing screen. Re-run that scan before applying.
   additive on top.
 - **Full transparency within a household.** Both members see each other's
   exact income, balances, and expenses. No totals-only / redacted mode in v1.
+  *Narrowed by D-84 (15 Oct):* this is delivered by the household summary,
+  not by peer-readable rows; 0057 returned every financial SELECT to owner-only.
 - **One Pro subscription covers the whole household.** The owner pays; both
   members get Pro. (Billing wiring is P4 — not built yet.)
 - **v1 scope is two partners.** Schema allows more (household_members is a

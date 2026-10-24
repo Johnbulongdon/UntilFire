@@ -88,13 +88,16 @@ function compute({
   const out: FireOutput = {
     fireTarget,
     years,
-    retireYear: new Date().getFullYear() + Math.floor(years),
+    // The calendar year freedom falls in, counted from today (D-65). This year
+    // plus whole years ignored how far through the year today is, so a date
+    // next spring read as this year's, ahead of the dashboard's exact date.
+    retireYear: new Date(Date.now() + years * 365.25 * 864e5).getFullYear(),
   };
-  // The age in the freedom year: rounded the same way as the year, so the
-  // two never disagree (it used to count whole years up while the year
-  // counted down, putting the age a year ahead).
+  // The age then, rounded (D-65): a whole-number age is anywhere in that year
+  // of life, so rounding is the middle estimate. With the year now counted from
+  // today too, the two still agree; flooring both used to read a year early.
   if (typeof currentAge === 'number' && currentAge > 0) {
-    out.age = currentAge + Math.floor(years);
+    out.age = Math.round(currentAge + years);
   }
   return out;
 }

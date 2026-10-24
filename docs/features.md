@@ -15,12 +15,18 @@ in [DECISIONS.md](DECISIONS.md).
 | Contributions | [Next contribution](design/next-contribution.md) | Shared Home/Plan derivation, separate payday/buy-in cadences and cashflow ledger; monthly email and live persistence QA remain separate |
 | Portfolio and scenarios | `app/portfolio/`, `app/dashboard/page.tsx` | Already implemented; no implied approval for new named asset recommendations |
 | City pricing | [Cost of living](cost-of-living.md) | Preserve rejected-source rationale; review data before promotion |
+| Admin journey map | `lib/journeys.ts`, `lib/journey-canvas.ts`, `app/admin/JourneysTab.tsx` | One shared-screen canvas with branching paths, separate account states, pan/zoom, path highlighting and screenshot inspection; navigation bridges join Home to Profile; capture manifest stays authoritative |
 | Analytics | [Event contract](analytics/EVENTS.md) | Check actual emit paths and data; historical counts are not current analytics |
 | Email | `app/api/email/retention/route.ts`, `lib/email-send.ts` | Existing lifecycle emails are not the unfinished monthly contribution email |
 | Pricing | `lib/pricing.ts` | Display constants do not prove the amount charged by Stripe |
-| PWA / Android wrapper | `app/manifest.ts`, `public/sw.js`, [Android setup](../android/SETUP.md) | Scaffold exists; store publication and device QA are not certified |
+| PWA / Android wrapper | `app/manifest.ts`, `public/sw.js`, [Android setup](../android/SETUP.md) | Superseded on Play by the Expo app (D-100); the Play listing keeps package `com.untilfire.app` |
+| Android phone app | `mobile/` (Expo, EAS build), D-100 | Free-only build for Play closed testing; Pro not sold on Android yet |
 | Monte Carlo | [Removal entry](../CHANGELOG.md), decision D-07 | Removed; older probability-score plans are historical |
 
 The older `docs/modules/` documents and sprint plans are historical snapshots,
 not current implementation specifications. Preserve their intent where useful;
 do not implement their unverified routes or reopen completed work from checkboxes.
+
+### Reveal savings pace (October 22, 2026)
+
+The responsive website reveal includes a fixed-income savings experiment before sign-up. `SavingsPace` and `lib/savings-pace.ts` reuse the current projection engine; changed savings update spending and target together. Draft changes are local until the single original/updated-plan button is chosen. Sign-up preserves that selected prefill. No local peer benchmark is invented; research is tracked in ROADMAP. Native Expo onboarding is not changed.

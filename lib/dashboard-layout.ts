@@ -1,3 +1,4 @@
+// D-94: Home now uses CARDS defaults. Merge/edit helpers below remain only for legacy data compatibility; no app editor calls them.
 /**
  * Which cards Home shows, in what order, at what width.
  *
@@ -23,7 +24,7 @@ export interface CardDef {
   label: string;
   /** One line explaining what it shows, for people deciding whether to keep it. */
   hint: string;
-  /** Hidden by default for nobody today; here so a future card can ship opt-in. */
+  /** Whether a layout that has never been customised shows it. */
   defaultVisible: boolean;
   defaultSpan: CardSpan;
   /**
@@ -48,19 +49,31 @@ export interface CardDef {
   pinned?: boolean;
 }
 
-/** The order here is the default order. */
+/**
+ * The order here is the default order.
+ *
+ * Home leads with three answers, the daily list and one quiet row (D-89,
+ * after D-39): when am I free (hero), the one next move (contribution), what's
+ * left this month (month), what needs a tap today (today), then net worth,
+ * safety pot and savings rate (glance). The rest ship
+ * hidden rather than deleted, so anyone can add them back from Edit; layouts
+ * saved before D-39 keep what they had, because a stored layout wins.
+ */
 export const CARDS: CardDef[] = [
   { id: "greeting",  label: "Greeting",          hint: "Your name and today's date. Stays at the top.",    defaultVisible: true, defaultSpan: "full", pinned: true },
-  { id: "setup",     label: "Setup checklist",   hint: "The remaining steps to a complete plan. Disappears once you finish them.", defaultVisible: true, defaultSpan: "full" },
-  { id: "hero",      label: "Progress chart",    hint: "Your portfolio against your FIRE target over time.", defaultVisible: true, defaultSpan: "full" },
-  { id: "ontrack",   label: "On-track score",    hint: "Whether your recent months keep your freedom date where it is.", defaultVisible: true, defaultSpan: "full" },
-  { id: "yourmonth", label: "Your month",        hint: "Last month's result and this month's next move.",  defaultVisible: true, defaultSpan: "full" },
-  { id: "contribution", label: "This month's contribution", hint: "Where this month's money goes, from the plan you set in Plan → Contributions.", defaultVisible: true, defaultSpan: "full" },
-  { id: "freedom",   label: "Freedom date",      hint: "When work becomes optional, and the one move that brings it closer.", defaultVisible: true, defaultSpan: "full" },
-  { id: "compare",   label: "How you compare",   hint: "Your net worth against US households your age, from the Federal Reserve's survey.", defaultVisible: true, defaultSpan: "full" },
-  { id: "goals",     label: "Your goals",        hint: "The targets you set, and progress toward each.",   defaultVisible: true, defaultSpan: "full" },
-  { id: "operating", label: "Monthly operating", hint: "What came in, what went out, what you kept.",      defaultVisible: true, defaultSpan: "full" },
-  { id: "support",   label: "Where your money is", hint: "How your balance is split across accounts and types.", defaultVisible: true, defaultSpan: "full" },
+  { id: "hero",      label: "Freedom date",      hint: "When work becomes optional, progress to your FIRE number, and the path there.", defaultVisible: true, defaultSpan: "full" },
+  { id: "contribution", label: "Your next move", hint: "The one thing that helps most right now: a budget, your safety pot, a debt, or where to invest.", defaultVisible: true, defaultSpan: "half" },
+  { id: "month",     label: "Left this month",   hint: "What's left of your budget, your pace so far, and the next bills.", defaultVisible: true, defaultSpan: "half" },
+  { id: "today",     label: "Today",             hint: "A few one-tap items from the last couple of days, and how many days you've finished.", defaultVisible: true, defaultSpan: "full" },
+  { id: "glance",    label: "At a glance",       hint: "Net worth, safety runway and months on plan, each linking to its page.", defaultVisible: true, defaultSpan: "full" },
+  { id: "ontrack",   label: "On-track score",    hint: "Whether your recent months keep your freedom date where it is.", defaultVisible: false, defaultSpan: "full" },
+  { id: "yourmonth", label: "Your month",        hint: "Last month's result and this month's next move.",  defaultVisible: false, defaultSpan: "full" },
+  { id: "free",      label: "Free to spend",     hint: "How much of your balance is yours until payday, after bills.", defaultVisible: false, defaultSpan: "full" },
+  { id: "freedom",   label: "Safety and best moves", hint: "Your safety runway in detail, and the moves that bring your date closer.", defaultVisible: false, defaultSpan: "full" },
+  { id: "compare",   label: "How you compare",   hint: "Your net worth against US households your age, from the Federal Reserve's survey.", defaultVisible: false, defaultSpan: "full" },
+  { id: "goals",     label: "Your goals",        hint: "The targets you set, and progress toward each.",   defaultVisible: false, defaultSpan: "full" },
+  { id: "operating", label: "Monthly operating", hint: "What came in, what went out, what you kept.",      defaultVisible: false, defaultSpan: "full" },
+  { id: "support",   label: "Where your money is", hint: "How your balance is split across accounts and types.", defaultVisible: false, defaultSpan: "full" },
 ];
 
 export interface CardPref {

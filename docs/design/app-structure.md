@@ -21,35 +21,39 @@ not "view vs edit", which breaks immediately (Money is editing too).
 | **Home**  | What does it mean?         | Synthesis and next moves; no independent financial inputs. |
 
 Money owns actual-finance and operational edits; Plan owns projection inputs.
-Both flow back to Home. Home layout customisation (reorder, resize, hide/restore
-cards) is allowed and does not introduce a second set of financial inputs.
+Both flow back to Home. Home uses the standard fixed card layout (D-94). Reorder,
+resize, hide and restore controls are removed; old stored layouts are ignored.
 
 ## The map
 
 ```
-Home                          synthesis · customisable layout
+Home                          synthesis · fixed layout
   └ Freedom date · progress · next moves
 
 Money                         actual finances and operational planning
   ├ Cashflow
-  │   ├ Transactions
-  │   ├ Upcoming (expected payments, with recurring detection suggestions)
+  │   ├ Transactions (date range, review bar, summary card, Worth a look, list)
+  │   ├ Calendar (month of payments with cash by day and the invest day, or a list; recurring suggestions; D-61)
   │   ├ Categories
   │   └ Budget
+  ├ Income (salary to take-home, pension before tax, employer money; D-59)
   ├ Net Worth
   ├ Debts
-  └ Insights
+  ├ Insights
+  └ Offers                    where to keep your money: partner savings, bank, brokerage (D-81)
 
 Plan                          long-term projections and scenarios
   ├ Freedom Date
+  ├ Compare                   what if: life changes on your plan (D-69)
   ├ Scenarios
   ├ Goals
   ├ Contributions
-  ├ Expat FIRE
+  ├ Explore
   ├ Citizenship
   └ Learn
 
-Profile                       account, household setup, FIRE personality/type
+Profile                       account, household setup, FIRE personality/type,
+                              give a month, creator program card (→ /invite)
                               lives in the user menu
 ```
 
@@ -61,7 +65,9 @@ Profile                       account, household setup, FIRE personality/type
    contribution targets. An upcoming bill belongs in Money, not here merely
    because it has not happened yet.
 3. **Home** — if it interprets the other two, it goes here. Home never gets its
-   own independent financial inputs. Layout preferences are allowed.
+   own independent financial inputs. Home has a fixed layout (D-94). One
+   exception: "Get set up" confirms payday and bills found in the bank with
+   one tap (D-101); nothing is typed on Home and the rows live in Calendar.
 4. **Profile** — if it's about the account rather than the money, it goes here.
 5. If a feature seems to fit two groups, it is **two features**. Split it.
 6. Every tab must be reachable from a nav array. **One array per nav — never a
@@ -102,8 +108,9 @@ group membership, rendering, and deep-link handling together:
   (`activeTabs`, which drives the active highlight).
 - `MONEY_SECTIONS` — the Money group's tabs. Feeds both the sidebar sub-nav and
   the horizontal section switch.
-- `CASHFLOW_SUB_TABS` — the four Cashflow sub-tabs. Feeds both the sidebar
-  sub-sub-nav and the horizontal switcher.
+- `CASHFLOW_SUB_TABS` — the four Cashflow sub-tabs. Feeds the pill switcher
+  on phones and the desktop sidebar, where they sit on one level with Net Worth,
+  Debts and Insights under Money (D-55; D-41 had the sidebar stop at Cashflow).
 - `MOBILE_PRIMARY_ITEMS` — the four mobile bottom-nav destinations.
 - `PLAN_SECTIONS` — Plan destinations, including tab and sub-tab states. Feeds
   both the sidebar sub-nav and mobile section switch.
@@ -111,16 +118,55 @@ group membership, rendering, and deep-link handling together:
 The `valid` array in the URL-parsing effect must also list any new tab, or it
 won't be deep-linkable. `goals` was missing from it for exactly this reason.
 
+## The creator program: a card in Profile, the program on /invite
+
+Profile keeps a short card (`app/dashboard/CreatorCard.tsx`): your link, Copy,
+and More, or one line and Learn more. The program itself lives on `/invite`:
+signed out, the pitch; signed in, your own program first (via
+`app/invite/CreatorArea.tsx`), then how it works. Both use the same dark hero
+whose one bright card is the most important thing: the pitch's calculator, the
+join form, or your earnings and progress to 40%. Stats, embed and payouts
+follow on the light page. The founder wants the signed-in page to look as good
+as the pitch. The founder asked for Profile not to carry the whole program.
+Links from the dashboard to it are client-side `Link`s: a full page load would
+meet the dashboard's "leave site?" guard while an autosave is running.
+
+## The public site header
+
+Every public page (landing, calculators, city and state pages, Learn,
+pricing, invite) shares one top bar, `app/components/SiteHeader.tsx`: logo,
+then How it works · Explore · Calculators · Learn · Pricing, then Get started, or
+Dashboard when signed in. The root layout renders it; `showsSiteHeader` keeps
+it off the app (dashboard, admin), sign-in, the creator embed and `/r/`.
+The landing page renders its own `fixed` copy over the hero, where Get
+started opens the calculator in place. Pages don't add a logo bar of their
+own. Off the landing it scrolls with the page, because calculator results
+cards and table heads already stick to the top.
+
+## Explore: every city on one map
+
+`/explore` (D-58) is a public page: the map of every city beside Nomad List
+style cards. It sits beside the city pages, not in place of them: each city
+page stays the page that ranks, and a card links on to it (or to its country
+page when a city abroad has none). The map is drawn from outlines in
+`lib/geo/`, never map tiles. Your numbers and your stars stay in the
+browser.
+
 ## Deliberately decided
 
 - **Learn is not a top-level group.** There is already a full public `/learn`
   (stages, articles, topics). A sidebar group duplicating it splits the content
   and spends a nav slot on something nobody opens the app to do. It sits inside
   Plan, next to the levers it explains.
-- **Expat FIRE sits in Plan.** It's a hypothesis tool and a real differentiator.
+- **Explore sits in Plan** (it was Expat FIRE until D-58). It's a hypothesis tool and a real differentiator.
   Long-term it is arguably a *mode* of Scenarios — "what if I move to Lisbon"
   and "what if I save 5% more" are the same question — and the two will start
   feeling redundant as Scenarios grows. Merge then, not now.
+- **Income is its own Money page** (D-59). Pay is a fact, like Cashflow; it was
+  a field in Budget. It works take-home out from salary and records what never
+  reaches take-home (pension before tax, employer money), which the freedom date
+  counts as saving. Plan → Freedom Date holds the goal (spending once free), pay
+  growth and pension access; Plan → Contributions shows where saving goes.
 - **Net Worth and Debts moved from Plan to Money.** They record what you have
   today; they are the same kind of thing as Cashflow, not a plan.
 - **Which accounts are the emergency fund is set in Net Worth** (D-12). It is a
@@ -130,14 +176,40 @@ won't be deep-linkable. `goals` was missing from it for exactly this reason.
 - **How you compare sits on Home** (D-19). It interprets two things Home
   already has, the net worth it shows and the age set in Plan → Freedom Date,
   so it adds no input; its "Change" link goes to that Plan setting.
+- **Free to spend lives in Money, with a sentence on Home** (D-29). Money →
+  Cashflow → Budget holds the runway, the bills behind it and which accounts
+  count; Home's "Free to spend" card only reads that result and links to it.
+- **Home leads with one next move, and every card is a door** (D-89, after
+  D-39): the freedom date curve, your next move, left this month, Today, then
+  net worth, safety pot and savings rate. Each card's chip opens Money or Plan.
+  The other cards are hidden by default and restored from Edit.
+- **Money pages share one calm shape** (D-40): a headline card, then rows
+  (`app/dashboard/MoneyCards.tsx`). What a debt started at is a fact about the
+  debt, so it is set on Debts, not in Plan.
+- **Explore replaced Expat FIRE** (D-58, superseding D-45's list): the same
+  map and cards as public `/explore`, at your plan's numbers, lifestyle and tax
+  in retirement. "Plan for" a city sets the retirement city that Freedom
+  date's Retire in row holds; the Live in row beside it is today's city, the
+  baseline a retirement city is priced against (D-82).
+- **Citizenship asks for your passport first** (D-46), then shows its score and
+  what it means as rows; other passports are a sortable list.
+- **Learn starts from your stage** (D-47) and its tools open Plan pages, not
+  the public calculators. The public `/learn` stays the library.
+- **Profile leads with who you are and your plan** (D-48); settings are rows
+  that open in place, and Try Pro is the page's only upgrade ask.
+- **The no-login calculator asks one thing per screen** (D-50): city, pay,
+  saving, net worth, age, under a scene where the sun rises with each answer.
+  Back and Skip sit in the header; the footer holds only the main button.
 
 ## Known gap — not fixed by this structure
 
 Regrouping is a *findability* fix. It helps a user who knows what they want.
-The reported confusion is a **sequence** problem: the setup checklist hands a
-new user four steps and sends them to four different destinations (onboarding
-modal → Cashflow → Net Worth → Profile) before any value appears. The app's own
-setup flow contradicts its own navigation.
+The reported confusion is a **sequence** problem: the old setup checklist handed a
+new user four steps and sent them to four different destinations (onboarding
+modal → Cashflow → Net Worth → Profile) before any value appeared. "Get set up"
+(D-101) narrows this: it appears after the first result, starts one step in,
+and confirms payday and bills in place, but income, bank and budget still open
+their own pages.
 
 This is historical problem context, not a fresh audit or permission to add Home
 financial inputs. A guided setup flow remains a separate proposal: reconcile it
