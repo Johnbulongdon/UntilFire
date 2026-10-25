@@ -21,7 +21,7 @@ const WORRIES: { id: WorryId; icon: { name: IconName; tint: string }; title: str
 export default function Worry() {
   const { draft, setDraft } = usePlan()
   const [picked, setPicked] = useState<WorryId | undefined>(draft.worry)
-  const next = () => router.push('/onboarding/home')
+  const next = () => router.push('/onboarding/housing')
 
   return (
     <QuestionScreen step={8} steps={9} title="What gets in the way most?" hint="Your first move will tackle it."

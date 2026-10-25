@@ -122,7 +122,7 @@ const APP_ANSWERS: Record<string, (page: Page) => Promise<void>> = {
   },
   age: (page) => tapText(page, 'Continue'),
   worry: (page) => tapText(page, 'Money runs out before payday'),
-  home: async (page) => {
+  housing: async (page) => {
     for (const text of ['Rent', 'Dividends']) await tapText(page, text)
     await tapText(page, 'Show my freedom date')
   },

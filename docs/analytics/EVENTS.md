@@ -272,7 +272,7 @@ The added `savings_pace` step uses stable index 8 before save (index 7); existin
   `debt`, `invest`, `none`; housing: `rent`, `own`; investing: `none`,
   `index`, `dividends`, `property`, one event per pick). Skips send nothing.
   Phone step ids are now 5 `savings`, 6 `portfolio`, 7 `age`, 8 `worry`,
-  9 `home` (`know` was folded into Spending).
+  9 `housing` (`know` was folded into Spending).
 
 The app reuses the website's property names so one funnel and one breakdown
 read both (`mobile/src/lib/analytics.ts`): `funnel_calculator_step_viewed`
