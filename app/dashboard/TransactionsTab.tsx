@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase";
 import { fetchAllPages } from "@/lib/supabase-pages";
 import CsvImportModal from "./CsvImportModal";
@@ -18,6 +19,11 @@ import { SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/li
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 
 /* Transactions show cents: these are reconciled against a statement. */
+// The category picker renders in a portal: the row clips its overflow. Desktop anchors it to the icon; phones show a bottom sheet.
+function PickerHost({ children }: { children: ReactNode }) {
+  return typeof document !== "undefined" ? createPortal(children, document.body) : null;
+}
+
 const txMoney = (n: number, currency = "USD") => formatMoney(n, { currency, decimals: 2 });
 import {
   EXPENSE_CATEGORIES, INCOME_CATEGORIES, ALL_CATEGORIES as ALL_CATEGORIES_BASE,
@@ -925,6 +931,7 @@ function TransactionList({
   const [filter, setFilter] = useState<"all" | "expense" | "income" | "transfer">("all");
   const [tagFilter, setTagFilter] = useState<"all" | "need" | "want" | "work">("all");
   const [catPickerTxId, setCatPickerTxId] = useState<string | null>(null);
+  const [pickerPos, setPickerPos] = useState<{ left: number; top?: number; bottom?: number }>({ left: 0 });
   const [swipedId, setSwipedId] = useState<string | null>(null);
   const touchStartX = useRef<number>(0);
 
@@ -933,8 +940,11 @@ function TransactionList({
     const handler = (e: MouseEvent) => {
       if (!(e.target as HTMLElement).closest("[data-cat-picker]")) setCatPickerTxId(null);
     };
+    // Anchored to the icon, so it would drift when the page scrolls under it.
+    const onScroll = () => { if (window.innerWidth > 700) setCatPickerTxId(null); };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    window.addEventListener("scroll", onScroll, true);
+    return () => { document.removeEventListener("mousedown", handler); window.removeEventListener("scroll", onScroll, true); };
   }, [catPickerTxId]);
   const todayYmd = new Date().toISOString().split("T")[0];
   const allCategories = useMemo(() => [...expenseCategories, ...INCOME_CATEGORIES], [expenseCategories]);
@@ -1140,7 +1150,8 @@ function TransactionList({
                           borderTop: "1px solid var(--uf-border)", cursor: "pointer",
                           background: isEditing ? "rgba(16,185,129,0.12)" : wasJustAdded ? "rgba(16,185,129,0.08)" : "transparent",
                           transition: "background 0.12s, transform 0.2s",
-                          transform: swipedId === tx.id ? "translateX(-72px)" : "translateX(0)",
+                          // No transform at rest: one would trap the phone category sheet (position: fixed) inside the row.
+                          transform: swipedId === tx.id ? "translateX(-72px)" : "none",
                           position: "relative", zIndex: 1,
                         }}
                         onMouseEnter={(e) => { if (!isEditing && swipedId !== tx.id) (e.currentTarget as HTMLDivElement).style.background = "var(--uf-surface)"; }}
@@ -1159,6 +1170,9 @@ function TransactionList({
                             onClick={(e) => {
                               e.stopPropagation();
                               if (tx.transaction_type === "transfer") return;
+                              const r = e.currentTarget.getBoundingClientRect();
+                              const below = r.bottom + 6 + 300 <= window.innerHeight;
+                              setPickerPos({ left: Math.max(8, Math.min(r.left, window.innerWidth - 292)), ...(below ? { top: r.bottom + 6 } : { bottom: window.innerHeight - r.top + 6 }) });
                               setCatPickerTxId(catPickerTxId === tx.id ? null : tx.id);
                             }}
                             style={{ width: 36, height: 36, borderRadius: "50%", background: chipColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, border: "none", cursor: tx.transaction_type === "transfer" ? "default" : "pointer", padding: 0, outline: catPickerTxId === tx.id ? `2px solid ${chipColor}` : "none", outlineOffset: 2, transition: "outline 0.1s" }}
@@ -1166,9 +1180,12 @@ function TransactionList({
                             {chipEmoji}
                           </button>
                           {catPickerTxId === tx.id && (
+                            <PickerHost>
+                            <div aria-hidden className="uf-cat-scrim" />
                             <div
                               data-cat-picker
-                              style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 200, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: 12, boxShadow: "0 6px 24px rgba(0,0,0,0.14)", width: 228, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}
+                              className="uf-cat-picker"
+                              style={{ position: "fixed", ...pickerPos, zIndex: 200, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: 12, boxShadow: "0 6px 24px rgba(0,0,0,0.14)", width: 284, display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 6 }}
                             >
                               <div style={{ gridColumn: "1/-1", fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 4 }}>
                                 Change category
@@ -1191,6 +1208,7 @@ function TransactionList({
                                 );
                               })}
                             </div>
+                            </PickerHost>
                           )}
                         </div>
 
@@ -2091,6 +2109,19 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         }
         @media (min-width: 1025px) {
           .cf-mobile-bar { left: 50%; right: auto; width: 100%; max-width: 340px; transform: translateX(-50%); bottom: 28px; }
+        }
+        .uf-cat-scrim { display: none; }
+        /* The row clips its overflow, so on phones the picker is a bottom sheet instead of a popover. */
+        @media (max-width: 700px) {
+          .uf-cat-scrim { display: block; position: fixed; inset: 0; z-index: 229; background: var(--uf-scrim); }
+          .uf-cat-picker {
+            position: fixed !important; top: auto !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+            width: auto !important; z-index: 230 !important; border-radius: 16px 16px 0 0 !important; gap: 8px !important;
+            padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px)) !important;
+            max-height: 70dvh; overflow-y: auto; box-shadow: var(--uf-e2) !important;
+          }
+          .uf-cat-picker button { min-height: 64px; }
+          .uf-cat-picker button span { font-size: 11px !important; }
         }
       `}</style>
 
