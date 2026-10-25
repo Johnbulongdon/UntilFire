@@ -704,3 +704,14 @@ John supplied 2026, Palo Alto, John / John NG, no funding. Submitted company Unt
 Other screening: PeplioHUB's current FAQ restricts fit to SEO/marketing/AI/content despite Other tools category; UntilFire was not submitted without demonstrated fit. StakDock public renderer uses nofollow for ordinary non-premium/non-featured vendor links; no free dofollow submission made. No payment, account, badge, newsletter signup or duplicate submission.
 
 Baseline fetch updated origin/main before ledger-only change, while unrelated local changes were preserved. Background repository garbage collection still reports pre-existing bad-tree/repack error; no repair attempted.
+
+
+## 2026-10-25: Clapstorm and Lifto qualification
+
+| Platform | Status | Evidence / next step |
+| --- | --- | --- |
+| Clapstorm | not-submitted; free route and sample-follow verified | Official https://www.clapstorm.com states free launches and no paid board placement. Sample https://www.clapstorm.com/p/submitmystartup returned HTTP 200 and a direct vendor anchor with rel=noopener only. Submit navigation resolves to https://www.clapstorm.com/sign-in?intent=submit (Google/GitHub or email/password). No account, form submission or UntilFire public listing created. Official sign-in page opened in Codex as user handoff. After sign-in, check existing UntilFire status then submit free and verify own anchor. |
+| Lifto | not-submitted; badge condition | Sample https://liftoapp.com/product/submitmystartup returned HTTP 200 and direct website anchor rel=noopener. However current official homepage explicitly says do-follow once badge added. Requires a demo video or carousel and sign-in; no badge, media upload or listing created. Existing UntilFire launch video may be relevant if pursued later. Do not assume sample behavior means unconditional free dofollow. |
+| LaunchBert | not-submitted; excluded free-nofollow | Official homepage/pricing now explicitly states free Starter public pages are nofollow; Pro EUR9 and Max EUR29 give dofollow. Skipped zero-budget instruction despite older third-party sample reports. |
+
+StackLedge recheck still redirects /submit to login despite homepage no-account-start copy. No duplicate submission. Baseline fetch main attempted before tracker-only change; unrelated local drift preserved. No newly accepted submission in this batch.
