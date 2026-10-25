@@ -715,3 +715,10 @@ Baseline fetch updated origin/main before ledger-only change, while unrelated lo
 | LaunchBert | not-submitted; excluded free-nofollow | Official homepage/pricing now explicitly states free Starter public pages are nofollow; Pro EUR9 and Max EUR29 give dofollow. Skipped zero-budget instruction despite older third-party sample reports. |
 
 StackLedge recheck still redirects /submit to login despite homepage no-account-start copy. No duplicate submission. Baseline fetch main attempted before tracker-only change; unrelated local drift preserved. No newly accepted submission in this batch.
+
+
+## 2026-10-25: Clapstorm live-follow submission completed
+
+Supersedes prior Clapstorm not-submitted/sign-in blocker. At John's explicit request, used normal Google sign-in with existing John account, reached public launch form, filled UntilFire, https://www.untilfire.com/, Finance category, tagline See when work could become optional., and factual FIRE-calculator/planner description. Optional logo omitted. Current round selected, no payment or optional badge required. Clicked Launch it once. Visible success: "You're live on the board" and navigation to https://www.clapstorm.com/p/untilfire. No claps, reviews, social shares or badge code posted.
+
+Independent anonymous public HTTP 200 check at https://www.clapstorm.com/p/untilfire confirms direct https://www.untilfire.com/ website anchor with rel=noopener only; no nofollow, ugc, sponsored or redirect intermediary. Status live-follow. Search-engine indexing not claimed. Screenshot outputs/directory-partners/clapstorm-live-2026-10-25.png. Do not resubmit; existing listing should be edited if needed. Retained published page as deliverable. Normal main fetch attempted before tracker-only update; unrelated local changes preserved.
