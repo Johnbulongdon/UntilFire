@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Card, Icon } from "@/components/ui";
 import { supabase } from "@/lib/supabase";
 import { addDays, isoDay, monthCount, webTodayItems, type TodayLease, type TodayProgress, type TodayRow, type WebTodayItem } from "@/lib/today-web";
@@ -9,6 +9,7 @@ import { merchantKey } from "@/lib/merchant-memory";
 import { readMerchantRules, type MerchantRule } from "@/lib/merchant-rules";
 import type { Bill } from "@/lib/spend-forecast";
 import { DoorChip } from "./HomeCards";
+import DoneCheck from "./DoneCheck";
 
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
 const muted: React.CSSProperties = { color: "var(--uf-ink-3)" };
@@ -159,6 +160,15 @@ export function TodayList({ items, count, fmt, onAnswer, onOpen, onWhatIf, onOpe
   onOpenNeeds?: () => void;
 }) {
   const finished = items.length === 0;
+  // Celebrate only the answer that finishes the day; a day already done on load just shows the check.
+  const wasFinished = useRef(finished);
+  const [celebrated, setCelebrated] = useState(false);
+  // Decided during render, so the first painted frame is already the start of the animation, not the finished check.
+  const justFinished = celebrated || (finished && !wasFinished.current);
+  useEffect(() => {
+    if (justFinished) setCelebrated(true);
+    wasFinished.current = finished;
+  }, [finished, justFinished]);
   return (
     <Card style={{ display: "grid", gap: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -169,8 +179,8 @@ export function TodayList({ items, count, fmt, onAnswer, onOpen, onWhatIf, onOpe
         <DoorChip to="money" onClick={onOpen} />
       </div>
       {finished ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--uf-teal)", fontWeight: 700 }}>
-          <Icon name="positive" size={18} />Today&apos;s done
+        <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--uf-teal)", fontWeight: 700 }}>
+          <DoneCheck play={justFinished} />Today&apos;s done
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: 10 }}>
