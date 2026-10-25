@@ -5,6 +5,10 @@
 - The phone app moves from Expo SDK 57 to 58 (React Native 0.88, React 19.3), so it opens in the current Expo Go again. App version is now 0.3.0, which gives it a new update runtime: build 14 (0.2.0) keeps its current code and gets no SDK 58 updates. Phones get this only through a new store build (D-102).
 - Code changes for the new versions: React Native views are typed by their instance types (`ViewInstance`, `ScrollViewInstance`, `TextInputInstance`), and the Explore globe builds its Skia paths with `Skia.PathBuilder`, since Skia 2.14 paths are read-only.
 
+## 2026-10-25 — Phone onboarding asks what gets in the way
+
+- Two new skippable phone onboarding screens after Age: the biggest money worry, and rent/own plus how you invest (multi-select, includes Dividends). Home's next move starts from the worry with a "Because you said…" line; renters are asked for their lease date. "Which do you know better?" became a switch on Spending. Phone only (D-104).
+
 ## 2026-10-24 — Bank connect spinner
 
 - Connect a bank shows a spinner in the button while Plaid's screen loads, instead of a faded "Connecting…" that looked frozen. `Button` gained a `busy` prop (spinner plus label, taps blocked) for other slow actions.

@@ -267,6 +267,12 @@ The added `savings_pace` step uses stable index 8 before save (index 7); existin
   `pending`, `cancelled` or `failed`, plus `billing` and `source`.
 - `app_reward_month_granted` - the quiz's free month was given (D-79),
   `source: fire_quiz`.
+- `app_onboarding_answered` - a personal onboarding answer (D-104):
+  `question` (`worry`, `housing`, `investing`) and `answer` (worry: `payday`,
+  `debt`, `invest`, `none`; housing: `rent`, `own`; investing: `none`,
+  `index`, `dividends`, `property`, one event per pick). Skips send nothing.
+  Phone step ids are now 5 `savings`, 6 `portfolio`, 7 `age`, 8 `worry`,
+  9 `home` (`know` was folded into Spending).
 
 The app reuses the website's property names so one funnel and one breakdown
 read both (`mobile/src/lib/analytics.ts`): `funnel_calculator_step_viewed`

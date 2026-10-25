@@ -29,12 +29,12 @@ export default function Income() {
   return (
     <QuestionScreen
       step={4}
-      steps={8}
+      steps={9}
       title={every.key === 'month' ? 'How much do you take home each month?' : 'How much is each paycheck?'}
       hint="After tax, what lands in your bank."
       cta="Continue"
       canContinue={check > 0}
-      onNext={() => { setDraft({ monthlyIncome: Math.round(toUSDFromDisplay(check) * every.perYear / 12) }); router.push('/onboarding/know') }}
+      onNext={() => { setDraft({ monthlyIncome: Math.round(toUSDFromDisplay(check) * every.perYear / 12) }); router.push('/onboarding/spending') }}
     >
       <MoneyWheel value={check} onChange={setCheck} max={max} unit={every.unit} label="Take-home pay" />
       <View className="mt-2"><CurrencyButton currency={draft.currency ?? 'USD'} onPick={c => setDraft({ currency: c })} /></View>
