@@ -587,3 +587,15 @@ Authority caveat: the older July skip recorded DR 1.7. The newer AZN8 public cat
 Other screening: Deep Blue Directory submit endpoint returns HTTP 500. Being Guru's current form is reported to require a phone number and offers no assured publication; not submitted. 600.tools remains blocked/sign-in gated. No duplicates or paid placements.
 
 Baseline: latest fetched and connector-verified main `8d3ebde6d26a3b2b55498020b72c576b3924cba4`. Local unrelated drift preserved; background Git repack reports a pre-existing bad-tree error. Only this ledger updated on the existing receipt branch; no website changes.
+
+
+## 2026-10-25: finance-specific directory submissions
+
+| Directory | Status | Evidence |
+| --- | --- | --- |
+| NxtGenFin | `pending` | Free `https://www.nxtgenfin.tech/submit` form, normal public JSON `POST /api/submit`, returned HTTP 200 `{"ok":true}`. Submitted UntilFire once in `budgeting` (Budgeting & personal finance) with accurate public description and approved `ash@untilfire.com`; regions left blank, maker/representative true, paid Featured declined. Published sample `https://www.nxtgenfin.tech/tools/empower` has two direct Empower anchors with `rel="noopener"` only. Existing catalog/homepage did not contain UntilFire. Publisher says approved tools usually go live within a week. UntilFire publication and its own anchor still unverified; do not count yet. Local receipt `outputs/directory-partners/nxtgenfin-receipt-2026-10-25.json`. |
+| WallStreetStack | `pending` | Official `https://wallstreetstack.com/submit` links to `https://forms.gle/GH6u4tHW934cBjuX9`. Submitted once to that form's normal formResponse action. HTTP 200 confirmation: "您的回复已记录。" (Your response has been recorded). Name UntilFire, homepage, factual description, approved `ash@untilfire.com`, suggested Personal Finance category, free editorial consideration only. Existing site's published client renderer creates direct website anchors with `rel="noopener noreferrer"` only; this is renderer evidence, not verification of UntilFire's future listing. No UntilFire match in the inspected public bundle. Human review 5-7 business days, approval not guaranteed. No paid sponsorship, account or badge. Local receipt `outputs/directory-partners/wallstreetstack-receipt-2026-10-25.html`. |
+
+Both are finance-relevant candidates. Actual UntilFire backlinks remain pending; no new live link is claimed. DR was not independently verified for either. FreeStartupDirectories was screened but not submitted because its free-link type and exact eligibility were not yet verified.
+
+Baseline: latest pushed main `8d3ebde6d26a3b2b55498020b72c576b3924cba4` reverified via GitHub connector. Local Git transport failed; local drift preserved. Only ledger updated in the existing receipt PR, with no website or deployment changes.
