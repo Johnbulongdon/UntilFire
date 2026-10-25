@@ -624,3 +624,15 @@ User reported signing in to SaaSList. In-app browser access timed out before the
 Corrected candidate screening: SaaSLineup and TheSaaSDir were already recorded as live-follow on 2026-08-27. Fresh public checks on 2026-10-25 returned HTTP 200 at https://saaslineup.com/product/untilfire/ and https://thesaasdir.com/product/untilfire/. Each has three direct https://www.untilfire.com/ anchors with rel="noopener" only, without nofollow, ugc or sponsored. These are reverified existing backlinks, not new acquisitions. Neither was resubmitted and no extra badge was added. Launching Next already has a submission receipt from June and was not resubmitted. PromoteIndex's official /seo page requires five distinct votes before removing nofollow/ugc; excluded from immediate dofollow acquisition.
 
 Latest pushed main remains 8d3ebde6d26a3b2b55498020b72c576b3924cba4, verified through GitHub. Fetch attempted but network connection failed; local unrelated drift preserved. No new submission or backlink in this retry.
+
+
+## 2026-10-25: SaaSList live confirmation and further qualification
+
+| Platform | Current status | Evidence |
+| --- | --- | --- |
+| SaaSList | live-follow | Supersedes earlier sign-in/browser blocker. User browser reached the success page, and independent public HTTP 200 check at https://www.saaslist.io/products/b4adde69-c30c-4b30-8188-a8cfb7831c1b confirmed title UntilFire - Personal Freedom via Finance and two direct https://www.untilfire.com/?ref=saaslist anchors with rel=noopener only. No nofollow/ugc/sponsored token. This was completed by the user; no duplicate submission by Codex. |
+| BSDirectory | not-submitted | Free normal form and Finance category available, zero UntilFire search matches. Sample https://directory.project-bs.com/products/bartok website button uses rel=nofollow and /api/products/click?slug=bartok redirect. Excluded under dofollow-only instruction. No submission sent. |
+| List Maro | not-submitted | https://listmaro.com/submit public five-step form; sample https://listmaro.com/tools/tta1 has direct rel=noopener noreferrer links. Current free final step requires sign-in and verified reciprocal badge. No account, badge or submission created in this batch. |
+| StackLedge | not-submitted | https://www.stackledge.com/submit redirects to login?next=/submit. No authenticated submission attempted. |
+
+No new submission accepted in this screening batch. SaaSList is an existing completed submission newly recorded as live-follow. All earlier SaaSList not-submitted notes are historical and superseded by this entry.
