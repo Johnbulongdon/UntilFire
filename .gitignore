@@ -46,3 +46,6 @@ scripts/demo-video/frames/
 scripts/demo-video/*.mp4
 journey-shots/
 journey-app/
+
+# dev:login sessions (scripts/dev-login.ts)
+.dev-login/
