@@ -2667,6 +2667,10 @@ Apple verify now only defers to an active Stripe row, so buying in the app
 during the month replaces the reward row.
 **Rollout:** apply 0052 before merging; until then the endpoint grants nothing.
 **Revisit:** whether quiz-month users later take the card trial and convert.
+**Update (Oct 25, founder):** the phone Profile no longer shows a type guessed
+from the plan before the quiz is done. It shows "Find yours" and, for accounts
+still eligible, "Finish it, get 1 month of Pro free" (no grants had happened,
+because nothing named the reward before the quiz). Matches the website's "Find yours".
 
 ### D-80 — October 14: the date no longer jumps after sign-up or a first bank
 

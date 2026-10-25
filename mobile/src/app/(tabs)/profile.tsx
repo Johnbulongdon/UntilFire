@@ -7,7 +7,6 @@ import { Alert, Linking, Pressable, Switch, View } from 'react-native'
 
 import { Button } from '@/components/Button'
 import { replayTour } from '@/components/GuidedTour'
-import { PersonalityAvatar } from '@/components/PersonalityAvatar'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { Row, RowIcon } from '@/components/SettingsRow'
 import { Card, Label, Screen } from '@/components/Screen'
@@ -23,9 +22,11 @@ import { versionLabel } from '@/lib/update-log'
 import { useEditPlan } from '@/lib/useEditPlan'
 import { FIRE_QUIZ_KEY } from '@/lib/fire-quiz'
 import { getTypeMeta } from '@quiz'
+import { rewardEligible } from '@engine/reward-month.ts'
+import { supabase } from '@/lib/supabase'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
-import { personalityFor, usePlan } from '@/state/plan'
+import { usePlan } from '@/state/plan'
 import { colors, TAB_COLOR, tabInk } from '@/theme/colors'
 
 const GOAL_LABEL = { 'retire-early': 'Retire early', 'financial-freedom': 'Financial freedom', exploring: 'Just exploring' } as const
@@ -39,6 +40,7 @@ export default function Profile() {
   const [billsOn, setBillsOn] = useState(false)
   const [todayOn, setTodayOn] = useState(false)
   const [quiz, setQuiz] = useState<{ code: string; name: string } | null>(null)
+  const [rewardOpen, setRewardOpen] = useState(false)
   const [lockOn, setLockState] = useState(false)
   const [lockInfo, setLockInfo] = useState<{ ok: boolean; label: string }>({ ok: false, label: 'Face ID' })
 
@@ -49,8 +51,17 @@ export default function Profile() {
     isLockOn().then(setLockState)
     lockAvailable().then(setLockInfo).catch(() => {})
   }, []))
+  // The quiz's free month (D-79) is offered only to accounts the site would still give it to.
+  const userId = session?.user.id
+  useFocusEffect(useCallback(() => {
+    if (!userId) { setRewardOpen(false); return }
+    Promise.all([
+      supabase.from('subscriptions').select('status, source, stripe_subscription_id, apple_original_transaction_id').eq('user_id', userId).maybeSingle(),
+      supabase.from('profiles').select('reward_month_at').eq('user_id', userId).maybeSingle(),
+    ]).then(([sub, prof]) => setRewardOpen(!sub.error && !prof.error && rewardEligible(sub.data, prof.data?.reward_month_at ?? null)))
+      .catch(() => setRewardOpen(false))
+  }, [userId]))
   if (!plan) return null
-  const type = personalityFor(plan)
 
 
   // Turning the lock on or off asks for Face ID first, so someone holding an unlocked phone can't switch it off.
@@ -64,18 +75,21 @@ export default function Profile() {
 
   return (
     <Screen tab="profile" flat hideTitle title="Profile">
-      {/* One type only (V2): the quiz result once taken, else the type from your answers. */}
-      <Pressable accessibilityRole="button" accessibilityLabel={`Your FIRE type: ${quiz ? quiz.name : type.name}. ${quiz ? 'Retake the quiz' : 'Take the quiz'}`} onPress={() => { haptic.tick(); router.push('/fire-quiz') }}
-        className="flex-row items-center gap-4 active:opacity-70">
-        {quiz ? (
-          <View style={{ width: 72, height: 72, borderRadius: 20, backgroundColor: TAB_COLOR.profile, alignItems: 'center', justifyContent: 'center' }}>
-            <Text className="text-[36px]">{getTypeMeta(quiz.code).emoji}</Text>
-          </View>
-        ) : <PersonalityAvatar profile={type} size={72} />}
+      {/* The type comes only from the finished quiz; until then, ask for it (and name the free month when it's still on offer). */}
+      <Pressable accessibilityRole="button" accessibilityLabel={quiz ? `Your FIRE type: ${quiz.name}. Retake the quiz` : `Find your FIRE type. Take the 8-question quiz${rewardOpen ? ' and get 1 month of Pro free' : ''}`}
+        onPress={() => { haptic.tick(); router.push('/fire-quiz') }} className="flex-row items-center gap-4 active:opacity-70">
+        <View style={{ width: 72, height: 72, borderRadius: 20, backgroundColor: TAB_COLOR.profile, alignItems: 'center', justifyContent: 'center' }}>
+          <Text className="text-[36px]">{quiz ? getTypeMeta(quiz.code).emoji : '🧬'}</Text>
+        </View>
         <View className="flex-1">
           <Text className="text-[12px] font-bold uppercase tracking-[1.5px] text-ink-3">Your FIRE type</Text>
-          <Text style={{ color: tabInk('profile') }} className="font-display text-[30px] font-bold leading-9 tracking-tight">{quiz ? quiz.name : type.name}</Text>
+          <Text style={{ color: tabInk('profile') }} className="font-display text-[30px] font-bold leading-9 tracking-tight">{quiz ? quiz.name : 'Find yours'}</Text>
           <Text className="text-[13px] text-ink-2">{quiz ? 'Retake the quiz' : 'Take the 8-question quiz'}</Text>
+          {!quiz && rewardOpen && (
+            <View className="mt-2 self-start rounded-[10px] bg-surface-2 px-2.5 py-1">
+              <Text className="text-[13px] font-semibold text-ink">🎁 Finish it, get 1 month of Pro free</Text>
+            </View>
+          )}
         </View>
         <Text className="text-[18px] text-ink-3">›</Text>
       </Pressable>
