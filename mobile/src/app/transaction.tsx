@@ -167,10 +167,16 @@ export default function TransactionSheet() {
                 })}
               </View>
               {type === 'expense' && !!category && (
-                <View className="mt-5 flex-row gap-2">
+                // One switch, the same pill as Expense / Income above (D-106).
+                <View className="mt-5 flex-row rounded-control bg-surface p-1" accessibilityRole="radiogroup" accessibilityLabel="Need or want">
                   {(['need', 'want'] as const).map(n => {
                     const on = (need ?? defaultNeed(category, subCategory)) === n
-                    return <Button key={n} small kind={on ? 'primary' : 'quiet'} label={n === 'need' ? 'Need' : 'Want'} onPress={() => setNeed(n)} />
+                    return (
+                      <Pressable key={n} accessibilityRole="radio" accessibilityState={{ checked: on }} onPress={() => { haptic.select(); setNeed(n) }}
+                        className={`flex-1 items-center rounded-lg py-2 ${on ? 'bg-card' : ''}`}>
+                        <Text className={`text-[14px] font-semibold ${on ? 'text-ink' : 'text-ink-2'}`}>{n === 'need' ? 'Need' : 'Want'}</Text>
+                      </Pressable>
+                    )
                   })}
                 </View>
               )}
