@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-26 — Today's done gets a small celebration
+
+- Website Home: answering the last Today item plays a short check animation (ring fills, dot pops, check draws, a few sparks), once. A day already done when you open the page, and anyone with reduced motion on, sees the finished check with no motion. No streaks or loss states.
+
 ## 2026-10-25 — Calmer category bars
 
 - Money › Transactions category bars: Past months is now a darker stretch inside each bar instead of a faint dotted box, and the black budget line is only as tall as the bar, so the row reads as one shape (D-107).
