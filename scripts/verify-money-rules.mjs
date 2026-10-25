@@ -9,7 +9,7 @@ import { classifyPlaid } from "../lib/plaid-category.ts";
 import { planRefunds } from "../lib/refunds.ts";
 import { spendingAverage, isMortgagePayment } from "../lib/real-spending.ts";
 import { matchesBill, billCategorySet } from "../lib/bill-categories.ts";
-import { categoryNeed, transactionNeed, budgetNeeds } from "../lib/needs.ts";
+import { categoryNeed, transactionNeed, budgetNeeds, rowNeed, withRowNeed, EATING_OUT, isMixedShop, asksShop } from "../lib/needs.ts";
 import { carriedCards, freedomDebt } from "../lib/freedom-debt.ts";
 import { applyAccountShares, readAccountShares, shareOf } from "../lib/account-share.ts";
 import { householdSpending } from "../lib/household-spending.ts";
@@ -60,6 +60,17 @@ assert.ok(!billCategorySet([{ description: "Dentist", category: "healthcare", re
 // ── Needs ──
 assert.equal(categoryNeed("food"), "need");
 assert.equal(categoryNeed("food", { food: "want" }), "want", "a category can be changed");
+assert.equal(categoryNeed("food", { food: "need" }, "Takeout & Delivery"), "want", "delivery stays a want when Food is set to need");
+assert.equal(categoryNeed("food", { "food/Takeout & Delivery": "need" }, "Takeout & Delivery"), "need", "a sub-category can be changed");
+assert.equal(rowNeed(EATING_OUT), "want");
+assert.equal(rowNeed(EATING_OUT, withRowNeed(EATING_OUT, "need")), "need", "moving eating out moves all of it");
+assert.equal(categoryNeed("food", withRowNeed(EATING_OUT, "need"), "Drinks & Bars"), "need");
+assert.ok(isMixedShop("TARGET 00012345 BROOKLYN NY") && isMixedShop("Amazon Mktp US*2K4AB") && isMixedShop("7-ELEVEN 34512"), "mixed shops are found through card noise");
+assert.ok(!isMixedShop("Trader Joe's #552") && !isMixedShop("Shell Oil 5744"), "a grocer or a gas station isn't mixed");
+assert.ok(asksShop({ description: "TARGET 1234", usd: 64, tags: [] }), "a mixed shop over $20 is asked about");
+assert.ok(!asksShop({ description: "TARGET 1234", usd: 12, tags: [] }), "a small one isn't");
+assert.ok(!asksShop({ description: "TARGET 1234", usd: 64, tags: [] }, { target: {} }), "once a shop is answered it isn't asked again");
+assert.ok(!asksShop({ description: "TARGET 1234", usd: 64, tags: ["want"] }), "an answered purchase isn't asked");
 assert.equal(transactionNeed({ category: "shopping", tags: ["need"] }), "need", "a tag on the row wins");
 assert.equal(budgetNeeds({ housing: 2000, food: 600, entertainment: 200, _fire_profile: 1 }), 2600);
 

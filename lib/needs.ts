@@ -4,7 +4,15 @@
  * (FIRE profile `categoryNeeds`); a need/want tag on one transaction still
  * wins for that transaction. Months of safety, the safety pot and the
  * contribution ladder's needs all read this, so the two apps agree.
+ *
+ * Sorted for you (D-106, Oct 25 2026): the most specific answer wins. One
+ * purchase's tag, then the shop ("Always for Target", merchantRules, which
+ * bank sync writes as that tag), then a sub-category ("food/Restaurants"
+ * in `categoryNeeds`), then eating out as a want, then the category. Today
+ * only asks about a shop that sells both, once, and only for a real amount.
  */
+import { merchantKey } from "./merchant-memory.ts";
+
 export const NEED_CATEGORIES = ["housing", "food", "transport", "healthcare", "utilities", "education"] as const;
 
 export type Need = "need" | "want";
@@ -15,9 +23,45 @@ const NEEDS = new Set<string>(NEED_CATEGORIES);
 /** Eating out inside a need category is a want: groceries are the need (audit round 3: DoorDash and coffee aren't essential). */
 export const WANT_SUBCATEGORIES = new Set(["Restaurants", "Takeout & Delivery", "Drinks & Bars"]);
 
-/** A category's own setting wins; otherwise an eating-out sub-category is a want, then the category's default. */
+/** A sub-category's own setting, then eating out as a want, then the category's setting, then its default. */
 export const categoryNeed = (category: string | null | undefined, overrides: NeedOverrides = {}, subCategory?: string | null): Need =>
-  (category && overrides[category]) || (subCategory && WANT_SUBCATEGORIES.has(subCategory) ? "want" : category && NEEDS.has(category) ? "need" : "want");
+  (category && subCategory && overrides[`${category}/${subCategory}`])
+  || (subCategory && WANT_SUBCATEGORIES.has(subCategory) ? "want" : null)
+  || (category && overrides[category]) || (category && NEEDS.has(category) ? "need" : "want");
+
+/** The Needs & wants screen's one extra row: eating out, pulled out of Food. */
+export const EATING_OUT = "food/eating-out";
+
+/** What a Needs & wants row (a category, or EATING_OUT) counts as now. */
+export const rowNeed = (row: string, overrides: NeedOverrides = {}): Need =>
+  row === EATING_OUT ? categoryNeed("food", overrides, "Restaurants") : categoryNeed(row, overrides);
+
+/** The overrides after moving a row; eating out is saved on each of its sub-categories. */
+export const withRowNeed = (row: string, need: Need, overrides: NeedOverrides = {}): NeedOverrides =>
+  row === EATING_OUT
+    ? { ...overrides, ...Object.fromEntries([...WANT_SUBCATEGORIES].map((s) => [`food/${s}`, need])) }
+    : { ...overrides, [row]: need };
+
+/**
+ * Shops that sell both under one name, as merchantKey reads them: a Target
+ * run can be groceries or a lamp. Gas stations stay with their category; a
+ * snack at the pump is too small to ask about.
+ */
+const MIXED_SHOPS = ["amazon", "amzn", "target", "walmart", "costco", "sams club", "bjs", "cvs", "walgreens", "rite aid", "dollar general", "dollar tree", "eleven", "wawa", "sheetz"];
+
+export const isMixedShop = (description: string | null | undefined): boolean => {
+  const key = ` ${merchantKey(description ?? "")} `;
+  return MIXED_SHOPS.some((s) => key.includes(` ${s} `));
+};
+
+/** Below this (in US dollars) a mixed shop follows its category: a few dollars either way don't move a plan. */
+export const MIXED_ASK_USD = 20;
+
+/** Whether Today asks "usually a need or a want?" about this spend: a mixed shop, a real amount, never answered. */
+export const asksShop = (t: { description?: string | null; usd: number; tags?: string[] | null }, shopRules: Record<string, unknown> = {}): boolean =>
+  isMixedShop(t.description) && t.usd >= MIXED_ASK_USD
+  && !(t.tags ?? []).some((g) => g === "need" || g === "want")
+  && !(merchantKey(t.description ?? "") in shopRules);
 
 export const transactionNeed = (t: { category?: string | null; sub_category?: string | null; tags?: string[] | null }, overrides: NeedOverrides = {}): Need =>
   t.tags?.includes("need") ? "need" : t.tags?.includes("want") ? "want" : categoryNeed(t.category, overrides, t.sub_category);

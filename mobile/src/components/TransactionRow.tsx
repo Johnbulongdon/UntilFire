@@ -4,14 +4,14 @@ import { Pressable, View } from 'react-native'
 
 import { moneyExact } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
-import { categoryOf } from '@/lib/money-data'
+import { categoryOf, needOf } from '@/lib/money-data'
 import { toUSD, type Transaction } from '@/state/account'
 
 import { CategoryGlyph } from './Icon'
 import { Text } from './Text'
 
 /**
- * One transaction: category badge, merchant, category, amount. Income in green.
+ * One transaction: category badge, merchant, category, need or want (D-106), amount. Income in green.
  * In select mode a tap ticks the row instead of opening it; a long press
  * starts select mode with this row ticked.
  */
@@ -52,7 +52,7 @@ export function TransactionRow({ t, first, selecting, selected, onToggle, onLong
       <View className="flex-1">
         <Text private numberOfLines={1} className="text-[15px] font-semibold text-ink">{t.description || cat.label}</Text>
         <Text numberOfLines={1} className="mt-0.5 text-[12px] text-ink-3">
-          {transfer ? 'Transfer' : cat.label}{t.sub_category ? ` · ${t.sub_category}` : ''}{refunded ? ' · refunded' : ''}
+          {transfer ? 'Transfer' : cat.label}{t.sub_category ? ` · ${t.sub_category}` : ''}{t.transaction_type === 'expense' ? (needOf(t) === 'need' ? ' · Need' : ' · Want') : ''}{refunded ? ' · refunded' : ''}
         </Text>
       </View>
       <Text className={`font-mono text-[15px] ${income ? 'text-pos-ink' : transfer ? 'text-ink-3' : 'text-ink'}`}>

@@ -26,9 +26,12 @@ assert.equal(pickNextMove({ ...base, fallback: { label: "Spend less", deltaYears
 
 // Today: sorted spends drop out, the closing item is always last, and a finished day counts once.
 const now = new Date(2026, 9, 18, 15);
-const row = (id: string, tags: string[] = []) => ({ id, date: "2026-10-17", description: "Shop", usd: 20, category: "food", tags, transaction_type: "expense" });
-const list = webTodayItems({ rows: [row("1"), row("2", ["need"])], bills: [], progress: { done: [], acks: [] }, perDay: 40, now });
-assert.deepEqual(list.items.map((i) => i.key), ["need:1", "day:2026-10-18"]);
+const row = (id: string, tags: string[] = [], description = "TARGET 1234", usd = 64) => ({ id, date: "2026-10-17", description, usd, category: "shopping", tags, transaction_type: "expense" });
+const list = webTodayItems({ rows: [row("1"), row("2", ["need"]), row("3", [], "Trader Joe's"), row("4", [], "TARGET 1234", 9)], bills: [], progress: { done: [], acks: [] }, perDay: 40, now });
+assert.deepEqual(list.items.map((i) => i.key), ["need:1", "day:2026-10-18"], "only a mixed shop of $20 or more is asked about (D-106)");
+assert.equal(webTodayItems({ rows: [row("1")], bills: [], progress: { done: [], acks: [] }, perDay: 40, shopRules: { target: {} }, now }).items[0].key, "day:2026-10-18", "an answered shop isn't asked again");
+assert.equal(webTodayItems({ rows: [], bills: [], progress: { done: [], acks: [] }, perDay: 40, sorted: 12, now }).items[0].key, "sorted");
+assert.equal(webTodayItems({ rows: [], bills: [], progress: { done: [], acks: ["sorted"] }, perDay: 40, sorted: 12, now }).items[0].key, "day:2026-10-18", "the sorted card shows once");
 assert.equal(webTodayItems({ rows: [], bills: [], progress: { done: [], acks: ["day:2026-10-18"] }, perDay: 40, now }).items.length, 0);
 assert.deepEqual(monthCount(["2026-09-30", "2026-10-01", "2026-10-17"], now), { done: 2, of: 18 });
 

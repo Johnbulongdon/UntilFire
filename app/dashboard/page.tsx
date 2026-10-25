@@ -730,7 +730,7 @@ function SectionLabel({ icon, text, color = "var(--uf-ink)" }: { icon: string; t
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
 const SETUP_ICON: Record<SetupStepId, IconName> = { income: "money", bank: "bank", payday: "calendar", bills: "card", budget: "target" };
 
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60, budget = {}, expectedRows = [], onExpectedAdded, onSetupStep }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, onOpenNeeds, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60, budget = {}, expectedRows = [], onExpectedAdded, onSetupStep }: {
   spreadCategories?: string[];
   /** Typed on the phone; in net worth only (audit round 2). */
   homeValue?: number;
@@ -766,6 +766,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   /** Free to spend until payday (D-29); read-only here, explained in Money. */
   freeResult?: FreeToSpend | null;
   onOpenFreeToSpend?: () => void;
+  /** Money › Categories › Needs & wants, from Today's "We sorted" card (D-106). */
+  onOpenNeeds?: () => void;
   onTabChange?: (tab: TabKey) => void;
   /** Plan → Compare, for "Move" on a lease in Today. */
   onOpenCompare?: () => void;
@@ -1860,6 +1862,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}
           onOpen={() => onTabChange?.("cashflow")}
           onWhatIf={onOpenCompare}
+          onOpenNeeds={onOpenNeeds}
         />
       </HomeSlot>
       <HomeSlot id="glance">
@@ -4883,6 +4886,7 @@ export default function Dashboard() {
   }, []);
   const [cashflowSubTab, setCashflowSubTab] = useState<CashflowSubTab>("cashflow");
   const [categoriesKey, setCategoriesKey] = useState(0);
+  const [categoriesStart, setCategoriesStart] = useState<"categories" | "needs">("categories");
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "invest-sim" | "compare">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   // Set when a creator referred this account: its trial is 60 days, not 30 (D-27).
@@ -6373,6 +6377,7 @@ export default function Dashboard() {
                 freeResult={freeResult}
                 bills={homeBills}
                 onOpenFreeToSpend={() => { setCashflowSubTab("budgets"); setTab("cashflow"); }}
+                onOpenNeeds={() => { setCategoriesStart("needs"); setCategoriesKey((k) => k + 1); setCashflowSubTab("categories"); setTab("cashflow"); }}
                 userId={userId}
                 income={effectiveIncome} expenses={freedomExpenses}
                 k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
@@ -6424,8 +6429,8 @@ export default function Dashboard() {
                 <div className="uf-cashflow-subtab-switch" style={{ marginBottom: 24 }}>
                   <PillTabs label="Cashflow" options={CASHFLOW_SUB_TABS} value={cashflowSubTab} onChange={setCashflowSubTab} />
                 </div>
-                {cashflowSubTab === "cashflow" && <TransactionsTab budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
-                {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
+                {cashflowSubTab === "cashflow" && <TransactionsTab categoryNeeds={categoryNeeds} budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
+                {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} startOn={categoriesStart} onCategoryNeeds={setCategoryNeeds} />}
                 {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} plan={sharedPlan} facts={contributionFacts} billDue={billDue} onMarkDone={setContributionDone} onOpenTransactions={() => setCashflowSubTab("cashflow")} />}
                 {cashflowSubTab === "budgets" && (
                   <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} spreadCategories={spreadCategories} />

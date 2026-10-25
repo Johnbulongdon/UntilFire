@@ -13,12 +13,12 @@ import { LoadingState } from '@/components/LoadingState'
 import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
 import { FLAG_COPY } from '@/components/WorthALook'
-import { isoDay } from '@/engine'
+import { isoDay, merchantKey } from '@/engine'
 import { proForSale } from '@/lib/native-build'
 import { money, moneyIn } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { categoryOf } from '@/lib/money-data'
-import { answerLease, deleteBill, fileTransactions, resolveFlag, retagRentOrMortgage, saveBill, saveBudget } from '@/lib/mutations'
+import { answerLease, deleteBill, fileTransactions, resolveFlag, retagRentOrMortgage, saveBill, saveBudget, saveFireProfile, saveMerchantRule } from '@/lib/mutations'
 import { defaultNeed } from '@/lib/review'
 import { addDays, monthCount, saveTodayProgress, todayItems, type TodayItem } from '@/lib/today'
 import { setTodayReminder } from '@/lib/today-reminder'
@@ -159,6 +159,16 @@ export default function Today() {
     revert: () => fileTransactions([{ id: t.id, category: t.category, sub_category: t.sub_category, tags: t.tags }]),
   })
 
+  // A shop that sells both: this purchase, and every later one from the shop (D-106). Undo puts both back.
+  const shop = (item: TodayItem, t: Transaction, need: 'need' | 'want') => run(item, async () => {
+    const problem = await fileTransactions([{ id: t.id, category: t.category, sub_category: t.sub_category, tags: [...t.tags.filter(g => g !== 'need' && g !== 'want'), need] }])
+    return problem ?? saveMerchantRule(session.user.id, data.profile.merchantRules, merchantKey(t.description), { category: t.category, sub_category: t.sub_category, need })
+  }, {
+    label: `${need === 'need' ? 'Need' : 'Want'} for ${t.description}`,
+    revert: async () => (await fileTransactions([{ id: t.id, category: t.category, sub_category: t.sub_category, tags: t.tags }]))
+      ?? saveFireProfile(session.user.id, { merchantRules: data.profile.merchantRules }),
+  })
+
   const count = monthCount(progress.done)
   const wasYesterday = !!finished && finished === addDays(isoDay(new Date()), -1)
 
@@ -205,7 +215,7 @@ export default function Today() {
   }
 
   const item = open[0]
-  const card = item ? cardFor(item, { ack, run, file, budget: data.budget, userId: session.user.id, day }) : null
+  const card = item ? cardFor(item, { ack, run, file, shop, budget: data.budget, userId: session.user.id, day }) : null
   const doneCount = total.current - open.length
   return (
     <Frame
@@ -261,6 +271,7 @@ function cardFor(item: TodayItem, h: {
   ack: (i: TodayItem) => void
   run: (i: TodayItem, work: () => Promise<string | null>) => void
   file: (i: TodayItem, t: Transaction, category: string, need?: 'need' | 'want') => void
+  shop: (i: TodayItem, t: Transaction, need: 'need' | 'want') => void
   budget: Record<string, number>
   userId: string
   day: string
@@ -274,10 +285,12 @@ function cardFor(item: TodayItem, h: {
           // Any other category: the transaction's own sheet, with every category and need or want.
           { label: 'Something else', kind: 'quiet', onPress: () => router.push({ pathname: '/transaction', params: { id: t!.id } }) }] }
     case 'need':
-      // A bank-categorised spend, confirmed in one tap (need or want follows the category).
-      return { eyebrow: `${when} · from your bank`, title: t!.description, amount: moneyIn(t!.amount, t!.currency), sub: `Filed as ${categoryOf(t!.category).label}. Right?`,
-        choices: [{ label: `Yes, ${categoryOf(t!.category).label}`, onPress: () => h.file(item, t!, t!.category) },
-          { label: 'Change', kind: 'quiet', onPress: () => router.push({ pathname: '/transaction', params: { id: t!.id } }) }] }
+      // A shop that sells both, asked once for the shop (D-106); everything else follows its category.
+      return { eyebrow: `${when} · this shop sells both`, title: `${t!.description}: usually a need or a want?`, amount: moneyIn(t!.amount, t!.currency), sub: 'We\'ll remember it for this shop.',
+        choices: [{ label: 'Need', onPress: () => h.shop(item, t!, 'need') }, { label: 'Want', onPress: () => h.shop(item, t!, 'want') }] }
+    case 'sorted':
+      return { eyebrow: 'Sorted for you', title: `We sorted ${item.count} buys for you`, sub: 'Groceries and gas count as needs. Delivery and eating out count as wants. Change any of it in Needs & wants.',
+        choices: [{ label: 'Got it', onPress: () => h.ack(item) }, { label: 'See all', kind: 'quiet', onPress: () => { h.ack(item); router.push('/needs-wants') } }] }
     case 'flag': {
       const copy = FLAG_COPY[item.flag!]!
       return { eyebrow: `${when} · ${copy.label.toLowerCase()}`, title: t!.description, amount: moneyIn(t!.amount, t!.currency), sub: copy.tip,

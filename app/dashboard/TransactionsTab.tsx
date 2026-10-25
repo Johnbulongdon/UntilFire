@@ -27,6 +27,9 @@ import {
 import { useCustomCategories } from "@/lib/useCustomCategories";
 import { combineDateAndTime, formatTime, timeInputValue } from "@/lib/transaction-time";
 import { buildMerchantMemory, merchantKey, suggestFromHistory } from "@/lib/merchant-memory";
+import { transactionNeed, type NeedOverrides } from "@/lib/needs";
+import { SegmentedControl } from "@/components/ui";
+import { readMerchantRules } from "@/lib/merchant-rules";
 import { trackTxFlagResolved, trackTxRangeChanged, trackTxReviewOpened } from "@/lib/analytics";
 
 type CustomCategory = { key: string; label: string; code: string; color: string; emoji?: string };
@@ -224,6 +227,9 @@ function QuickAddForm({
   preferredCurrencies,
   onAddCategory,
   onAddSubCategory,
+  alwaysShop = false,
+  onAlwaysShop,
+  categoryNeeds = {},
 }: {
   draft: DraftTransaction;
   setDraft: React.Dispatch<React.SetStateAction<DraftTransaction>>;
@@ -238,6 +244,10 @@ function QuickAddForm({
   preferredCurrencies: string[];
   onAddCategory: (cat: CustomCategory) => void;
   onAddSubCategory: (catKey: string, sub: string) => void;
+  /** "Always for this shop" (D-106), offered when editing a saved spend. */
+  alwaysShop?: boolean;
+  onAlwaysShop?: (on: boolean) => void;
+  categoryNeeds?: NeedOverrides;
 }) {
   const amountRef = useRef<HTMLInputElement>(null);
   const [categorizing, setCategorizing] = useState(false);
@@ -666,48 +676,26 @@ function QuickAddForm({
             <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
               Classify
             </label>
-            <div style={{ display: "flex", gap: 6 }}>
-              {(["need", "want", "work", "untagged"] as const).map((option) => {
-                const hasNeed = draft.tags.includes("need");
-                const hasWant = draft.tags.includes("want");
-                const hasWork = draft.tags.includes("work");
-                const isSelected = option === "need" ? hasNeed : option === "want" ? hasWant : option === "work" ? hasWork : !hasNeed && !hasWant && !hasWork;
-                const bgMap = { need: "#DCFCE7", want: "#FEE2E2", work: "#EEF2FF", untagged: "var(--uf-surface-2)" };
-                const borderMap = { need: "#22d3a5", want: "#f97316", work: "#6366f1", untagged: "var(--uf-border)" };
-                const colorMap = { need: "#059669", want: "#ea580c", work: "#4f46e5", untagged: "var(--uf-text)" };
-                return (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => {
-                      const base = draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work");
-                      if (option === "untagged") {
-                        setField("tags", base);
-                      } else if (isSelected) {
-                        setField("tags", base);
-                      } else {
-                        setField("tags", [...base, option]);
-                      }
-                    }}
-                    style={{
-                      flex: 1,
-                      background: isSelected ? bgMap[option] : "transparent",
-                      border: `1px solid ${isSelected ? borderMap[option] : "var(--uf-border)"}`,
-                      borderRadius: 8,
-                      padding: "9px 6px",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: isSelected ? colorMap[option] : "var(--uf-text-2)",
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                      transition: "all 0.12s",
-                    }}
-                  >
-                    {option === "need" ? "💚 Need" : option === "want" ? "🧡 Want" : option === "work" ? "💼 Work" : "◯ Clear"}
-                  </button>
-                );
-              })}
+            {/* One switch, Need or Want, the same pill as elsewhere (D-106); work costs keep their own tag. */}
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              <SegmentedControl
+                label="Need or want"
+                value={draft.tags.includes("need") ? "need" : draft.tags.includes("want") ? "want" : transactionNeed({ category: draft.category, sub_category: draft.sub_category || null, tags: [] }, categoryNeeds)}
+                onChange={(v) => setField("tags", [...draft.tags.filter((t) => t !== "need" && t !== "want"), v])}
+                options={[{ value: "need", label: "Need" }, { value: "want", label: "Want" }]}
+              />
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--uf-text-2)", cursor: "pointer" }}>
+                <input type="checkbox" checked={draft.tags.includes("work")}
+                  onChange={(e) => setField("tags", e.target.checked ? [...draft.tags.filter((t) => t !== "work"), "work"] : draft.tags.filter((t) => t !== "work"))} />
+                Work cost
+              </label>
             </div>
+            {editing && onAlwaysShop && draft.description.trim() && (
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--uf-text-2)", cursor: "pointer" }}>
+                <input type="checkbox" checked={alwaysShop} onChange={(e) => onAlwaysShop(e.target.checked)} />
+                Always for {draft.description.trim()}
+              </label>
+            )}
           </div>
         )}
 
@@ -918,6 +906,7 @@ function TransactionList({
   formatAmount,
   catCustomizations,
   expenseCategories,
+  categoryNeeds = {},
 }: {
   transactions: Transaction[];
   editingId: string | null;
@@ -929,6 +918,8 @@ function TransactionList({
   formatAmount: (value: number) => string;
   catCustomizations: CatCustomizations;
   expenseCategories: CustomCategory[];
+  /** The person's need/want per category, so every expense shows what it counts as (D-106). */
+  categoryNeeds?: NeedOverrides;
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "expense" | "income" | "transfer">("all");
@@ -951,9 +942,9 @@ function TransactionList({
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
       if (filter !== "all" && t.transaction_type !== filter) return false;
-      if (tagFilter !== "all") {
-        if (!(t.tags || []).includes(tagFilter)) return false;
-      }
+      if (tagFilter === "work" && !(t.tags || []).includes("work")) return false;
+      // Need or want is what the row counts as, sorted for you or tagged (D-106).
+      if ((tagFilter === "need" || tagFilter === "want") && (t.transaction_type !== "expense" || transactionNeed(t, categoryNeeds) !== tagFilter)) return false;
       if (search) {
         const s = search.toLowerCase();
         const cat = allCategories.find((c) => c.key === t.category);
@@ -965,7 +956,7 @@ function TransactionList({
       }
       return true;
     });
-  }, [transactions, search, filter, tagFilter, allCategories]);
+  }, [transactions, search, filter, tagFilter, allCategories, categoryNeeds]);
 
   // What the rows on screen add up to, so a filter (a tag, a search, the
   // work chip) answers "how much was that" without leaving the list. The
@@ -1121,7 +1112,7 @@ function TransactionList({
                     const baseDisplay = { color: cat?.color || "#6b7280", emoji: (cat as {emoji?: string})?.emoji || "📦" };
                     const { color: chipColor, emoji: chipEmoji } = resolveDisplay(baseDisplay, catCustomizations, tx.category);
                     const txTags = tx.tags || [];
-                    const needOrWant = txTags.includes("need") ? "need" : txTags.includes("want") ? "want" : null;
+                    const needOrWant = transactionNeed(tx, categoryNeeds);
                     const isWorkCost = txTags.includes("work");
                     const displayTags = txTags.filter((t) => t !== "need" && t !== "want" && t !== "work" && !isSystemTag(t)).slice(0, 2);
                     // Null for most rows — only Plaid, an import that carried
@@ -1215,13 +1206,13 @@ function TransactionList({
                             {tx.transaction_type === "expense" && needOrWant && (
                               <span
                                 style={{
-                                  background: needOrWant === "need" ? "rgba(34,211,165,0.15)" : "rgba(249,115,22,0.15)",
-                                  color: needOrWant === "need" ? "#22d3a5" : "#f97316",
+                                  background: needOrWant === "need" ? "color-mix(in srgb, var(--uf-pos) 15%, transparent)" : "color-mix(in srgb, var(--uf-warn) 15%, transparent)",
+                                  color: needOrWant === "need" ? "var(--uf-pos)" : "var(--uf-warn)",
                                   border: "none", borderRadius: 999, padding: "1px 8px",
                                   fontSize: 10, fontWeight: 700, flexShrink: 0,
                                 }}
                               >
-                                {needOrWant}
+                                {needOrWant === "need" ? "Need" : "Want"}
                               </span>
                             )}
                             {tx.transaction_type === "expense" && isWorkCost && (
@@ -1563,7 +1554,8 @@ function AiReviewModal({
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick, budgets, expectedIncome, freeToSpend }: {
+export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick, budgets, expectedIncome, freeToSpend, categoryNeeds }: {
+  categoryNeeds?: NeedOverrides;
   defaultCurrency?: string;
   displayCurrency?: string;
   displayRates?: Record<string, number>;
@@ -1647,6 +1639,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 
   // Form state (lifted so edit can populate it)
   const [draft, setDraft] = useState<DraftTransaction>(() => ({ ...EMPTY_DRAFT(), currency: defaultCurrency }));
+  const [alwaysShop, setAlwaysShop] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; undoId?: string; _removed?: Transaction; isError?: boolean } | null>(null);
@@ -1917,6 +1910,18 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         return;
       }
       setTransactions((prev) => prev.map((t) => (t.id === draft.id ? data : t)));
+      // "Always for this shop" (D-106): later buys there are filed and sorted the same way, on both apps.
+      if (alwaysShop && payload.transaction_type === "expense" && merchantKey(payload.description)) {
+        const { data: budget } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
+        const ex = (budget?.expenses as Record<string, unknown>) ?? {};
+        const fp = (ex._fire_profile as Record<string, unknown>) ?? {};
+        const rule = { category: payload.category, sub_category: payload.sub_category, need: transactionNeed(payload, categoryNeeds) };
+        const { error: ruleError } = await supabase.from("user_budget").update({
+          expenses: { ...ex, _fire_profile: { ...fp, merchantRules: { ...readMerchantRules(fp.merchantRules), [merchantKey(payload.description)]: rule } } },
+        }).eq("user_id", session.user.id);
+        if (ruleError) showToast("Saved, but couldn't remember the shop — please try again", undefined, undefined, true);
+      }
+      setAlwaysShop(false);
       setEditingId(null);
       setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency });
       showToast("Transaction updated");
@@ -1939,7 +1944,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       }
       if (drawerOpen && !keepOpen) setDrawerOpen(false);
     }
-  }, [defaultCurrency, draft, drawerOpen, inRange, showToast]);
+  }, [defaultCurrency, draft, drawerOpen, inRange, showToast, alwaysShop, categoryNeeds]);
 
   const handleEdit = useCallback((tx: Transaction) => {
     setEditingId(tx.id);
@@ -1963,6 +1968,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 
   const handleCancelEdit = useCallback(() => {
     setEditingId(null);
+    setAlwaysShop(false);
     setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency });
     if (drawerOpen) setDrawerOpen(false);
   }, [defaultCurrency, drawerOpen]);
@@ -2133,6 +2139,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         formatAmount={fmtDisplay}
         catCustomizations={catCustomizations}
         expenseCategories={allExpenseCats}
+        categoryNeeds={categoryNeeds}
       />
 
       <MobileBar
@@ -2154,6 +2161,9 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           onAddCategory={handleAddCategory}
           onAddSubCategory={handleAddSubCategory}
           preferredCurrencies={preferredCurrencies}
+          alwaysShop={alwaysShop}
+          onAlwaysShop={setAlwaysShop}
+          categoryNeeds={categoryNeeds}
         />
       </MobileDrawer>
 

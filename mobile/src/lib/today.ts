@@ -1,4 +1,4 @@
-import { addMonths, buildMerchantMemory, findFlags, isoDay, isRent, isRentOrMortgage, ladderViewFromPlan, leaseAsk, noticeDeadline, monthOf, netAmount, suggestFromHistory, type FlagKind } from '@/engine'
+import { addMonths, asksShop, buildMerchantMemory, findFlags, isoDay, isRent, isRentOrMortgage, ladderViewFromPlan, leaseAsk, noticeDeadline, monthOf, netAmount, suggestFromHistory, type FlagKind } from '@/engine'
 import { freeUntilPayday, unpaid, upcoming } from '@/lib/bills'
 import { contributionFacts, EMPTY_PLAN } from '@/lib/contribution-facts'
 import { saveFireProfile } from '@/lib/mutations'
@@ -14,7 +14,7 @@ import { billCategories, budgetFor, splitBudget } from '@/lib/budget-split'
  * is answered (filed, or a flag resolved); the rest are answered with an ack
  * saved in the FIRE profile beside the finished days.
  */
-export type TodayKind = 'big' | 'flag' | 'category' | 'need' | 'backlog' | 'bill' | 'billcheck' | 'payday' | 'goal' | 'manual' | 'setup' | 'number' | 'lease' | 'renttag'
+export type TodayKind = 'big' | 'flag' | 'category' | 'need' | 'sorted' | 'backlog' | 'bill' | 'billcheck' | 'payday' | 'goal' | 'manual' | 'setup' | 'number' | 'lease' | 'renttag'
 
 export interface Filing { category: string; sub_category: string | null; need: 'need' | 'want' }
 
@@ -30,7 +30,7 @@ export interface TodayItem {
   over?: { category: string; by: number; from: string | null }
   bill?: { id: string; description: string; amount: number; iso: string }
   goal?: Goal
-  /** Payday: what's safe to invest; number: what's safe to spend today; backlog: how many more. */
+  /** Payday: what's safe to invest; number: what's safe to spend today; backlog: how many more; sorted: how many were sorted. */
   amount?: number
   count?: number
   /** Bill check: a bill whose price changed (with the new amount, in the bill's currency) or that stopped being paid. */
@@ -125,13 +125,19 @@ export function todayItems(data: AccountData, progress: TodayProgress, now = new
     out.push({ key: `flag:${t.id}`, kind: 'flag', tx: t, flag: kind })
   }
 
-  /* New spending to sort: a category when it has none, else a one-tap
-     confirm of the category the bank gave it (Copilot's "To review"), since
-     bank rows arrive categorised and were never asked about (audit round 2).
-     Confirming writes the need/want tag, which is what marks it confirmed. */
+  // Once, when bank spending first shows up: it was sorted for you, and where to change it (D-106).
+  if (!acked.has('sorted') && data.transactions.some(t => t.source === 'plaid' && t.transaction_type === 'expense')) {
+    const since = addDays(today, -30)
+    out.push({ key: 'sorted', kind: 'sorted', count: data.transactions.filter(t => t.transaction_type === 'expense' && t.date >= since).length })
+  }
+
+  /* New spending to sort: a category when it has none. Need or want follows
+     the category, so a bank row is only asked about when it comes from a
+     shop that sells both (Target, Amazon) and is $20 or more, once per shop
+     (D-106): asking about every purchase was the clicking people skipped. */
   const memory = buildMerchantMemory(data.transactions.filter(isFiled))
   const usual = topCategories(data.transactions)
-  const toConfirm = (t: Transaction) => t.source === 'plaid' && !t.tags.some(g => g === 'need' || g === 'want')
+  const toConfirm = (t: Transaction) => t.source === 'plaid' && asksShop({ description: t.description, usd: spentUSD(t), tags: t.tags }, data.profile.merchantRules)
   const unfiled = recent.filter(t => t.transaction_type === 'expense' && !t.tags.includes('sys:pending') && (!isFiled(t) || toConfirm(t)) && !flags.has(t.id))
   for (const t of unfiled.slice(0, MAX_FILING)) {
     const s = suggestFromHistory(t, memory)
