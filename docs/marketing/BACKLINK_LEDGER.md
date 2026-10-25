@@ -774,3 +774,16 @@ Latest origin/main fetched at 3122e9a47b8a20ebffb56398cea34177936a6e1a before tr
 Badge condition: Toolcurio says badge must stay or listing is automatically delisted. Preserve user's month-end audit preference: check own public anchor at month end; if no followed backlink is detected, remove badge per user's standing instruction, understanding that this may delist the submission. A pending receipt or verified outbound badge is not proof of an inbound backlink.
 
 Baseline origin/main fetched before badge change at 0dc7237; existing local drift preserved, live Directory partners section matches this placement. Only the official badge block was changed in LandingPage.tsx; no reskin. Main rechecked through GitHub at 91ae0ddb3785d2f43f13479afb495e57602fb3f9 before ledger update; local fetch attempted again. Existing bad-tree background repack issue untouched.
+
+
+## 2026-10-26: SaaS Cubes free submission accepted with verified homepage badge
+
+| Platform | Status | Evidence |
+| --- | --- | --- |
+| SaaS Cubes | pending | https://saascubes.com/submit?plan=free, $0 plan, no account required. No prior ledger record; checked public directory before submitting. Official pricing includes a followed link on free plan after a homepage link is verified. Sample https://saascubes.com/saas/toolroots anonymously returned direct vendor hrefs rel=noopener only (separate Good for Bots link is nofollow). Added official badge https://saascubes.com/images/badges/badge-dark.png, 175x54, linked https://saascubes.com with rel=noopener in existing homepage Directory partners section. Latest pushed main baseline 91ae0ddb3785d2f43f13479afb495e57602fb3f9, badge commit 16e07b649cddbceb95b20feac24a6ec420d39bf2. Public homepage confirms deployment. Normal browser form: UntilFire, official homepage, Finance, Freemium/SaaS/Personal Finance tags, reviewed factual descriptions, approved ash@untilfire.com for private listing updates. Public optional contact blank; removed unverified auto-extracted X and LinkedIn. Clicked Save & Check My Homepage once. Visible receipt "Link verified — your listing is in review" and "Homepage link verified"; review 3–5 business days, publication and email after approval. No payment or account created. No own live backlink claimed. Screenshot outputs/directory-partners/saascubes-receipt-2026-10-26.png. Do not resubmit. |
+
+Keep badge for review; apply user's standing month-end own-dofollow audit/removal preference. Removing the badge can hide the free listing. No authority/ranking/indexing claim.
+
+Additional screening: purshoLOGY normal page now loads a 10-step form with 30+ required fields; no new form submitted, prior failed submission remains not-submitted. Profit Hunt requires actual MRR, not supplied, so not submitted or fabricated. SaaS Surf currently routes to paid sponsorships or a free-product email pitch; no form submission made. StartupDirectory.net still auth-gated. Existing submitted directories not repeated.
+
+Fetched main and compared local drift before badge change; live existing badge section matched placement. Preserved unrelated local app/docs changes. No reskin; only one official badge block. Baseline fetch attempted again before this ledger-only update; pre-existing background bad-tree/repack issue untouched.
