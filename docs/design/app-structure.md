@@ -28,7 +28,7 @@ resize, hide and restore controls are removed; old stored layouts are ignored.
 
 ```
 Home                          synthesis · fixed layout
-  └ Freedom date · progress · next moves
+  └ Freedom date · how far you've come · one next move
 
 Money                         actual finances and operational planning
   ├ Cashflow
@@ -44,13 +44,12 @@ Money                         actual finances and operational planning
 
 Plan                          long-term projections and scenarios
   ├ Freedom Date
-  ├ Compare                   what if: life changes on your plan (D-69)
-  ├ Scenarios
+  ├ What if                   life changes on your plan (D-69), with
+  │                           Investing (Scenarios) one switch away (D-105)
   ├ Goals
   ├ Contributions
   ├ Explore
-  ├ Citizenship
-  └ Learn
+  └ Learn                     a quiet row under the phone's tiles (D-105)
 
 Profile                       account, household setup, FIRE personality/type,
                               give a month, creator program card (→ /invite)
@@ -154,6 +153,11 @@ browser.
 
 ## Deliberately decided
 
+- **What if is one place** (D-105). Compare (life changes) and Scenarios
+  (investment mixes) are both "try a different future", so Plan lists one
+  What if with a switch inside, not two neighbours to choose between. The
+  phone's What if adds a third part, Changes (quick moves). Citizenship stays
+  behind its release gate and is off the list until it ships.
 - **Learn is not a top-level group.** There is already a full public `/learn`
   (stages, articles, topics). A sidebar group duplicating it splits the content
   and spends a nav slot on something nobody opens the app to do. It sits inside

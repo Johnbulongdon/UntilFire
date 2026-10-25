@@ -82,7 +82,7 @@ import { isRent } from "@/lib/lease";
 import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
-import { Alert, Button, ICON_PATHS, Input } from "@/components/ui";
+import { Alert, Button, ICON_PATHS, Input, SegmentedControl } from "@/components/ui";
 import Flag, { flagUri } from "@/app/components/Flag";
 import { stampActive } from "@/lib/last-active";
 import { knownWithdrawalLimit, parseWithdrawalLimit, withdrawalsLeftLabel } from "@/lib/savings-limits";
@@ -4793,13 +4793,13 @@ const MONEY_SECTIONS: { label: string; tab: TabKey }[] = [
 type PlanSection = { label: string; tab: TabKey; subTab?: "menu" | "invest-sim" | "compare" };
 const PLAN_SECTIONS: PlanSection[] = [
   { label: "Freedom Date", tab: "fire-calculator", subTab: "menu"       },
-  // What if: life changes tried on top of your plan (D-69).
-  { label: "Compare",      tab: "fire-calculator", subTab: "compare"    },
-  { label: "Scenarios",    tab: "fire-calculator", subTab: "invest-sim" },
+  // What if: life changes tried on top of your plan (D-69), with Scenarios (investment
+  // mixes) one switch away inside it, so Plan lists one place to try a different future
+  // rather than two (choice overload, Oct 2026). The phone does the same.
+  { label: "What if",      tab: "fire-calculator", subTab: "compare"    },
   { label: "Goals",        tab: "goals"        },
   { label: "Contributions", tab: "contributions" },
   { label: "Explore",      tab: "expat-fire"   },
-  { label: "Citizenship",  tab: "citizenship"  },
   { label: "Learn",        tab: "learning-hub" },
 ];
 
@@ -4814,6 +4814,7 @@ const SUB_ICONS: Record<string, string> = {
   Transactions: "M4 7h13l-3-3M20 17H7l3 3",
   Calendar: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
   Compare: "M8 4v16M16 4v16M3 8h5M16 16h5M3 16h5M16 8h5",
+  "What if": "M8 4v16M16 4v16M3 8h5M16 16h5M3 16h5M16 8h5",
   Categories: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
   Budget: "M12 3a9 9 0 1 0 9 9h-9zM15 3.5A9 9 0 0 1 20.5 9H15z",
   Income: "M3 7h18v12H3zM8 7V5h8v2M3 12h18",
@@ -4828,6 +4829,9 @@ const SUB_ICONS: Record<string, string> = {
   Citizenship: "M6 3h12v18H6zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM9 17h6",
   Learn: "M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2zM4 19V5M8 7h8",
 };
+/** Scenarios sits inside What if, so the section list lights What if for it. */
+const whatIfOf = (sub: "menu" | "invest-sim" | "compare") => (sub === "invest-sim" ? "compare" : sub);
+
 function SubIcon({ label }: { label: string }) {
   const d = SUB_ICONS[label];
   return d ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="uf-sidebar-sub-icon"><path d={d} /></svg> : null;
@@ -6256,7 +6260,7 @@ export default function Dashboard() {
                         <button
                           key={sub.label}
                           className={`uf-sidebar-sub-item ${
-                            tab === sub.tab && (!sub.subTab || fireCalcSubTab === sub.subTab) ? "active" : ""
+                            tab === sub.tab && (!sub.subTab || whatIfOf(fireCalcSubTab) === sub.subTab) ? "active" : ""
                           }`}
                           onClick={() => {
                             if (sub.subTab) setFireCalcSubTab(sub.subTab);
@@ -6342,7 +6346,7 @@ export default function Dashboard() {
                   <button
                     key={item.label}
                     className={`uf-section-button ${
-                      tab === item.tab && (!item.subTab || fireCalcSubTab === item.subTab) ? "active" : ""
+                      tab === item.tab && (!item.subTab || whatIfOf(fireCalcSubTab) === item.subTab) ? "active" : ""
                     }`}
                     onClick={() => {
                       if (item.subTab) setFireCalcSubTab(item.subTab);
@@ -6602,6 +6606,13 @@ export default function Dashboard() {
                       onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
                     />
                   </>
+                )}
+                {(fireCalcSubTab === "compare" || fireCalcSubTab === "invest-sim") && (
+                  <div style={{ marginBottom: 16 }}>
+                    <SegmentedControl label="What if" value={fireCalcSubTab}
+                      options={[{ value: "compare", label: "Life changes" }, { value: "invest-sim", label: "Investing" }] as const}
+                      onChange={(v) => setFireCalcSubTab(v)} />
+                  </div>
                 )}
                 {fireCalcSubTab === "compare" && (
                   <WhatIf run={runChanges} ctx={compareCtx} growth={growthRate} retireAge={compareRetireAge} lease={compareLease}

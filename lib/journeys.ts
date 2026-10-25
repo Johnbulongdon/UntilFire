@@ -90,13 +90,12 @@ const WEB_MONEY: JourneyStep[] = [
 ]
 
 const WEB_PLAN: JourneyStep[] = [
-  { label: 'Freedom Date', action: 'Tap Compare', route: '/dashboard', shot: 'user:/dashboard?tab=fire-calculator' },
-  { label: 'Compare', action: 'Tap Scenarios', route: '/dashboard', shot: 'user:/dashboard?tab=fire-calculator', click: ['^Compare$'] },
-  { label: 'Scenarios', action: 'Tap Goals', route: '/dashboard', shot: 'user:/dashboard?tab=fire-calculator', click: ['^Scenarios$'] },
+  { label: 'Freedom Date', action: 'Tap What if', route: '/dashboard', shot: 'user:/dashboard?tab=fire-calculator' },
+  { label: 'What if', action: 'Tap Investing', route: '/dashboard', shot: 'user:/dashboard?tab=fire-calculator', click: ['^What if$'] },
+  { label: 'What if: Investing', action: 'Tap Goals', route: '/dashboard', shot: 'user:/dashboard?tab=fire-calculator', click: ['^What if$', '^Investing$'] },
   { label: 'Goals', action: 'Tap Contributions', route: '/dashboard', shot: 'user:/dashboard?tab=goals' },
   { label: 'Contributions', action: 'Tap Explore', route: '/dashboard', shot: 'user:/dashboard?tab=contributions' },
-  { label: 'Explore', action: 'Tap Citizenship', route: '/dashboard', shot: 'user:/dashboard?tab=expat-fire' },
-  { label: 'Citizenship', action: 'Tap Learn', route: '/dashboard', shot: 'user:/dashboard?tab=citizenship' },
+  { label: 'Explore', action: 'Tap Learn', route: '/dashboard', shot: 'user:/dashboard?tab=expat-fire' },
   { label: 'Learn', route: '/dashboard', shot: 'user:/dashboard?tab=learning-hub' },
 ]
 
@@ -118,9 +117,8 @@ const PHONE_MONEY = phoneScreens([
 ])
 const PHONE_PLAN = phoneScreens([
   ['Plan', '(tabs)/plan/index'], ['Freedom date', '(tabs)/plan/freedom'], ['What if', '(tabs)/plan/what-if'],
-  ['Compare', '(tabs)/plan/compare'], ['Scenarios', '(tabs)/plan/scenarios'], ['Goals', '(tabs)/plan/goals'],
-  ['Contributions', '(tabs)/plan/contributions'], ['Explore', '(tabs)/plan/explore'],
-  ['Citizenship', '(tabs)/plan/citizenship'], ['Learn', '(tabs)/plan/learn'],
+  ['What if: Life', '(tabs)/plan/compare'], ['What if: Investing', '(tabs)/plan/scenarios'], ['Goals', '(tabs)/plan/goals'],
+  ['Contributions', '(tabs)/plan/contributions'], ['Explore', '(tabs)/plan/explore'], ['Learn', '(tabs)/plan/learn'],
 ])
 const PHONE_PROFILE = phoneScreens([
   ['Household', 'household'], ['Currency', 'currency'], ['Name', 'name'], ['FIRE type', 'fire-quiz'],

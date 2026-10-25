@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-25 — App psychology pass
+
+- Home's "Your next move" is the one card with a green frame and an icon. While Get set up is open, its next step is Home's only ask (phone hides the next move; website shows the setup step in that slot).
+- Home's freedom card shows how far you've come: "23% there" and the next quarter mark, from the same projection as the date.
+- Linking a bank shows the work: connected, transactions read, payday found, bills found, date updated. The exchange-token API now returns `accounts_count` and `found`.
+- Phone onboarding ends on a "Your plan" screen (the year and first moves) after the reminder ask; the "Free sooner abroad" reveal is gone from onboarding.
+- Plan: Compare and Scenarios are one "What if" with a switch (website: Life changes / Investing; phone: Changes / Life / Investing). Phone Plan has four tiles plus a Learn row (D-105).
+
 ## 2026-10-25 — Phone onboarding asks what gets in the way
 
 - Two new skippable phone onboarding screens after Age: the biggest money worry, and rent/own plus how you invest (multi-select, includes Dividends). Home's next move starts from the worry with a "Because you said…" line; renters are asked for their lease date. "Which do you know better?" became a switch on Spending. Phone only (D-104).
