@@ -1,5 +1,5 @@
 import { memo, useRef } from 'react'
-import { type NativeScrollEvent, type NativeSyntheticEvent, ScrollView, View } from 'react-native'
+import { type NativeScrollEvent, type NativeSyntheticEvent, ScrollView, type ScrollViewInstance, View } from 'react-native'
 
 import { haptic } from '@/lib/haptics'
 import { colors } from '@/theme/colors'
@@ -26,7 +26,7 @@ export function Wheel<T>({ values, value, onChange, format, accessibilityLabel }
   format: (v: T) => string
   accessibilityLabel: string
 }) {
-  const scroller = useRef<ScrollView>(null)
+  const scroller = useRef<ScrollViewInstance>(null)
   const index = Math.max(0, values.indexOf(value))
   const last = useRef(index)
   // Where the wheel opens: set once, so it starts on the answer before the first frame.

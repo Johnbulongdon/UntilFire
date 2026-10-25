@@ -122,9 +122,10 @@ function GlobeSkia({ size, frame, focus, pins = [], cities, onCenter, onTap, col
     const R = R0 * zoom.value
     const cl = Math.cos(lam.value * RAD), sl = Math.sin(lam.value * RAD)
     const cp = Math.cos(phi.value * RAD), sp = Math.sin(phi.value * RAD)
-    const land = Skia.Path.Make()
-    const grid = Skia.Path.Make()
-    const dots = Skia.Path.Make()
+    // Skia 2.14 paths are read-only; builders collect the points, then detach() a path.
+    const land = Skia.PathBuilder.Make()
+    const grid = Skia.PathBuilder.Make()
+    const dots = Skia.PathBuilder.Make()
     const rim = Skia.XYWHRect(cx - R, cy - R, 2 * R, 2 * R)
     // Point i of a ring as [depth, across, up]; depth > 0 is the near side.
     const at = (pts: number[], i: number) => {
@@ -195,8 +196,8 @@ function GlobeSkia({ size, frame, focus, pins = [], cities, onCenter, onTap, col
       return true
     }
     for (const r of LAND_RINGS) {
-      const sub = Skia.Path.Make()
-      if (area(r, sub)) land.addPath(sub)
+      const sub = Skia.PathBuilder.Make()
+      if (area(r, sub)) land.addPath(sub.detach())
     }
     for (const g of GRID_LINES) line(g, grid)
     for (let i = 0; i < cityVecs.length; i += 3) {
@@ -208,7 +209,7 @@ function GlobeSkia({ size, frame, focus, pins = [], cities, onCenter, onTap, col
       if (x < 0.2) continue
       dots.addCircle(cx + R * Y, cy - R * (Z * cp + X * sp), 2.6 + Math.min(3, (zoom.value - 1) * 0.25))
     }
-    return { land, grid, dots }
+    return { land: land.detach(), grid: grid.detach(), dots: dots.detach() }
   })
   const land = useDerivedValue(() => draw.value.land)
   const grid = useDerivedValue(() => draw.value.grid)

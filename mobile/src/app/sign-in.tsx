@@ -2,7 +2,7 @@ import { router } from 'expo-router'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { nativeBuild } from '@/lib/native-build'
 import { useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, TextInput, useColorScheme, View } from 'react-native'
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, TextInput, type TextInputInstance, useColorScheme, View } from 'react-native'
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -31,7 +31,7 @@ export default function SignIn() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [wait, setWait] = useState(0)
-  const codeRef = useRef<TextInput>(null)
+  const codeRef = useRef<TextInputInstance>(null)
 
   // Signed in by any route (Google included): close the sheet.
   useEffect(() => { if (session) router.back() }, [session])

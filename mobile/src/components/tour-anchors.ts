@@ -1,5 +1,5 @@
 import { useCallback, useRef, useSyncExternalStore } from 'react'
-import { Dimensions, type View } from 'react-native'
+import { Dimensions, type ViewInstance } from 'react-native'
 
 /**
  * Places the Home tour points at (GuidedTour): a screen part registers itself
@@ -10,7 +10,7 @@ import { Dimensions, type View } from 'react-native'
 export type TourAnchor = 'hero' | 'actions' | 'today'
 export type Rect = { x: number; y: number; width: number; height: number }
 
-const views = new Map<TourAnchor, Set<View>>()
+const views = new Map<TourAnchor, Set<ViewInstance>>()
 
 // Whether the tour is on screen, so a part that is sometimes hidden (the Today
 // bar when all caught up) can show itself for its stop.
@@ -27,9 +27,9 @@ export function useTourShowing() {
 
 /** Spread on the View the tour should point at: `<View {...useTourAnchor('hero')}>`. */
 export function useTourAnchor(name: TourAnchor) {
-  const ref = useRef<View | null>(null)
-  const set = useCallback((v: View | null) => {
-    const all = views.get(name) ?? new Set<View>()
+  const ref = useRef<ViewInstance | null>(null)
+  const set = useCallback((v: ViewInstance | null) => {
+    const all = views.get(name) ?? new Set<ViewInstance>()
     if (ref.current) all.delete(ref.current)
     ref.current = v
     if (v) all.add(v)
@@ -38,7 +38,7 @@ export function useTourAnchor(name: TourAnchor) {
   return { ref: set, collapsable: false }
 }
 
-const measure = (v: View) => new Promise<Rect | null>(resolve => {
+const measure = (v: ViewInstance) => new Promise<Rect | null>(resolve => {
   try { v.measureInWindow((x, y, width, height) => resolve(width > 0 && height > 0 ? { x, y, width, height } : null)) } catch { resolve(null) }
 })
 

@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react'
-import { StyleSheet, useWindowDimensions, View } from 'react-native'
+import { StyleSheet, useWindowDimensions, View, type ViewInstance } from 'react-native'
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
 
 import { CategoryGlyph } from '@/components/Icon'
@@ -25,7 +25,7 @@ const PAD = 16, ROW = 82, TOP = 96, SUB_ROW = 44, HOLD_MS = 450
 export const DragCategoryPicker = forwardRef<DragPickerHandle, { open: boolean }>(function DragCategoryPicker({ open }, ref) {
   const { width, height } = useWindowDimensions()
   const cats = useMemo(() => expenseCategories(), [])
-  const box = useRef<View>(null)
+  const box = useRef<ViewInstance>(null)
   const origin = useRef({ x: 0, y: 0 })
   const [at, setAt] = useState<{ x: number; y: number } | null>(null)
   const [kinds, setKinds] = useState<string | null>(null)
