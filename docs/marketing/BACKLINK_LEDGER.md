@@ -664,3 +664,12 @@ Local baseline fetch hit FETCH_HEAD permission denied; GitHub main checked indep
 | Endors | not-submitted, excluded | Fresh sample https://endors.me/product/azn8 website anchor uses rel=noopener noreferrer nofollow ugc; excluded despite older third-party followed-link catalog evidence. |
 
 No new accepted submission in this pass. Two qualified next candidates recorded; no repeat of already live SaaSLineup/TheSaaSDir or existing pending forms. Local baseline fetch attempted before tracker change; unrelated drift preserved.
+
+
+## 2026-10-25: requested BuildShipper and NextRankHQ submissions attempted
+
+User explicitly requested submitting both. BuildShipper Chrome form opened and showed URL/Details/Account steps; cookie Reject completed, but browser calls timed out before any product details or authenticated publish could be confirmed. Recovery refreshed browser inventory (Chrome ID changed from 3 to 2); new DOM confirmed website field still empty, then URL-fill/read action timed out again. No accepted submission, account, receipt or live UntilFire link. Do not claim draft saved.
+
+NextRankHQ's official Launch Your Product Free link leads to https://nextrankhq.com/internal-ai-launch-audit. Public normal form has URL input and required Cloudflare Turnstile, submit button disabled while Verifying Security. No challenge solved/bypassed and no POST or listing created. Needs user/browser security verification, followed by actual launch workflow; audit alone would not prove listing submission.
+
+Both official pages opened in Codex as user handoffs (queued). No payments, duplicated listings or success claims. Both remain not submitted with sample-follow evidence only. Baseline fetch attempted before tracker write; unrelated local workspace preserved.
