@@ -4,6 +4,7 @@ import path from 'node:path'
 
 import { chromium, type Browser, type Page } from 'playwright'
 
+import { appAuthKey, botSession, BOT_EMAIL, SITE_AUTH_KEY } from './journeys-bot.ts'
 import { CALC_SHOTS, JOURNEYS, SHOT_BUCKET, SHOT_VIEWPORTS, shotDevice, shotFile, type ShotDevice } from '../lib/journeys.ts'
 
 // Screenshots every journey step that has a `shot`, at desktop and phone size,
@@ -22,9 +23,6 @@ const calculatorOnly = process.env.JOURNEY_CALCULATOR_ONLY === '1'
 const skipCalculator = process.env.JOURNEY_SKIP_CALCULATOR === '1'
 const upload = !calculatorOnly && !!supabaseUrl && !!serviceKey && process.env.JOURNEY_DRY_RUN !== '1'
 
-// A real account the script signs in as. It never pays and never deletes.
-const BOT_EMAIL = 'journeys-bot@untilfire.com'
-
 async function save(file: string, body: Buffer | string, contentType: string) {
   if (!upload) {
     fs.mkdirSync('journey-shots', { recursive: true })
@@ -39,24 +37,12 @@ async function save(file: string, body: Buffer | string, contentType: string) {
   if (!res.ok) throw new Error(`Upload of ${file} failed: ${res.status} ${await res.text()}`)
 }
 
-/** Signs the test account in through the admin API and returns its Supabase session. */
-async function botSession(): Promise<Record<string, unknown> | null> {
+/** Signs the test account in, or returns null without the Supabase variables. */
+async function signInBot(): Promise<Record<string, unknown> | null> {
   if (!supabaseUrl || !serviceKey) return null
-  const headers = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' }
-  const post = (path: string, body: object) => fetch(`${supabaseUrl}${path}`, { method: 'POST', headers, body: JSON.stringify(body) })
-  await post('/auth/v1/admin/users', { email: BOT_EMAIL, email_confirm: true }) // 422 once it exists
-  const link = await (await post('/auth/v1/admin/generate_link', { type: 'magiclink', email: BOT_EMAIL })).json()
-  const res = await post('/auth/v1/verify', { type: 'magiclink', token_hash: link.hashed_token ?? link.properties?.hashed_token })
-  if (!res.ok) throw new Error(`Test account sign-in failed: ${res.status} ${await res.text()}`)
-  const session = await res.json()
-  // Keep the retention emails away from an inbox nobody reads.
-  await fetch(`${supabaseUrl}/rest/v1/profiles?on_conflict=user_id`, {
-    method: 'POST',
-    headers: { ...headers, Prefer: 'resolution=merge-duplicates' },
-    body: JSON.stringify({ user_id: session.user.id, marketing_unsubscribed_at: new Date().toISOString() }),
-  })
-  console.log(`Signed in as the journeys test account (${session.user.id})`)
-  return { ...session, expires_at: session.expires_at ?? Math.floor(Date.now() / 1000) + session.expires_in }
+  const session = await botSession(supabaseUrl, serviceKey)
+  console.log(`Signed in as the journeys test account (${(session.user as { id: string }).id})`)
+  return session
 }
 
 /** $6,000 take-home a month, then $6,000 invested; savings and age keep their suggested values. */
@@ -195,7 +181,7 @@ async function captureApp(browser: Browser, dir: string, shots: string[], shoot:
     })
     if (session) {
       // The app's Supabase client keeps its session under the default key.
-      const key = `sb-${new URL(supabaseUrl!).hostname.split('.')[0]}-auth-token`
+      const key = appAuthKey(supabaseUrl!)
       await page.evaluate(([k, v]) => localStorage.setItem(k, v), [key, JSON.stringify(session)])
       // GuidedTour's seen flag (AsyncStorage is localStorage on web): set, so Home shows without the tour.
       await page.evaluate(() => localStorage.setItem('tour-seen', '1'))
@@ -288,7 +274,7 @@ const stripeShots = [...new Set(steps.filter((s) => s.shot!.startsWith('stripe:'
 // In manifest order, so the onboarding screens are walked in the order the app shows them.
 const appShots = [...new Set(steps.filter((s) => s.shot!.startsWith('app')).map((s) => s.shot!))]
 
-const session = calculatorOnly ? null : await botSession()
+const session = calculatorOnly ? null : await signInBot()
 const stripeReady = !!session && stripeShots.length > 0 && await hasStripeCustomer(String((session.user as { id: string }).id))
 if (session && stripeShots.length && !stripeReady) console.log('Skipping Stripe pages: the test account has no stripe_customer_id yet')
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
@@ -347,8 +333,7 @@ for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
   if (session) {
     // Same browser as the calculator walk, so Home picks up the plan it just
     // made, as it would for a person signing up.
-    // The site's own storageKey (lib/supabase.ts).
-    await page.evaluate(([key, value]) => localStorage.setItem(key, value), ['fire-dashboard-auth', JSON.stringify(session)])
+    await page.evaluate(([key, value]) => localStorage.setItem(key, value), [SITE_AUTH_KEY, JSON.stringify(session)])
     for (const { shot, click } of userShots) {
       if (shotDevice(shot!, device, click) !== device) continue
       try {

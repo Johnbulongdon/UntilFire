@@ -41,6 +41,7 @@
     "test:savings-pace": "node scripts/verify-savings-pace.mjs",
     "test:journey-canvas": "node --experimental-strip-types --no-warnings scripts/verify-journey-canvas.ts",
     "test:journeys": "node --experimental-strip-types --no-warnings scripts/verify-journeys.ts",
+    "dev:login": "node --use-env-proxy --experimental-strip-types --no-warnings scripts/dev-login.ts",
     "journeys:capture": "node --experimental-strip-types --no-warnings scripts/capture-journeys.ts",
     "test:hysa-empty-state": "node scripts/verify-hysa-empty-state-card.mjs",
     "test:emergency-fund-needs": "node scripts/verify-emergency-fund-needs-only.mjs",

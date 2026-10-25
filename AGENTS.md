@@ -178,6 +178,19 @@ Use relevant skills/workflows only when available and applicable.
   build solely for ceremony. Report checks not run and verification limits.
   Investigate relevant failures; never remove a guard just to make checks green.
 
+### Signing in locally
+
+To see signed-in screens on this computer, run `npm run dev:login` instead of
+asking John to sign in. It signs in the Journeys test account
+(journeys-bot@untilfire.com, which never pays or deletes anything) and writes
+`.dev-login/` (git-ignored): `storage-state.json` for Playwright and `sign-in.js`
+to run on the local page in any other browser, then reload. It covers the
+website (`--site`, default `http://localhost:3000`) and the phone's web build
+(`--app`, default `http://localhost:8081`), refuses any address that is not
+localhost, and `--open` opens a signed-in Chromium. It needs `SUPABASE_URL` and
+`SUPABASE_SERVICE_ROLE_KEY` in `.env.local`; never print, paste or commit them.
+The account's data is real, so treat changes there like any shared test data.
+
 Treat deployment identifiers (for example `6Tb7dySgE`) as deployment references,
 not git revisions, unless verified otherwise.
 

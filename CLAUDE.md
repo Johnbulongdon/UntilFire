@@ -95,6 +95,8 @@ free. Documentation edits alone do not authorize a redesign.
   additional evidence.
 - `package.json` — executable command inventory; shared rules explain which
   checks to select, including financial regression guards.
+- `npm run dev:login` — signs local browsers in as the Journeys test account
+  for signed-in checks on localhost ([Signing in locally](AGENTS.md#signing-in-locally)).
 
 The app repo is the single maintained home for public-safe project knowledge,
 including direction and rationale. The vault is historical source material;
