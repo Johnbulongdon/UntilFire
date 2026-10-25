@@ -23,6 +23,9 @@ npx expo install --fix      # fix incompatible package versions
 
 Run lint and typecheck before declaring any task done.
 
+Don't add or change `scripts` in `mobile/package.json`: they are part of the native
+fingerprint, so even a new script blocks phone updates until a store build (D-102).
+
 ## Navigation & Routing
 
 - Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
