@@ -1,4 +1,5 @@
 import { cssInterop } from 'nativewind'
+import { Children, isValidElement, type ReactNode } from 'react'
 import { StyleSheet, Text as RNText, type TextProps, type TextStyle } from 'react-native'
 
 /**
@@ -28,7 +29,22 @@ export function fontFile(family: string | undefined, weight: TextStyle['fontWeig
 
 const CLASS_WEIGHT: Record<string, number> = { 'font-normal': 400, 'font-medium': 500, 'font-semibold': 600, 'font-bold': 700, 'font-extrabold': 800 }
 
-export function Text({ style, ...rest }: TextProps & { className?: string }) {
+/** Every string inside a Text, nested Text included. */
+function textOf(node: ReactNode): string {
+  if (node == null || typeof node === 'boolean') return ''
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(textOf).join('')
+  if (isValidElement<{ children?: ReactNode }>(node)) return Children.toArray(node.props.children).map(textOf).join('')
+  return ''
+}
+
+// Screen recordings (D-103) cover all text by default; a Text is shown only
+// when it holds no digit, currency sign or email, isn't DM Mono financial data
+// and isn't marked `private` (names, merchants). "ph-no-mask" is the tag the
+// PostHog SDK reads; on Android, testID sets it.
+const SENSITIVE = /[0-9$€£¥₹₩₽₺₪฿@]/
+
+export function Text({ style, private: hidden, ...rest }: TextProps & { className?: string; private?: boolean }) {
   const flat = StyleSheet.flatten(style) ?? {}
   // On the phone NativeWind hands the classes over as style; in the browser
   // preview they can arrive as a className instead, so read both.
@@ -42,7 +58,8 @@ export function Text({ style, ...rest }: TextProps & { className?: string }) {
   const weight = classWeight ? (CLASS_WEIGHT[classWeight] as TextStyle['fontWeight']) : flat.fontWeight
   const fontFamily = fontFile(family, weight)
   // Follows the phone's text size (Dynamic Type), capped so big numbers and rows still fit.
-  return <RNText maxFontSizeMultiplier={1.5} {...rest} style={[style, { fontFamily, fontWeight: undefined }]} />
+  const shown = !hidden && family !== 'DMMono' && !SENSITIVE.test(textOf(rest.children))
+  return <RNText maxFontSizeMultiplier={1.5} testID={shown ? 'ph-no-mask' : undefined} {...rest} style={[style, { fontFamily, fontWeight: undefined }]} />
 }
 
 cssInterop(Text, { className: 'style' })

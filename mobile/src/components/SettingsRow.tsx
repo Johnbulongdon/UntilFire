@@ -23,7 +23,7 @@ export function Row({ label, value, onPress, first, busy, icon, fallback }: { la
       {icon ? <RowIcon name={icon} fallback={fallback ?? ''} /> : null}
       <Text className="text-[15px] text-ink">{label}</Text>
       <View className="flex-1 flex-row items-center justify-end gap-1.5">
-        {busy ? <ActivityIndicator color={colors.green} /> : <Text numberOfLines={1} className="text-[14px] text-ink-2">{value}</Text>}
+        {busy ? <ActivityIndicator color={colors.green} /> : <Text private numberOfLines={1} className="text-[14px] text-ink-2">{value}</Text>}
         {onPress ? <Text className="text-[16px] text-ink-3">›</Text> : null}
       </View>
     </View>

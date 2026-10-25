@@ -50,7 +50,7 @@ export function TransactionRow({ t, first, selecting, selected, onToggle, onLong
         <CategoryGlyph cat={cat} size={22} />
       </View>
       <View className="flex-1">
-        <Text numberOfLines={1} className="text-[15px] font-semibold text-ink">{t.description || cat.label}</Text>
+        <Text private numberOfLines={1} className="text-[15px] font-semibold text-ink">{t.description || cat.label}</Text>
         <Text numberOfLines={1} className="mt-0.5 text-[12px] text-ink-3">
           {transfer ? 'Transfer' : cat.label}{t.sub_category ? ` · ${t.sub_category}` : ''}{refunded ? ' · refunded' : ''}
         </Text>

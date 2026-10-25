@@ -7,6 +7,7 @@ import * as Updates from 'expo-updates'
  * each line short and in plain words (the founder reads it to check a build).
  */
 export const UPDATE_LOG: { version: string; date: string; changes: string[] }[] = [
+  { version: '0.2.0', date: '2026-10-25', changes: ['Screen recordings show labels and buttons; amounts, numbers, names and anything you type stay hidden'] },
   { version: '0.2.0', date: '2026-10-24', changes: ['Screen recordings to help us fix confusing screens, with every amount, name and text hidden'] },
   { version: '0.1.0', date: '2026-10-24', changes: ['Connect a bank shows a spinner while Plaid opens', 'Android: connect a bank inside the app instead of the website', 'Android: Explore shows the city list, fixing a crash when opening it', 'Android: Google sign-in no longer flashes an "Unmatched Route" page'] },
   { version: '0.1.0', date: '2026-10-23', changes: ['Home has a "Get set up" checklist that adds the bills it finds in your bank in one tap'] },

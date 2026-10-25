@@ -85,7 +85,7 @@ export default function Household() {
           <View className="rounded-card border border-border bg-card p-5">
             <View className="flex-row items-center justify-between gap-3">
               <View className="flex-1">
-                <Text className="text-[16px] font-bold text-ink">{labelFor(partner)}</Text>
+                <Text private className="text-[16px] font-bold text-ink">{labelFor(partner)}</Text>
                 {partner.email && partner.displayName ? <Text className="text-[12px] text-ink-3">{partner.email}</Text> : null}
               </View>
               <View className="rounded-full bg-green-50 px-2.5 py-0.5"><Text className="text-[12px] font-bold text-pos-ink">Connected</Text></View>
