@@ -4,6 +4,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { deriveFirePersonality, quickFreedom } from '@/engine'
 
 export type Goal = 'retire-early' | 'financial-freedom' | 'exploring'
+/** What gets in the way most (onboarding): it picks Home's first next move. */
+export type Worry = 'payday' | 'debt' | 'invest' | 'none'
+export type Housing = 'rent' | 'own'
+export type InvestStyle = 'none' | 'index' | 'dividends' | 'property'
 
 /** What onboarding collects. Monthly amounts, in dollars. Kept on the device only. */
 export interface Plan {
@@ -14,6 +18,10 @@ export interface Plan {
   monthlySpending: number
   invested: number
   age?: number
+  worry?: Worry
+  housing?: Housing
+  /** Any of these; empty when skipped. */
+  investing?: InvestStyle[]
   /** The currency onboarding's amounts were typed in. Amounts here are still USD. */
   currency?: string
 }
@@ -76,6 +84,9 @@ export function planFromDraft(draft: Partial<Plan>): Plan {
     monthlySpending: draft.monthlySpending ?? 0,
     invested: draft.invested ?? 0,
     age: draft.age,
+    worry: draft.worry,
+    housing: draft.housing,
+    investing: draft.investing,
     currency: draft.currency,
   }
 }

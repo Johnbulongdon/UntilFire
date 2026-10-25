@@ -20,8 +20,8 @@ export default function Invested() {
 
   return (
     <QuestionScreen
-      step={7}
-      steps={8}
+      step={6}
+      steps={9}
       title="What have you saved and invested?"
       hint="Retirement accounts, funds and cash savings. Zero is fine."
       cta="Continue"

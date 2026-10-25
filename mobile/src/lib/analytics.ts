@@ -55,6 +55,8 @@ export const Events = {
   REWARD_MONTH_GRANTED: 'app_reward_month_granted',
   // Home → Get set up, as on the website (lib/setup-steps).
   SETUP_CHECKLIST: 'funnel_setup_checklist',
+  // Onboarding's worry, housing and investing answers, so demand (dividends) is countable.
+  ONBOARDING_ANSWERED: 'app_onboarding_answered',
 } as const
 
 export function track(event: (typeof Events)[keyof typeof Events], props?: Record<string, string | number | boolean | null>) {
@@ -81,11 +83,11 @@ export function yearsBucket(years: number | null) {
 /**
  * Onboarding question number → the website's step_id and step_index
  * (CALCULATOR_STEP_INDEX), so a breakdown by step lines up across both.
- * Pay and know exist only on the phone, so they carry no website index.
+ * Pay, worry and home exist only on the phone, so they carry no website index.
  */
 const STEP_IDS: Record<number, [string, number | null]> = {
   1: ['goal', 0], 2: ['city', 1], 3: ['pay', null], 4: ['income', 3],
-  5: ['know', null], 6: ['savings', 4], 7: ['portfolio', 5], 8: ['age', 6],
+  5: ['savings', 4], 6: ['portfolio', 5], 7: ['age', 6], 8: ['worry', null], 9: ['home', null],
 }
 
 export function stepProps(step: number, steps: number) {

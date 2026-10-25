@@ -14,15 +14,15 @@ export default function Age() {
 
   return (
     <QuestionScreen
-      step={8}
-      steps={8}
+      step={7}
+      steps={9}
       title="How old are you?"
       hint="So we can tell you how old you'll be when you're free."
-      cta="Show my freedom date"
+      cta="Continue"
       canContinue
-      onNext={() => { setDraft({ age }); router.push('/onboarding/reveal') }}
+      onNext={() => { setDraft({ age }); router.push('/onboarding/worry') }}
       skipLabel="Skip"
-      onSkip={() => { setDraft({ age: undefined }); router.push('/onboarding/reveal') }}
+      onSkip={() => { setDraft({ age: undefined }); router.push('/onboarding/worry') }}
     >
       <Wheel values={AGES} value={age} onChange={setAge} format={String} accessibilityLabel="Your age" />
     </QuestionScreen>

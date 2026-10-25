@@ -3245,3 +3245,24 @@ first day of Android testers showed 12 people reach sign-in and 5 finish.
   JS-only change, sent as an update to build 14.
 **Revisit:** if masking leaks any amount in a real recording, turn replay off
 with an update and report it.
+
+### D-104 — October 25: phone onboarding asks two personal questions
+**Status:** Active. Founder's call, 2026-10-25 ("Make onboarding more personal"
+thread), after phone data showed all 12 testers who started the questions
+finished them; people leave at sign-in, not mid-questions.
+- After Age, two skippable one-tap screens: "What gets in the way most?"
+  (payday, debt, investing, or "Nothing, I just want my plan") and "Your home"
+  (rent or own, then how you invest: any of Not yet, Index funds, Dividends,
+  Property). Then the reveal, unchanged.
+- "Which do you know better?" is gone; Spending has a spend/save switch.
+  Nine questions now (was eight).
+- Home's "Your next move" uses the worry: payday favours the Money moves and
+  says "Make payday last", debt and investing bring those contribution-ladder
+  steps forward, each with a "Because you said…" line. A renter whose Rent bill
+  has no lease date is asked for it when no money move is due. Answers stay on
+  the device (Plan) and as `app_onboarding_answered` events, so dividend
+  interest can be counted before building for it.
+- Not added: a separate "building your plan" screen (the reveal's curve does
+  it) and a "your plan" summary (Home's next move does it). The FIRE quiz stays
+  in Profile. Website calculator unchanged.
+**Revisit:** if the worry or home screens lose more than 1 in 10 people.

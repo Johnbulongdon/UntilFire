@@ -11,7 +11,7 @@ import { answers, PAY_EVERY, type PayEvery } from '@/lib/onboarding-answers'
 export default function Pay() {
   const [picked, setPicked] = useState<PayEvery>(answers.pay)
   return (
-    <QuestionScreen step={3} steps={8} title="How often do you get paid?">
+    <QuestionScreen step={3} steps={9} title="How often do you get paid?">
       <View className="gap-3">
         {PAY_EVERY.map(p => (
           <OptionCard key={p.key} title={p.label} selected={picked === p.key}

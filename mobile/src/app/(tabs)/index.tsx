@@ -162,10 +162,11 @@ const MOVE_ROUTE: Record<NextMove['tab'], '/money/budget' | '/plan/contributions
 
 /** The one next move (D-89), the website's rule: over budget, then no budget, then the contribution ladder. "Not now" puts it off a week. */
 function NextMoveCard({ data }: { data: AccountData }) {
+  const { plan: answers } = usePlan()
   const [snoozed, setSnoozed] = useState<Set<string> | null>(null)
   useEffect(() => { snoozedMoves().then(setSnoozed).catch(() => setSnoozed(new Set())) }, [])
   if (!snoozed) return null
-  const move = phoneNextMove(data, snoozed)
+  const move = phoneNextMove(data, snoozed, answers)
   if (!move) return null
   const later = () => { haptic.tick(); snoozeMove(move.key).catch(() => {}); setSnoozed(new Set([...snoozed, move.key])) }
   return (
@@ -175,13 +176,14 @@ function NextMoveCard({ data }: { data: AccountData }) {
         <Text className="text-[13px] font-bold" style={{ color: colors.green }}>{move.door === 'plan' ? 'Plan ›' : 'Money ›'}</Text>
       </View>
       <Text className="text-[18px] font-bold leading-6 text-ink">{move.title}</Text>
+      {!!move.because && <Text className="text-[14px] leading-5 text-ink-2">{move.because}</Text>}
       {!!move.payoff && (
         <View className="self-start rounded-full px-2.5 py-1" style={{ backgroundColor: colors.tealSoft }}>
           <Text className="text-[12px] font-bold" style={{ color: colors.tealDeep }}>{move.payoff}</Text>
         </View>
       )}
       <View className="flex-row items-center gap-2">
-        <Button small label={move.button} onPress={() => { haptic.press(); router.push(MOVE_ROUTE[move.tab]) }} />
+        <Button small label={move.button} onPress={() => { haptic.press(); router.push(move.href ?? MOVE_ROUTE[move.tab]) }} />
         <Button small kind="quiet" label="Not now" onPress={later} />
       </View>
     </View>

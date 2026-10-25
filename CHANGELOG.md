@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-25 — Phone onboarding asks what gets in the way
+
+- Two new skippable phone onboarding screens after Age: the biggest money worry, and rent/own plus how you invest (multi-select, includes Dividends). Home's next move starts from the worry with a "Because you said…" line; renters are asked for their lease date. "Which do you know better?" became a switch on Spending. Phone only (D-104).
+
 ## 2026-10-24 — Bank connect spinner
 
 - Connect a bank shows a spinner in the button while Plaid's screen loads, instead of a faded "Connecting…" that looked frozen. `Button` gained a `busy` prop (spinner plus label, taps blocked) for other slow actions.
