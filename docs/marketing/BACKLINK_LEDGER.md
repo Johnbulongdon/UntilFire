@@ -693,3 +693,14 @@ Supersedes prior not-submitted/security blocker. User completed verification; Co
 Visible receipt: "Submission received", "Your free submission is saved", "UntilFire is saved for free Project Note consideration." Saved reference PR-96A91C8B37. A receipt email was accepted for delivery, not confirmed delivered to inbox. Status pending editorial consideration; no publication or live UntilFire backlink claimed. No payment or optional upsell. Do not resubmit. Screenshot outputs/directory-partners/projectradar-receipt-2026-10-25.png; browser receipt tab retained. Private one-time optional detail links not copied into this ledger.
 
 Normal baseline fetch attempted before tracker-only write; unrelated local changes preserved.
+
+
+## 2026-10-25: AwesomeFinTech free submission accepted
+
+Supersedes earlier AwesomeFinTech not-submitted/connectivity note. Official https://www.awesomefintech.com/add/ company link resolves to Google Form 1FAIpQLSfJiom8a0sLguZ26omGCAsIBBN5p4HJKs5Tx_01yvHKc0jLBw. Free normal form POST returned HTTP 200 and "您的回复已记录。" (Your response has been recorded). Receipt outputs/directory-partners/awesomefintech-receipt-2026-10-25.html. Status submitted / pending editorial review, no public UntilFire listing or own backlink verified. Do not resubmit.
+
+John supplied 2026, Palo Alto, John / John NG, no funding. Submitted company UntilFire; founding year 2026; Palo Alto, United States; founder John Ng; funding None; website https://www.untilfire.com/; contact ash@untilfire.com (previously approved); categories Financial Wellness, Wealth Tech, Personal Finance; factual calculator/planner description, no guarantee or investment-advice claim; optional Twitter/LinkedIn omitted. Allowed listing-related follow-up questions. Sample https://www.awesomefintech.com/company/brightplan-mjpjm/ independently has direct https://brightplan.com anchor with rel=noreferrer only. Sample followed link is evidence of directory behavior, not UntilFire publication.
+
+Other screening: PeplioHUB's current FAQ restricts fit to SEO/marketing/AI/content despite Other tools category; UntilFire was not submitted without demonstrated fit. StakDock public renderer uses nofollow for ordinary non-premium/non-featured vendor links; no free dofollow submission made. No payment, account, badge, newsletter signup or duplicate submission.
+
+Baseline fetch updated origin/main before ledger-only change, while unrelated local changes were preserved. Background repository garbage collection still reports pre-existing bad-tree/repack error; no repair attempted.
