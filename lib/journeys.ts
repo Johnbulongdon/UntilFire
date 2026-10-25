@@ -73,7 +73,7 @@ const WEB_SIGN_UP: JourneyStep[] = [
 
 /** Phone onboarding after sign-in, in the order the screens push each other. */
 const PHONE_ONBOARDING: JourneyStep[] = [
-  'goal', 'city', 'pay', 'income', 'know', 'spending', 'invested', 'age',
+  'goal', 'city', 'pay', 'income', 'spending', 'invested', 'age', 'worry', 'home',
   'reveal', 'life', 'number', 'standing', 'abroad', 'reminder',
 ].map((screen) => ({ label: screen[0].toUpperCase() + screen.slice(1), route: `onboarding/${screen}.tsx`, shot: `app:/onboarding/${screen}` }))
 
