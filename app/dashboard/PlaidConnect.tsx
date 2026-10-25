@@ -6,6 +6,7 @@ import { trackHysaEmptyStateCtaClicked } from "@/lib/analytics";
 import { isPro, supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui";
 import { BankLogo, MoneyList, MoneyRow } from "./MoneyCards";
+import BankWorking, { type BankFound } from "./BankWorking";
 
 export type PlaidItem = {
   id: string;
@@ -57,6 +58,8 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
   const [loadingLink, setLoadingLink] = useState(false);
   const [importing, setImporting] = useState(false);
   const [connectResult, setConnectResult] = useState<{ name: string; added: number } | null>(null);
+  // Linking a bank, shown working (BankWorking): the bank's name while it imports, then what it found.
+  const [working, setWorking] = useState<{ name: string; result: BankFound | null } | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [syncResults, setSyncResults] = useState<Record<string, SyncResult>>({});
@@ -131,6 +134,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
         return;
       }
       const institution = metadata.institution;
+      setWorking({ name: institution?.name ?? "your bank", result: null });
       const res = await fetch("/api/plaid/exchange-token", {
         method: "POST",
         headers: {
@@ -147,6 +151,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
       setImporting(false);
       setLinkToken(null);
       if (!res.ok) {
+        setWorking(null);
         setError(data.error ?? "Failed to import transactions");
         return;
       }
@@ -165,9 +170,10 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
         ...prev,
         [data.item_id]: { added: data.added_count, modified: 0, removed: 0 },
       }));
-      const result = { name: data.institution_name, added: data.added_count };
-      setConnectResult(result);
-      setTimeout(() => setConnectResult(null), 4000);
+      setWorking({ name: data.institution_name, result: {
+        name: data.institution_name, added: data.added_count, accounts: data.accounts_count ?? 0,
+        found: data.found ?? { payday: false, bills: 0 },
+      } });
       onTransactionsImported?.();
     },
     [onTransactionsImported],
@@ -270,6 +276,8 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
         @keyframes plaid-spin { to { transform: rotate(360deg); } }
         @keyframes plaid-slide-in { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
       `}</style>
+
+      {working && <BankWorking name={working.name} result={working.result} onClose={() => setWorking(null)} />}
 
       {connectResult && (
         <div
