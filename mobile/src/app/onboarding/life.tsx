@@ -10,7 +10,7 @@ import { freedomFor, planFromDraft, usePlan } from '@/state/plan'
 const LIFE = 100
 const ASSUMED_AGE = 35
 
-/** Reveal 2 of 5 (the website's "life in years"): a hundred squares, lived, working and free. */
+/** Reveal 2 of 4 (the website's "life in years"): a hundred squares, lived, working and free. */
 export default function Life() {
   const { draft } = usePlan()
   const plan = useMemo(() => planFromDraft(draft), [draft])

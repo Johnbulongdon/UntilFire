@@ -8,7 +8,7 @@ import { Text } from '@/components/Text'
 import { compactMoney } from '@/lib/format'
 import { freedomFor, planFromDraft, usePlan } from '@/state/plan'
 
-/** Reveal 3 of 5: the freedom number, and how much of it is already there. */
+/** Reveal 3 of 4: the freedom number, and how much of it is already there. */
 export default function FreedomNumber() {
   const { draft } = usePlan()
   const plan = useMemo(() => planFromDraft(draft), [draft])

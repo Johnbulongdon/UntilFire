@@ -35,6 +35,20 @@ export const SETUP_LABEL: Record<SetupStepId, string> = {
   budget: "Set a budget",
 };
 
+/** What a step is for, in one short line, when it stands in as Home's next move. */
+export const SETUP_WHY: Record<SetupStepId, string> = {
+  income: "Your freedom date starts from it",
+  bank: "Your date then uses your real spending",
+  payday: "Until payday gets an end date",
+  bills: "Bills get set aside before you spend",
+  budget: "You see overspending while it's small",
+};
+
+/** The button when a step stands alone (Home), since the list isn't on screen. */
+export const SETUP_BUTTON: Record<SetupStepId, string> = {
+  income: "Add income", bank: "Link bank", payday: "Add payday", bills: "Add bills", budget: "Set budget",
+};
+
 /** The button on an unfinished step. */
 export const SETUP_CTA: Record<SetupStepId, string> = {
   income: "Add", bank: "Link", payday: "Add", bills: "Add", budget: "Set",

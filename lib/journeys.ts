@@ -74,8 +74,8 @@ const WEB_SIGN_UP: JourneyStep[] = [
 /** Phone onboarding after sign-in, in the order the screens push each other. */
 const PHONE_ONBOARDING: JourneyStep[] = [
   'goal', 'city', 'pay', 'income', 'spending', 'invested', 'age', 'worry', 'housing',
-  'reveal', 'life', 'number', 'standing', 'abroad', 'reminder',
-].map((screen) => ({ label: screen[0].toUpperCase() + screen.slice(1), route: `onboarding/${screen}.tsx`, shot: `app:/onboarding/${screen}` }))
+  'reveal', 'life', 'number', 'standing', 'reminder', 'your-plan',
+].map((screen) => ({ label: screen[0].toUpperCase() + screen.slice(1).replace('-', ' '), route: `onboarding/${screen}.tsx`, shot: `app:/onboarding/${screen}` }))
 
 /** Website Money and Plan pages; sub-pages without their own URL are opened like a person would, by their tab. */
 const WEB_MONEY: JourneyStep[] = [

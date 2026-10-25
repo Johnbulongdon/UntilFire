@@ -12,7 +12,7 @@ import { freedomFor, planFromDraft, usePlan } from '@/state/plan'
 const US_SAVING_RATE = 5
 const FIRE_SAVING_RATE = 25
 
-/** Reveal 4 of 5, how you stack up: your saving rate against the average and a typical FIRE saver. */
+/** Reveal 4 of 4, how you stack up: your saving rate against the average and a typical FIRE saver. */
 export default function Standing() {
   const { draft } = usePlan()
   const plan = useMemo(() => planFromDraft(draft), [draft])
@@ -27,7 +27,7 @@ export default function Standing() {
   }
 
   return (
-    <RevealFrame eyebrow="How you stack up" next="Continue" onNext={() => router.push('/onboarding/abroad')} second={{ label: 'Share my result', onPress: share }}>
+    <RevealFrame eyebrow="How you stack up" next="Continue" onNext={() => router.push('/onboarding/reminder')} second={{ label: 'Share my result', onPress: share }}>
       <Text className="font-display text-[30px] font-bold leading-9 text-white">
         {beats ? <>You save <Text className="text-aqua">{rate}%</Text> of your take-home.</> : <>You're saving <Text className="text-aqua">{rate}%</Text> right now.</>}
       </Text>

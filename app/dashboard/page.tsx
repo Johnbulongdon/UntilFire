@@ -41,7 +41,10 @@ import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessB
 import FreeToSpendRunway from "./FreeToSpendRunway";
 import FreeToSpendHome from "./FreeToSpendHome";
 import SetupChecklist, { type AddedExpected } from "./SetupChecklist";
-import type { SetupFacts, SetupStepId } from "@/lib/setup-steps";
+import { freedomProgress, progressPercent } from "@/lib/freedom-progress";
+import { SETUP_BUTTON, SETUP_FINISHED_KEY, SETUP_LABEL, SETUP_WHY, setupSteps, type SetupFacts, type SetupStepId } from "@/lib/setup-steps";
+import type { IconName } from "@/components/ui";
+import type { NextMove } from "@/lib/next-move";
 import type { RawTx } from "@/lib/recurring-detect";
 import { FreedomCard, MonthCard, GlanceRow, NextMoveCard, UntilPaydayCard, type MonthCategory } from "./HomeCards";
 import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, MoneyTrack, Fig, StackBar, PaceBar, MonthCalendar, BankLogo } from "./MoneyCards";
@@ -725,6 +728,8 @@ function SectionLabel({ icon, text, color = "var(--uf-ink)" }: { icon: string; t
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
+const SETUP_ICON: Record<SetupStepId, IconName> = { income: "money", bank: "bank", payday: "calendar", bills: "card", budget: "target" };
+
 function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60, budget = {}, expectedRows = [], onExpectedAdded, onSetupStep }: {
   spreadCategories?: string[];
   /** Typed on the phone; in net worth only (audit round 2). */
@@ -1106,6 +1111,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     return Array.from(byYear.values()).map((b) => ({ ...b, label: String(b.year) }));
   }, [chartData, thisYear, freeYear]);
   const todayPoint = yearBars.find((b) => b.year === thisYear) ?? yearBars[0];
+  // How far you've come (lib/freedom-progress): today's point on the same curve against the FIRE target.
+  const howFar = useMemo(() => (todayPoint ? freedomProgress(todayPoint.value, fireTarget, yearBars) : null), [todayPoint, fireTarget, yearBars]);
 
   // Milestones drawn on the curve, so a far-off date still shows the steps
   // between here and there: the first year past a quarter and a half of the
@@ -1239,6 +1246,20 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     income, bankLinked: plaidAccounts.length > 0, typedInvestments: k401 + rothIRA + taxable,
     expected: expectedRows.map((r) => ({ type: r.transaction_type, recurrence: r.recurrence })), budget,
   }), [income, plaidAccounts.length, k401, rothIRA, taxable, expectedRows, budget]);
+  // While Get set up is open, its next step is Home's next move: one ask, not two.
+  const [setupFinished, setSetupFinished] = useState<boolean | null>(null);
+  useEffect(() => { try { setSetupFinished(localStorage.getItem(SETUP_FINISHED_KEY) === "1"); } catch { setSetupFinished(false); } }, []);
+  const setupMove = useMemo<{ step: SetupStepId; move: NextMove } | null>(() => {
+    if (setupFinished !== false) return null;
+    const steps = setupSteps(setupFacts);
+    const at = steps.findIndex((s) => !s.done);
+    if (at < 0) return null;
+    const step = steps[at].id;
+    return { step, move: {
+      key: `setup:${step}`, title: SETUP_LABEL[step], payoff: `Step ${at + 1} of ${steps.length}`,
+      door: "money", tab: "cashflow", button: SETUP_BUTTON[step],
+    } };
+  }, [setupFinished, setupFacts]);
   const setupTxns = useMemo<RawTx[]>(() => recentTransactions
     .filter((t) => t.transaction_type === "expense" || t.transaction_type === "income")
     .map((t, i) => ({ id: String(i), date: t.date.slice(0, 10), amount: t.transaction_type === "expense" ? netAmt(t) : t.amount,
@@ -1638,6 +1659,10 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         yearsAway={exactFreedomDate ? Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5)) : fireYear}
         age={fireAge > 0 && exactFreedomDate ? Math.round(fireAge + Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5))) : null}
         onOpen={() => onTabChange?.("fire-calculator")}
+        progress={howFar ? {
+          pct: progressPercent(howFar.share), share: howFar.share,
+          next: howFar.next ? `Next: ${Math.round(howFar.next.mark * 100)}%${howFar.next.year != null ? ` in ${howFar.next.year}` : `, ${fmtMoney(howFar.next.toGo, true)} to go`}` : "Your freedom number is there",
+        } : undefined}
         route={retireCity ? {
           from: cityName ? cityName.split(",")[0] : "",
           fromFlag: cityName ? CITIES.find((c) => c.name === cityName)?.flag ?? "\u{1F3E0}" : "",
@@ -1791,7 +1816,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       </HomeSlot>
       {/* ── Freedom date + best move ─────────────────────────────────────── */}
       <HomeSlot id="contribution">
-      {nextMove ? (
+      {setupMove && !isSnoozed(setupMove.move.key) ? (
+        <NextMoveCard move={setupMove.move} because={SETUP_WHY[setupMove.step]} icon={SETUP_ICON[setupMove.step]} fmt={(n) => fmtMoney(n)}
+          onOpen={() => onSetupStep?.(setupMove.step)}
+          onSnooze={() => { snooze(setupMove.move.key); setSnoozeTick((t) => t + 1); }} />
+      ) : nextMove ? (
         <NextMoveCard move={nextMove} fmt={(n) => fmtMoney(n)}
           onOpen={() => onTabChange?.(nextMove.tab)}
           onSnooze={() => { snooze(nextMove.key); setSnoozeTick((t) => t + 1); }} />

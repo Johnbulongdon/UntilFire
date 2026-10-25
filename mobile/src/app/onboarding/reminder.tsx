@@ -35,7 +35,8 @@ export default function Reminder() {
   }, [swing])
   const bell = useAnimatedStyle(() => ({ transform: [{ rotate: `${swing.value}deg` }] }))
 
-  const finish = () => { AsyncStorage.setItem('today-reminder-asked', '1').catch(() => {}); router.replace(session ? '/(tabs)' : '/save-plan') }
+  // Onboarding ends on Your plan, not on this ask (peak-end).
+  const finish = () => { AsyncStorage.setItem('today-reminder-asked', '1').catch(() => {}); router.push('/onboarding/your-plan') }
 
   return (
     <SafeAreaView className="flex-1 bg-ground">
