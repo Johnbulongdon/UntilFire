@@ -19,9 +19,9 @@ import { SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/li
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 
 /* Transactions show cents: these are reconciled against a statement. */
-// On phones the category picker is a bottom sheet; a portal lifts it out of the row's clipping and stacking.
-function PickerHost({ portal, children }: { portal: boolean; children: ReactNode }) {
-  return portal && typeof document !== "undefined" ? createPortal(children, document.body) : <>{children}</>;
+// The category picker renders in a portal: the row clips its overflow. Desktop anchors it to the icon; phones show a bottom sheet.
+function PickerHost({ children }: { children: ReactNode }) {
+  return typeof document !== "undefined" ? createPortal(children, document.body) : null;
 }
 
 const txMoney = (n: number, currency = "USD") => formatMoney(n, { currency, decimals: 2 });
@@ -931,11 +931,7 @@ function TransactionList({
   const [filter, setFilter] = useState<"all" | "expense" | "income" | "transfer">("all");
   const [tagFilter, setTagFilter] = useState<"all" | "need" | "want" | "work">("all");
   const [catPickerTxId, setCatPickerTxId] = useState<string | null>(null);
-  const [phoneSheet, setPhoneSheet] = useState(false);
-  useEffect(() => {
-    const q = matchMedia("(max-width: 700px)"); const set = () => setPhoneSheet(q.matches);
-    set(); q.addEventListener("change", set); return () => q.removeEventListener("change", set);
-  }, []);
+  const [pickerPos, setPickerPos] = useState<{ left: number; top?: number; bottom?: number }>({ left: 0 });
   const [swipedId, setSwipedId] = useState<string | null>(null);
   const touchStartX = useRef<number>(0);
 
@@ -944,8 +940,11 @@ function TransactionList({
     const handler = (e: MouseEvent) => {
       if (!(e.target as HTMLElement).closest("[data-cat-picker]")) setCatPickerTxId(null);
     };
+    // Anchored to the icon, so it would drift when the page scrolls under it.
+    const onScroll = () => { if (window.innerWidth > 700) setCatPickerTxId(null); };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    window.addEventListener("scroll", onScroll, true);
+    return () => { document.removeEventListener("mousedown", handler); window.removeEventListener("scroll", onScroll, true); };
   }, [catPickerTxId]);
   const todayYmd = new Date().toISOString().split("T")[0];
   const allCategories = useMemo(() => [...expenseCategories, ...INCOME_CATEGORIES], [expenseCategories]);
@@ -1171,6 +1170,9 @@ function TransactionList({
                             onClick={(e) => {
                               e.stopPropagation();
                               if (tx.transaction_type === "transfer") return;
+                              const r = e.currentTarget.getBoundingClientRect();
+                              const below = r.bottom + 6 + 300 <= window.innerHeight;
+                              setPickerPos({ left: Math.max(8, Math.min(r.left, window.innerWidth - 292)), ...(below ? { top: r.bottom + 6 } : { bottom: window.innerHeight - r.top + 6 }) });
                               setCatPickerTxId(catPickerTxId === tx.id ? null : tx.id);
                             }}
                             style={{ width: 36, height: 36, borderRadius: "50%", background: chipColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, border: "none", cursor: tx.transaction_type === "transfer" ? "default" : "pointer", padding: 0, outline: catPickerTxId === tx.id ? `2px solid ${chipColor}` : "none", outlineOffset: 2, transition: "outline 0.1s" }}
@@ -1178,12 +1180,12 @@ function TransactionList({
                             {chipEmoji}
                           </button>
                           {catPickerTxId === tx.id && (
-                            <PickerHost portal={phoneSheet}>
+                            <PickerHost>
                             <div aria-hidden className="uf-cat-scrim" />
                             <div
                               data-cat-picker
                               className="uf-cat-picker"
-                              style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 200, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: 12, boxShadow: "0 6px 24px rgba(0,0,0,0.14)", width: 228, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}
+                              style={{ position: "fixed", ...pickerPos, zIndex: 200, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: 12, boxShadow: "0 6px 24px rgba(0,0,0,0.14)", width: 284, display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 6 }}
                             >
                               <div style={{ gridColumn: "1/-1", fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 4 }}>
                                 Change category
