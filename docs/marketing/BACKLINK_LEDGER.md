@@ -565,3 +565,12 @@ Baseline: latest pushed main `bbecec0b12962be5d89e7d0ef5fdf7e6f4866f22` reverifi
 Screening: Freeboard explicitly says it does not pass ranking credit and routes through click tracking; skipped under dofollow-only scope. HereIsMySaaS requires sign-in. AI-only/design directories were not used without demonstrated product fit. aifindr now requires GitHub sign-in despite its no-account text; no submission. WebRankDirectory returned HTTP 403; no bypass.
 
 Baseline: latest fetched `origin/main` remains `bbecec0b12962be5d89e7d0ef5fdf7e6f4866f22`. Fetch succeeded but Git background maintenance reported a pre-existing bad-tree/repack error; unrelated local changes preserved. This PR changes only the backlink ledger.
+
+
+## 2026-10-25: ShowMeYourSaaS submission
+
+| Directory | Status | Evidence |
+| --- | --- | --- |
+| ShowMeYourSaaS | `pending` - followed link advertised, not verified | User explicitly requested help completing its open submit form. Submitted once via its normal public `POST https://showmeyoursaas.com/api/submissions`, free `plan:none`. HTTP 201 receipt `{"id":"e5c8aab6-a04c-4d41-b177-55ac4643203b","status":"pending"}`. Used approved `ash@untilfire.com`, John, public product facts, free-plan pricing, Analytics category (no finance category available), and the existing public Reddit handle. Optional media URLs left blank. Publisher's submit page advertises a permanent profile, followed website link and no launch-period listing charge. No published product profile was found to inspect, so link type remains unverified and no backlink is counted. No payment/badge/account. Local receipt `outputs/directory-partners/showmeyoursaas-receipt-2026-10-25.json`. Do not resubmit from the partially filled browser form. |
+
+Baseline latest pushed main rechecked through GitHub, `bbecec0b12962be5d89e7d0ef5fdf7e6f4866f22`; local Git transport failed and unrelated local changes were preserved. Only the ledger is changed in the receipt PR.
