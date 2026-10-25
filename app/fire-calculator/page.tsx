@@ -149,7 +149,8 @@ export default function FireCalculatorLandingPage() {
             <span style={{ color: 'var(--uf-green-900)', fontWeight: 800 }}>FIRE Calculator</span>
           </nav>
 
-          <header style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(280px, 0.65fr)', gap: 28, alignItems: 'stretch', marginBottom: 34 }}>
+          <style>{`@media (max-width: 720px) { .uf-fc-hero { grid-template-columns: minmax(0, 1fr) !important; } .uf-fc-hero > section { padding: 26px 20px !important; } }`}</style>
+          <header className="uf-fc-hero" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(280px, 0.65fr)', gap: 28, alignItems: 'stretch', marginBottom: 34 }}>
             <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 24, padding: '34px 30px' }}>
               <p style={{ margin: '0 0 12px', color: 'var(--uf-green)', fontSize: 12, fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase' }}>
                 FIRE calculator
