@@ -466,6 +466,21 @@ function FooterSection() {
           <summary>Directory partners</summary>
           <div className="uf7-listings-badges" aria-label="Directory badges">
           <a
+            href="https://saascubes.com"
+            target="_blank"
+            rel="noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://saascubes.com/images/badges/badge-dark.png"
+              alt="Listed on SaaS Cubes"
+              width={175}
+              height={54}
+              loading="lazy"
+            />
+          </a>
+          <a
             href="https://toolcurio.com"
             target="_blank"
             rel="noopener"
