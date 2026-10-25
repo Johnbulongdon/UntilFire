@@ -722,3 +722,12 @@ StackLedge recheck still redirects /submit to login despite homepage no-account-
 Supersedes prior Clapstorm not-submitted/sign-in blocker. At John's explicit request, used normal Google sign-in with existing John account, reached public launch form, filled UntilFire, https://www.untilfire.com/, Finance category, tagline See when work could become optional., and factual FIRE-calculator/planner description. Optional logo omitted. Current round selected, no payment or optional badge required. Clicked Launch it once. Visible success: "You're live on the board" and navigation to https://www.clapstorm.com/p/untilfire. No claps, reviews, social shares or badge code posted.
 
 Independent anonymous public HTTP 200 check at https://www.clapstorm.com/p/untilfire confirms direct https://www.untilfire.com/ website anchor with rel=noopener only; no nofollow, ugc, sponsored or redirect intermediary. Status live-follow. Search-engine indexing not claimed. Screenshot outputs/directory-partners/clapstorm-live-2026-10-25.png. Do not resubmit; existing listing should be edited if needed. Retained published page as deliverable. Normal main fetch attempted before tracker-only update; unrelated local changes preserved.
+
+
+## 2026-10-25: SaaSolution free editorial submission accepted
+
+| Platform | Status | Evidence |
+| --- | --- | --- |
+| SaaSolution | submitted / pending editorial review | https://saasolution.io/submit/ free no-account form. Existing tracker had no SaaSolution record and current public homepage had no UntilFire match. Sample https://saasolution.io/tool/submitmystartup/ returned direct vendor website anchors with rel=noopener only (no nofollow/ugc/sponsored). Normal form handler POST /api/submit/ with official homepage, approved ash@untilfire.com, factual <=280-character calculator/planner description, empty honeypot, real form-read timestamp returned HTTP 200 {"success":true,"message":"Submission received","id":502}. Receipt outputs/directory-partners/saasolution-receipt-2026-10-25.json. No account, payment, badge or newsletter. Review timing unknown; publication not guaranteed. UntilFire's own published link is not yet verified and must not count as live-follow. Do not resubmit. |
+
+User's dofollow-only requirement applies: sample markup qualified this editorial submission, but no live UntilFire backlink claimed until public listing and own anchor are checked. Latest main fetch attempted before ledger-only update; local unrelated drift preserved. Existing background git repack error not repaired.
