@@ -653,3 +653,14 @@ Baseline fetch origin main attempted before tracker write; unrelated local drift
 Checked additional candidates without claiming success: Bidrise.live sample https://bidrise.live/p/tta1 uses rel=ugc nofollow noopener noreferrer and official submit FAQ disclaims ranking credit. Shipboard sample https://shipboard.live/s/azn8.com uses rel=ugc noopener. DealMyApp sample https://dealmyapp.com/listings/azn8 uses rel=nofollow noopener. All excluded. SaaS Dealer's sample /tools/dcs4 exposes a nofollow vendor pricing link; main followed-link eligibility was not established, so not submitted. AlterBase's free lane requires a badge. Unloc's free form requires a human check. isthereanytool.app requires account and mentions payment; SaaSHammer and Saaspa.ge require sign-in. Saasuji returned HTTP 402. webinhalt.de requires German-language website content, so UntilFire was not submitted as a mismatch. No CAPTCHA, account, payment, badge, or duplicate submission created. One more qualifying submission has not yet been achieved.
 
 Local baseline fetch hit FETCH_HEAD permission denied; GitHub main checked independently before this tracker-only update. Extensive unrelated local workspace drift preserved.
+
+
+## 2026-10-25: two additional followed-link candidates qualified
+
+| Platform | Status | Evidence and next step |
+| --- | --- | --- |
+| BuildShipper | not-submitted, sample-follow verified | https://buildshipper.com/submit explicitly offers a free listing with followed backlink; paid boosts optional. Published sample https://buildshipper.com/p/azn8 has direct https://azn8.com anchor rel=noopener. Finance category exists. Current normal submission workflow is URL, Details, Account; final publish requires Google or email/password authentication. No account, credential, listing, badge, or payment created. Next step: legitimate sign-in, then complete free UntilFire listing and verify own public anchor. |
+| NextRankHQ | not-submitted, sample-follow verified | https://nextrankhq.com/app-directory offers free audit/launch and permanent dofollow product profile. Published sample https://nextrankhq.com/apps/article-to-audio contains direct https://www.tta1.com?ref=nextrankhq.com anchor rel=noopener noreferrer. Actual UntilFire launch not created; account/final workflow still needs checking. No claim of UntilFire backlink, traffic or domain authority. |
+| Endors | not-submitted, excluded | Fresh sample https://endors.me/product/azn8 website anchor uses rel=noopener noreferrer nofollow ugc; excluded despite older third-party followed-link catalog evidence. |
+
+No new accepted submission in this pass. Two qualified next candidates recorded; no repeat of already live SaaSLineup/TheSaaSDir or existing pending forms. Local baseline fetch attempted before tracker change; unrelated drift preserved.
