@@ -599,3 +599,19 @@ Baseline: latest fetched and connector-verified main `8d3ebde6d26a3b2b55498020b7
 Both are finance-relevant candidates. Actual UntilFire backlinks remain pending; no new live link is claimed. DR was not independently verified for either. FreeStartupDirectories was screened but not submitted because its free-link type and exact eligibility were not yet verified.
 
 Baseline: latest pushed main `8d3ebde6d26a3b2b55498020b72c576b3924cba4` reverified via GitHub connector. Local Git transport failed; local drift preserved. Only ledger updated in the existing receipt PR, with no website or deployment changes.
+
+
+## 2026-10-25: next-batch qualification and SaaSList sign-in blocker
+
+| Directory | Status | Evidence |
+| --- | --- | --- |
+| SaaSList | `not-submitted` - sign-in required | Official free multi-step form `https://www.saaslist.io/products/new` is public. Sample FanDesk listing `https://www.saaslist.io/products/ada4d9e8-6f29-4dd4-9195-a5d915224558` returns public HTML with a direct vendor website anchor using `rel="noopener"` and `robots=index, follow`. Form fields prepared: UntilFire, official homepage/icon, factual FIRE-planning description, freemium, web platform. The form's normal public `POST /api/products` returned HTTP 401 `{"data":null,"success":false,"error":"Unauthorized"}`. No record created; do not count as submitted or a backlink. Needs legitimate account sign-in before finishing. Public form opened as a user handoff. |
+| IndieNeed | `not-submitted` | Official submit page explicitly states free listings get nofollow and paid launches from $15 get dofollow. Skipped: zero budget/dofollow only. |
+| Ramen.Tools | `not-submitted` | Maker/tech-stack profile platform; sign-in required, no clean anonymous UntilFire product-submission path established. |
+| FreeSaaSDirectory / SaaSRadar | `not-submitted` | Canonical host attempts fail TLS validation; no bypass and no submission. |
+| WebToolsDirectory | `not-submitted` | Checked host returned HTTP 522; no usable free form. |
+| Share Fast | `not-submitted` | Official homepage requires login and $2.99 paid listing or free backlink verification. No account, payment, badge or submission created. |
+| SEOVentra | `not-submitted` | Official directory emphasizes SEO, AI writing and technical tools. Guide mentions Finance Tools but actual UntilFire fit/free followed-link behavior was not established. No submission. |
+| Trust My Tool | `not-submitted` | Homepage exposes login/register and zero loaded tools/categories in checked state; no verifiable sample listing link. |
+
+No new submission or live backlink in this batch. Continue with SaaSList after sign-in; avoid repeating rejected free-nofollow paths. Baseline main `8d3ebde6d26a3b2b55498020b72c576b3924cba4` verified through GitHub; local Git transport failed and unrelated local drift preserved. Only ledger changed.
