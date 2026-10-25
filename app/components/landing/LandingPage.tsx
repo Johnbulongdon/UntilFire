@@ -466,6 +466,21 @@ function FooterSection() {
           <summary>Directory partners</summary>
           <div className="uf7-listings-badges" aria-label="Directory badges">
           <a
+            href="https://toolcurio.com"
+            target="_blank"
+            rel="noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://toolcurio.com/badge-light.png"
+              alt="Featured on Toolcurio"
+              width={200}
+              height={54}
+              loading="lazy"
+            />
+          </a>
+          <a
             href="https://www.founder.best/products/untilfire?ref=founderbest"
             target="_blank"
             rel="noopener noreferrer"
