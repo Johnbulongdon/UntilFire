@@ -636,3 +636,13 @@ Latest pushed main remains 8d3ebde6d26a3b2b55498020b72c576b3924cba4, verified th
 | StackLedge | not-submitted | https://www.stackledge.com/submit redirects to login?next=/submit. No authenticated submission attempted. |
 
 No new submission accepted in this screening batch. SaaSList is an existing completed submission newly recorded as live-follow. All earlier SaaSList not-submitted notes are historical and superseded by this entry.
+
+
+## 2026-10-25: TechTools free submission accepted
+
+| Platform | Status | Evidence and limits |
+| --- | --- | --- |
+| TechTools Launchpad | live-unverified (published API record; followed renderer verified) | Official documented no-account/no-CAPTCHA free POST https://techtools.cz/launchpad-api/tools accepted UntilFire with HTTP 201, success=true, id=5388, message "It is now live." Share URL https://techtools.cz/tools/launchpad/?tool=5388. Submitted factual public product name, homepage, FIRE-planning description, Business & Finance category, John, public icon, and submitted_by="Codex for UntilFire". No email, payment, account or badge. Independent GET /launchpad-api/tools/5388 confirms UntilFire and https://www.untilfire.com. Public share page returns HTTP 200 and robots=index, follow. Current official script.js?v=20261020 renders direct tool.url anchors with rel=noopener only, including Visit button. Links are client rendered: own hydrated DOM not independently observed, so do not overstate this as fully verified live-follow or search-indexed. Receipt outputs/directory-partners/techtools-receipt-2026-10-25.json. Do not resubmit. Domain rating not independently verified; no DR claim. |
+| WorthToTry | not-submitted | Official /submit says account/magic-link required and agent can create only a draft for user final review; no submission attempted. |
+
+Baseline fetch origin main attempted before tracker write; unrelated local drift preserved. No application or badge code changed. This batch produced one accepted free submission, with publication independently confirmed through public API; own rendered-anchor verification remains outstanding.
