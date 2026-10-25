@@ -105,13 +105,12 @@ async function showEmailCode(page: Page) {
   }
 }
 
-/** Phone onboarding answers: once a month, the suggested take-home, $3,000 spent, $6,000 invested. */
+/** Phone onboarding answers: once a month, the suggested take-home, $3,000 spent, $6,000 invested, a payday worry, renting with dividends. */
 const APP_ANSWERS: Record<string, (page: Page) => Promise<void>> = {
   goal: (page) => tapText(page, 'Financial freedom'),
   city: (page) => tapText(page, 'Skip'),
   pay: (page) => tapText(page, 'Once a month'),
   income: (page) => tapText(page, 'Continue'),
-  know: (page) => tapText(page, 'What I spend each month'),
   spending: async (page) => {
     await tapText(page, 'Type it instead')
     await page.locator('input:visible').last().fill('3000')
@@ -121,7 +120,12 @@ const APP_ANSWERS: Record<string, (page: Page) => Promise<void>> = {
     for (const key of ['6', '000']) await tapText(page, key)
     await tapText(page, 'Continue')
   },
-  age: (page) => tapText(page, 'Show my freedom date'),
+  age: (page) => tapText(page, 'Continue'),
+  worry: (page) => tapText(page, 'Money runs out before payday'),
+  home: async (page) => {
+    for (const text of ['Rent', 'Dividends']) await tapText(page, text)
+    await tapText(page, 'Show my freedom date')
+  },
 }
 const tapText = (page: Page, text: string) => page.getByText(text, { exact: true }).last().click()
 
