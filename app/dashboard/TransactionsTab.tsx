@@ -27,6 +27,8 @@ import {
 import { useCustomCategories } from "@/lib/useCustomCategories";
 import { combineDateAndTime, formatTime, timeInputValue } from "@/lib/transaction-time";
 import { buildMerchantMemory, merchantKey, suggestFromHistory } from "@/lib/merchant-memory";
+import { transactionNeed, type NeedOverrides } from "@/lib/needs";
+import { readMerchantRules } from "@/lib/merchant-rules";
 import { trackTxFlagResolved, trackTxRangeChanged, trackTxReviewOpened } from "@/lib/analytics";
 
 type CustomCategory = { key: string; label: string; code: string; color: string; emoji?: string };
@@ -224,6 +226,8 @@ function QuickAddForm({
   preferredCurrencies,
   onAddCategory,
   onAddSubCategory,
+  alwaysShop = false,
+  onAlwaysShop,
 }: {
   draft: DraftTransaction;
   setDraft: React.Dispatch<React.SetStateAction<DraftTransaction>>;
@@ -238,6 +242,9 @@ function QuickAddForm({
   preferredCurrencies: string[];
   onAddCategory: (cat: CustomCategory) => void;
   onAddSubCategory: (catKey: string, sub: string) => void;
+  /** "Always for this shop" (D-106), offered when editing a saved spend. */
+  alwaysShop?: boolean;
+  onAlwaysShop?: (on: boolean) => void;
 }) {
   const amountRef = useRef<HTMLInputElement>(null);
   const [categorizing, setCategorizing] = useState(false);
@@ -703,11 +710,17 @@ function QuickAddForm({
                       transition: "all 0.12s",
                     }}
                   >
-                    {option === "need" ? "💚 Need" : option === "want" ? "🧡 Want" : option === "work" ? "💼 Work" : "◯ Clear"}
+                    {option === "need" ? "💚 Need" : option === "want" ? "🧡 Want" : option === "work" ? "💼 Work" : "◯ Auto"}
                   </button>
                 );
               })}
             </div>
+            {editing && onAlwaysShop && draft.description.trim() && (
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--uf-text-2)", cursor: "pointer" }}>
+                <input type="checkbox" checked={alwaysShop} onChange={(e) => onAlwaysShop(e.target.checked)} />
+                Always for {draft.description.trim()}
+              </label>
+            )}
           </div>
         )}
 
@@ -918,6 +931,7 @@ function TransactionList({
   formatAmount,
   catCustomizations,
   expenseCategories,
+  categoryNeeds = {},
 }: {
   transactions: Transaction[];
   editingId: string | null;
@@ -929,6 +943,8 @@ function TransactionList({
   formatAmount: (value: number) => string;
   catCustomizations: CatCustomizations;
   expenseCategories: CustomCategory[];
+  /** The person's need/want per category, so every expense shows what it counts as (D-106). */
+  categoryNeeds?: NeedOverrides;
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "expense" | "income" | "transfer">("all");
@@ -951,9 +967,9 @@ function TransactionList({
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
       if (filter !== "all" && t.transaction_type !== filter) return false;
-      if (tagFilter !== "all") {
-        if (!(t.tags || []).includes(tagFilter)) return false;
-      }
+      if (tagFilter === "work" && !(t.tags || []).includes("work")) return false;
+      // Need or want is what the row counts as, sorted for you or tagged (D-106).
+      if ((tagFilter === "need" || tagFilter === "want") && (t.transaction_type !== "expense" || transactionNeed(t, categoryNeeds) !== tagFilter)) return false;
       if (search) {
         const s = search.toLowerCase();
         const cat = allCategories.find((c) => c.key === t.category);
@@ -965,7 +981,7 @@ function TransactionList({
       }
       return true;
     });
-  }, [transactions, search, filter, tagFilter, allCategories]);
+  }, [transactions, search, filter, tagFilter, allCategories, categoryNeeds]);
 
   // What the rows on screen add up to, so a filter (a tag, a search, the
   // work chip) answers "how much was that" without leaving the list. The
@@ -1121,7 +1137,7 @@ function TransactionList({
                     const baseDisplay = { color: cat?.color || "#6b7280", emoji: (cat as {emoji?: string})?.emoji || "📦" };
                     const { color: chipColor, emoji: chipEmoji } = resolveDisplay(baseDisplay, catCustomizations, tx.category);
                     const txTags = tx.tags || [];
-                    const needOrWant = txTags.includes("need") ? "need" : txTags.includes("want") ? "want" : null;
+                    const needOrWant = transactionNeed(tx, categoryNeeds);
                     const isWorkCost = txTags.includes("work");
                     const displayTags = txTags.filter((t) => t !== "need" && t !== "want" && t !== "work" && !isSystemTag(t)).slice(0, 2);
                     // Null for most rows — only Plaid, an import that carried
@@ -1215,13 +1231,13 @@ function TransactionList({
                             {tx.transaction_type === "expense" && needOrWant && (
                               <span
                                 style={{
-                                  background: needOrWant === "need" ? "rgba(34,211,165,0.15)" : "rgba(249,115,22,0.15)",
-                                  color: needOrWant === "need" ? "#22d3a5" : "#f97316",
+                                  background: needOrWant === "need" ? "color-mix(in srgb, var(--uf-pos) 15%, transparent)" : "color-mix(in srgb, var(--uf-warn) 15%, transparent)",
+                                  color: needOrWant === "need" ? "var(--uf-pos)" : "var(--uf-warn)",
                                   border: "none", borderRadius: 999, padding: "1px 8px",
                                   fontSize: 10, fontWeight: 700, flexShrink: 0,
                                 }}
                               >
-                                {needOrWant}
+                                {needOrWant === "need" ? "Need" : "Want"}
                               </span>
                             )}
                             {tx.transaction_type === "expense" && isWorkCost && (
@@ -1563,7 +1579,8 @@ function AiReviewModal({
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick, budgets, expectedIncome, freeToSpend }: {
+export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick, budgets, expectedIncome, freeToSpend, categoryNeeds }: {
+  categoryNeeds?: NeedOverrides;
   defaultCurrency?: string;
   displayCurrency?: string;
   displayRates?: Record<string, number>;
@@ -1647,6 +1664,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 
   // Form state (lifted so edit can populate it)
   const [draft, setDraft] = useState<DraftTransaction>(() => ({ ...EMPTY_DRAFT(), currency: defaultCurrency }));
+  const [alwaysShop, setAlwaysShop] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; undoId?: string; _removed?: Transaction; isError?: boolean } | null>(null);
@@ -1917,6 +1935,18 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         return;
       }
       setTransactions((prev) => prev.map((t) => (t.id === draft.id ? data : t)));
+      // "Always for this shop" (D-106): later buys there are filed and sorted the same way, on both apps.
+      if (alwaysShop && payload.transaction_type === "expense" && merchantKey(payload.description)) {
+        const { data: budget } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
+        const ex = (budget?.expenses as Record<string, unknown>) ?? {};
+        const fp = (ex._fire_profile as Record<string, unknown>) ?? {};
+        const rule = { category: payload.category, sub_category: payload.sub_category, need: transactionNeed(payload, categoryNeeds) };
+        const { error: ruleError } = await supabase.from("user_budget").update({
+          expenses: { ...ex, _fire_profile: { ...fp, merchantRules: { ...readMerchantRules(fp.merchantRules), [merchantKey(payload.description)]: rule } } },
+        }).eq("user_id", session.user.id);
+        if (ruleError) showToast("Saved, but couldn't remember the shop — please try again", undefined, undefined, true);
+      }
+      setAlwaysShop(false);
       setEditingId(null);
       setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency });
       showToast("Transaction updated");
@@ -1939,7 +1969,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       }
       if (drawerOpen && !keepOpen) setDrawerOpen(false);
     }
-  }, [defaultCurrency, draft, drawerOpen, inRange, showToast]);
+  }, [defaultCurrency, draft, drawerOpen, inRange, showToast, alwaysShop, categoryNeeds]);
 
   const handleEdit = useCallback((tx: Transaction) => {
     setEditingId(tx.id);
@@ -1963,6 +1993,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 
   const handleCancelEdit = useCallback(() => {
     setEditingId(null);
+    setAlwaysShop(false);
     setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency });
     if (drawerOpen) setDrawerOpen(false);
   }, [defaultCurrency, drawerOpen]);
@@ -2133,6 +2164,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         formatAmount={fmtDisplay}
         catCustomizations={catCustomizations}
         expenseCategories={allExpenseCats}
+        categoryNeeds={categoryNeeds}
       />
 
       <MobileBar
@@ -2154,6 +2186,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           onAddCategory={handleAddCategory}
           onAddSubCategory={handleAddSubCategory}
           preferredCurrencies={preferredCurrencies}
+          alwaysShop={alwaysShop}
+          onAlwaysShop={setAlwaysShop}
         />
       </MobileDrawer>
 

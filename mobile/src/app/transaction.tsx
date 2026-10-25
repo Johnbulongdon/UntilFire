@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router'
 import { Button } from '@/components/Button'
 import { useState } from 'react'
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native'
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { Bouncy } from '@/components/Bouncy'
@@ -9,12 +9,12 @@ import { PrimaryButton } from '@/components/PrimaryButton'
 import { CategoryGlyph } from '@/components/Icon'
 import { LeaseCard } from '@/components/LeaseCard'
 import { Text } from '@/components/Text'
-import { INCOME_CATEGORIES, isoDay, isRent, SUB_CATEGORIES } from '@/engine'
+import { INCOME_CATEGORIES, isoDay, isRent, merchantKey, SUB_CATEGORIES } from '@/engine'
 import { currencySymbol, displayCurrency } from '@/lib/display-currency'
 import { haptic } from '@/lib/haptics'
 import { amountInput, moneyIn } from '@/lib/format'
 import { dayLabel, expenseCategories } from '@/lib/money-data'
-import { deleteTransaction, saveTransaction } from '@/lib/mutations'
+import { deleteTransaction, saveMerchantRule, saveTransaction } from '@/lib/mutations'
 import { defaultNeed } from '@/lib/review'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
@@ -36,6 +36,9 @@ export default function TransactionSheet() {
   const [subCategory, setSubCategory] = useState<string | null>(existing?.sub_category ?? null)
   // Need or want, set from the category's usual answer and easy to flip, so Today doesn't ask again.
   const [need, setNeed] = useState<'need' | 'want' | null>(existing?.tags.includes('need') ? 'need' : existing?.tags.includes('want') ? 'want' : null)
+  // "Always for this shop" (D-106): the answer becomes the shop's, so later buys there are sorted the same way.
+  const shopKey = merchantKey(existing?.description ?? '')
+  const [always, setAlways] = useState(false)
   const [notes, setNotes] = useState(existing?.notes ?? '')
   const [refund, setRefund] = useState(existing?.refund_amount ? String(existing.refund_amount) : '')
   const [showMore, setShowMore] = useState(!!(existing?.notes || existing?.refund_amount))
@@ -61,9 +64,11 @@ export default function TransactionSheet() {
     const problem = await saveTransaction(session.user.id, {
       id: existing?.id, date, amount: value, currency, description, category,
       sub_category: subCategory, notes, refund_amount: Number(refund) || 0, transaction_type: type,
-      need: type === 'expense' && category ? (need ?? defaultNeed(category)) : null, tags: existing?.tags,
+      need: type === 'expense' && category ? (need ?? defaultNeed(category, subCategory)) : null, tags: existing?.tags,
     })
-    if (problem) { setBusy(false); haptic.warn(); setError(problem); return }
+    const ruleProblem = problem || !always || !shopKey || !data ? null
+      : await saveMerchantRule(session.user.id, data.profile.merchantRules, shopKey, { category, sub_category: subCategory, need: need ?? defaultNeed(category, subCategory) })
+    if (problem || ruleProblem) { setBusy(false); haptic.warn(); setError(problem ?? ruleProblem!); return }
     haptic.success()
     await refresh()
     router.back()
@@ -164,9 +169,18 @@ export default function TransactionSheet() {
               {type === 'expense' && !!category && (
                 <View className="mt-5 flex-row gap-2">
                   {(['need', 'want'] as const).map(n => {
-                    const on = (need ?? defaultNeed(category)) === n
+                    const on = (need ?? defaultNeed(category, subCategory)) === n
                     return <Button key={n} small kind={on ? 'primary' : 'quiet'} label={n === 'need' ? 'Need' : 'Want'} onPress={() => setNeed(n)} />
                   })}
+                </View>
+              )}
+              {type === 'expense' && !!category && editing && !!shopKey && (
+                <View className="mt-4 gap-1">
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-[15px] text-ink">Always for {existing!.description}</Text>
+                    <Switch accessibilityLabel={`Always for ${existing!.description}`} value={always} onValueChange={v => { haptic.select(); setAlways(v) }} trackColor={{ true: colors.green }} />
+                  </View>
+                  <Text className="text-[13px] text-ink-3">{always ? 'Later buys here are sorted the same way.' : 'Just this one. Other buys here stay as they are.'}</Text>
                 </View>
               )}
             </>

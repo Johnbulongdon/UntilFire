@@ -34,7 +34,7 @@ Money                         actual finances and operational planning
   ├ Cashflow
   │   ├ Transactions (date range, review bar, summary card, Worth a look, list)
   │   ├ Calendar (month of payments with cash by day and the invest day, or a list; recurring suggestions; D-61)
-  │   ├ Categories
+  │   ├ Categories (all categories · Needs & wants, D-106; phone: Budget › Needs & wants)
   │   └ Budget
   ├ Income (salary to take-home, pension before tax, employer money; D-59)
   ├ Net Worth

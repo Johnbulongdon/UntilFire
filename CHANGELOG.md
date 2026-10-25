@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-25 — Needs and wants are sorted for you
+
+- Today no longer asks Need or Want about every purchase. The category decides (eating out and delivery are wants, groceries and gas are needs), and Today only asks about a shop that sells both, like Target or Amazon, once per shop and only for $20 or more (D-106).
+- The first time bank spending shows up, Today shows one "We sorted N buys for you" card with a way to see all of it.
+- New Needs & wants screen (phone: Money › Budget; website: Money › Categories) to move a category, or eating out, to the other side, and to change shops you answered.
+- Every purchase shows Need or Want; editing one offers "Always for this shop".
+
 ## 2026-10-25 — App psychology pass
 
 - Home's "Your next move" is the one card with a green frame and an icon. While Get set up is open, its next step is Home's only ask (phone hides the next move; website shows the setup step in that slot).

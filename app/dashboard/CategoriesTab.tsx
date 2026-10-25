@@ -11,6 +11,9 @@ import {
   CatCustomizations, COLOR_PALETTE, EMOJI_PALETTE, resolveDisplay,
 } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
+import { SegmentedControl } from "@/components/ui";
+import type { NeedOverrides } from "@/lib/needs";
+import NeedsWantsPanel from "./NeedsWantsPanel";
 
 type ClassificationRule = {
   id: string;
@@ -467,10 +470,14 @@ function ProjectRow({
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function CategoriesTab({ displayCurrency = "USD", displayRates = FALLBACK_RATES }: {
+export default function CategoriesTab({ displayCurrency = "USD", displayRates = FALLBACK_RATES, startOn = "categories", onCategoryNeeds }: {
   displayCurrency?: string;
   displayRates?: Record<string, number>;
+  /** Today's "See all" opens Needs & wants (D-106). */
+  startOn?: "categories" | "needs";
+  onCategoryNeeds?: (overrides: NeedOverrides) => void;
 }) {
+  const [view, setView] = useState<"categories" | "needs">(startOn);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
@@ -701,12 +708,28 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
     }
   };
 
+  const viewSwitch = (
+    <div style={{ marginBottom: 20 }}>
+      <SegmentedControl label="Categories view" value={view} onChange={setView}
+        options={[{ value: "categories", label: "All categories" }, { value: "needs", label: "Needs & wants" }]} />
+    </div>
+  );
+  if (view === "needs") {
+    return (
+      <div>
+        {viewSwitch}
+        <NeedsWantsPanel customCats={customCats} fmt={fmtDisplay} toUsd={(amount, currency) => toUSD(amount, currency, rates)} onChange={onCategoryNeeds} />
+      </div>
+    );
+  }
+
   if (loading) {
     return <div style={{ textAlign: "center", padding: "60px 0", color: "var(--uf-text-3)" }}>Loading…</div>;
   }
 
   return (
     <div>
+      {viewSwitch}
       {/* Mismatch prompt */}
       {mismatchPrompt && (
         <>

@@ -80,6 +80,7 @@ function RootLayout() {
           <Stack.Screen name="shared-accounts" options={{ presentation: 'modal' }} />
           <Stack.Screen name="bill" options={{ presentation: 'modal' }} />
           <Stack.Screen name="lease" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="needs-wants" options={{ presentation: 'modal' }} />
           <Stack.Screen name="balances" options={{ presentation: 'modal' }} />
           <Stack.Screen name="mortgage" options={{ presentation: 'modal' }} />
           <Stack.Screen name="income-edit" options={{ presentation: 'modal' }} />

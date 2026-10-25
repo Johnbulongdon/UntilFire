@@ -5,6 +5,8 @@ import { Button, Card, Icon } from "@/components/ui";
 import { supabase } from "@/lib/supabase";
 import { addDays, isoDay, monthCount, webTodayItems, type TodayLease, type TodayProgress, type TodayRow, type WebTodayItem } from "@/lib/today-web";
 import { isRent, type LeaseDecision } from "@/lib/lease";
+import { merchantKey } from "@/lib/merchant-memory";
+import { readMerchantRules, type MerchantRule } from "@/lib/merchant-rules";
 import type { Bill } from "@/lib/spend-forecast";
 import { DoorChip } from "./HomeCards";
 
@@ -29,29 +31,37 @@ function useTodayData(userId: string | undefined, toUsd: (amount: number, curren
   const [rows, setRows] = useState<TodayRow[]>([]);
   const [leases, setLeases] = useState<TodayLease[]>([]);
   const [oldRentTag, setOldRentTag] = useState(false);
+  const [shopRules, setShopRules] = useState<Record<string, MerchantRule>>({});
+  const [sorted, setSorted] = useState(0);
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
     (async () => {
-      const [{ data: budget }, { data: tx }, { data: housing }, { count: oldTx }] = await Promise.all([
+      const [{ data: budget }, { data: tx }, { data: housing }, { count: oldTx }, { count: bankTx }] = await Promise.all([
         supabase.from("user_budget").select("expenses").eq("user_id", userId).maybeSingle(),
-        supabase.from("expenses").select("id, date, description, amount, refund_amount, currency, category, tags, transaction_type")
+        supabase.from("expenses").select("id, date, description, amount, refund_amount, currency, category, sub_category, tags, transaction_type")
           .eq("user_id", userId).gte("date", addDays(isoDay(new Date()), -3)).order("date", { ascending: false }).limit(50),
         // Housing bills, for the lease and the old combined tag; spends still on that tag ask the same question.
         supabase.from("expected_payments").select("id, category, sub_category, lease_ends_on, lease_notice_days, lease_decision")
           .eq("user_id", userId).eq("category", "housing"),
         supabase.from("expenses").select("id", { count: "exact", head: true })
           .eq("user_id", userId).eq("category", "housing").eq("sub_category", "Rent/Mortgage"),
+        // Bank purchases in the last 30 days, for the one-time "We sorted" card (D-106).
+        supabase.from("expenses").select("id", { count: "exact", head: true })
+          .eq("user_id", userId).eq("transaction_type", "expense").not("plaid_transaction_id", "is", null).gte("date", addDays(isoDay(new Date()), -30)),
       ]);
       if (cancelled) return;
-      const saved = ((budget?.expenses as Record<string, unknown>)?._fire_profile as { today?: TodayProgress } | undefined)?.today;
+      const fp = (budget?.expenses as Record<string, unknown>)?._fire_profile as { today?: TodayProgress; merchantRules?: unknown } | undefined;
+      const saved = fp?.today;
+      setShopRules(readMerchantRules(fp?.merchantRules));
+      setSorted(bankTx ?? 0);
       setProgress({ done: saved?.done ?? [], acks: saved?.acks ?? [] });
       setLeases((housing ?? []).filter((b) => isRent(b) && b.lease_ends_on).map((b) => ({
         id: String(b.id), ends_on: String(b.lease_ends_on).slice(0, 10), notice_days: b.lease_notice_days ?? null, decision: (b.lease_decision as LeaseDecision | null) ?? null,
       })));
       setOldRentTag((oldTx ?? 0) > 0 || (housing ?? []).some((b) => b.sub_category === "Rent/Mortgage"));
       setRows((tx ?? []).map((t) => ({
-        id: String(t.id), date: String(t.date).slice(0, 10), description: t.description ?? "", category: t.category ?? "other",
+        id: String(t.id), date: String(t.date).slice(0, 10), description: t.description ?? "", category: t.category ?? "other", sub_category: t.sub_category ?? null,
         tags: t.tags ?? [], transaction_type: t.transaction_type ?? "expense",
         usd: toUsd((t.amount ?? 0) - (t.refund_amount ?? 0), t.currency ?? "USD"),
       })));
@@ -60,7 +70,7 @@ function useTodayData(userId: string | undefined, toUsd: (amount: number, curren
     // toUsd changes with rates only; the strip reads once per visit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
-  return { progress, setProgress, rows, setRows, leases, setLeases, oldRentTag, setOldRentTag };
+  return { progress, setProgress, rows, setRows, leases, setLeases, oldRentTag, setOldRentTag, shopRules, setShopRules, sorted };
 }
 
 /** A Today answer that writes back to a bill or a tag, not only the saved progress. */
@@ -69,7 +79,7 @@ export type TodayWrite =
   | { lease: string; decision: LeaseDecision }
   | { renttag: "Rent" | "Mortgage" };
 
-export default function TodayStrip({ userId, bills, perDay, fmt, toUsd, onOpen, onWhatIf }: {
+export default function TodayStrip({ userId, bills, perDay, fmt, toUsd, onOpen, onWhatIf, onOpenNeeds }: {
   userId?: string;
   bills: Bill[];
   /** Safe to spend each day: Until payday over the days to payday (D-90), else the budget left over the days left. Null with neither. */
@@ -79,10 +89,12 @@ export default function TodayStrip({ userId, bills, perDay, fmt, toUsd, onOpen, 
   onOpen: () => void;
   /** Plan → Compare, where "Move" on a lease goes next (the phone opens What if). */
   onWhatIf?: () => void;
+  /** Money › Categories › Needs & wants, from the "We sorted" card. */
+  onOpenNeeds?: () => void;
 }) {
-  const { progress, setProgress, rows, setRows, leases, setLeases, oldRentTag, setOldRentTag } = useTodayData(userId, toUsd);
+  const { progress, setProgress, rows, setRows, leases, setLeases, oldRentTag, setOldRentTag, shopRules, setShopRules, sorted } = useTodayData(userId, toUsd);
 
-  const list = progress ? webTodayItems({ rows, bills, progress, perDay, leases, oldRentTag }) : null;
+  const list = progress ? webTodayItems({ rows, bills, progress, perDay, leases, oldRentTag, shopRules, sorted }) : null;
 
   /* Each answer is saved straight away; the answer that empties the list also
      marks the day finished. Need or want is written onto the spend itself, a
@@ -99,6 +111,16 @@ export default function TodayStrip({ userId, bills, perDay, fmt, toUsd, onOpen, 
       if (error) { console.error("[today] tagging", error); return; }
       nextRows = rows.map((r) => (r.id === write.id ? { ...r, tags } : r));
       setRows(nextRows);
+      // The answer is the shop's from now on (D-106): bank sync files later buys there the same way.
+      const rules = { ...shopRules, [merchantKey(row.description)]: { category: row.category, sub_category: row.sub_category ?? null, need: write.need } };
+      const { data } = await supabase.from("user_budget").select("expenses").eq("user_id", userId).maybeSingle();
+      const ex = (data?.expenses as Record<string, unknown>) ?? {};
+      const fp = (ex._fire_profile as Record<string, unknown>) ?? {};
+      const { error: ruleError } = await supabase.from("user_budget").update({
+        expenses: { ...ex, _fire_profile: { ...fp, merchantRules: { ...readMerchantRules(fp.merchantRules), ...rules } } },
+      }).eq("user_id", userId);
+      if (ruleError) console.error("[today] shop rule", ruleError);
+      else setShopRules(rules);
     } else if (write && "lease" in write) {
       const { error } = await supabase.from("expected_payments").update({ lease_decision: write.decision }).eq("id", write.lease).eq("user_id", userId);
       if (error) { console.error("[today] lease", error); return; }
@@ -116,24 +138,25 @@ export default function TodayStrip({ userId, bills, perDay, fmt, toUsd, onOpen, 
     }
     // A sorted spend leaves by its tag; everything else is acked, which also stops a second ask the same stage.
     const acks = write && "need" in write ? progress.acks : [...progress.acks, key];
-    const left = webTodayItems({ rows: nextRows, bills, progress: { ...progress, acks }, perDay, leases: nextLeases, oldRentTag: nextOld }).items;
+    const left = webTodayItems({ rows: nextRows, bills, progress: { ...progress, acks }, perDay, leases: nextLeases, oldRentTag: nextOld, sorted }).items;
     const next = { acks, done: left.length === 0 ? [...progress.done, list.day] : progress.done };
     setProgress(next);
     await saveProgress(userId, next);
-  }, [userId, progress, list, rows, leases, oldRentTag, bills, perDay, setProgress, setRows, setLeases, setOldRentTag]);
+  }, [userId, progress, list, rows, leases, oldRentTag, bills, perDay, shopRules, sorted, setProgress, setRows, setLeases, setOldRentTag, setShopRules]);
 
   if (!progress || !list) return null;
-  return <TodayList items={list.items} count={monthCount(progress.done)} fmt={fmt} onAnswer={answer} onOpen={onOpen} onWhatIf={onWhatIf} />;
+  return <TodayList items={list.items} count={monthCount(progress.done)} fmt={fmt} onAnswer={answer} onOpen={onOpen} onWhatIf={onWhatIf} onOpenNeeds={onOpenNeeds} />;
 }
 
 /** The strip itself, from a built list: up to three one-tap items, or "Today's done". */
-export function TodayList({ items, count, fmt, onAnswer, onOpen, onWhatIf }: {
+export function TodayList({ items, count, fmt, onAnswer, onOpen, onWhatIf, onOpenNeeds }: {
   items: WebTodayItem[];
   count: { done: number; of: number };
   fmt: (n: number) => string;
   onAnswer: (key: string, write?: TodayWrite) => void;
   onOpen: () => void;
   onWhatIf?: () => void;
+  onOpenNeeds?: () => void;
 }) {
   const finished = items.length === 0;
   return (
@@ -178,9 +201,24 @@ export function TodayList({ items, count, fmt, onAnswer, onOpen, onWhatIf }: {
                   </span>
                 </>
               )}
+              {item.kind === "sorted" && (
+                <>
+                  <span style={{ display: "grid", gap: 2 }}>
+                    <span style={{ fontWeight: 700 }}>We sorted {item.count} buys for you</span>
+                    <span className="uf-t-small" style={muted}>Groceries and gas count as needs. Delivery and eating out count as wants.</span>
+                  </span>
+                  <span style={{ display: "flex", gap: 8 }}>
+                    <Button size="sm" onClick={() => onAnswer(item.key)}>Got it</Button>
+                    {onOpenNeeds && <Button size="sm" variant="ghost" onClick={() => { onAnswer(item.key); onOpenNeeds(); }}>See all</Button>}
+                  </span>
+                </>
+              )}
               {item.kind === "need" && (
                 <>
-                  <span style={{ fontWeight: 700 }}>{item.row.description || "A spend"} <span style={mono}>{fmt(item.row.usd)}</span></span>
+                  <span style={{ display: "grid", gap: 2 }}>
+                    <span className="uf-t-small" style={muted}>This shop sells both</span>
+                    <span style={{ fontWeight: 700 }}>{item.row.description || "A spend"} <span style={mono}>{fmt(item.row.usd)}</span>: usually a need or a want?</span>
+                  </span>
                   <span style={{ display: "flex", gap: 8 }}>
                     <Button size="sm" onClick={() => onAnswer(item.key, { id: item.row.id, need: "need" })}>Need</Button>
                     <Button size="sm" onClick={() => onAnswer(item.key, { id: item.row.id, need: "want" })}>Want</Button>

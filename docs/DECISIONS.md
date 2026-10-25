@@ -3297,3 +3297,29 @@ peak-end, labor illusion, Von Restorff and choice overload.
 **Revisit:** if phone onboarding finishes drop at Your plan, or Get set up
 completion doesn't rise within a month.
 
+
+### D-106 — October 25: needs and wants are sorted for you
+**Status:** Active. Founder's call, 2026-10-25 ("Default 50/30/20 starter
+budget" thread): John paused the 50/30/20 starter to fix need/want first,
+because tapping Need or Want on every purchase was too much clicking.
+- **Defaults do the work.** The most specific answer wins: one purchase's tag,
+  then the shop ("Always for Target", stored in `merchantRules`, which bank
+  sync writes as that tag), then a sub-category (`categoryNeeds` key
+  `food/Restaurants`), then eating out as a want, then the category. A
+  category set to need no longer turns delivery into a need (`lib/needs.ts`).
+- **Today asks only about mixed shops.** Target, Amazon, Costco and similar,
+  $20 or more, once per shop; the answer is remembered for the shop. The
+  phone's old "Filed as Food. Right?" on every bank purchase is gone. A snack
+  at a gas station follows the category: a few dollars don't move a plan.
+- **One explainer, shown once.** "We sorted N buys for you" in Today the first
+  time bank spending exists (ack key `sorted`, shared by both apps), with Got
+  it and See all. Not a tour: John asked for the defaults to be explained,
+  and one card is what people read.
+- **Needs & wants screen.** Phone: Money › Budget › Needs & wants. Website:
+  Money › Categories › Needs & wants. Each category is a row, eating out is
+  pulled out of Food, tap to move; shops answered in Today are listed. Every
+  purchase shows Need or Want; its edit sheet has "Always for this shop".
+- **Not added:** a setup quiz per category (every extra setup step loses
+  people), splitting one purchase across need and want.
+**Next:** the 50/30/20 starter budget builds on these totals.
+**Revisit:** if people move many rows on Needs & wants, the defaults are wrong.
