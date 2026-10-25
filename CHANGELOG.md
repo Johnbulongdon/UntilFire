@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-25 — Calmer category bars
+
+- Money › Transactions category bars: Past months is now a darker stretch inside each bar instead of a faint dotted box, and the black budget line is only as tall as the bar, so the row reads as one shape (D-107).
+
 ## 2026-10-25 — Needs and wants are sorted for you
 
 - Today no longer asks Need or Want about every purchase. The category decides (eating out and delivery are wants, groceries and gas are needs), and Today only asks about a shop that sells both, like Target or Amazon, once per shop and only for $20 or more (D-106).
