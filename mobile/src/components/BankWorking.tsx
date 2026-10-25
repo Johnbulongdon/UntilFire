@@ -74,13 +74,15 @@ export function BankWorking({ name, result, onClose }: { name: string; result: B
 /** One step: a spinner while busy, a teal tick when it found something, a quiet dash when it found nothing. */
 function Row({ state, label }: { state: 'busy' | 'ok' | 'none'; label: string }) {
   return (
-    <Animated.View entering={FadeInDown.duration(250)} className="min-h-[32px] flex-row items-center gap-3">
-      <View className="h-[26px] w-[26px] items-center justify-center rounded-lg" style={{ backgroundColor: state === 'ok' ? colors.teal : colors.surface2 }}>
-        {state === 'busy' && <ActivityIndicator size="small" color={colors.green} />}
-        {state === 'ok' && <Svg width={14} height={14} viewBox="0 0 12 12"><Path d="M2.5 6.2l2.3 2.3 4.7-4.9" stroke={colors.card} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" /></Svg>}
-        {state === 'none' && <View className="h-[2px] w-2.5 rounded-sm" style={{ backgroundColor: colors.ink3 }} />}
+    <Animated.View entering={FadeInDown.duration(250)}>
+      <View className="min-h-[32px] flex-row items-center gap-3">
+        <View className="h-[26px] w-[26px] items-center justify-center rounded-lg" style={{ backgroundColor: state === 'ok' ? colors.teal : colors.surface2 }}>
+          {state === 'busy' && <ActivityIndicator size="small" color={colors.green} />}
+          {state === 'ok' && <Svg width={14} height={14} viewBox="0 0 12 12"><Path d="M2.5 6.2l2.3 2.3 4.7-4.9" stroke={colors.card} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" /></Svg>}
+          {state === 'none' && <View className="h-[2px] w-2.5 rounded-sm" style={{ backgroundColor: colors.ink3 }} />}
+        </View>
+        <Text className={`flex-1 text-[16px] ${state === 'none' ? 'text-ink-2' : 'text-ink'}`}>{label}</Text>
       </View>
-      <Text className={`flex-1 text-[16px] ${state === 'none' ? 'text-ink-2' : 'text-ink'}`}>{label}</Text>
     </Animated.View>
   )
 }

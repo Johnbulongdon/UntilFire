@@ -39,24 +39,28 @@ export default function YourPlan() {
 
   return (
     <RevealFrame eyebrow="Your plan" next="Start my plan" onNext={() => { haptic.press(); router.replace(session ? '/(tabs)' : '/save-plan') }}>
-      <Animated.View entering={FadeIn.duration(400)} className="flex-row items-center gap-4">
-        <Sunny mood="win" size={72} />
-        <View className="flex-1">
-          <Text className="text-[16px] font-semibold text-mint">{result.year != null ? 'Free in' : 'At this pace'}</Text>
-          <Text className="font-display text-[56px] font-bold leading-[62px] text-aqua">{result.year ?? '65+ yrs'}</Text>
+      {/* Layout sits on plain Views: the web build ignores className on Animated.View. */}
+      <Animated.View entering={FadeIn.duration(400)}>
+        <View className="flex-row items-center gap-4">
+          <Sunny mood="win" size={72} />
+          <View className="flex-1">
+            <Text className="text-[16px] font-semibold text-mint">{result.year != null ? 'Free in' : 'At this pace'}</Text>
+            <Text className="font-display text-[56px] font-bold leading-[62px] text-aqua">{result.year ?? '65+ yrs'}</Text>
+          </View>
         </View>
       </Animated.View>
       <Text className="mb-3 mt-8 text-[13px] font-bold uppercase tracking-[2px] text-mint">Your first moves</Text>
       <View className="gap-3">
         {moves.map((m, i) => (
-          <Animated.View key={m.title} entering={FadeInDown.delay(250 + i * 150).duration(400)}
-            className="flex-row items-center gap-3 rounded-2xl p-3" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
-            <View className="h-11 w-11 items-center justify-center rounded-[13px]" style={{ backgroundColor: 'rgba(98,250,227,0.16)' }}>
-              <Icon name={m.icon} fallback={m.fallback} size={22} color="#62FAE3" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-[16px] font-bold text-white">{m.title}</Text>
-              <Text className="text-[14px] text-mint">{m.why}</Text>
+          <Animated.View key={m.title} entering={FadeInDown.delay(250 + i * 150).duration(400)}>
+            <View className="flex-row items-center gap-3 rounded-2xl p-3" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
+              <View className="h-11 w-11 items-center justify-center rounded-[13px]" style={{ backgroundColor: 'rgba(98,250,227,0.16)' }}>
+                <Icon name={m.icon} fallback={m.fallback} size={22} color="#62FAE3" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-[16px] font-bold text-white">{m.title}</Text>
+                <Text className="text-[14px] text-mint">{m.why}</Text>
+              </View>
             </View>
           </Animated.View>
         ))}
