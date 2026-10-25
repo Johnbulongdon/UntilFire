@@ -126,6 +126,8 @@ const APP_ANSWERS: Record<string, (page: Page) => Promise<void>> = {
     for (const text of ['Rent', 'Dividends']) await tapText(page, text)
     await tapText(page, 'Show my freedom date')
   },
+  // Not the last screen any more (Your plan follows, D-105); the web build has no notifications to turn on.
+  reminder: (page) => tapText(page, 'Not now'),
 }
 const tapText = (page: Page, text: string) => page.getByText(text, { exact: true }).last().click()
 
