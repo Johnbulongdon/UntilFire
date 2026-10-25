@@ -741,3 +741,15 @@ User's dofollow-only requirement applies: sample markup qualified this editorial
 | IndieLogs | not-submitted; sample-follow verified | Public maker profile https://www.indielogs.com/prommoo has direct https://tta1.com/ and https://azn8.com/ anchors rel=noopener only. Founder portfolio with project shelf rather than standalone directory. Free project profile reported by current public submission log, no payment planned; authentication at https://www.indielogs.com/auth needed before adding UntilFire. Opened auth page for user. No UntilFire project or public link created. |
 
 Startup Europe checked but no usable direct sample website anchor established in current fetch; signup shows required account/terms fields. Not submitted. New qualified candidates are not live UntilFire backlinks. No success claimed this batch. Main fetch attempted before tracker-only update; unrelated local drift preserved.
+
+
+## 2026-10-25: MadeLaunch submitted and IndieLogs live-follow
+
+Supersedes both prior sign-in / not-submitted entries. User completed both logins and requested continuation.
+
+| Platform | Status | Evidence |
+| --- | --- | --- |
+| MadeLaunch | pending | Normal free submit form accepted UntilFire, official homepage, factual calculator/planner description, SaaS category and official icon. Submitted once via Submit for Review. Receipt https://madelaunch.com/products/untilfire explicitly says "This product is pending review" and "only visible to you". Visit Website points to https://www.untilfire.com/?ref=madelaunch, but this private preview is not a live public backlink. Recheck after approval; do not resubmit. Screenshot outputs/directory-partners/madelaunch-pending-2026-10-25.png. No payment or badge. |
+| IndieLogs | live-follow | Existing signed-in Ash account had zero projects. Saved public username untilfire, factual builder bio and official website; created one UntilFire project, status Launched, Finance category, official icon URL and <=80-character description. Public profile https://www.indielogs.com/untilfire has two direct https://www.untilfire.com/ anchors with rel=noopener only. Independently fetched anonymously: HTTP 200 and both anchors confirmed, no nofollow/ugc/sponsored or redirect intermediary. One referring domain, two anchors; no search-indexing claim. Screenshot outputs/directory-partners/indielogs-live-2026-10-25.png. Free founder portfolio/project shelf, no payment or badge. Do not resubmit. |
+
+Main fetch attempted before tracker update but local network failed; latest pushed GitHub main independently checked at c8f9e2027eb47969f27326ef297265980a49a971. Compared local drift and preserved unrelated files. Tracker-only change on existing receipts branch; no application or badge changes.
