@@ -673,3 +673,14 @@ User explicitly requested submitting both. BuildShipper Chrome form opened and s
 NextRankHQ's official Launch Your Product Free link leads to https://nextrankhq.com/internal-ai-launch-audit. Public normal form has URL input and required Cloudflare Turnstile, submit button disabled while Verifying Security. No challenge solved/bypassed and no POST or listing created. Needs user/browser security verification, followed by actual launch workflow; audit alone would not prove listing submission.
 
 Both official pages opened in Codex as user handoffs (queued). No payments, duplicated listings or success claims. Both remain not submitted with sample-follow evidence only. Baseline fetch attempted before tracker write; unrelated local workspace preserved.
+
+
+## 2026-10-25: user completion report and two newly screened directories
+
+John said "submitted" after the BuildShipper/NextRankHQ handoff; ambient browser showed dashboard.tulimoa.com. Record user-reported completion without inferring which exact platform(s) or claiming independently verified public listings. Do not resubmit BuildShipper, NextRankHQ or Tulimoa before checking their status.
+
+ProjectRadar: new not-submitted candidate. https://getprojectradar.com/submit offers free consideration for public independent projects, no guaranteed publication. Sample https://getprojectradar.com/projects/founderomni has a direct vendor anchor with rel=noopener noreferrer only. Current form requires Cloudflare Turnstile. No challenge solved/bypassed, no form submitted, no backlink claimed. Opened official submit page as user handoff. Draft content can use UntilFire name, official homepage, approved ash@untilfire.com and factual FIRE-calculator description; optional logo not uploaded.
+
+Digivated: new not-submitted candidate. https://digivated.com/submit-project offers free directory review without account via normal /api/submissions; public form fields and permission-to-display notice inspected. Do not submit yet: published own/sample followed-link markup has not been established. Paid promotion and membership ignored. ProjectRadar and Digivated are new qualification work, not accepted submissions.
+
+Baseline fetch attempted before tracker-only update; unrelated local changes preserved.
