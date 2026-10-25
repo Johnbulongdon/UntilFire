@@ -3323,3 +3323,17 @@ because tapping Need or Want on every purchase was too much clicking.
   people), splitting one purchase across need and want.
 **Next:** the 50/30/20 starter budget builds on these totals.
 **Revisit:** if people move many rows on Needs & wants, the defaults are wrong.
+
+### D-107 — October 25: past months sit inside the category bar
+**Status:** Active. Founder's call, 2026-10-25 ("Polish budget category bars"
+thread): the black budget line was bold while the track and the dotted
+Past months box were faint, so the bars looked unbalanced. John picked
+option C of three (lighter line, stronger frame, one pill).
+- **One pill per row.** Past months is a darker stretch inside the track
+  (same height, rounded, no outline), drawn under spent and still due. It
+  replaces D-52's shaded box with dotted edges.
+- **Budget line fits the bar.** Still black and still at 70% (D-52), but 2px
+  wide and 16px tall instead of 2.5px by 20px, so it no longer towers over
+  the row. The track is 12px instead of 10px.
+- **Not changed:** what the band measures, the over hatching, the ▸ marker.
+  Website only; the phone has no per-category bars.
