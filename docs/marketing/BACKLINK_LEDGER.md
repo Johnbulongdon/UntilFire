@@ -615,3 +615,12 @@ Baseline: latest pushed main `8d3ebde6d26a3b2b55498020b72c576b3924cba4` reverifi
 | Trust My Tool | `not-submitted` | Homepage exposes login/register and zero loaded tools/categories in checked state; no verifiable sample listing link. |
 
 No new submission or live backlink in this batch. Continue with SaaSList after sign-in; avoid repeating rejected free-nofollow paths. Baseline main `8d3ebde6d26a3b2b55498020b72c576b3924cba4` verified through GitHub; local Git transport failed and unrelated local drift preserved. Only ledger changed.
+
+
+## 2026-10-25: signed-in browser retry and duplicate prevention
+
+User reported signing in to SaaSList. In-app browser access timed out before the form could be observed; no authenticated submission or record is confirmed. SaaSList remains not submitted, now blocked by browser connectivity rather than a request for sign-in. No duplicate POST was sent.
+
+Corrected candidate screening: SaaSLineup and TheSaaSDir were already recorded as live-follow on 2026-08-27. Fresh public checks on 2026-10-25 returned HTTP 200 at https://saaslineup.com/product/untilfire/ and https://thesaasdir.com/product/untilfire/. Each has three direct https://www.untilfire.com/ anchors with rel="noopener" only, without nofollow, ugc or sponsored. These are reverified existing backlinks, not new acquisitions. Neither was resubmitted and no extra badge was added. Launching Next already has a submission receipt from June and was not resubmitted. PromoteIndex's official /seo page requires five distinct votes before removing nofollow/ugc; excluded from immediate dofollow acquisition.
+
+Latest pushed main remains 8d3ebde6d26a3b2b55498020b72c576b3924cba4, verified through GitHub. Fetch attempted but network connection failed; local unrelated drift preserved. No new submission or backlink in this retry.
