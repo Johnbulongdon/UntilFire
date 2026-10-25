@@ -9,7 +9,7 @@ import { Button } from '@/components/Button'
 import { Text } from '@/components/Text'
 import { ThemeScope } from '@/components/ThemeScope'
 import {
-  FALLBACK_RATES, RECURRENCE_LABEL, SETUP_CTA, SETUP_FINISHED_KEY, SETUP_LABEL, SETUP_SNAPSHOT_KEY,
+  FALLBACK_RATES, RECURRENCE_LABEL, SETUP_BUTTON, SETUP_CTA, SETUP_FINISHED_KEY, SETUP_LABEL, SETUP_SNAPSHOT_KEY,
   setupFinds, setupMoment, setupSteps, type SetupFind, type SetupMoment, type SetupSnapshot, type SetupStepId,
 } from '@/engine'
 import { freeUntilPayday } from '@/lib/bills'
@@ -32,9 +32,6 @@ const ROUTE: Record<SetupStepId, Parameters<typeof router.push>[0]> = {
   bills: '/bill',
   budget: '/budget-edit',
 }
-
-/** The slim card's one button names the step, since the list isn't on screen. */
-const NEXT_LABEL: Record<SetupStepId, string> = { income: 'Add income', bank: 'Link bank', payday: 'Add payday', bills: 'Add bills', budget: 'Set budget' }
 
 const GLYPH: Record<SetupStepId, (c: string) => ReactNode> = {
   income: c => <><Rect x={3} y={6} width={18} height={12} rx={3} stroke={c} strokeWidth={2.2} fill="none" /><Circle cx={12} cy={12} r={2.5} stroke={c} strokeWidth={2.2} fill="none" /></>,
@@ -70,6 +67,26 @@ function ProgressRing({ done, total, size }: { done: number; total: number; size
   )
 }
 
+const factsFrom = (data: AccountData) => ({
+  income: data.income,
+  bankLinked: data.plaidAccounts.length > 0,
+  typedInvestments: data.typed.k401 + data.typed.rothIRA + data.typed.taxable,
+  expected: data.bills.map(b => ({ type: b.transaction_type, recurrence: b.recurrence })),
+  budget: data.budget,
+})
+
+/**
+ * Whether Get set up is still on Home (null while it reads storage). While it
+ * is, it is Home's one ask, so the next move waits (one thing to do, not three).
+ */
+export function useSetupOpen(data: AccountData | null): boolean | null {
+  const [finished, setFinished] = useState<boolean | null>(null)
+  useEffect(() => { AsyncStorage.getItem(SETUP_FINISHED_KEY).then(v => setFinished(v === '1')).catch(() => setFinished(false)) }, [])
+  const allDone = useMemo(() => (data ? setupSteps(factsFrom(data)).every(s => s.done) : false), [data])
+  if (!data || finished == null) return null
+  return !finished && !allDone
+}
+
 /**
  * Get set up on Home (Oct 2026): a slim card with the next step's button,
  * opening a sheet with all five (lib/setup-steps, shared with the website).
@@ -79,13 +96,7 @@ function ProgressRing({ done, total, size }: { done: number; total: number; size
 export function SetupCard({ data, freedomYear }: { data: AccountData; freedomYear: number | null }) {
   const { session } = useAuth()
   const { refresh } = useAccount()
-  const steps = useMemo(() => setupSteps({
-    income: data.income,
-    bankLinked: data.plaidAccounts.length > 0,
-    typedInvestments: data.typed.k401 + data.typed.rothIRA + data.typed.taxable,
-    expected: data.bills.map(b => ({ type: b.transaction_type, recurrence: b.recurrence })),
-    budget: data.budget,
-  }), [data])
+  const steps = useMemo(() => setupSteps(factsFrom(data)), [data])
   const doneIds = useMemo(() => steps.filter(s => s.done).map(s => s.id), [steps])
   const total = steps.length
   const next = steps.find(s => !s.done)?.id ?? null
@@ -181,15 +192,16 @@ export function SetupCard({ data, freedomYear }: { data: AccountData; freedomYea
 
   return (
     <>
+      {/* Home's one ask while setup is open, so it wears the next move's green frame. */}
       <Pressable accessibilityRole="button" accessibilityLabel={`Get set up, ${doneIds.length} of ${total} done. Show steps`}
         onPress={() => { haptic.tick(); setSheet(true); track(Events.SETUP_CHECKLIST, { action: 'opened', done_count: doneIds.length }) }}
-        className="flex-row items-center gap-3 rounded-card border border-border bg-card py-3 pl-4 pr-3">
+        className="flex-row items-center gap-3 rounded-card bg-card py-3 pl-4 pr-3" style={{ borderWidth: 2, borderColor: colors.green }}>
         <ProgressRing done={doneIds.length} total={total} size={38} />
         <View className="flex-1">
           <Text className="text-[15px] font-extrabold text-ink">Get set up</Text>
           <Text className="text-[13px] text-ink-2">{doneIds.length} of {total} done</Text>
         </View>
-        {next && <Button small label={NEXT_LABEL[next]}
+        {next && <Button small label={SETUP_BUTTON[next]}
           onPress={() => (findsFor(next).length > 0 ? (haptic.tick(), setSheet(true)) : go(next))} />}
       </Pressable>
 

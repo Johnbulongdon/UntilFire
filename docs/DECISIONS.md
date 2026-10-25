@@ -3266,3 +3266,34 @@ finished them; people leave at sign-in, not mid-questions.
   it) and a "your plan" summary (Home's next move does it). The FIRE quiz stays
   in Profile. Website calculator unchanged.
 **Revisit:** if the worry or home screens lose more than 1 in 10 people.
+
+### D-105 — October 25: app psychology pass (one ask, a closer finish line, a strong end)
+**Status:** Active. Founder's call, 2026-10-25 ("Apply app psychology lessons"
+thread): John picked all five changes from a review against the goal gradient,
+peak-end, labor illusion, Von Restorff and choice overload.
+- **One loud next move** (Von Restorff, choice overload). "Your next move" is
+  the one Home card with a green frame and an icon. While Get set up is open
+  its next step is Home's one ask: the phone hides the next-move card (the
+  slim setup card wears the frame); the website shows the setup step in the
+  next-move slot ("Step 2 of 5", a why line, the step's button). Copy lives in
+  `lib/setup-steps.ts` (`SETUP_WHY`, `SETUP_BUTTON`).
+- **Onboarding ends on "Your plan"** (peak-end). Phone order after the reveal:
+  Life, Number, Standing, Reminder, then Your plan (the year and up to three
+  first moves: link your bank, the worry's move, the lease for renters), then
+  Home. The "Free sooner abroad" reveal is gone from onboarding (Explore keeps
+  the idea). This replaces D-104's "no 'your plan' summary": ending on the
+  reminder ask was the weakest last screen.
+- **How far you've come** (goal gradient). Home's freedom card shows "23%
+  there" and the next quarter mark ("Next: 25% in 2027") from the same
+  projection as the date (`lib/freedom-progress.ts`, both platforms).
+- **Bank link shown working** (labor illusion). After Plaid, real steps tick by:
+  connected, transactions read, payday found, bills found (Get set up's own
+  `setupFinds`, now also run by `/api/plaid/exchange-token`), date updated.
+  Steps are paced, never invented; reduced motion shows them at once.
+- **What if is one place** (choice overload). See app-structure.md.
+- **Not added:** streaks or loss warnings (D-73 stands; John asked, the advice
+  was a weekly "4 of 7 days" count instead, not yet approved), fake waits in
+  Today or the calculator, more confetti.
+**Revisit:** if phone onboarding finishes drop at Your plan, or Get set up
+completion doesn't rise within a month.
+

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native'
 
 import { DetailScreen } from '@/components/DetailScreen'
+import { WhatIfTabs, whatIfSubtitle } from '@/components/WhatIfTabs'
 import { Card, Label } from '@/components/Screen'
 import { Text } from '@/components/Text'
 import { haptic } from '@/lib/haptics'
@@ -51,7 +52,8 @@ export default function Scenarios() {
   }
 
   return (
-    <DetailScreen back="Plan" title="Scenarios" subtitle="Compare investment mixes side by side">
+    <DetailScreen back="Plan" title="What if" subtitle={whatIfSubtitle('scenarios')}>
+      <WhatIfTabs current="scenarios" />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
         {scenarios.map((s, i) => (
           <Pressable accessibilityRole="button" key={i} onPress={() => { haptic.select(); setSelected(i); setEditing(false) }} onLongPress={() => remove(i)}

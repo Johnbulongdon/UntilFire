@@ -14,7 +14,7 @@ import { Events, track, yearsBucket } from '@/lib/analytics'
 
 const COUNT_MS = 1400
 
-/** Reveal 1 of 5: the year work becomes optional, and the age you'll be. Nothing else. */
+/** Reveal 1 of 4: the year work becomes optional, and the age you'll be. Nothing else. */
 export default function Reveal() {
   const { draft, savePlan } = usePlan()
   const plan = useMemo(() => planFromDraft(draft), [draft])

@@ -7,6 +7,7 @@ import * as Updates from 'expo-updates'
  * each line short and in plain words (the founder reads it to check a build).
  */
 export const UPDATE_LOG: { version: string; date: string; changes: string[] }[] = [
+  { version: '0.2.0', date: '2026-10-25', changes: ['Home shows how far along you are and your next milestone', 'Your next move stands out, and only one thing asks for your attention at a time', 'Linking a bank shows what it found: your payday and bills', 'Onboarding ends with your plan and first moves', 'Plan is simpler: What if now holds Compare and Scenarios'] },
   { version: '0.2.0', date: '2026-10-25', changes: ['Onboarding asks what gets in the way most, whether you rent or own, and how you invest; Home\'s next move starts from your answer', 'Spending and saving share one screen with a switch'] },
   { version: '0.2.0', date: '2026-10-25', changes: ['Profile asks you to take the FIRE type quiz instead of guessing your type, and shows the free Pro month for finishing it', 'Screen recordings show labels and buttons; amounts, numbers, names and anything you type stay hidden'] },
   { version: '0.2.0', date: '2026-10-24', changes: ['Screen recordings to help us fix confusing screens, with every amount, name and text hidden'] },

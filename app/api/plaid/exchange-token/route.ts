@@ -4,6 +4,9 @@ import { Transaction as PlaidTransaction } from "plaid";
 import { getInstitutionBranding, getPlaidClient, mapPlaidTx } from "@/lib/plaid";
 import { applyRefunds } from "@/lib/plaid-sync";
 import { LIFECYCLE_EVENTS, recordEvent } from "@/lib/lifecycle";
+import { FALLBACK_RATES } from "@/lib/currency";
+import { setupFinds } from "@/lib/setup-steps";
+import type { RawTx } from "@/lib/recurring-detect";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -105,6 +108,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Money back from a shop reduces that purchase, rather than reading as income (lib/refunds).
     await applyRefunds(admin, user.id, allAdded.filter((tx) => tx.amount < 0 && !tx.pending).map((tx) => tx.transaction_id));
 
+    // What the bank showed, for the "working" screen (lib/setup-steps setupFinds, the
+    // checklist's own rule): a paycheck and repeating bills Calendar doesn't list yet.
+    let found = { payday: false, bills: 0 };
+    try {
+      const txns: RawTx[] = rows.flatMap((r, i) => r && (r.transaction_type === "expense" || r.transaction_type === "income")
+        ? [{ id: String(i), date: r.date, amount: r.amount, currency: r.currency, description: r.description ?? "", category: r.category ?? "", transaction_type: r.transaction_type }]
+        : []);
+      const { data: listed } = await admin.from("expected_payments").select("description").eq("user_id", user.id);
+      const finds = setupFinds(txns, listed ?? [], FALLBACK_RATES);
+      found = { payday: !!finds.payday, bills: finds.bills.length };
+    } catch (findErr) {
+      console.error("[plaid/exchange-token] finds:", findErr);
+    }
+    let accountsCount = 0;
+
     // Fetch and store account balances
     try {
       const accountsResp = await plaid.accountsGet({ access_token: accessToken });
@@ -123,6 +141,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         mask: a.mask ?? null,
         updated_at: new Date().toISOString(),
       }));
+      accountsCount = accountRows.length;
       if (accountRows.length > 0) {
         const { error: accErr } = await admin
           .from("plaid_accounts")
@@ -137,6 +156,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       item_id: itemRow.id,
       institution_name: body.institution_name,
       added_count: rows.length,
+      accounts_count: accountsCount,
+      found,
     });
   } catch (err) {
     console.error("[plaid/exchange-token]", err);

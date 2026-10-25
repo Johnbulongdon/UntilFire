@@ -10,6 +10,7 @@
  */
 
 import { Button, Card, Icon } from "@/components/ui";
+import type { IconName } from "@/components/ui";
 import type { NextMove } from "@/lib/next-move";
 import type { PaydayLine } from "@/lib/payday-line";
 import Flag, { flagUri } from "@/app/components/Flag";
@@ -37,7 +38,7 @@ export function DoorChip({ to, onClick }: { to: "plan" | "money"; onClick: () =>
   );
 }
 
-export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, children }: {
+export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, progress, children }: {
   /** "March 2041"; null until the plan has enough to project. */
   dateLabel: string | null;
   yearsAway: number | null;
@@ -46,6 +47,8 @@ export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, children
   onOpen: () => void;
   /** A planned move to the retirement city (D-82), shown under the date so the number says what it assumes. */
   route?: { from: string; fromFlag?: string; to: string; toFlag?: string; when: string; onOpen: () => void };
+  /** How far you've come (lib/freedom-progress): "23%", 0–1, and the next mark. */
+  progress?: { pct: string; share: number; next: string };
   /** The curve, drawn by the dashboard from the same projection as the date. */
   children: React.ReactNode;
 }) {
@@ -77,6 +80,18 @@ export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, children
         </div>
         <DoorChip to="plan" onClick={onOpen} />
       </div>
+      {progress && (
+        <div role="img" aria-label={`${progress.pct} of your freedom number. ${progress.next}`} style={{ display: "grid", gap: 6 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ ...mono, fontSize: 15, fontWeight: 700, color: "var(--uf-ink)" }}>{progress.pct} there</span>
+            <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>{progress.next}</span>
+          </div>
+          <div style={{ position: "relative", height: 10, borderRadius: 999, background: "var(--uf-surface-2)", overflow: "hidden" }}>
+            <i style={{ display: "block", height: "100%", width: `${Math.max(2, progress.share * 100)}%`, borderRadius: 999, background: "var(--uf-teal)" }} />
+            {[25, 50, 75].map((m) => <i key={m} style={{ position: "absolute", top: 0, bottom: 0, left: `${m}%`, width: 2, background: "var(--uf-card)" }} />)}
+          </div>
+        </div>
+      )}
       {children}
     </Card>
   );
@@ -87,20 +102,32 @@ export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, children
  * green button to where it is done. "Not now" hides it for a week and the
  * next rule takes its place, so the card never nags.
  */
-export function NextMoveCard({ move, fmt, onOpen, onSnooze }: {
+export function NextMoveCard({ move, fmt, onOpen, onSnooze, icon, because }: {
   move: NextMove;
+  /** Why this move, in one short line. */
+  because?: string;
   fmt: (n: number) => string;
   onOpen: () => void;
   onSnooze: () => void;
+  /** Defaults to one per destination tab. */
+  icon?: IconName;
 }) {
   const split = move.split && move.split.length > 1 ? move.split : null;
+  // The one card on Home that looks different (Von Restorff): a green frame
+  // and an icon, where every other card is a plain one.
   return (
-    <Card style={{ display: "grid", gap: 12, alignContent: "start" }}>
+    <Card style={{ display: "grid", gap: 12, alignContent: "start", border: "2px solid var(--uf-green)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <span className="uf-t-label" style={muted}>Your next move</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
+          <span aria-hidden style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 12, background: "var(--uf-green-50)", color: "var(--uf-green)" }}>
+            <Icon name={icon ?? MOVE_ICON[move.tab]} size={22} />
+          </span>
+          <span className="uf-t-label" style={{ color: "var(--uf-green)" }}>Your next move</span>
+        </span>
         <DoorChip to={move.door} onClick={onOpen} />
       </div>
       <div className="uf-t-h3" style={{ margin: 0 }}>{move.title}</div>
+      {because && <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: -6 }}>{because}</div>}
       {move.payoff && (
         <span style={{ justifySelf: "start", borderRadius: 999, padding: "4px 10px", background: "var(--uf-teal-soft)", color: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }}>
           {move.payoff}
@@ -125,6 +152,8 @@ export function NextMoveCard({ move, fmt, onOpen, onSnooze }: {
     </Card>
   );
 }
+
+const MOVE_ICON: Record<NextMove["tab"], IconName> = { cashflow: "target", contributions: "money", "fire-calculator": "sliders" };
 
 export interface MonthCategory { key: string; label: string; color: string; usd: number }
 

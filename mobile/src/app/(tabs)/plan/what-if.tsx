@@ -5,6 +5,7 @@ import { View } from 'react-native'
 
 import { Bouncy } from '@/components/Bouncy'
 import { DetailScreen } from '@/components/DetailScreen'
+import { WhatIfTabs, whatIfSubtitle } from '@/components/WhatIfTabs'
 import { Icon } from '@/components/Icon'
 import { BeforeYouBuy } from '@/components/HomeAccountCards'
 import { Card, Label } from '@/components/Screen'
@@ -73,7 +74,8 @@ export default function WhatIf() {
   }
 
   return (
-    <DetailScreen back="Plan" title="What if" subtitle="Try a change and watch your date move">
+    <DetailScreen back="Plan" title="What if" subtitle={whatIfSubtitle('what-if')}>
+      <WhatIfTabs current="what-if" />
       <Card>
         <Label>{changed ? 'With this change, work becomes optional in' : 'Work becomes optional in'}</Label>
         <Text className="font-display text-[44px] font-bold leading-[50px] text-teal">{whatIf.year ?? '65+ yrs'}</Text>

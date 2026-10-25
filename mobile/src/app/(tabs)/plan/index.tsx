@@ -14,17 +14,15 @@ import { TAB_COLOR } from '@/theme/colors'
 type SymbolName = Parameters<typeof Icon>[0]['name']
 
 // Plan goes in many directions, so it's a set of chunky tiles, not a path (founder's call, October audit).
+// Four, not seven (choice overload, Oct 2026): Compare and Scenarios live inside What if, and Learn is a quiet row below.
 const TILES: { label: string; note: string; icon: SymbolName; fallback: string; to: string }[] = [
-  { label: 'What if', note: 'Try a change', icon: 'wand.and.stars', fallback: '?', to: '/plan/what-if' },
+  { label: 'What if', note: 'Changes, life, investing', icon: 'wand.and.stars', fallback: '?', to: '/plan/what-if' },
   { label: 'Goals', note: 'Saving along the way', icon: 'target', fallback: '◎', to: '/plan/goals' },
-  { label: 'Compare', note: 'Work less, a home, kids', icon: 'square.split.2x1.fill', fallback: '⇆', to: '/plan/compare' },
   { label: 'Contributions', note: 'Where saving goes', icon: 'arrow.up.right.circle.fill', fallback: '↗', to: '/plan/contributions' },
-  { label: 'Scenarios', note: 'Investment mixes', icon: 'chart.bar.fill', fallback: '▤', to: '/plan/scenarios' },
   { label: 'Explore', note: 'Cities worldwide', icon: 'globe.americas.fill', fallback: '◍', to: '/plan/explore' },
-  { label: 'Learn', note: 'Short reads', icon: 'book.fill', fallback: '▯', to: '/plan/learn' },
 ]
 
-/** Plan (V2): the freedom date and how far along you are, then every planning page as a chunky tile. */
+/** Plan (V2): the freedom date and how far along you are, then the four planning places as chunky tiles. */
 export default function PlanHub() {
   const { plan } = useLivePlan()
   const f = useFreedom()
@@ -63,6 +61,13 @@ export default function PlanHub() {
           </Pressable>
         ))}
       </View>
+
+      <Pressable accessibilityRole="button" accessibilityLabel="Learn: short reads" onPress={() => { haptic.tick(); router.push('/plan/learn') }}
+        className="min-h-[56px] flex-row items-center gap-3 rounded-card border border-border bg-card px-4">
+        <Icon name="book.fill" fallback="▯" size={22} color={TAB_COLOR.plan} />
+        <Text className="flex-1 text-[16px] font-bold text-ink">Learn</Text>
+        <Text className="text-[14px] text-ink-2">Short reads ›</Text>
+      </Pressable>
     </Screen>
   )
 }

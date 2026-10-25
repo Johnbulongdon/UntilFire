@@ -19,8 +19,14 @@ export function plaidNativeAvailable(): boolean {
   try { require('react-native-plaid-link-sdk'); return true } catch { return false }
 }
 
-/** Opens native Link. Resolves to an error message, 'cancelled', or null when a bank was connected. */
-export async function connectBankNative(accessToken: string): Promise<string | 'cancelled' | null> {
+/** What the bank showed, as /api/plaid/exchange-token returns it (the "working" screen, BankWorking). */
+export interface BankFound { name: string; added: number; accounts: number; found: { payday: boolean; bills: number } }
+
+/**
+ * Opens native Link. Resolves to an error message, 'cancelled', or null when a bank was connected.
+ * `onWorking` hears the bank's name as the import starts, then what it found.
+ */
+export async function connectBankNative(accessToken: string, onWorking?: (name: string, result: BankFound | null) => void): Promise<string | 'cancelled' | null> {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { createPlaidLinkSession } = require('react-native-plaid-link-sdk') as typeof import('react-native-plaid-link-sdk')
   const headers = { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
@@ -36,6 +42,8 @@ export async function connectBankNative(accessToken: string): Promise<string | '
       onEvent: () => {},
       onExit: () => resolve('cancelled'),
       onSuccess: async (success: LinkSuccess) => {
+        const name = success.metadata.institution?.name || 'your bank'
+        onWorking?.(name, null)
         const done = await fetch(`${SITE}/api/plaid/exchange-token`, {
           method: 'POST',
           headers,
@@ -50,6 +58,11 @@ export async function connectBankNative(accessToken: string): Promise<string | '
           resolve(err.error ?? "The bank connected but didn't finish saving. Please try again.")
           return
         }
+        const data = await done.json().catch(() => ({}))
+        onWorking?.(data.institution_name || name, {
+          name: data.institution_name || name, added: data.added_count ?? 0, accounts: data.accounts_count ?? 0,
+          found: data.found ?? { payday: false, bills: 0 },
+        })
         resolve(null)
       },
     })

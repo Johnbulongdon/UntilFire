@@ -10,7 +10,7 @@ import { GuidedTour } from '@/components/GuidedTour'
 import { useTourAnchor } from '@/components/tour-anchors'
 import { HouseholdCard } from '@/components/HouseholdCard'
 import { RecurringTeaser } from '@/components/RecurringCard'
-import { SetupCard } from '@/components/SetupCard'
+import { SetupCard, useSetupOpen } from '@/components/SetupCard'
 import { CategoryGlyph, Icon } from '@/components/Icon'
 import { ProgressTrack, Screen } from '@/components/Screen'
 import { Sunny } from '@/components/Sunny'
@@ -23,9 +23,9 @@ import { useAuth } from '@/state/auth'
 import { saveFireProfile } from '@/lib/mutations'
 import { useFreedom, type Freedom } from '@/state/freedom'
 import { useLivePlan } from '@/state/live-plan'
-import { everydayByDay, guessBillCategory, isCounted, isoDay, paydayLine, quickFreedom, type NextMove } from '@/engine'
+import { everydayByDay, freedomProgress, guessBillCategory, progressPercent, isCounted, isoDay, paydayLine, quickFreedom, type NextMove } from '@/engine'
 import { usePlan } from '@/state/plan'
-import { colors, TAB_COLOR } from '@/theme/colors'
+import { brand, colors, TAB_COLOR } from '@/theme/colors'
 import { splitBudget } from '@/lib/budget-split'
 import { freeUntilPayday, unpaid, upcoming } from '@/lib/bills'
 import { phoneNextMove, snoozedMoves, snoozeMove } from '@/lib/next-move'
@@ -44,6 +44,7 @@ export default function Home() {
   const result = useFreedom()
   const { session } = useAuth()
   const { data, loading, refresh } = useAccount()
+  const setupOpen = useSetupOpen(data)
   if (!plan || !result) return <Redirect href="/onboarding" />
 
   return (
@@ -52,7 +53,7 @@ export default function Home() {
       <Hero result={result} />
       <DateMoved result={result} />
       {data && <SavingsGap data={data} />}
-      {data && <NextMoveCard data={data} />}
+      {data && setupOpen === false && <NextMoveCard data={data} />}
       <Actions signedIn={!!session} />
       {data && (freeUntilPayday(data) ? <UntilPayday data={data} /> : <ThisMonth data={data} />)}
       {data && <RecurringTeaser data={data} freedom={result} />}
@@ -89,7 +90,33 @@ function Hero({ result }: { result: Freedom }) {
           <Text style={{ color: '#FFFFFF' }} className="font-display text-[50px] font-bold leading-[56px] tracking-tight">{date}</Text>
           {!!sub && <Text style={{ color: 'rgba(255,255,255,0.85)' }} className="text-[15px]">{sub}</Text>}
         </Pressable>
+        <HowFar result={result} />
         <View className="mt-4"><FreedomLineChart f={result} onDark /></View>
+      </View>
+    </View>
+  )
+}
+
+/**
+ * How far you've come (goal gradient, lib/freedom-progress): the share of the
+ * freedom number already there and the next quarter mark, close enough to chase.
+ */
+function HowFar({ result }: { result: Freedom }) {
+  const p = freedomProgress(result.invested, result.target, result.series.map(s => ({ year: s.year, value: s.invested })))
+  if (!p) return null
+  const pct = progressPercent(p.share)
+  const next = p.next ? `Next: ${Math.round(p.next.mark * 100)}%${p.next.year != null ? ` in ${p.next.year}` : `, ${money(p.next.toGo)} to go`}` : 'Your freedom number is there'
+  return (
+    <View className="mt-4" accessible accessibilityLabel={`${pct} of your freedom number. ${next}`}>
+      <View className="flex-row items-baseline justify-between">
+        <Text style={{ color: '#FFFFFF' }} className="font-mono text-[15px] font-bold">{pct} there</Text>
+        <Text style={{ color: 'rgba(255,255,255,0.85)' }} className="text-[13px]">{next}</Text>
+      </View>
+      <View className="mt-2 h-2.5 overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+        <View className="h-full rounded-full" style={{ width: `${Math.max(2, p.share * 100)}%`, backgroundColor: brand.aqua }} />
+        {[0.25, 0.5, 0.75].map(m => (
+          <View key={m} className="absolute bottom-0 top-0 w-[2px]" style={{ left: `${m * 100}%`, backgroundColor: 'rgba(6,65,47,0.55)' }} />
+        ))}
       </View>
     </View>
   )
@@ -169,10 +196,16 @@ function NextMoveCard({ data }: { data: AccountData }) {
   const move = phoneNextMove(data, snoozed, answers)
   if (!move) return null
   const later = () => { haptic.tick(); snoozeMove(move.key).catch(() => {}); setSnoozed(new Set([...snoozed, move.key])) }
+  const icon = MOVE_ICON[move.key === 'lease' ? 'lease' : move.tab]
+  // The one card on Home that looks different (Von Restorff): a green frame and
+  // an icon, where every other card is a plain soft panel.
   return (
-    <View className="gap-3 rounded-3xl p-4" style={{ backgroundColor: panel() }}>
-      <View className="flex-row items-center justify-between">
-        <Text className="text-[12px] font-bold uppercase tracking-[1.5px] text-ink-3">Your next move</Text>
+    <View className="gap-3 rounded-3xl p-4" style={{ backgroundColor: colors.card, borderWidth: 2, borderColor: colors.green }}>
+      <View className="flex-row items-center gap-3">
+        <View className="h-11 w-11 items-center justify-center rounded-[13px]" style={{ backgroundColor: colors.green50 }}>
+          <Icon name={icon.name} fallback={icon.fallback} size={24} color={colors.green} />
+        </View>
+        <Text className="flex-1 text-[12px] font-bold uppercase tracking-[1.5px]" style={{ color: colors.green }}>Your next move</Text>
         <Text className="text-[13px] font-bold" style={{ color: colors.green }}>{move.door === 'plan' ? 'Plan ›' : 'Money ›'}</Text>
       </View>
       <Text className="text-[18px] font-bold leading-6 text-ink">{move.title}</Text>
@@ -188,6 +221,13 @@ function NextMoveCard({ data }: { data: AccountData }) {
       </View>
     </View>
   )
+}
+
+const MOVE_ICON: Record<NextMove['tab'] | 'lease', { name: 'chart.pie.fill' | 'chart.line.uptrend.xyaxis' | 'wand.and.stars' | 'house.fill'; fallback: string }> = {
+  cashflow: { name: 'chart.pie.fill', fallback: '🥧' },
+  contributions: { name: 'chart.line.uptrend.xyaxis', fallback: '📈' },
+  'fire-calculator': { name: 'wand.and.stars', fallback: '✨' },
+  lease: { name: 'house.fill', fallback: '🏠' },
 }
 
 const signed = (n: number) => `${n < 0 ? '−' : ''}${money(Math.abs(n))}`

@@ -41,7 +41,10 @@ import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessB
 import FreeToSpendRunway from "./FreeToSpendRunway";
 import FreeToSpendHome from "./FreeToSpendHome";
 import SetupChecklist, { type AddedExpected } from "./SetupChecklist";
-import type { SetupFacts, SetupStepId } from "@/lib/setup-steps";
+import { freedomProgress, progressPercent } from "@/lib/freedom-progress";
+import { SETUP_BUTTON, SETUP_FINISHED_KEY, SETUP_LABEL, SETUP_WHY, setupSteps, type SetupFacts, type SetupStepId } from "@/lib/setup-steps";
+import type { IconName } from "@/components/ui";
+import type { NextMove } from "@/lib/next-move";
 import type { RawTx } from "@/lib/recurring-detect";
 import { FreedomCard, MonthCard, GlanceRow, NextMoveCard, UntilPaydayCard, type MonthCategory } from "./HomeCards";
 import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, MoneyTrack, Fig, StackBar, PaceBar, MonthCalendar, BankLogo } from "./MoneyCards";
@@ -79,7 +82,7 @@ import { isRent } from "@/lib/lease";
 import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
-import { Alert, Button, ICON_PATHS, Input } from "@/components/ui";
+import { Alert, Button, ICON_PATHS, Input, SegmentedControl } from "@/components/ui";
 import Flag, { flagUri } from "@/app/components/Flag";
 import { stampActive } from "@/lib/last-active";
 import { knownWithdrawalLimit, parseWithdrawalLimit, withdrawalsLeftLabel } from "@/lib/savings-limits";
@@ -725,6 +728,8 @@ function SectionLabel({ icon, text, color = "var(--uf-ink)" }: { icon: string; t
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
+const SETUP_ICON: Record<SetupStepId, IconName> = { income: "money", bank: "bank", payday: "calendar", bills: "card", budget: "target" };
+
 function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60, budget = {}, expectedRows = [], onExpectedAdded, onSetupStep }: {
   spreadCategories?: string[];
   /** Typed on the phone; in net worth only (audit round 2). */
@@ -1106,6 +1111,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     return Array.from(byYear.values()).map((b) => ({ ...b, label: String(b.year) }));
   }, [chartData, thisYear, freeYear]);
   const todayPoint = yearBars.find((b) => b.year === thisYear) ?? yearBars[0];
+  // How far you've come (lib/freedom-progress): today's point on the same curve against the FIRE target.
+  const howFar = useMemo(() => (todayPoint ? freedomProgress(todayPoint.value, fireTarget, yearBars) : null), [todayPoint, fireTarget, yearBars]);
 
   // Milestones drawn on the curve, so a far-off date still shows the steps
   // between here and there: the first year past a quarter and a half of the
@@ -1239,6 +1246,20 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     income, bankLinked: plaidAccounts.length > 0, typedInvestments: k401 + rothIRA + taxable,
     expected: expectedRows.map((r) => ({ type: r.transaction_type, recurrence: r.recurrence })), budget,
   }), [income, plaidAccounts.length, k401, rothIRA, taxable, expectedRows, budget]);
+  // While Get set up is open, its next step is Home's next move: one ask, not two.
+  const [setupFinished, setSetupFinished] = useState<boolean | null>(null);
+  useEffect(() => { try { setSetupFinished(localStorage.getItem(SETUP_FINISHED_KEY) === "1"); } catch { setSetupFinished(false); } }, []);
+  const setupMove = useMemo<{ step: SetupStepId; move: NextMove } | null>(() => {
+    if (setupFinished !== false) return null;
+    const steps = setupSteps(setupFacts);
+    const at = steps.findIndex((s) => !s.done);
+    if (at < 0) return null;
+    const step = steps[at].id;
+    return { step, move: {
+      key: `setup:${step}`, title: SETUP_LABEL[step], payoff: `Step ${at + 1} of ${steps.length}`,
+      door: "money", tab: "cashflow", button: SETUP_BUTTON[step],
+    } };
+  }, [setupFinished, setupFacts]);
   const setupTxns = useMemo<RawTx[]>(() => recentTransactions
     .filter((t) => t.transaction_type === "expense" || t.transaction_type === "income")
     .map((t, i) => ({ id: String(i), date: t.date.slice(0, 10), amount: t.transaction_type === "expense" ? netAmt(t) : t.amount,
@@ -1638,6 +1659,10 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         yearsAway={exactFreedomDate ? Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5)) : fireYear}
         age={fireAge > 0 && exactFreedomDate ? Math.round(fireAge + Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5))) : null}
         onOpen={() => onTabChange?.("fire-calculator")}
+        progress={howFar ? {
+          pct: progressPercent(howFar.share), share: howFar.share,
+          next: howFar.next ? `Next: ${Math.round(howFar.next.mark * 100)}%${howFar.next.year != null ? ` in ${howFar.next.year}` : `, ${fmtMoney(howFar.next.toGo, true)} to go`}` : "Your freedom number is there",
+        } : undefined}
         route={retireCity ? {
           from: cityName ? cityName.split(",")[0] : "",
           fromFlag: cityName ? CITIES.find((c) => c.name === cityName)?.flag ?? "\u{1F3E0}" : "",
@@ -1791,7 +1816,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       </HomeSlot>
       {/* ── Freedom date + best move ─────────────────────────────────────── */}
       <HomeSlot id="contribution">
-      {nextMove ? (
+      {setupMove && !isSnoozed(setupMove.move.key) ? (
+        <NextMoveCard move={setupMove.move} because={SETUP_WHY[setupMove.step]} icon={SETUP_ICON[setupMove.step]} fmt={(n) => fmtMoney(n)}
+          onOpen={() => onSetupStep?.(setupMove.step)}
+          onSnooze={() => { snooze(setupMove.move.key); setSnoozeTick((t) => t + 1); }} />
+      ) : nextMove ? (
         <NextMoveCard move={nextMove} fmt={(n) => fmtMoney(n)}
           onOpen={() => onTabChange?.(nextMove.tab)}
           onSnooze={() => { snooze(nextMove.key); setSnoozeTick((t) => t + 1); }} />
@@ -4764,13 +4793,13 @@ const MONEY_SECTIONS: { label: string; tab: TabKey }[] = [
 type PlanSection = { label: string; tab: TabKey; subTab?: "menu" | "invest-sim" | "compare" };
 const PLAN_SECTIONS: PlanSection[] = [
   { label: "Freedom Date", tab: "fire-calculator", subTab: "menu"       },
-  // What if: life changes tried on top of your plan (D-69).
-  { label: "Compare",      tab: "fire-calculator", subTab: "compare"    },
-  { label: "Scenarios",    tab: "fire-calculator", subTab: "invest-sim" },
+  // What if: life changes tried on top of your plan (D-69), with Scenarios (investment
+  // mixes) one switch away inside it, so Plan lists one place to try a different future
+  // rather than two (choice overload, Oct 2026). The phone does the same.
+  { label: "What if",      tab: "fire-calculator", subTab: "compare"    },
   { label: "Goals",        tab: "goals"        },
   { label: "Contributions", tab: "contributions" },
   { label: "Explore",      tab: "expat-fire"   },
-  { label: "Citizenship",  tab: "citizenship"  },
   { label: "Learn",        tab: "learning-hub" },
 ];
 
@@ -4785,6 +4814,7 @@ const SUB_ICONS: Record<string, string> = {
   Transactions: "M4 7h13l-3-3M20 17H7l3 3",
   Calendar: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
   Compare: "M8 4v16M16 4v16M3 8h5M16 16h5M3 16h5M16 8h5",
+  "What if": "M8 4v16M16 4v16M3 8h5M16 16h5M3 16h5M16 8h5",
   Categories: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
   Budget: "M12 3a9 9 0 1 0 9 9h-9zM15 3.5A9 9 0 0 1 20.5 9H15z",
   Income: "M3 7h18v12H3zM8 7V5h8v2M3 12h18",
@@ -4799,6 +4829,9 @@ const SUB_ICONS: Record<string, string> = {
   Citizenship: "M6 3h12v18H6zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM9 17h6",
   Learn: "M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2zM4 19V5M8 7h8",
 };
+/** Scenarios sits inside What if, so the section list lights What if for it. */
+const whatIfOf = (sub: "menu" | "invest-sim" | "compare") => (sub === "invest-sim" ? "compare" : sub);
+
 function SubIcon({ label }: { label: string }) {
   const d = SUB_ICONS[label];
   return d ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="uf-sidebar-sub-icon"><path d={d} /></svg> : null;
@@ -6227,7 +6260,7 @@ export default function Dashboard() {
                         <button
                           key={sub.label}
                           className={`uf-sidebar-sub-item ${
-                            tab === sub.tab && (!sub.subTab || fireCalcSubTab === sub.subTab) ? "active" : ""
+                            tab === sub.tab && (!sub.subTab || whatIfOf(fireCalcSubTab) === sub.subTab) ? "active" : ""
                           }`}
                           onClick={() => {
                             if (sub.subTab) setFireCalcSubTab(sub.subTab);
@@ -6313,7 +6346,7 @@ export default function Dashboard() {
                   <button
                     key={item.label}
                     className={`uf-section-button ${
-                      tab === item.tab && (!item.subTab || fireCalcSubTab === item.subTab) ? "active" : ""
+                      tab === item.tab && (!item.subTab || whatIfOf(fireCalcSubTab) === item.subTab) ? "active" : ""
                     }`}
                     onClick={() => {
                       if (item.subTab) setFireCalcSubTab(item.subTab);
@@ -6573,6 +6606,13 @@ export default function Dashboard() {
                       onOpenInvestSim={() => setFireCalcSubTab("invest-sim")}
                     />
                   </>
+                )}
+                {(fireCalcSubTab === "compare" || fireCalcSubTab === "invest-sim") && (
+                  <div style={{ marginBottom: 16 }}>
+                    <SegmentedControl label="What if" value={fireCalcSubTab}
+                      options={[{ value: "compare", label: "Life changes" }, { value: "invest-sim", label: "Investing" }] as const}
+                      onChange={(v) => setFireCalcSubTab(v)} />
+                  </div>
                 )}
                 {fireCalcSubTab === "compare" && (
                   <WhatIf run={runChanges} ctx={compareCtx} growth={growthRate} retireAge={compareRetireAge} lease={compareLease}

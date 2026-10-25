@@ -5,11 +5,12 @@ import { Alert, View } from 'react-native'
 
 import { proForSale } from '@/lib/native-build'
 import { haptic } from '@/lib/haptics'
-import { connectBankNative, plaidNativeAvailable } from '@/lib/plaid-native'
+import { connectBankNative, plaidNativeAvailable, type BankFound } from '@/lib/plaid-native'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { colors } from '@/theme/colors'
 
+import { BankWorking } from './BankWorking'
 import { Button } from './Button'
 import { Text } from './Text'
 
@@ -30,6 +31,8 @@ export function BankBridge({ another, compact }: { another?: boolean; compact?: 
   const { data, refresh } = useAccount()
   const { session } = useAuth()
   const [busy, setBusy] = useState(false)
+  // Linking a bank, shown working: the bank's name while it imports, then what it found.
+  const [working, setWorking] = useState<{ name: string; result: BankFound | null } | null>(null)
   const native = plaidNativeAvailable()
   // Free stops at one bank: say so before the connect flow, not as an error after it.
   const needsPro = !!another && !!data && !data.pro
@@ -43,10 +46,10 @@ export function BankBridge({ another, compact }: { another?: boolean; compact?: 
     }
     if (native && session) {
       setBusy(true)
-      const result = await connectBankNative(session.access_token)
+      const result = await connectBankNative(session.access_token, (name, found) => setWorking({ name, result: found }))
       setBusy(false)
-      if (result === null) { haptic.success(); refresh() }
-      else if (result !== 'cancelled') { haptic.warn(); Alert.alert(result) }
+      if (result === null) refresh()
+      else { setWorking(null); if (result !== 'cancelled') { haptic.warn(); Alert.alert(result) } }
       return
     }
     await WebBrowser.openBrowserAsync(CONNECT_URL, { controlsColor: colors.green }).catch(() => {})
@@ -54,6 +57,7 @@ export function BankBridge({ another, compact }: { another?: boolean; compact?: 
   }
   return (
     <View className="gap-2">
+      {working && <BankWorking name={working.name} result={working.result} onClose={() => setWorking(null)} />}
       <Button small={compact} kind={another ? 'quiet' : 'primary'} busy={busy}
         label={busy ? 'Connecting…' : needsPro ? (proForSale ? 'More banks with Pro' : 'One bank on the free plan') : another ? 'Connect another bank' : 'Connect a bank'} onPress={open} />
       {!another && (
