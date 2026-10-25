@@ -3232,5 +3232,12 @@ first day of Android testers showed 12 people reach sign-in and 5 finish.
 - The privacy policy's usage line now mentions masked screen recordings.
 - Why: the web already records with amounts marked `ph-no-capture`; the phone
   had no way to see where new people get stuck.
+- 2026-10-25, founder's pick ("show words, hide money and names"): fully
+  covered recordings were unreadable, so `components/Text` tags a Text
+  `ph-no-mask` when it has no digit, currency sign or "@", isn't DM Mono and
+  isn't marked `private` (transaction descriptions, merchants, partner name,
+  settings values). Everything else, text boxes included, stays masked, so a
+  missed spot fails closed. Images show (icons and illustrations only). A
+  JS-only change, sent as an update to build 14.
 **Revisit:** if masking leaks any amount in a real recording, turn replay off
 with an update and report it.

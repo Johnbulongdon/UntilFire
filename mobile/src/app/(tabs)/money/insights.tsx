@@ -79,7 +79,7 @@ export default function Insights() {
             <Text className="mb-1 text-[13px] text-ink-3">Where it went most</Text>
             {topMerchants.map(([name, usd]) => (
               <View key={name} className="flex-row justify-between py-0.5">
-                <Text numberOfLines={1} className="flex-1 pr-3 text-[14px] text-ink">{name}</Text>
+                <Text private numberOfLines={1} className="flex-1 pr-3 text-[14px] text-ink">{name}</Text>
                 <Text className="font-mono text-[14px] text-ink">{money(usd)}</Text>
               </View>
             ))}
