@@ -684,3 +684,12 @@ ProjectRadar: new not-submitted candidate. https://getprojectradar.com/submit of
 Digivated: new not-submitted candidate. https://digivated.com/submit-project offers free directory review without account via normal /api/submissions; public form fields and permission-to-display notice inspected. Do not submit yet: published own/sample followed-link markup has not been established. Paid promotion and membership ignored. ProjectRadar and Digivated are new qualification work, not accepted submissions.
 
 Baseline fetch attempted before tracker-only update; unrelated local changes preserved.
+
+
+## 2026-10-25: ProjectRadar submission accepted
+
+Supersedes prior not-submitted/security blocker. User completed verification; Codex filled the existing verified form without reloading. UntilFire, https://www.untilfire.com/, factual FIRE calculator/planning description, category Utilities & Calculators, stage Launched, approved ash@untilfire.com, accuracy/editorial-consideration checkbox. Optional file and local draft saving omitted. Verification expired during connection recovery but later the visible status was Verification complete and submit button enabled. Submitted once through the normal free form.
+
+Visible receipt: "Submission received", "Your free submission is saved", "UntilFire is saved for free Project Note consideration." Saved reference PR-96A91C8B37. A receipt email was accepted for delivery, not confirmed delivered to inbox. Status pending editorial consideration; no publication or live UntilFire backlink claimed. No payment or optional upsell. Do not resubmit. Screenshot outputs/directory-partners/projectradar-receipt-2026-10-25.png; browser receipt tab retained. Private one-time optional detail links not copied into this ledger.
+
+Normal baseline fetch attempted before tracker-only write; unrelated local changes preserved.
