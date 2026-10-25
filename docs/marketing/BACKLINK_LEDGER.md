@@ -646,3 +646,10 @@ No new submission accepted in this screening batch. SaaSList is an existing comp
 | WorthToTry | not-submitted | Official /submit says account/magic-link required and agent can create only a draft for user final review; no submission attempted. |
 
 Baseline fetch origin main attempted before tracker write; unrelated local drift preserved. No application or badge code changed. This batch produced one accepted free submission, with publication independently confirmed through public API; own rendered-anchor verification remains outstanding.
+
+
+## 2026-10-25: one-more request qualification, no new accepted submission
+
+Checked additional candidates without claiming success: Bidrise.live sample https://bidrise.live/p/tta1 uses rel=ugc nofollow noopener noreferrer and official submit FAQ disclaims ranking credit. Shipboard sample https://shipboard.live/s/azn8.com uses rel=ugc noopener. DealMyApp sample https://dealmyapp.com/listings/azn8 uses rel=nofollow noopener. All excluded. SaaS Dealer's sample /tools/dcs4 exposes a nofollow vendor pricing link; main followed-link eligibility was not established, so not submitted. AlterBase's free lane requires a badge. Unloc's free form requires a human check. isthereanytool.app requires account and mentions payment; SaaSHammer and Saaspa.ge require sign-in. Saasuji returned HTTP 402. webinhalt.de requires German-language website content, so UntilFire was not submitted as a mismatch. No CAPTCHA, account, payment, badge, or duplicate submission created. One more qualifying submission has not yet been achieved.
+
+Local baseline fetch hit FETCH_HEAD permission denied; GitHub main checked independently before this tracker-only update. Extensive unrelated local workspace drift preserved.
