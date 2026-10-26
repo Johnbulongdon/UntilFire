@@ -839,3 +839,9 @@ Three newly confirmed referring domains, five outgoing UntilFire anchors across 
 Screening: FalcoScan and Stackdrop target AI/builder tools without demonstrated UntilFire fit, not submitted. WebRankDirectory and YStartUps unavailable via web fetch; not submitted. BidoutX sample static fetch had no observed vendor anchor, so not submitted without follow evidence. No duplicate listing sent.
 
 Latest origin/main fetched and local drift compared before tracker-only update. Unrelated app/docs edits preserved; existing background git repack error untouched.
+
+## 2026-10-26: JunkStartups qualified, account handoff
+
+JunkStartups https://junkstartups.com/submit is new not-submitted candidate. Public example https://junkstartups.com/startups/quiet-sleep has direct Play Store href with rel=noopener noreferrer only. Free listing flow shows Essentials, Enrich, Create Account; no guarantee of UntilFire dofollow until its own page exists. Expected https://junkstartups.com/startups/untilfire anonymously returns HTTP 404, no earlier ledger record. Opened actual form, then visible Sign In route for user; user asked to complete account sign-in/setup. No product details transmitted, account created, listing submitted, badge added or payment. Resume only after sign-in; check duplicate status again before publish. Keep as not-submitted, not pending review.
+
+Tiny Startups remains previously account-gated, no repeat. Talmyn Startup 100 is a free editorial campaign but no cohort/sample followed link established; no submission sent. Main fetched before tracker-only update, local unrelated drift compared/preserved, existing background bad-tree/repack issue untouched.
