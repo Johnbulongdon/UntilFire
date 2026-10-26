@@ -111,7 +111,7 @@ components:
 
 ## Overview
 
-UntilFire should feel like a calm financial guide, not a loud fintech dashboard or a cold spreadsheet. The product promise is emotional first: personal finance that sets you free. Every screen should help users feel that work can become optional, that their next step is understandable, and that the product is safe to trust with meaningful money decisions.
+UntilFire should feel like a calm financial guide, not a loud fintech dashboard or a cold spreadsheet. The current positioning is “See beyond your balance. Open up your life.” (D-109; see `docs/CONTEXT.md` for the supporting sentence). Every screen should help users feel that work can become optional, that their next step is understandable, and that the product is safe to trust with meaningful money decisions.
 
 The visual identity should combine warmth and restraint. Use soft paper backgrounds, deep evergreen for authority, and one clear mint accent for momentum and progress. The product should feel premium, modern, and reassuring, with enough breathing room that important numbers feel meaningful rather than noisy.
 

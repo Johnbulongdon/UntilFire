@@ -49,8 +49,8 @@ Repo and Vault Boundary, and May 28 structure audit.
 
 ### D-02 — May 2026, clarified July 16: freedom and guidance after free value
 
-**Status:** Active.
-**Decision:** Lead with freedom date, useful next move and work optionality.
+**Status:** Active experience constraints; headline and positioning emphasis superseded by [D-109](#d-109--october-27-see-beyond-your-balance-open-up-your-life).
+**Decision (historical positioning emphasis):** Lead with freedom date, useful next move and work optionality.
 City/tax precision supports trust; no login, bank or payment barrier before value.
 **Why:** Early qualitative feedback asked for clarity and practical guidance,
 not another tracking surface. Treat that small sample as directional evidence.
@@ -3366,3 +3366,36 @@ mocks (fixes 1–8 of the current-look review). Website and phone.
   bottom-nav labels are 12px, cards ease in (none with reduced motion).
 - **Not changed:** what any card computes; Money (its header and add bar are
   next); the phone hero.
+
+
+### D-109 — October 27: see beyond your balance, open up your life
+
+**Status:** Active working positioning, explicitly approved by the founder;
+customer comprehension and conversion impact remain unvalidated.
+**Decision:** Headline: “See beyond your balance. Open up your life.” Supporting
+sentence: “See your whole financial picture, understand your choices, and build
+toward the life you want.” [CONTEXT.md](CONTEXT.md) owns the current wording.
+**Previous slogan:** “Personal finance that sets you free.” The prior supporting
+copy was “Start with your freedom date in 60 seconds. Then UntilFire gives you a
+plan to move it closer.” These remain here as history, not copy to reuse.
+**Why:** The founder felt that describing UntilFire only as a freedom date and
+one next move undersold the whole product as a calculator. “See beyond your
+balance” carries two meanings: understand the whole financial picture and look
+into the future. “Open up your life” ties that understanding to the life a user
+wants, rather than assuming early retirement is everyone's immediate aim.
+**Supersedes:** D-02's headline emphasis and the former slogan in current product
+guidance. D-02's free, no-login first value and no mandatory bank/payment barrier
+remain active, as do D-03's deterministic guidance and D-73's daily continuity.
+**Alternatives considered:** “Your money. Your future. Your terms.” felt repetitive
+and basic; “Take control of your money” did not name the actual uncertainty;
+“Make sense of your finances” felt mundane; “living plan” sounded like AI copy.
+**Scope:** Update maintained product guidance and preserve history. This records
+positioning, not a claim that the website, metadata, email or video copy has
+changed. Runtime copy alignment is a separate implementation and QA task; no
+redesign, bank-first onboarding requirement, new advice capability or deployment
+is authorized by this documentation update.
+**Source:** Founder positioning discussion and explicit request to record the
+replacement and old slogan, 27 October 2026.
+**Trade-off / revisit:** The headline alone is abstract, so keep the supporting
+sentence with it. Test comprehension with target users; do not claim this copy
+outperforms the old version before evidence exists.

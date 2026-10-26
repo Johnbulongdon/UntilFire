@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-27 — Positioning recorded: see beyond your balance
+
+- Current product guidance now uses “See beyond your balance. Open up your life.” with “See your whole financial picture, understand your choices, and build toward the life you want.”
+- D-109 preserves the previous slogan, “Personal finance that sets you free,” and the founder's rationale. D-02 retains the free-first-value experience constraints; its headline emphasis is superseded.
+- Documentation only. Runtime marketing copy alignment and comprehension testing remain tracked in the roadmap; no website or deployment change.
+
 ## 2026-10-27 — Startup without a video player
 
 - Replace the first-session MP4 splash with the existing vector sun mark on the app background. Keep a brief rise/fade and immediate pointer, key or scroll skip. A CSS deadline dismisses it even before hydration; reduced motion skips the introduction. No media element means no native play controls or black video rectangle.

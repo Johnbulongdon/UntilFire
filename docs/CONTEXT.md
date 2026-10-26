@@ -3,10 +3,33 @@
 Reconciled 23 September 2026. Decisions and their history live in
 [DECISIONS.md](DECISIONS.md); document ownership lives in [KNOWLEDGE.md](KNOWLEDGE.md).
 
-UntilFire is a **financial freedom app**: **Personal finance that sets you free.**
-It shows a freedom date, a useful next move, and continuing progress toward work
-optionality. The business goal is $3k MRR. Prioritise activation, retention, trust,
-and conversion after value; feature breadth alone is not the goal.
+UntilFire is a **financial freedom app**.
+
+**Headline:** See beyond your balance. Open up your life.
+
+**Supporting sentence:** See your whole financial picture, understand your choices, and build toward the life you want.
+
+Updated 27 October 2026 by founder decision (D-109). “See beyond” means both
+understanding more than a current balance and seeing future possibilities.
+“Open up your life” connects financial clarity to the user's own goals, without
+requiring early retirement as the goal. Freedom date, useful next moves, daily
+money management and progress are concrete ways the product earns this promise,
+not a complete description of the product on their own.
+
+The working customer hypothesis is busy early-career people who earn money but
+lack the time or confidence to understand their overall finances and the impact
+of life choices. This audience and the new copy are not yet validated. Test
+whether target users can explain the product after reading the headline and
+supporting sentence, rather than measuring whether they merely like the words.
+
+The business goal remains $3k MRR. Prioritise activation, retention, trust and
+conversion after value; this positioning change does not authorize feature
+expansion, an onboarding redesign, or making bank connection mandatory before
+value. Bank connection is setup; its value is the useful understanding revealed
+afterward. Current runtime copy still needs a separate implementation and QA pass.
+
+The previous slogan and rationale are preserved in D-109 in
+[DECISIONS.md](DECISIONS.md); use the wording above for new positioning work.
 
 ## Direction and its reasons
 
