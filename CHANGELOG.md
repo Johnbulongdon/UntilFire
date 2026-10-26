@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-27 — Startup without a video player
+
+- Replace the first-session MP4 splash with the existing vector sun mark on the app background. Keep a brief rise/fade and immediate pointer, key or scroll skip. A CSS deadline dismisses it even before hydration; reduced motion skips the introduction. No media element means no native play controls or black video rectangle.
+
+
 ## 2026-10-26 — Today leads Home
 
 - Website and phone: Home opens with Today. Safe to spend today is a line under the list (it opens Money), not a "Got it" to tap, and a day with nothing to answer counts as soon as you open it.
