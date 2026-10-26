@@ -863,3 +863,15 @@ Supersedes prior Ramen.Tools sign-in blocker. User explicitly approved Ash Googl
 Live URL https://ramen.tools/@untilfire independently returns anonymous HTTP 200 with direct anchor https://www.untilfire.com/?ref=RamenTools and no rel restriction. No nofollow/ugc/sponsored or redirect intermediary. Status live-follow, one new referring domain. This is the free public maker-profile website link, not a claimed paid tool page or a standalone UntilFire product listing. Dashboard product/stack groups remain empty, optional profile completion tasks not required for observed public link. No indexing or authority claim. Screenshot outputs/directory-partners/ramen-live-2026-10-26.png. Do not recreate profile or resubmit; edit existing if needed.
 
 Main fetched before ledger-only update; unrelated local drift compared/preserved. Existing background bad-tree/repack issue untouched. No application or badge changes.
+
+## 2026-10-26: no-phone preference; StartupDope skipped; Startup Europe qualified
+
+Standing user instruction for future submissions: skip directories requiring a phone number. Do not ask for or invent one.
+
+StartupDope: supersedes old stale-path screening only; remains not-submitted. Current /submit/new free no-account flow exists, official free review 7–14 business days and sample /tools/azn8 direct rel=noopener noreferrer. Normal browser URL verification passed HTTPS/safety/uniqueness for UntilFire, filled official name/homepage/tagline, Fintech & Web3 category, Financial Services industry, Productivity & SaaS format. Founder Contact stage requires phone number. User explicitly selected skip directories requiring a phone. No contact/phone data entered and no submission sent.
+
+Startup Europe: still not-submitted, fresh sample-follow verified through rendered DOM. Public https://startupeurope.net/startup?id=21856 (ChambaNOW, United States) has direct https://chambanow.com/?utm_source=startupeurope.net with empty rel. Directory homepage also shows other US startups. Official /users/join.php offers Google or password/reCAPTCHA signup. Opened signup handoff; requested user's approval for Ash Google account and free UntilFire submission. No sign-in, account, password, CAPTCHA action, badge, payment or listing created this pass. Resume after answer, check own duplicates before publish; no own backlink yet.
+
+BuildHop skipped: UntilFire currently sends X-Frame-Options DENY and CSP frame-ancestors none, incompatible with BuildHop's iframe requirement. No security settings weakened. Huzzler free plan requires badge, waits 72 days and noindexes free pages; not pursued. StartupBase existing /products/untilfire-2 anonymously HTTP 200 now exposes rel=nofollow noopener noreferrer on Visit link, so not dofollow (supersedes earlier unverified note). Microlaunch static fetch still no observed own anchor. SaaS Cubes /saas/untilfire and AppRater /a/untilfire still 404; remain pending.
+
+Main fetch attempted before tracker-only update; local drift compared and preserved. No application/badge changes.
