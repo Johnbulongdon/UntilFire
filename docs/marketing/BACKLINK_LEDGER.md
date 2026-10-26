@@ -855,3 +855,11 @@ Normal free form: UntilFire, https://www.untilfire.com/, FIRE calculator and fin
 Live URL https://junkstartups.com/startups/untilfire independently returns anonymous HTTP 200 with title UntilFire: FIRE calculator and financial freedom planner — JunkStartups. Two responsive direct https://www.untilfire.com/ anchors rel=noopener noreferrer only; no nofollow/ugc/sponsored or redirect intermediary observed. Status live-follow, one newly acquired referring domain, two anchors. No search-indexing or authority claim. Screenshot outputs/directory-partners/junkstartups-live-2026-10-26.png. Do not resubmit.
 
 Fetched main before tracker-only update and compared/preserved unrelated local drift. No application or badge changes.
+
+## 2026-10-26: Ramen.Tools live-follow profile backlink
+
+Supersedes prior Ramen.Tools sign-in blocker. User explicitly approved Ash Google account for free maker profile and UntilFire link. Standard Google identity consent shared name/profile picture/email only. Normal new-profile screen accepted username untilfire; profile name Ash retained. No password, payment, badge, votes, shares or fabricated tool-stack entries. At /my-links, free "Your website (dofollow link)" set to https://www.untilfire.com/ and Submit changes returned "Your profile was successfully updated!"
+
+Live URL https://ramen.tools/@untilfire independently returns anonymous HTTP 200 with direct anchor https://www.untilfire.com/?ref=RamenTools and no rel restriction. No nofollow/ugc/sponsored or redirect intermediary. Status live-follow, one new referring domain. This is the free public maker-profile website link, not a claimed paid tool page or a standalone UntilFire product listing. Dashboard product/stack groups remain empty, optional profile completion tasks not required for observed public link. No indexing or authority claim. Screenshot outputs/directory-partners/ramen-live-2026-10-26.png. Do not recreate profile or resubmit; edit existing if needed.
+
+Main fetched before ledger-only update; unrelated local drift compared/preserved. Existing background bad-tree/repack issue untouched. No application or badge changes.
