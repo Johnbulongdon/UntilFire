@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-27 — Queue welcome-screen button alignment
+
+- Add the reported Android welcome-screen sign-in button alignment issue to Next (X4), with reproduction and verification criteria. Planning only; no UI fix shipped.
+
 ## 2026-10-27 — Shared Now / Next / Later roadmap
 
 - Put three current priorities, ordered follow-ups, deferred ideas, completion criteria and blockers at the front of the roadmap. Preserve the detailed backlog and historical checks.

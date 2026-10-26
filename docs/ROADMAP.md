@@ -27,6 +27,7 @@ queue: reconcile its scope and dependencies before starting overlapping changes.
 
 | ID | Task | Start condition / done when |
 | --- | --- | --- |
+| X4 | Align the Android welcome-screen sign-in button | Planned; agent assigned when started. Tester feedback (24 October): “I already have an account” is smaller and left-aligned beside the full-width Get started button on Pixel 7 / Android 16. Reproduce on current main, check existing mobile PRs, align the secondary action with the primary while retaining hierarchy, and verify narrow-screen layout, readable touch targets and both themes. Done when verified and merged; not yet fixed. |
 | X1 | Fix the biggest repeated user obstacle | After N3 supplies evidence; prioritize observed friction, then verify the fix with affected users. |
 | X2 | Check actual return behavior | Follow up about a week after each session and around payday; record whether users returned, what triggered it and why others did not. Payday is a hypothesis, not a new feature requirement. Use existing retention analytics where sufficient. |
 | X3 | Verify paid conversion, then expand acquisition | Verify checkout, subscription activation and entitlement persistence before relying on paid conversion. Resolve critical billing failures immediately under N2; broad promotion waits for first-use reliability and evidence of repeat value. |
