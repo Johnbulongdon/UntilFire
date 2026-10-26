@@ -21,9 +21,11 @@ missing, report the limitation instead of claiming the queue was checked.
 
 ## Product constraints
 
-UntilFire is a financial freedom app: **Personal finance that sets you free.**
-Show a freedom date, one useful next move, and ongoing progress toward work
-optionality. The business goal is **$3k MRR**, through activation, conversion,
+UntilFire is a financial freedom app: **See beyond your balance. Open up your life.**
+See your whole financial picture, understand your choices, and build toward the life you want.
+Freedom date, useful next moves and ongoing progress make that promise tangible;
+they are not the full positioning. See D-109 in [the decision log](docs/DECISIONS.md).
+The business goal is **$3k MRR**, through activation, conversion,
 retention, trust, and acquisition. Keep work bounded to the user's request.
 
 - Keep the full initial calculator useful, free, and available without login.

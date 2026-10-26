@@ -25,11 +25,21 @@ checklists below are historical planning context, not new approval to execute.
 
 ---
 
+## Positioning rollout — October 27, 2026
+
+- [x] Record the approved headline, supporting sentence and previous slogan in current guidance and D-109.
+- [ ] Align runtime copy in `lib/positioning.ts`, homepage/search/social metadata and image, email footer and demo-video ending. Review teaser copy against D-109. Keep historical records intact. Verify affected layouts before publication; this documentation PR does not change these surfaces.
+- [ ] Test target-user comprehension of the headline and supporting sentence.
+
 ## Product Direction
 
-**Positioning:** Personal finance that sets you free.
+**Positioning:** See beyond your balance. Open up your life.
 
-UntilFire starts with your freedom date, then walks with you toward it: what matters, what to do this month, and how each move brings work optionality closer. Free, no login.
+See your whole financial picture, understand your choices, and build toward the life you want.
+
+Founder-approved working copy, 27 October 2026 (D-109); comprehension is not yet validated.
+
+UntilFire connects everyday financial clarity with the life a user wants. A freedom date makes the future tangible, with ongoing guidance: what matters, what to do this month, and how each move brings work optionality closer. Free, no login.
 
 **Core differentiator:** UntilFire does it with you. Most finance tools either hand you a number and leave you alone, or hand you a model you have to interpret yourself. UntilFire should be the path in between: a clear next move, tracked progress, and guidance that keeps working with you toward financial freedom. Since D-73 (October 2026) that continuity is daily: a short Today list of one-tap items so people stay on top of their money without opening every page. Completed days are counted, never streaked.
 
@@ -219,8 +229,8 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 
 ### Product Hunt Launch Assets
 
-- [ ] Product Hunt tagline: "Personal finance that sets you free."
-- [ ] Product Hunt short description: "UntilFire starts with your freedom date, then gives you a plan to bring work optionality closer. Free, no login."
+- [ ] Product Hunt tagline: "See beyond your balance. Open up your life." (D-109; replaces the former slogan recorded in the decision log).
+- [ ] Product Hunt short description: "See your whole financial picture, understand your choices, and build toward the life you want."
 - [ ] Maker first comment: personal story + why FIRE tools need to guide the path, not just hand over a number — good tools do not only show the answer, they help you get there.
 - [ ] 20–40 second demo GIF/video: enter inputs → get freedom date → see plan.
 - [ ] 3–5 screenshots: hero, calculator step, result, monthly move/plan, dashboard continuity. Avoid making city/tax comparison the hero screenshot.
