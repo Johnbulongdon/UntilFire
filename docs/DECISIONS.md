@@ -3399,3 +3399,29 @@ replacement and old slogan, 27 October 2026.
 **Trade-off / revisit:** The headline alone is abstract, so keep the supporting
 sentence with it. Test comprehension with target users; do not claim this copy
 outperforms the old version before evidence exists.
+
+
+### D-110 — October 27: one shared queue, three Now priorities
+
+**Status:** Active workflow and planning direction, approved for a review PR.
+**Decision:** Keep Now (at most three priorities), ordered Next, and Later at the
+front of [ROADMAP.md](ROADMAP.md#current-priorities). Keep the goal, date, status,
+owner, completion criteria and blocker/next action visible. Preserve the existing
+detailed roadmap rather than create a competing task document.
+**Why:** John wants a short actionable list without forgetting the longer plan;
+all agents need the same recorded priorities across platforms.
+**Maintenance:** Read latest main and open PRs before starting; update the queue
+in the work's PR. Unmerged work remains In review. Completed, deferred and
+rejected items keep evidence/reasons; material direction changes stay here.
+**Initial order:** Now: positioning rollout, complete first-use verification,
+five-user testing. Next: repeated-friction fixes, return-behavior follow-up,
+paid conversion verification before broader acquisition. Reliability/security/
+financial-correctness/billing blockers can interrupt with a recorded reason.
+**Trade-off:** Repo context is not automatic cross-platform memory; agents must
+fetch/read it. A queue item is not permission to contact people, start unrelated
+work, merge or deploy, nor cancellation of existing authorized work. Research
+originals stay private; only anonymized conclusions enter this public repo.
+**Source:** Founder discussion about active tasks, roadmap and remembering future
+work, and authorization to open the roadmap refactor PR, 27 October 2026.
+**Revisit:** If the queue becomes stale or duplicates the detailed backlog,
+simplify its maintenance before adding another tracking system.

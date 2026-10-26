@@ -12,6 +12,7 @@ The old Obsidian vault is historical evidence, not a second instruction source.
 | What is the product's core direction? | [CONTEXT.md](CONTEXT.md) |
 | Why did we choose this, and what superseded it? | [DECISIONS.md](DECISIONS.md) |
 | What must the experience do? | [PRD.md](PRD.md) |
+| What should we work on now, next and later? | [Current priorities](ROADMAP.md#current-priorities), one shared queue for every agent |
 | What exists and what remains? | [ROADMAP.md](ROADMAP.md), checked against code and tests |
 | What changed in the implementation? | [CHANGELOG.md](../CHANGELOG.md) |
 | Where does a feature belong? | [App structure](design/app-structure.md) |
