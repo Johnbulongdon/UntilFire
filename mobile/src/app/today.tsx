@@ -20,7 +20,7 @@ import { haptic } from '@/lib/haptics'
 import { categoryOf } from '@/lib/money-data'
 import { answerLease, deleteBill, fileTransactions, resolveFlag, retagRentOrMortgage, saveBill, saveBudget, saveFireProfile, saveMerchantRule } from '@/lib/mutations'
 import { defaultNeed } from '@/lib/review'
-import { addDays, monthCount, saveTodayProgress, todayItems, type TodayItem } from '@/lib/today'
+import { addDays, monthCount, quietDayToMark, saveTodayProgress, todayItems, type TodayItem } from '@/lib/today'
 import { setTodayReminder } from '@/lib/today-reminder'
 import { useAccount, type TodayProgress, type Transaction } from '@/state/account'
 import { useAuth } from '@/state/auth'
@@ -75,9 +75,17 @@ export default function Today() {
   const open = items.filter(i => !cleared.has(i.key))
   total.current = Math.max(total.current, cleared.size + open.length)
 
-  // The last item answered finishes the day.
+  // The last item answered finishes the day. Opened with nothing to answer, the day counts quietly, as on Home (D-108).
   useEffect(() => {
-    if (!session || !day || open.length > 0 || progress.done.includes(day) || finished) return
+    if (!session || !day || open.length > 0 || finished) return
+    if (cleared.size === 0) {
+      const quiet = quietDayToMark(progress.done, 0)
+      if (!quiet) return
+      setLocal(l => ({ ...l, done: [...l.done, quiet] })); setFinished(quiet)
+      saveTodayProgress(session.user.id, { ...progress, done: [...progress.done, quiet] }).then(() => refresh())
+      return
+    }
+    if (progress.done.includes(day)) return
     const next = { ...progress, done: [...progress.done, day] }
     setLocal(l => ({ ...l, done: [...l.done, day] })); setFinished(day)
     haptic.success()
@@ -365,11 +373,6 @@ function cardFor(item: TodayItem, h: {
           choices: [{ label: 'Connect a bank', onPress: () => { h.ack(item); router.back(); router.push('/money') } }, { label: 'Not now', kind: 'quiet', onPress: () => h.ack(item) }] }
         : { eyebrow: 'One-time setup', title: 'Name a goal', sub: 'A trip, a cushion, a deposit: something to save for on the way to freedom.',
           choices: [{ label: 'Add a goal', onPress: () => { h.ack(item); router.push('/goal') } }, { label: 'Not now', kind: 'quiet', onPress: () => h.ack(item) }] }
-    case 'number':
-      return item.amount != null
-        ? { eyebrow: 'Your number today', title: 'Safe to spend', amount: money(item.amount), sub: 'today, and still stay on budget.', choices: [{ label: 'Got it', onPress: () => h.ack(item) }] }
-        : { eyebrow: 'Your number today', title: 'Set a budget', sub: 'Then this becomes what\'s safe to spend each day.',
-          choices: [{ label: 'Got it', onPress: () => h.ack(item) }, { label: 'Set a budget', kind: 'quiet', onPress: () => router.push('/budget-edit') }] }
   }
 }
 

@@ -3337,3 +3337,32 @@ option C of three (lighter line, stronger frame, one pill).
   the row. The track is 12px instead of 10px.
 - **Not changed:** what the band measures, the over hatching, the ▸ marker.
   Website only; the phone has no per-category bars.
+
+### D-108 — October 26: Today leads Home; safe to spend is shown, not ticked
+**Status:** Active. Founder's call, 2026-10-26, after the "v3 Warm · improved"
+mocks (fixes 1–8 of the current-look review). Website and phone.
+- **Safe to spend is a figure, not a step.** It no longer closes the Today
+  list with "Got it"; it sits under the list as a line that opens Money.
+  Neither `lib/today-web.ts` nor `mobile/src/lib/today.ts` emits the
+  `day:<iso>` item any more.
+- **A quiet day counts when opened.** With nothing to answer, opening Home
+  (or the phone's Today screen) marks today done, once (`quietDayToMark` on
+  both). D-73's "days with nothing new must still be completable" now holds
+  without a tap. Days are still counted, never streaked.
+- **Home order:** Today first, then the freedom date, the one next move with
+  Get set up docked under it, this month, at a glance. Supersedes the order in
+  D-89/D-94 (layout stays fixed, no controls). Wide website screens keep the
+  same single column, centred at 760px: two equal columns were tried and made
+  the cards compete (founder, same day).
+- **Get set up** is in the page flow under the next move, folded by default,
+  not a floating box or pill (website). On the phone it moves below the next
+  move.
+- **Phone:** Today is Home's first card; the pinned Today bar shows on the
+  other tabs only. Supersedes D-74's "never at the top of Home".
+- **Quieter Home chrome (website):** card doors are "Plan ›" / "Money ›"
+  text, card names are sentence case, the freedom date shows once on Home
+  (not in the phone top bar or the sidebar there), the cash assumption moves
+  from a footnote to a hover title, chart labels stay inside the card, the
+  bottom-nav labels are 12px, cards ease in (none with reduced motion).
+- **Not changed:** what any card computes; Money (its header and add bar are
+  next); the phone hero.

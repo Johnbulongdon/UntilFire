@@ -57,8 +57,9 @@ function Chip({ tint, icon, fallback, label, a11y, onPress }: { tint: string; ic
 export const TODAY_BAR_SPACE = 84
 
 /**
- * Today, always in reach (D-73): pinned just above the tab bar on every tab,
- * never at the top of Home. Signed out there is no list, so nothing shows.
+ * Today, always in reach (D-73): pinned just above the tab bar on every tab
+ * but Home, where it is the first card instead (D-108). Signed out there is
+ * no list, so nothing shows.
  */
 export function TodayBar() {
   const { data } = useAccount()

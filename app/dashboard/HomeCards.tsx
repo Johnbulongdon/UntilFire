@@ -24,19 +24,23 @@ function RouteFlag({ emoji }: { emoji?: string }) {
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
 const muted: React.CSSProperties = { color: "var(--uf-ink-3)" };
 /**
- * Where a card leads: the tab's own icon and name, top right, so Home teaches
- * the navigation by picture. The whole chip is the button.
+ * Where a card leads, top right: the tab's name and an arrow, quiet enough
+ * that every card can carry one without the page turning into chips (D-108).
+ * Still a 44px target.
  */
 export function DoorChip({ to, onClick }: { to: "plan" | "money"; onClick: () => void }) {
   const name = to === "plan" ? "Plan" : "Money";
   return (
     <button type="button" onClick={onClick} aria-label={`Open ${name}`}
-      style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "none", borderRadius: 999, padding: "5px 11px",
-        background: "var(--uf-green-50)", color: "var(--uf-green)", font: "inherit", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-      <Icon name={to} size={14} />{name}
+      style={{ display: "inline-flex", alignItems: "center", gap: 4, minHeight: 44, margin: "-12px -8px", padding: "0 8px", border: "none", borderRadius: 12,
+        background: "transparent", color: "var(--uf-ink-2)", font: "inherit", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+      {name}<span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>›</span>
     </button>
   );
 }
+
+/** A card's name, sentence case: one label style across Home (D-108). */
+const cardLabel: React.CSSProperties = { fontSize: 14, fontWeight: 600, color: "var(--uf-ink-2)" };
 
 export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, progress, children }: {
   /** "March 2041"; null until the plan has enough to project. */
@@ -122,7 +126,7 @@ export function NextMoveCard({ move, fmt, onOpen, onSnooze, icon, because }: {
           <span aria-hidden style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 12, background: "var(--uf-green-50)", color: "var(--uf-green)" }}>
             <Icon name={icon ?? MOVE_ICON[move.tab]} size={22} />
           </span>
-          <span className="uf-t-label" style={{ color: "var(--uf-green)" }}>Your next move</span>
+          <span style={{ ...cardLabel, color: "var(--uf-green)", fontWeight: 700 }}>Your next move</span>
         </span>
         <DoorChip to={move.door} onClick={onOpen} />
       </div>
@@ -206,19 +210,19 @@ export function MonthCard({ spent, budget, left, paceSoFar, monthDays, nextBills
   return (
     <Card style={{ display: "grid", gap: 10, alignContent: "start" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <span className="uf-t-label" style={muted}>This month</span>
+        <span style={cardLabel}>This month</span>
         <DoorChip to="money" onClick={onOpen} />
       </div>
       {budget > 0 ? (
         <>
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
             <span style={{ ...mono, fontSize: 32, fontWeight: 600, color: over ? "var(--uf-neg-ink)" : "var(--uf-ink)" }}>{fmt(spent)}</span>
-            <span className="uf-t-small" style={muted}>spent of your <span style={mono}>{fmt(budget)}</span> day-to-day budget</span>
+            <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>spent of <span style={mono}>{fmt(budget)}</span></span>
           </div>
           <div role="img" aria-label={`${pace}: spent ${fmt(spent)} so far, even pace would be ${fmt(evenSoFar)}`}>
             <PaceLine soFar={paceSoFar} days={monthDays} budget={budget} />
           </div>
-          <div className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>{pace}</div>
+          <div className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>{pace} for the month</div>
         </>
       ) : (
         <>
@@ -294,7 +298,7 @@ export function UntilPaydayCard({ line, paydayIso, billCount, billTotal, icon, f
   return (
     <Card style={{ display: "grid", gap: 10, alignContent: "start" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <span className="uf-t-label" style={muted}>Until payday</span>
+        <span style={cardLabel}>Until payday</span>
         <DoorChip to="money" onClick={onOpen} />
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
@@ -343,7 +347,8 @@ export function UntilPaydayCard({ line, paydayIso, billCount, billTotal, icon, f
   );
 }
 
-const cell: React.CSSProperties = { display: "grid", gap: 10, alignContent: "start", padding: "16px 18px", background: "var(--uf-card)", color: "inherit", textAlign: "left", border: "none", font: "inherit", cursor: "pointer" };
+// Each tile draws its own divider, so a row that wraps 2 + 1 leaves card, not a border-coloured hole.
+const cell: React.CSSProperties = { display: "grid", gap: 10, alignContent: "start", padding: "16px 18px", background: "var(--uf-card)", color: "inherit", textAlign: "left", border: "none", font: "inherit", cursor: "pointer", boxShadow: "0 0 0 0.5px var(--uf-border)" };
 const head: React.CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 };
 
 /** The reveal's comparison (RevealFlow): a common FIRE target, and the US personal saving rate (BEA/FRED), rounded. */
@@ -363,11 +368,11 @@ function Sparkline({ values }: { values: number[] }) {
 }
 
 /** A tile's label and the tab it opens, one line. */
-function TileHead({ label, to }: { label: string; to: "money" | "plan" }) {
+function TileHead({ label }: { label: string; to: "money" | "plan" }) {
   return (
     <span style={head}>
-      <span className="uf-t-label" style={muted}>{label}</span>
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--uf-green)", fontSize: 12, fontWeight: 700 }}><Icon name={to} size={14} />{to === "plan" ? "Plan" : "Money"}</span>
+      <span style={cardLabel}>{label}</span>
+      <span aria-hidden style={{ color: "var(--uf-ink-3)", fontSize: 16, lineHeight: 1 }}>›</span>
     </span>
   );
 }
@@ -395,8 +400,7 @@ export function GlanceRow({ netWorth, invested, safety, savingsRate, fmt, onNetW
   const maxRate = Math.max(1, ...rates.map((r) => r.pct));
   return (
     <Card style={{ padding: 0, overflow: "hidden" }}>
-      {/* A 1px gap over a border-coloured grid draws the dividers in one row or three. */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 1, background: "var(--uf-border)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))" }}>
         <button type="button" onClick={onNetWorth} aria-label="Net worth, open Money" style={cell}>
           <TileHead label="Net worth" to="money" />
           <b style={{ ...mono, fontSize: 22, color: netWorth < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink)" }}>{fmt(netWorth)}</b>

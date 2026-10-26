@@ -27,8 +27,8 @@ resize, hide and restore controls are removed; old stored layouts are ignored.
 ## The map
 
 ```
-Home                          synthesis · fixed layout
-  └ Freedom date · how far you've come · one next move
+Home                          synthesis · fixed layout (D-108)
+  └ Today · freedom date · how far you've come · one next move · this month
 
 Money                         actual finances and operational planning
   ├ Cashflow
@@ -64,9 +64,10 @@ Profile                       account, household setup, FIRE personality/type,
    contribution targets. An upcoming bill belongs in Money, not here merely
    because it has not happened yet.
 3. **Home** — if it interprets the other two, it goes here. Home never gets its
-   own independent financial inputs. Home has a fixed layout (D-94). One
-   exception: "Get set up" confirms payday and bills found in the bank with
-   one tap (D-101); nothing is typed on Home and the rows live in Calendar.
+   own independent financial inputs. Home has a fixed layout (D-94), Today
+   first (D-108). One exception: "Get set up", docked under the next move,
+   confirms payday and bills found in the bank with one tap (D-101); nothing
+   is typed on Home and the rows live in Calendar.
 4. **Profile** — if it's about the account rather than the money, it goes here.
 5. If a feature seems to fit two groups, it is **two features**. Split it.
 6. Every tab must be reachable from a nav array. **One array per nav — never a

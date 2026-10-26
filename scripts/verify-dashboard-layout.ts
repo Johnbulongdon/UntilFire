@@ -14,9 +14,9 @@ const ids = (l: { cards: { id: string }[] }) => l.cards.map((c) => c.id);
 assert.deepEqual(ids(normaliseLayout(null)), CARDS.map((c) => c.id));
 assert.deepEqual(ids(normaliseLayout(undefined)), CARDS.map((c) => c.id));
 
-// A fresh Home leads with the calm set (D-39, D-89 adds Today); the rest ship hidden, not deleted.
+// A fresh Home leads with the calm set (D-39, D-89 adds Today, D-108 puts it first); the rest ship hidden, not deleted.
 const shown = (l: { cards: { id: string; visible: boolean }[] }) => l.cards.filter((c) => c.visible).map((c) => c.id);
-assert.deepEqual(shown(defaultLayout()), ["greeting", "hero", "contribution", "month", "today", "glance"], "the calm default");
+assert.deepEqual(shown(defaultLayout()), ["greeting", "today", "hero", "contribution", "month", "glance"], "the calm default");
 // Someone who saved a layout before D-39 keeps what they had, and gains the two new cards.
 const pre39 = normaliseLayout({ cards: [{ id: "hero", visible: true, span: "full" }, { id: "support", visible: true, span: "full" }] });
 assert.equal(pre39.cards.find((c) => c.id === "support")?.visible, true, "a stored card keeps its visibility");

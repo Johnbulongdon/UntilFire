@@ -48,7 +48,8 @@ export function Screen({ title, subtitle, children, refreshing, onRefresh, flat,
         {onRefresh ? <AccountNotice /> : null}
         <View className={flat ? 'gap-9' : 'gap-4'}>{children}</View>
       </ScrollView>
-      {tab && <TodayBar />}
+      {/* Home has Today as its first card (D-108), so the pinned bar shows on the other tabs. */}
+      {tab && tab !== 'home' && <TodayBar />}
     </SafeAreaView>
     </FlatContext.Provider>
   )

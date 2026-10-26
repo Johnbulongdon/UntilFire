@@ -691,3 +691,13 @@ html[data-splash="1"] #uf-splash {
   .uf-dash-slot[data-span="full"],
   .uf-dash-slot[data-span="half"] { grid-column: span 1; }
 }
+
+/* Home (D-108): Today leads, one column in reading order on every screen,
+   set by `order` because the column groups dissolve (display: contents).
+   Wide screens centre it at a readable width rather than splitting it in two:
+   two equal columns made the cards compete. */
+.uf-home { display: flex; flex-direction: column; gap: 20px; max-width: 760px; margin-left: auto; margin-right: auto; }
+.uf-home-col { display: contents; }
+.uf-home-in { min-width: 0; animation: uf-home-in .5s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes uf-home-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .uf-home-in { animation: none; } }

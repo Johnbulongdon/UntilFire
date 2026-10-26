@@ -31,12 +31,14 @@ import { freeUntilPayday, unpaid, upcoming } from '@/lib/bills'
 import { phoneNextMove, snoozedMoves, snoozeMove } from '@/lib/next-move'
 import { spentUSD, toUSD } from '@/state/account'
 import { expenseCategories } from '@/lib/custom-categories'
+import { monthCount, quietDayToMark, safeToSpendToday, saveTodayProgress, todayItems } from '@/lib/today'
 
 /**
- * Home (V2, after the October audit; D-89): the freedom date and its path, the
- * one next move, then four round actions, Phantom-style. What's left this
- * month gets a pace line and the next big bill; safety lives in the top bar;
- * Today is pinned above the tabs. Home interprets; it owns no inputs
+ * Home (V2, after the October audit; D-89, D-108): Today first, then the
+ * freedom date and its path, the one next move with Get set up docked under
+ * it, then four round actions, Phantom-style. What's left this month gets a
+ * pace line and the next big bill; safety lives in the top bar. On the other
+ * tabs Today is pinned above the tab bar. Home interprets; it owns no inputs
  * (docs/design/app-structure.md).
  */
 export default function Home() {
@@ -49,11 +51,12 @@ export default function Home() {
 
   return (
     <Screen tab="home" flat hideTitle title="Home" refreshing={loading && !!data} onRefresh={data ? refresh : undefined}>
-      {data && <SetupCard data={data} freedomYear={result.year ?? null} />}
+      {data && session && <TodayCard data={data} userId={session.user.id} />}
       <Hero result={result} />
       <DateMoved result={result} />
       {data && <SavingsGap data={data} />}
       {data && setupOpen === false && <NextMoveCard data={data} />}
+      {data && <SetupCard data={data} freedomYear={result.year ?? null} />}
       <Actions signedIn={!!session} />
       {data && (freeUntilPayday(data) ? <UntilPayday data={data} /> : <ThisMonth data={data} />)}
       {data && <RecurringTeaser data={data} freedom={result} />}
@@ -182,6 +185,57 @@ function SavingsGap({ data }: { data: AccountData }) {
 
 /** A soft panel that shows against the page in both themes (surface in light, card in dark). */
 const panel = () => (Appearance.getColorScheme() === 'dark' ? colors.card : colors.surface)
+
+/**
+ * Today on Home (D-108): what's left to answer, opening into the one-at-a-time
+ * list, or the day's check when it's done. Safe to spend is a figure under it,
+ * not a step to tick, and a day with nothing to answer counts once it's opened.
+ */
+function TodayCard({ data, userId }: { data: AccountData; userId: string }) {
+  const { refresh } = useAccount()
+  const anchor = useTourAnchor('today')
+  const progress = data.profile.today
+  const { day, items } = todayItems(data, progress)
+  const count = monthCount(progress.done)
+  const safe = safeToSpendToday(data)
+  const quiet = quietDayToMark(progress.done, items.length)
+  useEffect(() => {
+    if (!quiet) return
+    saveTodayProgress(userId, { ...progress, done: [...progress.done, quiet] }).then(() => refresh()).catch(() => {})
+    // Once per day to mark; progress is read at that moment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quiet, userId])
+  const left = items.length
+  return (
+    <View {...anchor} className="gap-3 rounded-3xl p-4" style={{ backgroundColor: panel() }}>
+      <View className="flex-row items-baseline justify-between">
+        <Text className="text-[18px] font-bold text-ink">Today</Text>
+        <Text className="text-[13px] text-ink-2"><Text className="font-mono text-[13px] text-ink-2">{count.done}</Text> of <Text className="font-mono text-[13px] text-ink-2">{count.of}</Text> days</Text>
+      </View>
+      {left > 0 ? (
+        <View className="flex-row items-center justify-between gap-3">
+          <Text className="flex-1 text-[15px] leading-5 text-ink">
+            {progress.done.includes(day) ? `${left} new since you finished` : `${left === 1 ? 'One thing to sort' : `${left} things to sort`}, about a minute`}
+          </Text>
+          <Button small label="Start" onPress={() => { haptic.press(); router.push('/today') }} />
+        </View>
+      ) : (
+        <View className="flex-row items-center gap-2">
+          <Icon name="checkmark.circle.fill" fallback="✓" size={22} color={colors.teal} />
+          <Text className="text-[15px] font-bold" style={{ color: colors.tealDeep }}>Today&apos;s done</Text>
+        </View>
+      )}
+      <Pressable accessibilityRole="button" accessibilityLabel={safe != null ? `Safe to spend today ${money(safe)}. Open your budget` : 'Set a budget to see what\'s safe to spend each day'}
+        onPress={() => { haptic.tick(); router.push(safe != null ? '/money/budget' : '/budget-edit') }}
+        className="flex-row items-center justify-between border-t pt-3 active:opacity-70" style={{ borderTopColor: colors.border }}>
+        {safe != null
+          ? <Text className="text-[15px] text-ink">Safe to spend today <Text className="font-mono text-[15px] font-semibold text-ink">{money(safe)}</Text></Text>
+          : <Text className="text-[15px] text-ink-2">Set a budget to see what&apos;s safe to spend each day</Text>}
+        <Text className="text-[16px] text-ink-3">›</Text>
+      </Pressable>
+    </View>
+  )
+}
 
 const MOVE_ROUTE: Record<NextMove['tab'], '/money/budget' | '/plan/contributions' | '/plan/what-if'> = {
   cashflow: '/money/budget', contributions: '/plan/contributions', 'fire-calculator': '/plan/what-if',

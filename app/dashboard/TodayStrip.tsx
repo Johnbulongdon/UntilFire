@@ -3,12 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Card, Icon } from "@/components/ui";
 import { supabase } from "@/lib/supabase";
-import { addDays, isoDay, monthCount, webTodayItems, type TodayLease, type TodayProgress, type TodayRow, type WebTodayItem } from "@/lib/today-web";
+import { addDays, isoDay, monthCount, quietDayToMark, webTodayItems, type TodayLease, type TodayProgress, type TodayRow, type WebTodayItem } from "@/lib/today-web";
 import { isRent, type LeaseDecision } from "@/lib/lease";
 import { merchantKey } from "@/lib/merchant-memory";
 import { readMerchantRules, type MerchantRule } from "@/lib/merchant-rules";
 import type { Bill } from "@/lib/spend-forecast";
-import { DoorChip } from "./HomeCards";
 import DoneCheck from "./DoneCheck";
 
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
@@ -95,7 +94,7 @@ export default function TodayStrip({ userId, bills, perDay, fmt, toUsd, onOpen, 
 }) {
   const { progress, setProgress, rows, setRows, leases, setLeases, oldRentTag, setOldRentTag, shopRules, setShopRules, sorted } = useTodayData(userId, toUsd);
 
-  const list = progress ? webTodayItems({ rows, bills, progress, perDay, leases, oldRentTag, shopRules, sorted }) : null;
+  const list = progress ? webTodayItems({ rows, bills, progress, leases, oldRentTag, shopRules, sorted }) : null;
 
   /* Each answer is saved straight away; the answer that empties the list also
      marks the day finished. Need or want is written onto the spend itself, a
@@ -139,20 +138,37 @@ export default function TodayStrip({ userId, bills, perDay, fmt, toUsd, onOpen, 
     }
     // A sorted spend leaves by its tag; everything else is acked, which also stops a second ask the same stage.
     const acks = write && "need" in write ? progress.acks : [...progress.acks, key];
-    const left = webTodayItems({ rows: nextRows, bills, progress: { ...progress, acks }, perDay, leases: nextLeases, oldRentTag: nextOld, sorted }).items;
+    const left = webTodayItems({ rows: nextRows, bills, progress: { ...progress, acks }, leases: nextLeases, oldRentTag: nextOld, sorted }).items;
     const next = { acks, done: left.length === 0 ? [...progress.done, list.day] : progress.done };
     setProgress(next);
     await saveProgress(userId, next);
-  }, [userId, progress, list, rows, leases, oldRentTag, bills, perDay, shopRules, sorted, setProgress, setRows, setLeases, setOldRentTag, setShopRules]);
+  }, [userId, progress, list, rows, leases, oldRentTag, bills, shopRules, sorted, setProgress, setRows, setLeases, setOldRentTag, setShopRules]);
+
+  // Nothing to answer: opening the day counts it (D-108).
+  const quiet = progress && list ? quietDayToMark(progress.done, list.items.length) : null;
+  useEffect(() => {
+    if (!userId || !progress || !quiet) return;
+    const next = { ...progress, done: [...progress.done, quiet] };
+    setProgress(next);
+    void saveProgress(userId, next);
+    // Runs once per day to mark; progress is read at that moment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, quiet]);
 
   if (!progress || !list) return null;
-  return <TodayList items={list.items} count={monthCount(progress.done)} fmt={fmt} onAnswer={answer} onOpen={onOpen} onWhatIf={onWhatIf} onOpenNeeds={onOpenNeeds} />;
+  return <TodayList items={list.items} count={monthCount(progress.done)} perDay={perDay} fmt={fmt} onAnswer={answer} onOpen={onOpen} onWhatIf={onWhatIf} onOpenNeeds={onOpenNeeds} />;
 }
 
-/** The strip itself, from a built list: up to three one-tap items, or "Today's done". */
-export function TodayList({ items, count, fmt, onAnswer, onOpen, onWhatIf, onOpenNeeds }: {
+/**
+ * The strip itself, from a built list: up to three one-tap items, or "Today's
+ * done", and under either, what's safe to spend today: a figure to read, not a
+ * step to tick (D-108). It opens Money.
+ */
+export function TodayList({ items, count, perDay, fmt, onAnswer, onOpen, onWhatIf, onOpenNeeds }: {
   items: WebTodayItem[];
   count: { done: number; of: number };
+  /** Safe to spend each day; null without a budget or a payday. */
+  perDay: number | null;
   fmt: (n: number) => string;
   onAnswer: (key: string, write?: TodayWrite) => void;
   onOpen: () => void;
@@ -170,22 +186,19 @@ export function TodayList({ items, count, fmt, onAnswer, onOpen, onWhatIf, onOpe
     wasFinished.current = finished;
   }, [finished, justFinished]);
   return (
-    <Card style={{ display: "grid", gap: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <span style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-          <span className="uf-t-label" style={muted}>Today</span>
-          <span className="uf-t-small" style={{ ...mono, ...muted }}>{count.done} of {count.of} days</span>
-        </span>
-        <DoorChip to="money" onClick={onOpen} />
+    <Card style={{ display: "grid", gap: 4 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+        <h2 className="uf-t-h3" style={{ margin: 0 }}>Today</h2>
+        <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}><span style={mono}>{count.done}</span> of <span style={mono}>{count.of}</span> days</span>
       </div>
       {finished ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 12, color: "var(--uf-teal)", fontWeight: 700 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", color: "var(--uf-teal)", fontWeight: 700 }}>
           <DoneCheck play={justFinished} />Today&apos;s done
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(240px, 100%), 1fr))", gap: 10 }}>
-          {items.slice(0, 3).map((item) => (
-            <div key={item.key} style={{ display: "grid", gap: 10, padding: 14, borderRadius: 16, background: "var(--uf-surface-2)" }}>
+        <div style={{ display: "grid" }}>
+          {items.slice(0, 3).map((item, i) => (
+            <div key={item.key} style={{ display: "grid", gap: 10, padding: "14px 0", borderTop: i > 0 ? "1px solid var(--uf-border)" : "none" }}>
               {item.kind === "lease" && (
                 <>
                   <span style={{ display: "grid", gap: 2 }}>
@@ -243,19 +256,18 @@ export function TodayList({ items, count, fmt, onAnswer, onOpen, onWhatIf, onOpe
                   <span><Button size="sm" onClick={() => onAnswer(item.key)}>Got it</Button></span>
                 </>
               )}
-              {item.kind === "number" && (
-                <>
-                  <span style={{ fontWeight: 700 }}>
-                    {item.perDay != null ? <>Safe to spend today: <span style={mono}>{fmt(item.perDay)}</span></> : "Set a budget to see what's safe to spend each day"}
-                  </span>
-                  {/* The phone's "Got it" (mobile today.tsx): reading your number is the day's last tap, so a quiet day can still be finished. */}
-                  <span><Button size="sm" onClick={() => onAnswer(item.key)}>Got it</Button></span>
-                </>
-              )}
             </div>
           ))}
         </div>
       )}
+      <button type="button" onClick={onOpen} aria-label={perDay != null ? `Safe to spend today ${fmt(perDay)}. Open Money` : "Set a budget to see what's safe to spend each day. Open Money"}
+        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 48, padding: "10px 0 0", border: "none", borderTop: "1px solid var(--uf-border)",
+          background: "transparent", color: "var(--uf-ink)", font: "inherit", textAlign: "left", cursor: "pointer" }}>
+        {perDay != null
+          ? <span>Safe to spend today <span style={{ ...mono, fontWeight: 600 }}>{fmt(perDay)}</span></span>
+          : <span style={{ color: "var(--uf-ink-2)" }}>Set a budget to see what&apos;s safe to spend each day</span>}
+        <span aria-hidden style={{ color: "var(--uf-ink-3)", fontSize: 16 }}>›</span>
+      </button>
     </Card>
   );
 }

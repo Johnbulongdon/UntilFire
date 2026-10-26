@@ -1627,7 +1627,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 
       {/* ── Greeting header ─────────────────────────────────────────────── */}
       <HomeSlot id="greeting">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+      {/* Same width as Home's column below (globals .uf-home), so the edges line up. */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, width: "100%", maxWidth: 760, margin: "0 auto" }}>
         <div>
           <div className="uf-t-h2" style={{ margin: 0 }}>
             {timeOfDay ? `Good ${timeOfDay}` : "Hello"}{firstName ? `, ${firstName}` : ""}
@@ -1639,22 +1640,66 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       </div>
 
       </HomeSlot>
-      {/* ── Get set up: a box in the corner, not a slot (SetupChecklist). ── */}
-      <SetupChecklist
-        userId={userId}
-        facts={setupFacts}
-        freedomYear={exactFreedomDate ? exactFreedomDate.getFullYear() : null}
-        untilPaydayUSD={paydayView ? paydayView.free : null}
-        fmt={(n) => fmtMoney(n)}
-        transactions={setupTxns}
-        rates={displayRates}
-        onAdded={(rows) => onExpectedAdded?.(rows)}
-        onOpen={(step) => onSetupStep?.(step)}
-      />
-      {/* ── Hero: chart-led progress card. Fixed dark treatment regardless of
-          the dashboard's light/dark setting — a deliberate hero moment, same
-          idea as the free-calculator reveal — so it forces the `.dark` token
-          scope rather than following the ambient theme. ─────────────────── */}
+    </div>
+
+    {/* ── Home (D-108): Today first, one centred column; `order` on each card sets the sequence. ── */}
+    <div className="uf-home" style={{ marginTop: 20 }}>
+      <div className="uf-home-col">
+      <div className="uf-home-in" style={{ order: 1 }}>
+      <HomeSlot id="today">
+        <TodayStrip
+          userId={userId}
+          bills={bills}
+          perDay={paydayView ? paydayView.perDay : monthLeft.everydayBudget > 0 ? Math.max(0, monthLeft.left / (monthDays - now.getDate() + 1)) : null}
+          fmt={(n) => fmtMoney(n)}
+          toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}
+          onOpen={() => onTabChange?.("cashflow")}
+          onWhatIf={onOpenCompare}
+          onOpenNeeds={onOpenNeeds}
+        />
+      </HomeSlot>
+      </div>
+      <div className="uf-home-in" style={{ order: 5, animationDelay: "160ms" }}>
+      <HomeSlot id="month">
+        {paydayView && paydayLineView ? (
+          <UntilPaydayCard
+            line={paydayLineView}
+            paydayIso={paydayView.payday.iso}
+            billCount={paydayView.bills.length}
+            billTotal={paydayView.bills.reduce((t, b) => t + Math.abs(b.amount), 0)}
+            icon={categoryIcon}
+            fmt={(n) => fmtMoney(n)}
+            onOpen={() => onTabChange?.("cashflow")}
+          />
+        ) : <MonthCard
+          spent={monthLeft.everydaySpent}
+          budget={monthLeft.everydayBudget}
+          left={monthLeft.left}
+          paceSoFar={paceSoFar}
+          monthDays={monthDays}
+          nextBills={nextBills}
+          fmt={(n) => fmtMoney(n)}
+          onOpen={() => onTabChange?.("cashflow")}
+        />}
+      </HomeSlot>
+      </div>
+      <div className="uf-home-in" style={{ order: 6, animationDelay: "200ms" }}>
+      <HomeSlot id="glance">
+        <GlanceRow
+          netWorth={currentNetWorth}
+          invested={investedByMonth}
+          safety={efMonthlyBase > 0 ? { months: emergencyFundPlan.coverageMonths, target: EMERGENCY_FUND_TARGET_MONTHS } : null}
+          savingsRate={income > 0 ? (annualSavings / (income * 12)) * 100 : null}
+          fmt={(n) => fmtMoney(n)}
+          onNetWorth={() => onTabChange?.("assets")}
+          onSafety={() => onTabChange?.("assets")}
+          onSavings={() => onTabChange?.("contributions")}
+        />
+      </HomeSlot>
+      </div>
+      </div>
+      <div className="uf-home-col">
+      <div className="uf-home-in" style={{ order: 2, animationDelay: "60ms" }}>
       <HomeSlot id="hero">
       <FreedomCard
         dateLabel={exactFreedomDate ? exactFreedomDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : retireYear ? String(retireYear) : null}
@@ -1709,29 +1754,68 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
             )}
             <Area type="monotone" dataKey="value" stroke="var(--uf-teal)" strokeWidth={3} fill="var(--uf-teal-soft)" fillOpacity={1} isAnimationActive={false}
               dot={false} activeDot={{ r: 5, fill: "var(--uf-teal)", stroke: "var(--uf-card)", strokeWidth: 2 }} />
-            {todayPoint && (
-              <ReferenceDot x={todayPoint.label} y={todayPoint.value} r={7} fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2}
-                label={{ value: `You · ${fmtMoney(todayPoint.value, true)}`, position: "top", offset: 12, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
-            )}
-            {milestones.map((m) => (
-              <ReferenceDot key={m.label} x={String(m.year)} y={m.value} r={6} fill="var(--uf-card)" stroke="var(--uf-teal)" strokeWidth={3}
-                label={{ value: m.label, position: "top", offset: 10, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
-            ))}
+            {/* The end dot first, so a milestone label near the end draws over it, not under it. */}
             {freeYear != null && yearBars.length > 1 && (
               <ReferenceDot x={yearBars[yearBars.length - 1].label} y={yearBars[yearBars.length - 1].value} r={8} fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2} />
             )}
+            {todayPoint && (
+              // To the right of the dot: centred above the first point it ran off the card's left edge.
+              <ReferenceDot x={todayPoint.label} y={todayPoint.value} r={7} fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2}
+                label={{ value: `You · ${fmtMoney(todayPoint.value, true)}`, position: "right", offset: 12, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
+            )}
+            {milestones.map((m) => {
+              // Near the end its label would run into the end dot, so it sits to the left instead.
+              const nearEnd = yearBars.length > 4 && m.year >= yearBars[Math.floor(yearBars.length * 0.8)].year;
+              return (
+                <ReferenceDot key={m.label} x={String(m.year)} y={m.value} r={6} fill="var(--uf-card)" stroke="var(--uf-teal)" strokeWidth={3}
+                  label={{ value: m.label, position: nearEnd ? "left" : "top", offset: 10, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
+              );
+            })}
           </AreaChart>
         </ResponsiveContainer>
+        {/* The assumption behind the cash figure stays one hover or tap away, not a footnote on Home (D-108). */}
         <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", display: "flex", flexWrap: "wrap", gap: "4px 16px", marginTop: 8 }}>
-          <span>Investments {fmtMoney(investable - balances.cash, true)}</span>
-          <span>Safety cash {fmtMoney(balances.cash, true)}</span>
-        </div>
-        <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 4 }}>
-          Cash uses saved APY (0% if unknown), less 3% inflation.
+          <span>Investments <span className="uf-t-data">{fmtMoney(investable - balances.cash, true)}</span></span>
+          <span title="Cash uses saved APY (0% if unknown), less 3% inflation.">Safety cash <span className="uf-t-data">{fmtMoney(balances.cash, true)}</span></span>
         </div>
       </FreedomCard>
 
       </HomeSlot>
+      </div>
+      <div className="uf-home-in" style={{ order: 3, animationDelay: "100ms" }}>
+      <HomeSlot id="contribution">
+      {setupMove && !isSnoozed(setupMove.move.key) ? (
+        <NextMoveCard move={setupMove.move} because={SETUP_WHY[setupMove.step]} icon={SETUP_ICON[setupMove.step]} fmt={(n) => fmtMoney(n)}
+          onOpen={() => onSetupStep?.(setupMove.step)}
+          onSnooze={() => { snooze(setupMove.move.key); setSnoozeTick((t) => t + 1); }} />
+      ) : nextMove ? (
+        <NextMoveCard move={nextMove} fmt={(n) => fmtMoney(n)}
+          onOpen={() => onTabChange?.(nextMove.tab)}
+          onSnooze={() => { snooze(nextMove.key); setSnoozeTick((t) => t + 1); }} />
+      ) : contributionFacts && (
+        <NextContributionCard facts={contributionFacts} onOpenPlan={() => onTabChange?.("contributions")} />
+      )}
+      </HomeSlot>
+      </div>
+      {/* ── Get set up, docked under the next move rather than floating over Home (D-108). ── */}
+      <div className="uf-home-in" style={{ order: 4, animationDelay: "120ms" }}>
+      <SetupChecklist
+        userId={userId}
+        facts={setupFacts}
+        freedomYear={exactFreedomDate ? exactFreedomDate.getFullYear() : null}
+        untilPaydayUSD={paydayView ? paydayView.free : null}
+        fmt={(n) => fmtMoney(n)}
+        transactions={setupTxns}
+        rates={displayRates}
+        onAdded={(rows) => onExpectedAdded?.(rows)}
+        onOpen={(step) => onSetupStep?.(step)}
+      />
+      </div>
+      </div>
+    </div>
+
+    {/* ── Cards that ship hidden (lib/dashboard-layout); they render nothing by default. ── */}
+    <div className="uf-dash-grid" style={{ marginTop: 20 }}>
       {/* ── On-track score: not how independent you are (the freedom date
           answers that) — how well you're keeping up the habits that get you
           there. ─────────────────────────────────────────────────────────── */}
@@ -1815,67 +1899,6 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       </HomeSlot>
       <HomeSlot id="free">
       {freeResult && <FreeToSpendHome result={freeResult} fmt={(n) => fmtMoney(n)} onOpen={onOpenFreeToSpend} />}
-      </HomeSlot>
-      {/* ── Freedom date + best move ─────────────────────────────────────── */}
-      <HomeSlot id="contribution">
-      {setupMove && !isSnoozed(setupMove.move.key) ? (
-        <NextMoveCard move={setupMove.move} because={SETUP_WHY[setupMove.step]} icon={SETUP_ICON[setupMove.step]} fmt={(n) => fmtMoney(n)}
-          onOpen={() => onSetupStep?.(setupMove.step)}
-          onSnooze={() => { snooze(setupMove.move.key); setSnoozeTick((t) => t + 1); }} />
-      ) : nextMove ? (
-        <NextMoveCard move={nextMove} fmt={(n) => fmtMoney(n)}
-          onOpen={() => onTabChange?.(nextMove.tab)}
-          onSnooze={() => { snooze(nextMove.key); setSnoozeTick((t) => t + 1); }} />
-      ) : contributionFacts && (
-        <NextContributionCard facts={contributionFacts} onOpenPlan={() => onTabChange?.("contributions")} />
-      )}
-
-      </HomeSlot>
-      <HomeSlot id="month">
-        {paydayView && paydayLineView ? (
-          <UntilPaydayCard
-            line={paydayLineView}
-            paydayIso={paydayView.payday.iso}
-            billCount={paydayView.bills.length}
-            billTotal={paydayView.bills.reduce((t, b) => t + Math.abs(b.amount), 0)}
-            icon={categoryIcon}
-            fmt={(n) => fmtMoney(n)}
-            onOpen={() => onTabChange?.("cashflow")}
-          />
-        ) : <MonthCard
-          spent={monthLeft.everydaySpent}
-          budget={monthLeft.everydayBudget}
-          left={monthLeft.left}
-          paceSoFar={paceSoFar}
-          monthDays={monthDays}
-          nextBills={nextBills}
-          fmt={(n) => fmtMoney(n)}
-          onOpen={() => onTabChange?.("cashflow")}
-        />}
-      </HomeSlot>
-      <HomeSlot id="today">
-        <TodayStrip
-          userId={userId}
-          bills={bills}
-          perDay={paydayView ? paydayView.perDay : monthLeft.everydayBudget > 0 ? Math.max(0, monthLeft.left / (monthDays - now.getDate() + 1)) : null}
-          fmt={(n) => fmtMoney(n)}
-          toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}
-          onOpen={() => onTabChange?.("cashflow")}
-          onWhatIf={onOpenCompare}
-          onOpenNeeds={onOpenNeeds}
-        />
-      </HomeSlot>
-      <HomeSlot id="glance">
-        <GlanceRow
-          netWorth={currentNetWorth}
-          invested={investedByMonth}
-          safety={efMonthlyBase > 0 ? { months: emergencyFundPlan.coverageMonths, target: EMERGENCY_FUND_TARGET_MONTHS } : null}
-          savingsRate={income > 0 ? (annualSavings / (income * 12)) * 100 : null}
-          fmt={(n) => fmtMoney(n)}
-          onNetWorth={() => onTabChange?.("assets")}
-          onSafety={() => onTabChange?.("assets")}
-          onSavings={() => onTabChange?.("contributions")}
-        />
       </HomeSlot>
       <HomeSlot id="freedom">
       {efMonthlyBase > 0 && (
@@ -6094,7 +6117,7 @@ export default function Dashboard() {
           .uf-mobile-top-title strong { font-size: 15px; font-weight: 800; color: var(--uf-ink); letter-spacing: -0.02em; }
           .uf-mobile-top-title span { font-size: 11px; color: var(--uf-text-2); font-weight: 600; }
           .uf-mobile-bottom-nav { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 120; background: var(--uf-topbar-glass); border-top: 1px solid var(--uf-border); padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); box-shadow: var(--uf-e2); }
-          .uf-mobile-bottom-item { border: none; background: transparent; color: var(--uf-text-2); border-radius: 14px; min-width: 0; padding: 7px 4px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-family: 'Manrope', sans-serif; font-size: 10px; font-weight: 800; cursor: pointer; }
+          .uf-mobile-bottom-item { border: none; background: transparent; color: var(--uf-text-2); border-radius: 14px; min-width: 0; padding: 7px 4px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; }
           .uf-mobile-bottom-item.active { background: var(--uf-green-50); color: var(--uf-green-700); }
           .uf-mobile-bottom-icon { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; }
           .uf-mobile-drawer-backdrop { display: block; position: fixed; inset: 0; z-index: 130; background: rgba(15,23,42,0.45); opacity: 0; pointer-events: none; transition: opacity 180ms ease; }
@@ -6177,7 +6200,8 @@ export default function Dashboard() {
         {/* The logo already says UntilFire; the title says where you are (D-54). */}
         <div className="uf-mobile-top-title">
           <strong>{tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Explore" : tab === "goals" ? "Goals" : tab === "contributions" ? "Contributions" : tab === "citizenship" ? "Citizenship" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Money"}</strong>
-          {freedomDateCompactLabel && <span>{`Free · ${freedomDateCompactLabel}`}</span>}
+          {/* Home shows the date in its own card, so the bar doesn't repeat it there (D-108). */}
+          {freedomDateCompactLabel && tab !== "overview" && <span>{`Free · ${freedomDateCompactLabel}`}</span>}
         </div>
         <button type="button" onClick={() => window.dispatchEvent(new Event("uf:feedback"))} aria-label="Send feedback" className="uf-mobile-menu-button">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -6217,7 +6241,8 @@ export default function Dashboard() {
         <aside className="uf-sidebar">
           <Link href="/" className="uf-sidebar-logo"><Logo variant="auto" size={26} /></Link>
 
-          {freedomDateLabel && (
+          {/* Home's own card shows the date; elsewhere the sidebar keeps it in view (D-108). */}
+          {freedomDateLabel && tab !== "overview" && (
             <div className="uf-sidebar-freedom">
               <span className="uf-sidebar-freedom-label">Freedom date</span>
               <span className="uf-sidebar-freedom-value">{freedomDateLabel}</span>

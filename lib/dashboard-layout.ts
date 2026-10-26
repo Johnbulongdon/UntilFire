@@ -52,19 +52,19 @@ export interface CardDef {
 /**
  * The order here is the default order.
  *
- * Home leads with three answers, the daily list and one quiet row (D-89,
- * after D-39): when am I free (hero), the one next move (contribution), what's
- * left this month (month), what needs a tap today (today), then net worth,
- * safety pot and savings rate (glance). The rest ship
+ * Home leads with the daily list (D-108, after D-89 and D-39): what needs a
+ * tap today (today), when am I free (hero), the one next move (contribution),
+ * what's left this month (month), then net worth, safety pot and savings rate
+ * (glance), one centred column on every screen (app/dashboard/page.tsx). The rest ship
  * hidden rather than deleted, so anyone can add them back from Edit; layouts
  * saved before D-39 keep what they had, because a stored layout wins.
  */
 export const CARDS: CardDef[] = [
   { id: "greeting",  label: "Greeting",          hint: "Your name and today's date. Stays at the top.",    defaultVisible: true, defaultSpan: "full", pinned: true },
+  { id: "today",     label: "Today",             hint: "A few one-tap items from the last couple of days, what's safe to spend, and how many days you've finished.", defaultVisible: true, defaultSpan: "full" },
   { id: "hero",      label: "Freedom date",      hint: "When work becomes optional, progress to your FIRE number, and the path there.", defaultVisible: true, defaultSpan: "full" },
   { id: "contribution", label: "Your next move", hint: "The one thing that helps most right now: a budget, your safety pot, a debt, or where to invest.", defaultVisible: true, defaultSpan: "half" },
   { id: "month",     label: "Left this month",   hint: "What's left of your budget, your pace so far, and the next bills.", defaultVisible: true, defaultSpan: "half" },
-  { id: "today",     label: "Today",             hint: "A few one-tap items from the last couple of days, and how many days you've finished.", defaultVisible: true, defaultSpan: "full" },
   { id: "glance",    label: "At a glance",       hint: "Net worth, safety runway and months on plan, each linking to its page.", defaultVisible: true, defaultSpan: "full" },
   { id: "ontrack",   label: "On-track score",    hint: "Whether your recent months keep your freedom date where it is.", defaultVisible: false, defaultSpan: "full" },
   { id: "yourmonth", label: "Your month",        hint: "Last month's result and this month's next move.",  defaultVisible: false, defaultSpan: "full" },

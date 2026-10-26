@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-26 — Today leads Home
+
+- Website and phone: Home opens with Today. Safe to spend today is a line under the list (it opens Money), not a "Got it" to tap, and a day with nothing to answer counts as soon as you open it.
+- Website Home is one column in the same order on every screen, centred at a readable width on desktop.
+- Get set up sits under your next move instead of floating over the page; the cards use quiet "Plan ›" / "Money ›" links, the freedom date shows once, and chart labels no longer clip.
+- Phone: Today is Home's first card; the pinned Today bar stays on the other tabs.
+
 ## 2026-10-26 — Today's done gets a small celebration
 
 - Website Home: answering the last Today item plays a short check animation (ring fills, dot pops, check draws, a few sparks), once. A day already done when you open the page, and anyone with reduced motion on, sees the finished check with no motion. No streaks or loss states.

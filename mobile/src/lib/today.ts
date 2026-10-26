@@ -14,7 +14,7 @@ import { billCategories, budgetFor, splitBudget } from '@/lib/budget-split'
  * is answered (filed, or a flag resolved); the rest are answered with an ack
  * saved in the FIRE profile beside the finished days.
  */
-export type TodayKind = 'big' | 'flag' | 'category' | 'need' | 'sorted' | 'backlog' | 'bill' | 'billcheck' | 'payday' | 'goal' | 'manual' | 'setup' | 'number' | 'lease' | 'renttag'
+export type TodayKind = 'big' | 'flag' | 'category' | 'need' | 'sorted' | 'backlog' | 'bill' | 'billcheck' | 'payday' | 'goal' | 'manual' | 'setup' | 'lease' | 'renttag'
 
 export interface Filing { category: string; sub_category: string | null; need: 'need' | 'want' }
 
@@ -30,7 +30,7 @@ export interface TodayItem {
   over?: { category: string; by: number; from: string | null }
   bill?: { id: string; description: string; amount: number; iso: string }
   goal?: Goal
-  /** Payday: what's safe to invest; number: what's safe to spend today; backlog: how many more; sorted: how many were sorted. */
+  /** Payday: what's safe to invest; backlog: how many more; sorted: how many were sorted. */
   amount?: number
   count?: number
   /** Bill check: a bill whose price changed (with the new amount, in the bill's currency) or that stopped being paid. */
@@ -218,10 +218,17 @@ export function todayItems(data: AccountData, progress: TodayProgress, now = new
   if (data.plaidAccounts.length === 0 && !acked.has('setup:bank')) out.push({ key: 'setup:bank', kind: 'setup', setup: 'bank' })
   if (data.goals.length === 0 && !acked.has('setup:goal')) out.push({ key: 'setup:goal', kind: 'setup', setup: 'goal' })
 
-  // Always last, and the only item on a quiet day, so every day can be finished (question 3).
-  if (!acked.has(`day:${day}`)) out.push({ key: `day:${day}`, kind: 'number', amount: safeToSpendToday(data, now) ?? undefined })
-
+  // Safe to spend today is shown beside the list, not asked (D-108); a quiet day counts when opened (quietDayToMark).
   return { day, items: out }
+}
+
+/**
+ * A quiet day counts once it is opened (D-108): with nothing to answer, today
+ * is the day to mark, if it isn't already. The website's rule (lib/today-web.ts).
+ */
+export function quietDayToMark(done: string[], openItems: number, now = new Date()): string | null {
+  const today = isoDay(now)
+  return openItems === 0 && !done.includes(today) ? today : null
 }
 
 /** The categories this account uses most, for one-tap choices. */
