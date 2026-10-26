@@ -811,3 +811,9 @@ Baseline main fetch attempted before tracker-only update, local drift compared a
 CodeHype: official /submit requires sign-in before upload/launch; free dofollow conditional on verified badge. User explicitly chose Skip CodeHype; closed handoff tab, no account, form, badge or submission created. Siiimple excluded: current published sample https://siiimple.com/london-gallery-weekend/ website button rel=nofollow. 500.tools paid-only and sold out, not submitted. TagsHub identified but not pursued or submitted.
 
 Main fetch attempted before tracker update; compared local drift and preserved unrelated app/docs changes. Tracker only, no application or badge edits.
+
+## 2026-10-26: TagsHub free listing prepared, awaiting rules approval
+
+TagsHub https://tagshub.com/submit is a new not-submitted candidate, no earlier UntilFire submission in ledger. Current public latest samples capvant.com and prdfamilylaw.com.au have direct hrefs without rel restrictions. Normal browser form prepared: Business and Economy category, Regular free plan, UntilFire, official homepage, factual FIRE-calculator/planner description and approved ash@untilfire.com. Newsletter explicitly disabled. No badge, payment or account required. Final submission-rules agreement remains unchecked and Continue not clicked. Asked user for action-time approval: rules require quality content, exclude made-for-ads sites, and paid entries get priority review. Preserve current form and await answer; do not recreate or claim receipt/backlink. Screenshot outputs/directory-partners/tagshub-ready-2026-10-26.png, browser tab retained.
+
+Main fetched before tracker update; unrelated app/docs drift compared and preserved. Tracker only, no application/badge changes.
