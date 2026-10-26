@@ -883,3 +883,11 @@ User explicitly approved Ash Google account and free UntilFire submission. Used 
 Status remains not-submitted, no listing receipt or own backlink. No product form, password, CAPTCHA, payment, badge or phone entered. Account existence uncertain: do not claim created. Normal email/password signup with CAPTCHA is the remaining visible route and requires user entry; handoff tab retained at sign-in. Screenshot outputs/directory-partners/startupeurope-login-blocked-2026-10-26.png. No alternate authentication bypass attempted.
 
 Main fetch attempted before ledger-only update, compared/preserved unrelated local changes. No application or badge change.
+
+## 2026-10-26: Arcapush free product route qualified, awaiting account approval
+
+Startup Europe remains signed out at /users/login.php?dest=dashboard.php; user has not completed password signup. No retry/bypass.
+
+Arcapush new not-submitted candidate. Official https://arcapush.com/submit supports products/startups, free, human review about 48 hours. Required product fields: name, tagline, description/problem statement, category, homepage, builder display name. Media/social/pitch deck optional; no phone or badge requirement observed. Public sample https://arcapush.com/startup/ai-ml/azn8 has both a tracking /go/product/azn8 button and a separate direct https://azn8.com/ anchor rel=noopener noreferrer. Sample direct-link qualification only; UntilFire own link not created. Official sign-in screen says continuing accepts Terms/Privacy. Opened screen, asked user to approve Ash Google account plus terms and free UntilFire submission. No login, account or submission created yet. Screenshot outputs/directory-partners/arcapush-signin-2026-10-26.png. Handoff retained.
+
+Additional screening: Ignlab sample /t/us-pay-check-guide Visit anchor rel=noopener nofollow ugc, excluded despite older potential fit. Crunchbase homepage accessible but normal Create Profile /add-new reaches session security verification; no challenge solved or bypassed, no submission. Prior no-phone instruction preserved. Main fetch attempted before tracker-only update; local drift compared/preserved. No application or badge changes.
