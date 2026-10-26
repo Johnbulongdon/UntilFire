@@ -823,3 +823,19 @@ Main fetched before tracker update; unrelated app/docs drift compared and preser
 Supersedes ready/awaiting-rules-approval entry. User explicitly approved the required submission rules and free submission. Reused prepared https://tagshub.com/submit form without reload/recreation: UntilFire, official homepage, Business and Economy, Regular free, reviewed factual description, approved ash@untilfire.com. Confirmed newsletter unchecked before checking rules and clicking Continue once. Visible receipt "Link submitted and awaiting approval". Status pending editorial review, approval timing unknown. No own public listing or inbound followed link verified; sample-follow evidence only until publication. No account, payment or badge. Screenshot outputs/directory-partners/tagshub-receipt-2026-10-26.png. The post-success form reset including newsletter default does not reflect submitted checkbox value. Do not resubmit.
 
 Fetched origin/main before tracker-only update and compared local drift; unrelated changes preserved. Existing background repack bad-tree issue untouched. No application or badge edits.
+
+## 2026-10-26: three pending submissions now confirmed live-follow
+
+These are newly verified publications of existing submissions, not duplicate submissions.
+
+| Platform | Status | Live evidence |
+| --- | --- | --- |
+| MadeLaunch | live-follow | https://madelaunch.com/products/untilfire anonymous HTTP 200; UntilFire title and no prior private/pending-preview notice. Direct https://www.untilfire.com/?ref=madelaunch anchor rel=noopener only. No nofollow/ugc/sponsored or redirect intermediary observed. Supersedes pending review. |
+| SaaSolution | live-follow | https://saasolution.io/tool/untilfire/ anonymous HTTP 200, title UntilFire: FIRE calculator for your early retirement date. Two responsive direct homepage anchors and one /pricing anchor all rel=noopener only. No nofollow/ugc/sponsored or redirect intermediary. Supersedes submission id 502 pending review. |
+| ProjectRadar | live-follow | https://getprojectradar.com/projects/untilfire anonymous HTTP 200; direct https://www.untilfire.com/ Visit project anchor rel=noopener noreferrer only. Correct UntilFire identity, visible published date Oct 25, 2026; /notes/untilfire editorial note linked. Supersedes reference PR-96A91C8B37 pending. Screenshot outputs/directory-partners/projectradar-live-2026-10-26.png. Editorial copy/platform/pricing statements are directory-generated and not independently audited in this backlink check. |
+
+Three newly confirmed referring domains, five outgoing UntilFire anchors across these three product pages. No search-indexing, traffic or domain-authority claim. No payment or new badge required in this pass. AwesomeFinTech expected route returned 403; preserve pending/unverified state without bypass.
+
+Screening: FalcoScan and Stackdrop target AI/builder tools without demonstrated UntilFire fit, not submitted. WebRankDirectory and YStartUps unavailable via web fetch; not submitted. BidoutX sample static fetch had no observed vendor anchor, so not submitted without follow evidence. No duplicate listing sent.
+
+Latest origin/main fetched and local drift compared before tracker-only update. Unrelated app/docs edits preserved; existing background git repack error untouched.
