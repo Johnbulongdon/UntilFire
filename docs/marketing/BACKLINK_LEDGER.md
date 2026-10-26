@@ -875,3 +875,11 @@ Startup Europe: still not-submitted, fresh sample-follow verified through render
 BuildHop skipped: UntilFire currently sends X-Frame-Options DENY and CSP frame-ancestors none, incompatible with BuildHop's iframe requirement. No security settings weakened. Huzzler free plan requires badge, waits 72 days and noindexes free pages; not pursued. StartupBase existing /products/untilfire-2 anonymously HTTP 200 now exposes rel=nofollow noopener noreferrer on Visit link, so not dofollow (supersedes earlier unverified note). Microlaunch static fetch still no observed own anchor. SaaS Cubes /saas/untilfire and AppRater /a/untilfire still 404; remain pending.
 
 Main fetch attempted before tracker-only update; local drift compared and preserved. No application/badge changes.
+
+## 2026-10-26: Startup Europe Google sign-in failed; no submission
+
+User explicitly approved Ash Google account and free UntilFire submission. Used normal /users/join.php Google link, selected Ash account, standard name/profile/email consent. Google returned to the official oauth_success.php callback, which rendered an empty page. Did not replay callback or store its sensitive query. Navigating to the site's existing /dashboard route redirected to /users/login.php and showed sign-in controls; no working authenticated session confirmed.
+
+Status remains not-submitted, no listing receipt or own backlink. No product form, password, CAPTCHA, payment, badge or phone entered. Account existence uncertain: do not claim created. Normal email/password signup with CAPTCHA is the remaining visible route and requires user entry; handoff tab retained at sign-in. Screenshot outputs/directory-partners/startupeurope-login-blocked-2026-10-26.png. No alternate authentication bypass attempted.
+
+Main fetch attempted before ledger-only update, compared/preserved unrelated local changes. No application or badge change.
