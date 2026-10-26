@@ -1,4 +1,81 @@
 # UntilFire — Product Roadmap
+
+## Current priorities
+
+**Last updated:** 27 October 2026 (Asia/Shanghai). **Owner:** John.
+**Goal:** A trustworthy financial-clarity experience people return to and will pay
+for, working toward **$3k MRR**. Positioning: see [CONTEXT.md](CONTEXT.md).
+
+This is the shared task queue for every agent (D-110). Now has **at most three**
+priorities, not three tasks per agent. Queued items are remembered, not permission
+to start unrelated work. Status here describes evidence, not live verification.
+
+### Now — three active priorities, in order
+
+| ID | Priority | Status / owner | Done when | Blocker / next action |
+| --- | --- | --- | --- | --- |
+| N1 | Roll out the approved positioning | Ready; agent assigned when started | Homepage, metadata, social preview and email footer match D-109; affected mobile/desktop layouts checked. Review video/teaser wording too. | Repo guidance merged in PR #316; runtime copy is pending. Inspect existing copy, implement and verify in its own PR. |
+| N2 | Verify the complete first-use journey | Ready; agent assigned when started | Onboarding → useful first result → signup → bank connection → dashboard checked; numbers agree, saved state survives reload, next action is clear; failures recorded and critical ones resolved. | Check existing repair PRs before editing; do not duplicate their work or treat old QA as current proof. Bank connection stays optional before first value. |
+| N3 | Test with five target users | Planned; John recruits, agent supports | Five busy early-career target users observed; comprehension, useful moment, friction and expected reason to return recorded privately, with anonymized conclusions here. | Recruit while N1/N2 progress; do not expose users to known critical flow failures. Ask permission before any outreach. |
+
+Reliability, financial correctness, security and billing blockers may interrupt
+this order. Record the reason and which Now item is displaced; do not silently
+create a fourth active priority. Existing authorized work is not canceled by this
+queue: reconcile its scope and dependencies before starting overlapping changes.
+
+### Next — ordered follow-ups
+
+| ID | Task | Start condition / done when |
+| --- | --- | --- |
+| X1 | Fix the biggest repeated user obstacle | After N3 supplies evidence; prioritize observed friction, then verify the fix with affected users. |
+| X2 | Check actual return behavior | Follow up about a week after each session and around payday; record whether users returned, what triggered it and why others did not. Payday is a hypothesis, not a new feature requirement. Use existing retention analytics where sufficient. |
+| X3 | Verify paid conversion, then expand acquisition | Verify checkout, subscription activation and entitlement persistence before relying on paid conversion. Resolve critical billing failures immediately under N2; broad promotion waits for first-use reliability and evidence of repeat value. |
+
+### Later — remembered, not active commitments
+
+- **Conditional growth:** Product Hunt, Reddit/X, Show HN, partnerships and referral
+  experiments. Existing evidence and plans remain below; recheck readiness before launch.
+- **Product depth:** stronger deterministic next-move guidance, contribution email,
+  scenarios and supported location research, only where user evidence warrants it.
+- **Deferred expansion:** extra planning tools, extra onboarding questions, an AI
+  advice layer and broad promotion. Revisit after the first-use/return tests.
+- **Existing backlog:** the detailed phase sections below retain prior ideas,
+  implementation notes and constraints. They are a reference, not another active
+  queue; unchecked does not mean absent. Review current code before promoting an item.
+
+### Updating this queue
+
+- Before starting, fetch latest main, read Now/Next/Later, inspect open PRs, and
+  identify the task ID, owner and scope. Record an in-progress PR link when available.
+- Update status, blocker/next action and the date in the same PR as the work.
+  Use Planned, Ready, In progress, Blocked, In review, or Completed; include evidence.
+  A completed implementation with an unmerged PR stays In review.
+- Promote from Next when a Now slot opens and the work is within John's authorized
+  scope. Record priority changes and their reason; material direction changes go
+  in [DECISIONS.md](DECISIONS.md). Never infer merge/deployment authority from the queue.
+- Move completed items into the dated record below with a PR/evidence link and
+  update [CHANGELOG.md](../CHANGELOG.md). Keep deferred/rejected items with a short
+  reason. Nothing is silently deleted; retain detailed historical plans below.
+- Keep respondent identities, finances, raw quotes and research notes private.
+  The public repo stores only anonymized conclusions and task status.
+
+### Completed / disposition record
+
+- **27 October 2026 — Completed:** positioning decision and historical slogan
+  recorded; [PR #316](https://github.com/Johnbulongdon/UntilFire/pull/316) merged
+  as `2a83202`. Runtime copy rollout is N1, not complete.
+- **27 October 2026 — Deferred:** broad promotion and new feature expansion until
+  evidence from the existing first-use and return experience supports them.
+
+---
+
+## Detailed roadmap and historical planning
+
+The sections below preserve previous plans and checkmarks. **Now / Next / Later
+above owns current execution order**, including where an older heading says
+“Current Focus” or “Next sprint.” Old metrics, launch dates and verification
+claims need refreshing; none of them automatically overrides this queue.
+
 ## October 22, 2026 — City savings benchmark follow-up
 
 - [ ] Add typical savings by city to the savings-pace experience once a reliable, comparable source is verified. Research coverage, median versus average, city versus metro boundaries, data year, household versus individual units, and before-tax versus take-home definitions. Label estimates and broader geographic fallbacks explicitly. A resident percentile requires a savings distribution; never infer it from an average or from unrelated income and spending datasets. Until suitable data is available, keep the user's own savings percentage and money left to spend; do not display invented local benchmarks. This is a research and implementation to-do, not approval to publish an unsupported comparison.
@@ -27,9 +104,8 @@ checklists below are historical planning context, not new approval to execute.
 
 ## Positioning rollout — October 27, 2026
 
-- [x] Record the approved headline, supporting sentence and previous slogan in current guidance and D-109.
-- [ ] Align runtime copy in `lib/positioning.ts`, homepage/search/social metadata and image, email footer and demo-video ending. Review teaser copy against D-109. Keep historical records intact. Verify affected layouts before publication; this documentation PR does not change these surfaces.
-- [ ] Test target-user comprehension of the headline and supporting sentence.
+Decision/history recording is complete (PR #316). Remaining runtime copy work is
+tracked once as **N1** above; comprehension testing belongs to **N3**.
 
 ## Product Direction
 

@@ -44,6 +44,18 @@ product constraints, navigation, design and working map apply to all agents.
   [docs/marketing/BACKLINK_LEDGER.md](docs/marketing/BACKLINK_LEDGER.md) within
   the authorized task.
 
+## Shared active task list
+
+[ROADMAP.md — Current priorities](docs/ROADMAP.md#current-priorities) is the one
+shared Now / Next / Later queue for all agents (D-110). Read it from latest main
+before starting; identify the task ID, check open PRs for overlap, and record
+owner, status, blocker/next action and the update date in the same PR as the work.
+Keep at most three Now priorities across all agents. Keep unmerged work In review
+with a PR link; mark completed only with evidence. Preserve completed, deferred
+and rejected items with their reason; put meaningful direction changes in the
+decision log. The queue does not authorize unrelated tasks, merge or deployment,
+and does not cancel existing authorized work. Raw user research stays private.
+
 ## Baseline and collaboration
 
 1. Fetch `origin/main`, inspect status and local history, and compare the workspace

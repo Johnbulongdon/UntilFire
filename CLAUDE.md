@@ -3,8 +3,11 @@
 Read the user's request and [AGENTS.md](AGENTS.md) first. It owns shared authority,
 baseline, engineering, verification, collaboration, and publishing rules for
 both Claude and Codex. Read [project memory](docs/KNOWLEDGE.md), relevant entries
-in [the decision log](docs/DECISIONS.md), the roadmap, recent changelog and commits,
-then inspect relevant code before editing. Use available skills and slash commands
+in [the decision log](docs/DECISIONS.md), the roadmap, recent changelog and commits.
+Start with [Current priorities](docs/ROADMAP.md#current-priorities): Now / Next /
+Later is the shared queue, with at most three Now priorities. Update task status
+and evidence in the same PR as the work, following AGENTS.md. Then inspect
+relevant code before editing. Use available skills and slash commands
 when useful; gstack and another agent's local tool paths are not prerequisites.
 
 ## Integration responsibility

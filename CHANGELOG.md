@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-27 — Shared Now / Next / Later roadmap
+
+- Put three current priorities, ordered follow-ups, deferred ideas, completion criteria and blockers at the front of the roadmap. Preserve the detailed backlog and historical checks.
+- Agent entry points and project memory now direct every agent to the same queue and require status/evidence updates in the work PR. D-110 records the rationale. Documentation only; no app behavior change.
+
 ## 2026-10-27 — Positioning recorded: see beyond your balance
 
 - Current product guidance now uses “See beyond your balance. Open up your life.” with “See your whole financial picture, understand your choices, and build toward the life you want.”
