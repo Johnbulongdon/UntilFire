@@ -938,3 +938,13 @@ Local fetch origin/main succeeded to 6affc4fe97ec4f6bb67fc038315b86325a9dc618; p
 ### 2026-10-27 — Directory-Free regular listing accepted for editorial review
 
 Directory-Free.com supersedes prepared CAPTCHA status: `pending` (accepted submission; editorial validation required). User explicitly approved image CAPTCHA and regular free submission. Filled current visible challenge through normal UI and clicked Add URL once. Result says Thank you for taking the time to suggest your site; your site has been added to Directory-Free; editors will validate request and include it if guidelines met. No paid plan, phone, badge, account or duplicate submission. Submitted UntilFire - FIRE calculator and financial freedom planner, https://www.untilfire.com/, accurate description, ash@untilfire.com, Finance/General. Public own listing/backlink not yet verified; do not count live-follow. Free ordinary Finance sample anchors previously verified direct with no restrictive rel. Receipt screenshot outputs/directory-partners/directory-free-receipt-2026-10-27.png. Agent-browser session untilfire-backlinks closed after receipt capture; do not resubmit. Local origin/main fetch retried, transport failed; local main ref remains 6affc4fe97ec4f6bb67fc038315b86325a9dc618, unrelated drift preserved and tracker compared. GitHub connector main checked before tracker update. Tracker-only change.
+
+
+## 2026-10-27 — Toolomio accepted; email confirmation pending
+
+- Directory: https://toolomio.de/ ; submission: https://toolomio.de/submit.php . Free, no account, phone, badge or payment requested.
+- Submitted https://www.untilfire.com/ using approved ash@untilfire.com. Site analyzed homepage plus seven subpages, recognized UntilFire, generated screenshot/favicon, and displayed `UntilFire wurde erfolgreich eingereicht` and `E-Mail-Bestätigung erforderlich`.
+- Status: **pending-email-confirmation**. Two connected Gmail searches found no Toolomio confirmation yet. No own public listing or backlink verified; do not count as live or resubmit.
+- Current sample https://toolomio.de/software/eorls has a direct https://icybiz.com/ Website besuchen anchor with rel="noopener" (no nofollow/ugc/sponsored), inspected in ordinary browser.
+- Receipt: outputs/directory-partners/toolomio-receipt-2026-10-27.png.
+- Screening exclusions: Thank John /tool/quotelyo has /go/ redirect rel=nofollow despite advertised dofollow; The Startup Starter Kit /tool/ghostfolio likewise nofollow redirect. No badges added or submissions made to those sites. Webfolio free tier explicitly nofollow; ToolHunt submission limited to self-hosted or free Mac apps; Share Your Startup FAQ says nofollow ugc; OpenResources limited to open-source software. Skip these routes.
