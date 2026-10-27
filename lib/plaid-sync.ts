@@ -30,7 +30,7 @@ export interface SyncItem {
 
 export interface SyncResult { added: number; modified: number; removed: number; tagged: number }
 
-/** Throws if Plaid refuses the transactions sync; the balance refresh and
+/** Throws if Plaid or a critical transaction/cursor write fails; the balance refresh and
  *  tagging steps log and carry on, as the Sync button always has. */
 export async function syncPlaidItem(admin: Admin, plaid: PlaidApi, item: SyncItem): Promise<SyncResult> {
   const userId = item.user_id;
@@ -63,10 +63,15 @@ export async function syncPlaidItem(admin: Admin, plaid: PlaidApi, item: SyncIte
   type Existing = { plaid_transaction_id: string; category: string | null; sub_category: string | null; tags: string[] | null; refund_amount: number | null; transaction_type: string | null; pfc_primary: string | null; pfc_detailed: string | null; amount: number | null };
   const readExisting = async (ids: string[]): Promise<Map<string, Existing>> => {
     if (ids.length === 0) return new Map();
-    const { data } = await admin.from("expenses")
-      .select("plaid_transaction_id, category, sub_category, tags, refund_amount, transaction_type, pfc_primary, pfc_detailed, amount")
-      .eq("user_id", userId).in("plaid_transaction_id", ids);
-    return new Map(((data ?? []) as Existing[]).map((r) => [r.plaid_transaction_id, r]));
+    const existing = new Map<string, Existing>();
+    for (let i = 0; i < ids.length; i += 100) {
+      const { data, error } = await fetchAllPages((from, to) => admin.from("expenses")
+        .select("plaid_transaction_id, category, sub_category, tags, refund_amount, transaction_type, pfc_primary, pfc_detailed, amount")
+        .eq("user_id", userId).in("plaid_transaction_id", ids.slice(i, i + 100)).order("id").range(from, to));
+      if (error) throw new Error("Could not read existing transactions");
+      for (const row of (data ?? []) as Existing[]) existing.set(row.plaid_transaction_id, row);
+    }
+    return existing;
   };
   const filedByHand = (r: Existing) => !!r.category && r.category !== autoCategory(r);
   const ownTags = (r: Existing) => (r.tags ?? []).filter((t) => !t.startsWith("sys:"));
@@ -74,16 +79,17 @@ export async function syncPlaidItem(admin: Admin, plaid: PlaidApi, item: SyncIte
   // Upsert added
   const addedRows = added.map((tx) => mapPlaidTx(tx, userId)).filter(Boolean);
   if (addedRows.length > 0) {
-    await admin
+    const { error } = await admin
       .from("expenses")
       .upsert(addedRows, { onConflict: "plaid_transaction_id", ignoreDuplicates: true });
+    if (error) throw new Error("Could not save imported transactions");
   }
 
   // Refunds reduce the purchase they came back to (lib/refunds).
   await applyRefunds(admin, userId, added.filter((tx) => tx.amount < 0 && !tx.pending).map((tx) => tx.transaction_id));
 
   // A posted transaction replacing a pending one keeps what was set on the pending row.
-  try {
+  {
     const posted = added.filter((tx) => tx.pending_transaction_id);
     const before = await readExisting(posted.map((tx) => tx.pending_transaction_id!));
     for (const tx of posted) {
@@ -94,20 +100,21 @@ export async function syncPlaidItem(admin: Admin, plaid: PlaidApi, item: SyncIte
       if (filedByHand(old)) { keep.category = old.category; keep.sub_category = old.sub_category; keep.transaction_type = old.transaction_type; }
       if (ownTags(old).length) keep.tags = [...new Set([...row.tags.filter((t) => t !== "sys:pending"), ...ownTags(old)])];
       if ((old.refund_amount ?? 0) > 0) keep.refund_amount = Math.min(old.refund_amount ?? 0, row.amount);
-      if (Object.keys(keep).length) await admin.from("expenses").update(keep).eq("plaid_transaction_id", tx.transaction_id).eq("user_id", userId);
+      if (Object.keys(keep).length) {
+        const { error } = await admin.from("expenses").update(keep).eq("plaid_transaction_id", tx.transaction_id).eq("user_id", userId);
+        if (error) throw new Error("Could not preserve pending transaction edits");
+      }
     }
-  } catch (carryErr) {
-    console.error("[plaid/sync] carrying pending edits:", carryErr);
   }
 
   // Update modified
-  const modifiedBefore = await readExisting(modified.map((tx) => tx.transaction_id)).catch(() => new Map<string, Existing>());
+  const modifiedBefore = await readExisting(modified.map((tx) => tx.transaction_id));
   for (const tx of modified) {
     const row = mapPlaidTx(tx, userId);
     if (!row) continue;
     const old = modifiedBefore.get(tx.transaction_id);
     const mine = old ? filedByHand(old) : false;
-    await admin
+    const { error } = await admin
       .from("expenses")
       .update({
         amount: row.amount,
@@ -126,6 +133,7 @@ export async function syncPlaidItem(admin: Admin, plaid: PlaidApi, item: SyncIte
       })
       .eq("plaid_transaction_id", tx.transaction_id)
       .eq("user_id", userId);
+    if (error) throw new Error("Could not update imported transactions");
   }
 
   // The person's "always file this merchant" rules. A new row is filed
@@ -153,11 +161,12 @@ export async function syncPlaidItem(admin: Admin, plaid: PlaidApi, item: SyncIte
 
   // Hard-delete removed (Plaid only marks removed when they were errors/duplicates)
   if (removedIds.length > 0) {
-    await admin
+    const { error } = await admin
       .from("expenses")
       .delete()
       .in("plaid_transaction_id", removedIds)
       .eq("user_id", userId);
+    if (error) throw new Error("Could not remove imported transactions");
   }
 
   // Refresh account balances. accountsGet returns the balances Plaid already
@@ -279,10 +288,11 @@ export async function syncPlaidItem(admin: Admin, plaid: PlaidApi, item: SyncIte
   }
 
   // Advance cursor
-  await admin
+  const { data: savedCursor, error: cursorError } = await admin
     .from("plaid_items")
     .update({ cursor: cursor ?? null, last_synced_at: new Date().toISOString() })
-    .eq("id", item.id);
+    .eq("id", item.id).eq("user_id", userId).select("id").single();
+  if (cursorError || !savedCursor) throw new Error("Could not save bank sync progress");
 
   return { added: addedRows.length, modified: modified.length, removed: removedIds.length, tagged };
 }
@@ -291,14 +301,22 @@ export async function syncPlaidItem(admin: Admin, plaid: PlaidApi, item: SyncIte
 export async function applyRefunds(admin: Admin, userId: string, refundIds: string[]): Promise<void> {
   try {
     if (!refundIds.length) return;
-    const { data: refunds } = await admin.from("expenses").select("id, date, amount, description, tags")
-      .eq("user_id", userId).in("plaid_transaction_id", refundIds).contains("tags", ["sys:refund"]);
+    const uniqueIds = [...new Set(refundIds)];
+    const refunds: { id: string; date: string; amount: number; description: string | null; tags: string[] | null }[] = [];
+    for (let i = 0; i < uniqueIds.length; i += 100) {
+      const { data, error } = await fetchAllPages((from, to) => admin.from("expenses").select("id, date, amount, description, tags")
+        .eq("user_id", userId).in("plaid_transaction_id", uniqueIds.slice(i, i + 100)).contains("tags", ["sys:refund"])
+        .order("id").range(from, to));
+      if (error) throw new Error("Could not read refunds");
+      refunds.push(...(data ?? []));
+    }
     if (!refunds?.length) return;
     const earliest = refunds.reduce((m, r) => (r.date < m ? r.date : m), refunds[0].date);
     const since = new Date(Date.parse(`${earliest}T00:00:00Z`) - 90 * 864e5).toISOString().slice(0, 10);
-    const { data: purchases } = await admin.from("expenses").select("id, date, amount, refund_amount, description")
+    const { data: purchases, error: purchaseError } = await fetchAllPages((from, to) => admin.from("expenses").select("id, date, amount, refund_amount, description")
       .eq("user_id", userId).eq("transaction_type", "expense").gte("date", since)
-      .in("description", [...new Set(refunds.map((r) => r.description).filter(Boolean))]);
+      .order("id").range(from, to));
+    if (purchaseError) throw new Error("Could not read refund purchases");
     for (const p of planRefunds(refunds, purchases ?? [])) {
       await admin.from("expenses").update({ refund_amount: p.refundAmount }).eq("id", p.purchaseId).eq("user_id", userId);
       const r = refunds.find((x) => x.id === p.refundId);
