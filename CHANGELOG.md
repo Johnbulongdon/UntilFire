@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-27 — Account and refund safety
+
+- Household disconnection fails visibly if membership cannot be checked. Bank disconnection reports failed local cleanup accurately, and remains retryable after Plaid removal.
+- Refund matching is a server-only database transaction: the purchase adjustment and applied marker commit together, replay is a no-op, owners/currencies cannot cross, and pending refunds retry on sync. Modified bank rows retain the applied marker.
+- Phone profile, budget and custom-category replacements detect conflicting saves. Website Needs & wants uses the same protected database operation. Existing account rows, including zero-income and zero-balance accounts, are never reseeded from local onboarding.
+- Requires the atomic-imported-refunds migration before website deployment or phone updates. The migration is additive; no historical financial rows are rewritten by applying it. Billing activation remains in existing draft PR #269.
+
 ## 2026-10-27 — Bank and budget save reliability
 
 - Bank sync now rejects failed core transaction writes, failed edit-preservation reads and failed cursor saves instead of reporting a successful import. Pending edits must be preserved before removed rows are deleted. The previous cursor remains retryable after a transaction failure. First-time bank imports also keep a starting cursor until transactions are saved and return a retry message instead of claiming completion.

@@ -105,6 +105,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         return NextResponse.json({ error: "Bank connection saved. Reload Money and use Sync to finish importing." }, { status: 500 });
       }
     }
+    // Money back from a shop reduces that purchase, rather than reading as income (lib/refunds).
+    await applyRefunds(admin, user.id, allAdded.filter((tx) => tx.amount < 0 && !tx.pending).map((tx) => tx.transaction_id));
+
     const { data: savedCursor, error: cursorError } = await admin.from("plaid_items")
       .update({ cursor: cursor ?? null, last_synced_at: new Date().toISOString() })
       .eq("id", itemRow.id).eq("user_id", user.id).select("id").single();
@@ -113,9 +116,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Bank connection saved. Reload Money and use Sync to finish importing." }, { status: 500 });
     }
     await recordEvent(admin, user.id, LIFECYCLE_EVENTS.BANK_CONNECTED);
-
-    // Money back from a shop reduces that purchase, rather than reading as income (lib/refunds).
-    await applyRefunds(admin, user.id, allAdded.filter((tx) => tx.amount < 0 && !tx.pending).map((tx) => tx.transaction_id));
 
     // What the bank showed, for the "working" screen (lib/setup-steps setupFinds, the
     // checklist's own rule): a paycheck and repeating bills Calendar doesn't list yet.

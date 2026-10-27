@@ -8,6 +8,21 @@ import { supabase } from '@/lib/supabase'
 import type { Bill, MerchantRule } from '@/state/account'
 import { displayCurrency, fromUSD } from '@/lib/display-currency'
 
+/** Protect every whole-budget replacement here against a newer phone/tab save. */
+async function writeBudget(userId: string, row: { expenses?: unknown } | null, update: Record<string, unknown>): Promise<string | null> {
+  if (!row) {
+    const { error } = await supabase.from('user_budget').insert({ user_id: userId, ...update });
+    return error ? "Couldn't save. Please try again." : null;
+  }
+  const { data, error } = await supabase.rpc('replace_budget_if_unchanged', {
+    p_expected: row.expenses ?? null,
+    p_expenses: update.expenses,
+    p_fire_assets: typeof update.fire_assets === 'number' ? update.fire_assets : null,
+  });
+  if (error) return "Couldn't save. Please try again.";
+  return data ? null : 'Your budget changed. Reload and try again.';
+}
+
 export interface TransactionDraft {
   id?: string
   date: string
@@ -96,10 +111,7 @@ export async function saveBudget(userId: string, budget: Record<string, number>)
   }
   const { _budget_local: _drop, ...rest } = merged as Record<string, unknown>
   const expenses = { ...rest, _budget_history: history, ...(local ? { _budget_local: local } : {}) }
-  const { error } = row
-    ? await supabase.from('user_budget').update({ expenses, updated_at: new Date().toISOString() }).eq('user_id', userId)
-    : await supabase.from('user_budget').insert({ user_id: userId, expenses })
-  return error ? 'Couldn\'t save the budget. Please try again.' : null
+  return writeBudget(userId, row, { expenses })
 }
 
 export interface BillDraft {
@@ -192,10 +204,8 @@ export async function saveFireProfile(userId: string, patch: Record<string, unkn
   const fp = { ...before, ...patch }
   const update: Record<string, unknown> = { expenses: { ...expenses, _fire_profile: fp }, updated_at: new Date().toISOString() }
   if ('k401' in patch) update.fire_assets = Number(patch.k401) || 0
-  const { error } = row
-    ? await supabase.from('user_budget').update(update).eq('user_id', userId)
-    : await supabase.from('user_budget').insert({ user_id: userId, ...update })
-  if (error) return 'Couldn\'t save. Please try again.'
+  const problem = await writeBudget(userId, row, update)
+  if (problem) return problem
 
   const invested = (f: Record<string, unknown>) => ['k401', 'rothIRA', 'taxable', 'cashSavings'].reduce((s, k) => s + (Number(f[k]) || 0), 0)
   if (invested(fp) !== invested(before)) {
@@ -218,10 +228,7 @@ export async function saveCustomCategories(userId: string, cats: { key: string; 
   const { data: row, error: readError } = await supabase.from('user_budget').select('expenses').eq('user_id', userId).maybeSingle()
   if (readError) return 'Couldn\'t save. Please try again.'
   const expenses = { ...((row?.expenses as Record<string, unknown>) ?? {}), _custom_cats: cats }
-  const { error } = row
-    ? await supabase.from('user_budget').update({ expenses, updated_at: new Date().toISOString() }).eq('user_id', userId)
-    : await supabase.from('user_budget').insert({ user_id: userId, expenses })
-  return error ? 'Couldn\'t save. Please try again.' : null
+  return writeBudget(userId, row, { expenses })
 }
 
 /**
@@ -279,13 +286,14 @@ export async function saveCurrency(userId: string, currency: string): Promise<st
 /**
  * A new account starts from the onboarding answers, as the website does with
  * its calculator prefill: take-home as income, spending as the budget's
- * "other", invested money as cash savings, age and city. Only fills what is
- * empty, so it never overwrites an account that already has numbers.
+ * "other", invested money as cash savings, age and city. Only creates a missing
+ * account row; an existing row, including zeroes, is never reseeded.
  */
 export async function seedFromOnboarding(userId: string, plan: { monthlyIncome: number; monthlySpending: number; invested: number; age?: number; city?: { name: string }; currency?: string }): Promise<boolean> {
-  const { data: row } = await supabase.from('user_budget').select('income, expenses, fire_age').eq('user_id', userId).maybeSingle()
-  if (row && Number(row.income) > 0) return false
-  const expenses = (row?.expenses as Record<string, unknown>) ?? {}
+  const { data: row, error: readError } = await supabase.from('user_budget').select('income, expenses, fire_age').eq('user_id', userId).maybeSingle()
+  // A real row, including explicit zeroes, belongs to the account. Never reseed it.
+  if (readError || row) return false
+  const expenses: Record<string, unknown> = {}
   const hasBudget = Object.entries(expenses).some(([k, v]) => !k.startsWith('_') && typeof v === 'number' && v > 0)
   const fp = (expenses._fire_profile as Record<string, unknown>) ?? {}
   const next = {
@@ -298,9 +306,7 @@ export async function seedFromOnboarding(userId: string, plan: { monthlyIncome: 
     ...(plan.age ? { fire_age: plan.age } : {}),
     updated_at: new Date().toISOString(),
   }
-  const { error } = row
-    ? await supabase.from('user_budget').update(next).eq('user_id', userId)
-    : await supabase.from('user_budget').insert({ user_id: userId, ...next })
+  const { error } = await supabase.from('user_budget').insert({ user_id: userId, ...next })
   // The currency onboarding was answered in becomes the account's.
   if (!error && plan.currency && plan.currency !== 'USD') await saveCurrency(userId, plan.currency)
   return !error
@@ -376,6 +382,5 @@ export async function mergeCategory(userId: string, from: string, to: string): P
     const next = Object.fromEntries(Object.entries(rules).map(([k, r]: [string, any]) => [k, r?.category === from ? { ...r, category: to, sub_category: null } : r]))
     rest._fire_profile = { ...rest._fire_profile, merchantRules: next }
   }
-  const { error } = await supabase.from('user_budget').update({ expenses: rest, updated_at: new Date().toISOString() }).eq('user_id', userId)
-  return error ? failed : null
+  return writeBudget(userId, row, { expenses: rest })
 }

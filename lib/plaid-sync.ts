@@ -12,7 +12,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PlaidApi, Transaction as PlaidTransaction } from "plaid";
 import { mapPlaidTx } from "@/lib/plaid";
 import { classifyPlaid } from "@/lib/plaid-category";
-import { planRefunds } from "@/lib/refunds";
 import { planTagging, type ClassificationRule } from "@/lib/classification-rules";
 import { fetchAllPages } from "@/lib/supabase-pages";
 import { planMerchantRules, readMerchantRules } from "@/lib/merchant-rules";
@@ -121,7 +120,7 @@ export async function syncPlaidItem(admin: Admin, plaid: PlaidApi, item: SyncIte
         description: row.description,
         // Plaid's category only where the person hasn't filed it themselves.
         ...(mine ? {} : { category: row.category, transaction_type: row.transaction_type }),
-        ...(old ? { tags: [...new Set([...ownTags(old), ...row.tags])] } : {}),
+        ...(old ? { tags: [...new Set([...ownTags(old), ...row.tags.filter((t) => !old.tags?.includes("sys:refund-applied") || t !== "sys:refund"), ...(old.tags?.includes("sys:refund-applied") ? ["sys:refund-applied"] : [])])] } : {}),
         // A pending transaction that posts is exactly when Plaid starts
         // sending a real time and a settled category, so re-read both.
         occurred_at: row.occurred_at,
@@ -297,33 +296,14 @@ export async function syncPlaidItem(admin: Admin, plaid: PlaidApi, item: SyncIte
   return { added: addedRows.length, modified: modified.length, removed: removedIds.length, tagged };
 }
 
-/** Applies newly imported refunds (tag sys:refund) to the purchases they came back to. Never throws. */
-export async function applyRefunds(admin: Admin, userId: string, refundIds: string[]): Promise<void> {
-  try {
-    if (!refundIds.length) return;
-    const uniqueIds = [...new Set(refundIds)];
-    const refunds: { id: string; date: string; amount: number; description: string | null; tags: string[] | null }[] = [];
-    for (let i = 0; i < uniqueIds.length; i += 100) {
-      const { data, error } = await fetchAllPages((from, to) => admin.from("expenses").select("id, date, amount, description, tags")
-        .eq("user_id", userId).in("plaid_transaction_id", uniqueIds.slice(i, i + 100)).contains("tags", ["sys:refund"])
-        .order("id").range(from, to));
-      if (error) throw new Error("Could not read refunds");
-      refunds.push(...(data ?? []));
-    }
-    if (!refunds?.length) return;
-    const earliest = refunds.reduce((m, r) => (r.date < m ? r.date : m), refunds[0].date);
-    const since = new Date(Date.parse(`${earliest}T00:00:00Z`) - 90 * 864e5).toISOString().slice(0, 10);
-    const { data: purchases, error: purchaseError } = await fetchAllPages((from, to) => admin.from("expenses").select("id, date, amount, refund_amount, description")
-      .eq("user_id", userId).eq("transaction_type", "expense").gte("date", since)
-      .order("id").range(from, to));
-    if (purchaseError) throw new Error("Could not read refund purchases");
-    for (const p of planRefunds(refunds, purchases ?? [])) {
-      await admin.from("expenses").update({ refund_amount: p.refundAmount }).eq("id", p.purchaseId).eq("user_id", userId);
-      const r = refunds.find((x) => x.id === p.refundId);
-      await admin.from("expenses").update({ tags: [...(r?.tags ?? []).filter((t: string) => t !== "sys:refund"), "sys:refund-applied"] })
-        .eq("id", p.refundId).eq("user_id", userId);
-    }
-  } catch (refundErr) {
-    console.error("[plaid] applying refunds:", refundErr);
+/** Retry every pending refund. The RPC locks the refund and purchase and commits both or neither. */
+export async function applyRefunds(admin: Admin, userId: string, _refundIds: string[] = []): Promise<void> {
+  const { data, error } = await fetchAllPages((from, to) => admin.from("expenses")
+    .select("id").eq("user_id", userId).contains("tags", ["sys:refund"])
+    .order("date").order("id").range(from, to));
+  if (error) throw new Error("Could not read pending refunds");
+  for (const refund of data ?? []) {
+    const { error: applyError } = await admin.rpc("apply_imported_refund", { p_user_id: userId, p_refund_id: refund.id });
+    if (applyError) throw new Error("Could not apply a refund safely");
   }
 }
