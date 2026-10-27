@@ -79,8 +79,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           institution_name: body.institution_name,
           institution_logo: branding.logo,
           institution_color: branding.color,
-          cursor: cursor ?? null,
-          last_synced_at: new Date().toISOString(),
+          // Keep a retryable starting point until the import is persisted.
+          cursor: null,
+          last_synced_at: null,
         },
         { onConflict: "user_id,institution_id" },
       )
@@ -92,10 +93,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Failed to save connection" }, { status: 500 });
     }
 
-    // First bank only — the unique index keeps a reconnect or a second
-    // institution from overwriting the moment they first crossed this line.
-    await recordEvent(admin, user.id, LIFECYCLE_EVENTS.BANK_CONNECTED);
-
     // Map and bulk upsert into expenses
     const rows = allAdded.map((tx) => mapPlaidTx(tx, user.id)).filter(Boolean);
 
@@ -103,8 +100,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       const { error: expErr } = await admin
         .from("expenses")
         .upsert(rows, { onConflict: "plaid_transaction_id", ignoreDuplicates: true });
-      if (expErr) console.error("[plaid/exchange-token] expenses upsert:", expErr);
+      if (expErr) {
+        console.error("[plaid/exchange-token] expenses upsert:", expErr);
+        return NextResponse.json({ error: "Bank connection saved. Reload Money and use Sync to finish importing." }, { status: 500 });
+      }
     }
+    const { data: savedCursor, error: cursorError } = await admin.from("plaid_items")
+      .update({ cursor: cursor ?? null, last_synced_at: new Date().toISOString() })
+      .eq("id", itemRow.id).eq("user_id", user.id).select("id").single();
+    if (cursorError || !savedCursor) {
+      console.error("[plaid/exchange-token] cursor save:", cursorError);
+      return NextResponse.json({ error: "Bank connection saved. Reload Money and use Sync to finish importing." }, { status: 500 });
+    }
+    await recordEvent(admin, user.id, LIFECYCLE_EVENTS.BANK_CONNECTED);
+
     // Money back from a shop reduces that purchase, rather than reading as income (lib/refunds).
     await applyRefunds(admin, user.id, allAdded.filter((tx) => tx.amount < 0 && !tx.pending).map((tx) => tx.transaction_id));
 

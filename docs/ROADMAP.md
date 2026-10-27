@@ -15,8 +15,10 @@ to start unrelated work. Status here describes evidence, not live verification.
 | ID | Priority | Status / owner | Done when | Blocker / next action |
 | --- | --- | --- | --- | --- |
 | N1 | Roll out the approved positioning | Ready; agent assigned when started | Homepage, metadata, social preview and email footer match D-109; affected mobile/desktop layouts checked. Review video/teaser wording too. | Repo guidance merged in PR #316; runtime copy is pending. Inspect existing copy, implement and verify in its own PR. |
-| N2 | Verify the complete first-use journey | Ready; agent assigned when started | Onboarding → useful first result → signup → bank connection → dashboard checked; numbers agree, saved state survives reload, next action is clear; failures recorded and critical ones resolved. | Check existing repair PRs before editing; do not duplicate their work or treat old QA as current proof. Bank connection stays optional before first value. |
+| N2 | Verify the complete first-use journey | In progress; Codex — reliability repair, 27 October | Onboarding → useful first result → signup → bank connection → dashboard checked; numbers agree, saved state survives reload, next action is clear; failures recorded and critical ones resolved. | Reliability subtask: guard failed bank writes/cursor saves, protect Needs & wants budget writes and page remaining transaction reads. Tests/build and review PR pending; full live journey QA still required. Bank connection stays optional before first value. |
 | N3 | Test with five target users | Planned; John recruits, agent supports | Five busy early-career target users observed; comprehension, useful moment, friction and expected reason to return recorded privately, with anonymized conclusions here. | Recruit while N1/N2 progress; do not expose users to known critical flow failures. Ask permission before any outreach. |
+
+27 October: John authorized these reproduced persistence repairs within N2. They take precedence over N1 runtime copy until reviewed; N1 remains Ready and N3 remains Planned. No fourth Now item is created.
 
 Reliability, financial correctness, security and billing blockers may interrupt
 this order. Record the reason and which Now item is displaced; do not silently

@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-27 — Bank and budget save reliability
+
+- Bank sync now rejects failed core transaction writes, failed edit-preservation reads and failed cursor saves instead of reporting a successful import. Pending edits must be preserved before removed rows are deleted. The previous cursor remains retryable after a transaction failure. First-time bank imports also keep a starting cursor until transactions are saved and return a retry message instead of claiming completion.
+- Website Needs & wants loads every transaction page and stops on loading errors. A category save requires a loaded budget, preserves unrelated settings and rejects a conflicting edit from another tab or phone. Repeated clicks wait for the current save.
+- Existing-row and refund/purchase reads are paged in a stable order; ID lookups use bounded batches. The shared backend serves website and phone; the phone already guards profile-read errors and pages its dashboard history. No native release or database migration.
+
 ## 2026-10-27 — Queue welcome-screen button alignment
 
 - Add the reported Android welcome-screen sign-in button alignment issue to Next (X4), with reproduction and verification criteria. Planning only; no UI fix shipped.
