@@ -17,8 +17,8 @@ export function contributionFacts(data: AccountData): AccountFacts {
   // Needs by the shared rule (lib/needs), the same figure months of safety and the safety pot use.
   const lastMonthKey = addMonths(thisMonth(), -1)
   const lastMonthNeeds = data.transactions.filter(t => t.transaction_type === 'expense' && monthOf(t.date) === lastMonthKey && needOf(t) === 'need')
-    .reduce((s, t) => s + spentUSD(t), 0)
-  const { needs: averageNeeds } = monthlyNeeds(data.budget, data.transactions)
+    .reduce((s, t) => s + spentUSD(t) * shareOf(t.plaid_account_id, data.accountShares), 0)
+  const { needs: averageNeeds } = monthlyNeeds(data.budget, data.transactions, thisMonth(), data.accountShares)
   const plaid = data.plaidAccounts
   const expectedItems: ExpectedItem[] = data.bills.map(b => ({
     description: b.description,

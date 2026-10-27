@@ -94,7 +94,8 @@
     "test:contribution-waterfall": "node --experimental-strip-types --no-warnings scripts/verify-contribution-waterfall.mjs",
     "test:savings-withdrawals": "node --experimental-strip-types --no-warnings scripts/verify-savings-withdrawals.ts",
     "test:reward-month": "node --experimental-strip-types scripts/verify-reward-month.ts",
-    "test:replay-repairs": "node --experimental-strip-types --no-warnings scripts/verify-replay-repairs.mjs"
+    "test:replay-repairs": "node --experimental-strip-types --no-warnings scripts/verify-replay-repairs.mjs",
+    "test:financial-consistency": "node --experimental-strip-types --no-warnings scripts/verify-financial-consistency.mjs"
   },
   "dependencies": {
     "@apple/app-store-server-library": "^3.1.0",

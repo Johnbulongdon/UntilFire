@@ -12,20 +12,42 @@ const norm = (s: string) => s.trim().toLowerCase();
 const isMortgageName = (s: string) => /mortgage|\bmtg\b|home ?loan/i.test(s);
 
 export function freedomDebt(opts: {
-  /** Loans the app knows of (connected, else typed), mortgages excluded. */
   otherDebt: number;
+  /** Current connected loan balances. Saved ladder balances never replace them. */
+  loans?: { name: string; balance: number }[];
   cards: { name: string; balance: number }[];
   ladderDebts: { name: string; balance: number; ratePct: number }[];
 }): { balance: number; rate: number } {
-  const rows = opts.ladderDebts.filter((d) => d.balance > 0 && !isMortgageName(d.name));
-  const ladderNames = new Map(rows.map((d) => [norm(d.name), d]));
-  const carried = opts.cards.filter((c) => c.balance > 0 && (ladderNames.get(norm(c.name))?.ratePct ?? 0) > 0)
-    .reduce((s, c) => s + c.balance, 0);
-  const balance = Math.max(0, opts.otherDebt) + carried;
-  const rated = rows.filter((d) => d.ratePct > 0);
-  const weight = rated.reduce((s, d) => s + d.balance, 0);
-  const rate = weight > 0 ? rated.reduce((s, d) => s + d.balance * d.ratePct, 0) / weight / 100 : DEFAULT_DEBT_RATE;
-  return { balance, rate };
+  const rows = opts.ladderDebts.filter(d => !isMortgageName(d.name));
+  const named = (name: string) => {
+    const matches = rows.filter(d => norm(d.name) === norm(name));
+    return matches.length === 1 ? matches[0] : undefined;
+  };
+  const rateOf = (row: typeof rows[number] | undefined) => row && Number.isFinite(row.ratePct) && row.ratePct >= 0
+    ? row.ratePct / 100 : DEFAULT_DEBT_RATE;
+  const carried = opts.cards.filter(c => c.balance > 0 && named(c.name) != null);
+  const other = Math.max(0, opts.otherDebt);
+  let interest = 0, remaining = other;
+  if (opts.loans?.length) {
+    // Match rates by unambiguous names until saved debts carry stable bank IDs.
+    for (const loan of opts.loans) {
+      const value = Math.min(remaining, Math.max(0, loan.balance));
+      interest += value * rateOf(named(loan.name));
+      remaining -= value;
+    }
+  } else {
+    const cardNames = new Set(opts.cards.map(c => norm(c.name)));
+    const loanRows = rows.filter(d => !cardNames.has(norm(d.name)) && d.balance > 0);
+    // A typed aggregate only has an identifiable rate when there is one loan,
+    // or a row explicitly named Other debt; unrelated saved rows cannot set it.
+    const typed = named("Other debt") ?? (loanRows.length === 1 ? loanRows[0] : undefined);
+    interest += other * rateOf(typed);
+    remaining = 0;
+  }
+  interest += remaining * DEFAULT_DEBT_RATE;
+  let balance = other;
+  for (const card of carried) { balance += card.balance; interest += card.balance * rateOf(named(card.name)); }
+  return { balance, rate: balance > 0 ? interest / balance : DEFAULT_DEBT_RATE };
 }
 
 /** How far back a card's own charges are read: a statement still to pay plus the cycle running now. */

@@ -1,3 +1,4 @@
+import { connectedDebt, connectedBalance } from "@engine/account-currency.ts"
 /**
  * Ported from app/dashboard/page.tsx (effectiveBalances, effectiveDebts and the
  * account-type tests), where they live inside the page rather than in lib/.
@@ -43,29 +44,25 @@ export const isMortgageAccount = (a: Kind) => a.type === 'loan' && normalizeSubt
 export function effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts }: {
   k401: number; rothIRA: number; taxable: number; cashSavings: number; plaidAccounts: PlaidAccount[]
 }) {
-  const sum = (keep: (a: Kind) => boolean) => plaidAccounts.filter(keep).reduce((s, a) => s + (a.balance_current ?? 0), 0)
-  const retirement = sum(isRetirementAccount)
-  const brokerage = sum(isBrokerageAccount)
-  const cash = sum(a => a.type === 'depository')
+  const retirement = connectedBalance(plaidAccounts, isRetirementAccount);
+  const brokerage = connectedBalance(plaidAccounts, isBrokerageAccount);
+  const cash = connectedBalance(plaidAccounts, a => a.type === "depository");
   return {
-    k401: retirement > 0 ? retirement : k401,
-    rothIRA: retirement > 0 ? 0 : rothIRA,
-    taxable: brokerage > 0 ? brokerage : taxable,
-    cashSavings: cash > 0 ? cash : cashSavings,
-  }
+    k401: retirement ?? k401,
+    rothIRA: retirement !== undefined ? 0 : rothIRA,
+    taxable: brokerage ?? taxable,
+    cashSavings: cash ?? cashSavings,
+  };
 }
 
 export function effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts }: {
   totalDebt: number; mortgageBalance: number; plaidAccounts: PlaidAccount[]
 }) {
-  const sum = (keep: (a: Kind) => boolean) => plaidAccounts.filter(keep).reduce((s, a) => s + Math.max(0, a.balance_current ?? 0), 0)
-  const mortgages = sum(isMortgageAccount)
-  const loans = sum(a => a.type === 'loan' && !isMortgageAccount(a))
   return {
-    otherDebt: loans > 0 ? loans : totalDebt,
-    mortgage: mortgages > 0 ? mortgages : mortgageBalance,
-    cards: sum(a => a.type === 'credit'),
-  }
+    otherDebt: connectedDebt(plaidAccounts, a => a.type === "loan" && !isMortgageAccount(a), totalDebt),
+    mortgage: connectedDebt(plaidAccounts, isMortgageAccount, mortgageBalance),
+    cards: connectedDebt(plaidAccounts, a => a.type === "credit", 0),
+  };
 }
 
 /**

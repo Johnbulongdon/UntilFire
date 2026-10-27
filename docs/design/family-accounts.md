@@ -449,3 +449,12 @@ than a nicety.
 
 It goes *after* the reveal, never before. Same rule as feedback: user-initiated
 after value, not first-run friction.
+
+
+## October 27 financial consistency repair
+
+The P3 scenario_assumptions source and cash-exclusion note above is historical. Household aggregation now reads current user_budget and its _fire_profile, converts account balances to USD before summing or removing confirmed duplicates, and includes non-spending cash under D-95 at its separate cash return. Checking and other selected spending accounts stay excluded. Linked zero replaces typed funds; unavailable required balances or inputs fail aggregation rather than invent totals.
+
+Real history replaces combined saved budgets only after all members have at least three common complete spending months. Missing history is not treated as zero spending. Deduplication requires confirmed account links and retains repeated identical purchases. Unlinked typed shared funds and budgets cannot be deduplicated reliably; P5 remains deferred.
+
+The household date remains a combined estimate, not the personal full projection engine: individual pension access, tax settings and debt schedules are not modeled by that pre-existing household path. Cash is no longer assigned equity returns.

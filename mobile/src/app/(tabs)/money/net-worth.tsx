@@ -123,7 +123,7 @@ function History({ data }: { data: AccountData }) {
 /** Months of essentials your cash covers, against the website's floor and target. */
 function EmergencyFund({ data }: { data: AccountData }) {
   // Shared with the safety chip and Home's Safety tile, so all three agree.
-  const { needs, basis } = useMemo(() => monthlyNeeds(data.budget, data.transactions), [data.budget, data.transactions])
+  const { needs, basis } = useMemo(() => monthlyNeeds(data.budget, data.transactions, undefined, data.accountShares), [data.budget, data.transactions, data.accountShares])
   if (!(needs > 0)) return null
   const months = safetyCash(data) / needs
   const state = months <= 0 ? 'Missing' : months < FLOOR_MONTHS ? 'Fragile' : months < TARGET_MONTHS ? 'Building' : 'Healthy'
@@ -146,7 +146,7 @@ function EmergencyFund({ data }: { data: AccountData }) {
       </View>
       <Pressable accessibilityRole="button" hitSlop={6} onPress={() => { haptic.tick(); Alert.alert('Emergency fund', `Savings outside your spending accounts, against ${TARGET_MONTHS} months of needs from ${basis}. Below ${FLOOR_MONTHS} months is fragile. Wants aren't counted: they'd stop if income did.`) }}
         className="mt-1 self-start rounded-control bg-surface px-2 py-1 active:opacity-70">
-        <Text className="text-[12px] font-semibold text-ink-2">How it's worked out ›</Text>
+        <Text className="text-[12px] font-semibold text-ink-2">How it&apos;s worked out ›</Text>
       </Pressable>
     </Card>
   )
