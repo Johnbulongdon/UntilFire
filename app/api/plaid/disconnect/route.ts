@@ -41,7 +41,11 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
   }
 
   // Delete plaid_items row. Transactions are kept (source='plaid' identifies them).
-  await admin.from("plaid_items").delete().eq("id", body.item_id);
+  const { error: deleteError } = await admin.from("plaid_items").delete().eq("id", body.item_id).eq("user_id", user.id);
+  if (deleteError) {
+    console.error("[plaid/disconnect] local cleanup:", deleteError);
+    return NextResponse.json({ error: "The bank connection was removed, but cleanup could not finish. Please try Disconnect again." }, { status: 500 });
+  }
 
   return NextResponse.json({ success: true, institution_name: item.institution_name });
 }

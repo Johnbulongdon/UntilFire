@@ -16,12 +16,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if ("error" in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
   const { admin, user } = auth;
 
-  const { data: mine } = await admin
+  const { data: mine, error: readError } = await admin
     .from("household_members")
     .select("household_id")
     .eq("user_id", user.id)
     .maybeSingle();
 
+  if (readError) return NextResponse.json({ error: "Couldn't check your household. Sharing has not been confirmed disconnected. Please try again." }, { status: 500 });
   if (!mine) return NextResponse.json({ ok: true, alreadyDisconnected: true });
 
   const { error } = await admin.from("households").delete().eq("id", mine.household_id);

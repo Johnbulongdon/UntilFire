@@ -20,12 +20,10 @@ async function saveProfile(userId: string, patch: Record<string, unknown>) {
     if (readError) return { message: "Couldn't load your budget. Please try again." };
     if (!data) return { message: "Your budget could not be loaded. Please reload and try again." };
     const ex = (data.expenses as Record<string, unknown>) ?? {};
-    let write = supabase.from("user_budget").update({
-      expenses: { ...ex, _fire_profile: { ...((ex._fire_profile as Record<string, unknown>) ?? {}), ...patch } },
-    }).eq("user_id", userId);
-    // Compare-and-set: don't replace a newer budget saved by another tab or phone.
-    write = data.expenses == null ? write.is("expenses", null) : write.eq("expenses", JSON.stringify(data.expenses));
-    const { data: saved, error } = await write.select("user_id").maybeSingle();
+    const { data: saved, error } = await supabase.rpc("replace_budget_if_unchanged", {
+      p_expected: data.expenses,
+      p_expenses: { ...ex, _fire_profile: { ...((ex._fire_profile as Record<string, unknown>) ?? {}), ...patch } },
+    });
     if (error) return { message: "Couldn't save. Please try again." };
     return saved ? null : { message: "Your budget changed. Please reload and try again." };
   } catch {

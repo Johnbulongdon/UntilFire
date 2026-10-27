@@ -254,7 +254,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     })
 
     // A brand-new account starts from the onboarding answers, then reloads once.
-    if (!budgetRes.error && !(Number(budgetRes.data?.income) > 0) && plan && plan.monthlyIncome > 0) {
+    if (!budgetRes.error && !budgetRes.data && plan && plan.monthlyIncome > 0) {
       if (await seedFromOnboarding(userId, plan)) { setLoading(false); return refresh() }
     }
 
