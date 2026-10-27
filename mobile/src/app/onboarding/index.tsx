@@ -79,7 +79,7 @@ export default function Welcome() {
 
         <Animated.View entering={FadeInDown.delay(1800).duration(600)}>
           <Button kind="onDark" label="Get started" onPress={start} />
-          <Button kind="onDarkQuiet" small style={{ marginTop: 10 }} label="I already have an account" onPress={start} />
+          <Button kind="onDarkQuiet" style={{ marginTop: 10 }} label="I already have an account" onPress={start} />
         </Animated.View>
       </View>
     </SafeAreaView>

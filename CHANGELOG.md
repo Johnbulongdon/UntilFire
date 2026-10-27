@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-27 — Aligned phone welcome actions
+
+- On the phone welcome screen, I already have an account uses the standard full-width, 56-point button and 17-point label, matching Get started. Retain the quieter secondary styling, spacing and existing sign-in behavior. The shared Button component is unchanged.
+
+
 ## 2026-10-27 — Financial consistency repairs
 
 - Web and phone: connected accounts replace typed figures even at zero; unavailable or unconvertible amounts cannot revive stale money. Paid-off linked loans also stay at zero.
