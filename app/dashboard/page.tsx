@@ -49,7 +49,7 @@ import type { RawTx } from "@/lib/recurring-detect";
 import { FreedomCard, MonthCard, GlanceRow, NextMoveCard, UntilPaydayCard, type MonthCategory } from "./HomeCards";
 import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, MoneyTrack, Fig, StackBar, PaceBar, MonthCalendar, BankLogo } from "./MoneyCards";
 import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
-import { accountInUSD, daysSinceSync, STALE_AFTER_DAYS, type ConvertedFields } from "@/lib/account-currency";
+import { connectedDebt, connectedBalance, accountInUSD, daysSinceSync, STALE_AFTER_DAYS, type ConvertedFields } from "@/lib/account-currency";
 import { fetchAllPages } from "@/lib/supabase-pages";
 import CategoriesTab from "./CategoriesTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
@@ -351,15 +351,14 @@ function effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts 
   k401: number; rothIRA: number; taxable: number; cashSavings: number;
   plaidAccounts: Pick<PlaidAccount, "type" | "subtype" | "balance_current">[];
 }) {
-  const sum = (keep: (a: Pick<PlaidAccount, "type" | "subtype">) => boolean) =>
-    plaidAccounts.filter(keep).reduce((s, a) => s + (a.balance_current ?? 0), 0);
-  const retirement = sum(isRetirementInvestmentAccount), brokerage = sum(isBrokerageInvestmentAccount);
-  const cash = sum((a) => a.type === "depository");
+  const retirement = connectedBalance(plaidAccounts, isRetirementInvestmentAccount);
+  const brokerage = connectedBalance(plaidAccounts, isBrokerageInvestmentAccount);
+  const cash = connectedBalance(plaidAccounts, a => a.type === "depository");
   return {
-    k401: retirement > 0 ? retirement : k401,
-    rothIRA: retirement > 0 ? 0 : rothIRA,
-    taxable: brokerage > 0 ? brokerage : taxable,
-    cashSavings: cash > 0 ? cash : cashSavings,
+    k401: retirement ?? k401,
+    rothIRA: retirement !== undefined ? 0 : rothIRA,
+    taxable: brokerage ?? taxable,
+    cashSavings: cash ?? cashSavings,
   };
 }
 
@@ -374,13 +373,10 @@ function effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts }: {
   plaidAccounts: Pick<PlaidAccount, "type" | "subtype" | "balance_current">[];
 }) {
   const isMortgage = (a: Pick<PlaidAccount, "type" | "subtype">) => a.type === "loan" && normalizePlaidSubtype(a.subtype).includes("mortgage");
-  const sum = (keep: (a: Pick<PlaidAccount, "type" | "subtype">) => boolean) =>
-    plaidAccounts.filter(keep).reduce((s, a) => s + Math.max(0, a.balance_current ?? 0), 0);
-  const mortgages = sum(isMortgage), loans = sum((a) => a.type === "loan" && !isMortgage(a));
   return {
-    otherDebt: loans > 0 ? loans : totalDebt,
-    mortgage: mortgages > 0 ? mortgages : mortgageBalance,
-    cards: sum((a) => a.type === "credit"),
+    otherDebt: connectedDebt(plaidAccounts, a => a.type === "loan" && !isMortgage(a), totalDebt),
+    mortgage: connectedDebt(plaidAccounts, isMortgage, mortgageBalance),
+    cards: connectedDebt(plaidAccounts, a => a.type === "credit", 0),
   };
 }
 
@@ -479,26 +475,18 @@ function calcProjection({
   for (let y = 0; y <= years; y++) {
     const investable = cur401k + curRoth + curTaxable + curCash;
     const netWorth   = investable - curDebt - curMort;
-    // fireTarget > 0 guards against the moment right after a page refresh,
-    // before real data has loaded from Supabase and every input (including
-    // monthlyExpenses, so fireTarget itself) is still its zero default —
-    // without this, "$0 invested >= $0 target" is trivially true on the
-    // very first loop year, and the freedom date briefly shows as today.
-    if (fireYear === null && fireTarget > 0 && investable >= fireTarget && y > 0) {
+    const early = currentAge > 0 && accessAge > 0 ? Math.max(0, accessAge - (currentAge + y)) : 0;
+    const reachable = curTaxable + curCash + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth);
+    // Before freedom, remember whether each annual point can fund its bridge.
+    // Date interpolation must not jump ahead of this eligibility boundary.
+    const needed = early > 0 && fireYear === null ? bridgeRequired(targetAnnualExpenses, early, curCash,
+      curTaxable + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth), cashGrowthRate, growthRate) : 0;
+    const bridgeShort = reachable < needed;
+    // A positive target guards unloaded zero inputs; year zero needs the full bridge too.
+    if (fireYear === null && fireTarget > 0 && investable >= fireTarget) {
       totalYear ??= y;
-      const early = currentAge > 0 && accessAge > 0 ? Math.max(0, accessAge - (currentAge + y)) : 0;
-      if (early > 0) {
-        // Spending until the pension opens, from money that keeps growing meanwhile. Each year's
-        // spending comes out at its start (D-65): a year is lived before it earns its growth.
-        const needed = bridgeRequired(targetAnnualExpenses, early, curCash,
-          curTaxable + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth), cashGrowthRate, growthRate);
-        const reachable = curTaxable + curCash + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth);
-        bridge = { needed, reachable, locked: investable - reachable, years: early };
-        if (reachable >= needed) fireYear = y;
-      } else {
-        bridge = null;
-        fireYear = y;
-      }
+      bridge = early > 0 ? { needed, reachable, locked: investable - reachable, years: early } : null;
+      if (!bridgeShort) fireYear = y;
     }
     const contributed = Math.min(totalContributed, investable);
     data.push({
@@ -514,7 +502,8 @@ function calcProjection({
       "Contributions": Math.round(contributed),
       "Market Growth": Math.round(Math.max(investable - contributed, 0)),
       // What can be drawn before the pension opens (D-59): taxable, cash, and the tax-free account (paid-in only where gains wait).
-      "Reachable":     Math.round(curTaxable + curCash + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth)),
+      "Reachable":     Math.round(reachable),
+      "Bridge Short":  bridgeShort ? 1 : 0,
     });
     // Debt is paid out of savings first (up to 30% of them), and only what
     // is left is invested. Paying it from savings that were also invested in
@@ -645,6 +634,7 @@ function projectionInputs({
     // Loans, plus cards carried at a rate, at their own rates (lib/freedom-debt).
     ...(({ otherDebt, mortgage }) => {
       const debt = freedomDebt({ otherDebt, ladderDebts,
+        loans: plaidAccounts.filter(a => a.type === "loan" && !normalizePlaidSubtype(a.subtype).includes("mortgage")).map(a => ({ name: a.name || a.official_name || "Loan", balance: a.balance_current ?? 0 })),
         cards: plaidAccounts.filter((a) => a.type === "credit").map((a) => ({ name: a.name || a.official_name || "Credit card", balance: a.balance_current ?? 0 })) });
       return { totalDebt: debt.balance, debtRate: debt.rate, mortgageBalance: mortgage };
     })(effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts })),
@@ -660,18 +650,16 @@ function projectionInputs({
  * projection, not a day-by-day simulation.
  */
 function exactFreedomDateFrom(data: Record<string, number>[], fireYear: number | null, fireTarget: number): Date | null {
-  if (fireYear === null || fireYear <= 0) return null;
+  if (fireYear === null || fireYear < 0) return null;
+  if (fireYear === 0) return new Date();
   const prevPoint = data[fireYear - 1];
   const curPoint = data[fireYear];
   if (!prevPoint || !curPoint) return null;
   const prevVal = prevPoint["Investable"] ?? 0;
   const curVal = curPoint["Investable"] ?? 0;
   const msPerYearExact = 365.25 * 24 * 60 * 60 * 1000;
-  // Past the target today: work is already optional, as the first result said. Year 0 is never the
-  // freedom year (it guards the zero-input moment), so without this it read as a year from now.
-  if (fireYear === 1 && prevVal >= fireTarget) return new Date();
   // Already past the target the year before: freedom waited for the bridge (D-59), so it is this year exactly.
-  if (prevVal >= fireTarget) return new Date(Date.now() + fireYear * msPerYearExact);
+  if (prevVal >= fireTarget || prevPoint["Bridge Short"] === 1) return new Date(Date.now() + fireYear * msPerYearExact);
   const span = curVal - prevVal;
   const fraction = span > 0 ? Math.min(1, Math.max(0, (fireTarget - prevVal) / span)) : 0;
   const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
@@ -5207,9 +5195,9 @@ export default function Dashboard() {
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const byMonth: Record<string, number> = {};
     recentTransactions.filter(t => t.transaction_type === "expense" && inLastTwelve(t.date.slice(0, 7), curMonth) && transactionNeed(t, categoryNeeds) === "need")
-      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
+      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates) * shareOf(t.plaid_account_id, accountShares); });
     return Object.entries(byMonth).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [recentTransactions, rates, categoryNeeds]);
+  }, [recentTransactions, rates, categoryNeeds, accountShares]);
   /* Last complete month's spending, split by tag, in dollars. The
      contribution forecast's day-to-day estimate is built from the needs; the
      wants and untagged totals are shown beside it so it is clear what was
@@ -5219,7 +5207,7 @@ export default function Dashboard() {
     const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const key = `${first.getFullYear()}-${String(first.getMonth() + 1).padStart(2, "0")}`;
     const month = recentTransactions.filter(t => t.transaction_type === "expense" && t.date.startsWith(key));
-    const inUsd = (t: typeof month[number]) => toUSD(netAmt(t), t.currency, rates);
+    const inUsd = (t: typeof month[number]) => toUSD(netAmt(t), t.currency, rates) * shareOf(t.plaid_account_id, accountShares);
     const filed = month.filter(t => !!t.category);
     return {
       year: first.getFullYear(),
@@ -5230,7 +5218,7 @@ export default function Dashboard() {
       wants: filed.filter(t => transactionNeed(t, categoryNeeds) === "want").reduce((sum, t) => sum + inUsd(t), 0),
       untagged: month.filter(t => !t.category).reduce((sum, t) => sum + inUsd(t), 0),
     };
-  }, [recentTransactions, rates, categoryNeeds]);
+  }, [recentTransactions, rates, categoryNeeds, accountShares]);
   const histNeedsAvg = useMemo(() => {
     const vals = needsByMonth.map(([, v]) => v);
     return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;

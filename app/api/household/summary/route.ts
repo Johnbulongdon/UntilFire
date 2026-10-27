@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireUser, householdPosition } from "@/lib/household";
-import { calcFIRE, REAL_RETURN } from "@/lib/fire";
+import { householdProjection } from "@/lib/household-projection";
 
 /**
  * One freedom date for two people.
@@ -23,20 +23,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     const { combined, members } = position;
 
-    // A date needs an age to anchor it, and the two partners rarely share one.
-    // Anchor on the younger, then report each person's age at that date — a
-    // household reaches freedom together or not at all, and the older partner
-    // hitting it first is not the thing being asked.
-    const ages = members.map((m) => m.age).filter((a) => a > 0);
-    const anchorAge = ages.length ? Math.min(...ages) : undefined;
-
-    const fire = calcFIRE(
-      combined.monthlySavings,
-      combined.annualExpenses,
-      anchorAge,
-      combined.portfolio,
-      REAL_RETURN,
-    );
+    const fire = householdProjection(combined);
 
     return NextResponse.json({
       household: {

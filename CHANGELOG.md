@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-10-27 — Financial consistency repairs
+
+- Web and phone: connected accounts replace typed figures even at zero; unavailable or unconvertible amounts cannot revive stale money. Paid-off linked loans also stay at zero.
+- Web and phone: freedom today requires today's pension bridge. Fractional dates do not precede a year whose bridge is still short. Known zero-interest loans remain zero; current included balances set interest weights, with defaults only for unknown rates.
+- Personal needs, safety coverage and contribution needs apply joint-account ownership consistently.
+- Household totals read current user_budget inputs, convert linked balances before summing/deduplication, filter budget metadata, preserve zero and include non-spending safety cash at cash returns. Required read failures stop aggregation; unavailable or insufficient history uses saved budgets.
+- Household history requires three common complete spending months for every member. Only confirmed account links deduplicate purchases; repeated same-day purchases retain their count.
+- Add behavioral calculation regressions and PR CI. No database migration or dependency/native API change. Release pending review.
+
 ## 2026-10-27 — Bank and budget save reliability
 
 - Bank sync now rejects failed core transaction writes, failed edit-preservation reads and failed cursor saves instead of reporting a successful import. Pending edits must be preserved before removed rows are deleted. The previous cursor remains retryable after a transaction failure. First-time bank imports also keep a starting cursor until transactions are saved and return a retry message instead of claiming completion.

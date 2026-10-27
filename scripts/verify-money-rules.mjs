@@ -101,10 +101,10 @@ assert.deepEqual(applyAccountShares([{ plaid_account_id: "joint", balance_curren
   { plaid_account_id: "joint", balance_current: 5000, balance_available: null }, "a shared balance counts half");
 
 // ── Households ──
-const joint = (user_id, date, amount, description) => ({ user_id, date, amount, refund_amount: 0, currency: "USD", description });
+const joint = (user_id, date, amount, description) => ({ user_id, date, amount, refund_amount: 0, currency: "USD", description, plaid_account_id: "joint-" + user_id });
 const hh = householdSpending([
   ...["2026-07", "2026-08", "2026-09"].flatMap((m) => [joint("a", `${m}-01`, 2000, "Rent"), joint("b", `${m}-01`, 2000, "Rent"), joint("b", `${m}-10`, 500, "Groceries")]),
-], "2026-10", (n) => n);
+], "2026-10", (n) => n, { memberIds: ["a", "b"], confirmedLinks: [{ a: "joint-a", b: "joint-b" }] });
 assert.equal(hh.average, 2500, "joint rent seen by both partners counts once");
 
 // ── Goals ──

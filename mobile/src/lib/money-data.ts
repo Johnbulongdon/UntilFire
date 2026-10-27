@@ -1,4 +1,4 @@
-import { addMonths, ALL_CATEGORIES, averageNeeds, budgetNeeds, inLastTwelve, isoDay, median, monthOf, type CategoryDef } from '@/engine'
+import { addMonths, ALL_CATEGORIES, averageNeeds, budgetNeeds, inLastTwelve, shareOf, isoDay, median, monthOf, type CategoryDef } from '@/engine'
 import { customCategories } from './custom-categories'
 import { defaultNeed, needOverrides } from './review'
 import { spentUSD, toUSD, type AccountData, type Transaction } from '@/state/account'
@@ -100,12 +100,12 @@ export function byDay(transactions: Transaction[]): { date: string; items: Trans
  * as the website (lib/needs): what needs actually cost, averaged over the last
  * 12 complete months; the need budgets before any data; a 60% guess last.
  */
-export function monthlyNeeds(budget: Record<string, number>, transactions: Transaction[], current = thisMonth()): { needs: number; basis: string } {
+export function monthlyNeeds(budget: Record<string, number>, transactions: Transaction[], current = thisMonth(), accountShares: Record<string, number> = {}): { needs: number; basis: string } {
   const byMonth = new Map<string, number>()
   for (const t of transactions) {
     const m = monthOf(t.date)
     if (t.transaction_type !== 'expense' || !inLastTwelve(m, current) || needOf(t) !== 'need') continue
-    byMonth.set(m, (byMonth.get(m) ?? 0) + spentUSD(t))
+    byMonth.set(m, (byMonth.get(m) ?? 0) + spentUSD(t) * shareOf(t.plaid_account_id, accountShares))
   }
   const spentNeeds = averageNeeds(byMonth)
   if (spentNeeds > 0) return { needs: spentNeeds, basis: 'what your needs cost on average' }
@@ -124,7 +124,7 @@ export function freedomCash(data: AccountData): number {
 
 /** Months of needs the safety pot covers, or null without a needs figure. */
 export function safetyMonths(data: AccountData): number | null {
-  const { needs } = monthlyNeeds(data.budget, data.transactions)
+  const { needs } = monthlyNeeds(data.budget, data.transactions, thisMonth(), data.accountShares)
   return needs > 0 ? safetyCash(data) / needs : null
 }
 

@@ -62,6 +62,7 @@ export function inputsFor(data: AccountData): Inputs {
     // Loans, plus cards carried at a rate, at their own rates (lib/freedom-debt), as on the website.
     ...(({ balance, rate }) => ({ totalDebt: balance, debtRate: rate }))(freedomDebt({
       otherDebt: data.debts.otherDebt,
+      loans: data.plaidAccounts.filter(a => a.type === 'loan' && !isMortgageAccount(a)).map(a => ({ name: a.name || 'Loan', balance: a.balance_current ?? 0 })),
       cards: data.plaidAccounts.filter(a => a.type === 'credit').map(a => ({ name: a.name || 'Credit card', balance: a.balance_current ?? 0 })),
       ladderDebts: data.contributionPlan?.ladder?.debts ?? [],
     })),

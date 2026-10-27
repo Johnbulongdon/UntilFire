@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { connectedDebt, connectedBalance } from "../lib/account-currency.ts";
 /**
  * Plan shows the freedom date beside the assumptions that move it, and it is
  * the same date Home shows. Choosing a different growth rate used to change
@@ -34,7 +35,7 @@ const code = locationSource + '\n' + ['calcProjection', 'freedomProjection', 'pr
   + '\nexports.freedomProjection = freedomProjection; exports.calcProjection = calcProjection; exports.PlanFreedomDate = PlanFreedomDate; exports.effectiveBalances = effectiveBalances; exports.effectiveDebts = effectiveDebts;';
 const exports = {};
 vm.runInNewContext(ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React, target: ts.ScriptTarget.ES2020 } }).outputText,
-  { exports, TAX_ESTIMATES_AVAILABLE, Math, Date, Object, React, retirementCash, DEFAULT_CASH_GROWTH, bridgeRequired, freedomDebt, REAL_RETURN: 0.069, freedomAgeAt: (age, years) => Math.round(age + years) });
+  { exports, connectedDebt, connectedBalance, TAX_ESTIMATES_AVAILABLE, Math, Date, Object, React, retirementCash, DEFAULT_CASH_GROWTH, bridgeRequired, freedomDebt, REAL_RETURN: 0.069, freedomAgeAt: (age, years) => Math.round(age + years) });
 const { freedomProjection, calcProjection, PlanFreedomDate, effectiveBalances, effectiveDebts } = exports;
 
 // A person: $8k/month take-home, $5k spending, $60k invested, $10k in a linked savings account (no needs set, so all of it counts).
