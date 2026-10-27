@@ -11,4 +11,6 @@ Tech stack: TypeScript, Next.js, React Native, Supabase; no new dependencies or 
 - [x] Evaluate pension bridge today before reporting today; keep future bridge crossings conservative. Cover web/phone parity.
 - [x] Match current loan/card balances to saved rates, include zero and default unknown rates. Ignore unrelated saved rows.
 - [x] Apply personal account shares to needs, last-month needs and contribution consumers on both platforms.
-- [ ] Run focused checks, web validation, phone types/lint. Review diff and open a separate PR with baseline, rollout and limitations. No merge/deploy without John.
+- [x] Run focused checks, web validation, phone types/lint. Review diff and open a separate PR with baseline, rollout and limitations. No merge/deploy without John.
+
+Review: PR #321; full validation and phone checks passed. Merge remains pending John.

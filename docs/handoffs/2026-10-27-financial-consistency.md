@@ -24,4 +24,4 @@ The household date remains the existing type of combined estimate, not the perso
 
 Final npm run validate passed (two website builds, TypeScript and lint); phone TypeScript and changed-file lint passed. Existing unrelated website lint warnings remain. No browser screenshot, authenticated live account edit, physical-device or live migration QA is claimed.
 
-Publication: implementation verified; review PR pending. No merge, production deployment, store build or phone update has been performed. Main merges deploy the website; phone preview/production eligibility remains the existing workflow. John authorizes merge separately.
+Publication: implementation verified in [PR #321](https://github.com/Johnbulongdon/UntilFire/pull/321), code commit 9aae41b17ce6f57971511fb2c6d92a8f2c319803. Review/CI and merge pending. No merge, production deployment, store build or phone update has been performed. Main merges deploy the website; phone preview/production eligibility remains the existing workflow. John authorizes merge separately.
