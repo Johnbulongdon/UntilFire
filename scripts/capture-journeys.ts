@@ -59,6 +59,7 @@ async function walkCalculator(page: Page, shoot: (name: string) => Promise<void>
   for (const name of CALC_SHOTS) {
     await settle(page)
     if(name==='freedom-age') await page.getByRole('button',{name:'Continue →',exact:true}).waitFor({timeout:20000})
+    if(['freedom-age','life','number','standing'].includes(name)) await page.waitForTimeout(2200) // capture settled result values, not count-up frames
     await shoot('calc:'+name)
     const answers: Record<string,string>={income:'6000',expenses:'3000',portfolio:'6000',age:'32'}
     if(answers[name]) await page.locator('.nh-intake input[type=number]').fill(answers[name])
@@ -88,10 +89,13 @@ const APP_ANSWERS: Record<string, (page: Page) => Promise<void>> = {
   goal: (page) => tapText(page, 'Financial freedom'),
   city: (page) => tapText(page, 'Skip'),
   pay: (page) => tapText(page, 'Once a month'),
-  income: (page) => tapText(page, 'Continue'),
+  income: async (page) => {
+    await page.getByRole('textbox', { name: 'Take-home pay', exact: true }).fill(SAMPLE_ANSWER)
+    await tapText(page, 'Continue')
+  },
   spending: async (page) => {
     await tapText(page, 'Type it instead')
-    await page.locator('input:visible').last().fill('3000')
+    await page.getByRole('textbox', { name: 'Monthly spending', exact: true }).fill('3000')
     await tapText(page, 'Continue')
   },
   invested: async (page) => {
