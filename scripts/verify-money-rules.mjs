@@ -15,6 +15,7 @@ import { applyAccountShares, readAccountShares, shareOf } from "../lib/account-s
 import { householdSpending } from "../lib/household-spending.ts";
 import { freedomCash, safetyPot } from "../lib/freedom-cash.ts";
 import { goalMonthly } from "../lib/goal-monthly.ts";
+import { starterBudget, starterGuide, usualByCategory } from "../lib/starter-budget.ts";
 
 // ── Bank rows ──
 assert.equal(classifyPlaid("TRANSFER_OUT", "TRANSFER_OUT_ACCOUNT_TRANSFER", 500).transaction_type, "transfer", "own-account moves are transfers");
@@ -109,5 +110,45 @@ assert.equal(hh.average, 2500, "joint rent seen by both partners counts once");
 
 // ── Goals ──
 assert.equal(goalMonthly({ target_amount: 1200, current_saved: 0, target_date: "2027-10-01" }, new Date(2026, 9, 16)), 100, "a goal needs the rest over the months left");
+
+// ── Starter budget, 50/30/20 (D-116) ──
+{
+  const R = (key, need, want, bill = false) => ({ key, need, want, bill });
+  const lim = (b) => Object.fromEntries(b.limits.map((l) => [l.key, l.limit]));
+  // The mock: needs fit, wants trimmed by one share, the rest is saving.
+  const a = starterBudget(4000, [R("housing", 1300, 0, true), R("utilities", 150, 0, true), R("food", 360, 600), R("transport", 130, 0), R("shopping", 0, 500), R("entertainment", 0, 300)]);
+  assert.equal(a.needs, 1940, "needs that fit stay as they are");
+  assert.ok(a.wants <= 1200 && a.wants >= 1185, "wants fit 30%");
+  assert.equal(a.saving, 4000 - 1940 - a.wants, "the rest is saving");
+  assert.equal(lim(a).housing, 1300, "bills are never trimmed");
+  assert.ok(lim(a).food >= 360 && lim(a).food < 960, "groceries stay whole, eating out is trimmed");
+  for (const l of a.limits) assert.ok(l.limit <= l.usual, `never more than usual (${l.key})`);
+  // Spending under every line: nothing changes, saving takes the rest.
+  const b = starterBudget(4000, [R("housing", 1200, 0, true), R("shopping", 0, 400)]);
+  assert.deepEqual(lim(b), { housing: 1200, shopping: 400 }, "no one is told to spend more");
+  assert.equal(b.saving, 2400, "already saving more keeps that rate");
+  // Needs past half: needs stay, wants give way so saving keeps 20%.
+  const c = starterBudget(4000, [R("housing", 2400, 0, true), R("shopping", 0, 800)]);
+  assert.equal(c.needs, 2400, "needs are never cut");
+  assert.equal(lim(c).shopping, 800, "wants shrink to what's left after needs and 20%");
+  assert.equal(c.saving, 800, "saving keeps 20%");
+  // A want that is a bill stays, even when it can't fit.
+  const d = starterBudget(3000, [R("housing", 2500, 0, true), R("entertainment", 0, 100, true), R("shopping", 0, 300)]);
+  assert.equal(lim(d).entertainment, 100, "a subscription bill isn't trimmed");
+  assert.equal(lim(d).shopping, 0, "other wants make room first");
+  // No spending yet: only the three totals.
+  assert.deepEqual([starterGuide(4000).needs, starterGuide(4000).wants, starterGuide(4000).saving], [2000, 1200, 800], "the guide is 50/30/20");
+  assert.equal(starterBudget(4000, []).hasData, false, "no rows is the guide");
+  // Usual spending: full months only, split need/want per purchase.
+  const rows = usualByCategory([
+    { date: "2026-09-03", usd: 300, category: "food", sub_category: "Groceries" },
+    { date: "2026-09-10", usd: 90, category: "food", sub_category: "Restaurants" },
+    { date: "2026-08-03", usd: 300, category: "food", sub_category: "Groceries" },
+    { date: "2026-08-12", usd: 30, category: "food", sub_category: "Restaurants" },
+    { date: "2026-10-02", usd: 999, category: "food", sub_category: "Groceries" },
+    { date: "2026-09-05", usd: 50, category: "shopping", transaction_type: "transfer" },
+  ], new Date(2026, 9, 29), {}, new Set());
+  assert.deepEqual(rows, [{ key: "food", need: 300, want: 60, bill: false }], "this month and transfers are left out");
+}
 
 console.log("Money rules checks passed.");

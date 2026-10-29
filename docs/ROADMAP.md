@@ -22,6 +22,8 @@ to start unrelated work. Status here describes evidence, not live verification.
 
 29 October: John asked for the city pages to match Next Horizon (mock approved in thread, "go"). Handled within N1 on branch `claude/project-thread-yhurmt`: single city pages, the city share image (previously 404) and geo-arbitrage pages. Ranking and state share images (`app/api/og/ranking/[slug].tsx`, `app/api/og/state/[state].tsx`) have the same non-route file problem and remain to fix.
 
+29 October: John asked for the 50/30/20 starting budget (D-106 follow-up; mock approved, "build"). Website only, In review on branch `claude/project-thread-v7mf9g`; outside Now/Next as a John-requested feature, no Now item displaced.
+
 27 October: John authorized these reproduced persistence repairs within N2. They take precedence over N1 runtime copy until reviewed; N1 remains Ready and N3 remains Planned. No fourth Now item is created.
 
 Reliability, financial correctness, security and billing blockers may interrupt

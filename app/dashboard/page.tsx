@@ -55,6 +55,8 @@ import { fetchAllPages } from "@/lib/supabase-pages";
 import CategoriesTab from "./CategoriesTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
 import BudgetSetupModal from "./BudgetSetupModal";
+import StarterBudgetCard from "./StarterBudgetCard";
+import { starterBudget, usualByCategory } from "@/lib/starter-budget";
 import ReportsTab from "./ReportsTab";
 import OffersTab from "./OffersTab";
 import ProfileTab from "./ProfileTab";
@@ -668,9 +670,9 @@ function exactFreedomDateFrom(data: Record<string, number>[], fireYear: number |
 }
 
 // ─── Shared UI ────────────────────────────────────────────────────────────────
-function NumberInput({ value, onChange, placeholder = "0", prefix = "$", currency, rates }: {
+function NumberInput({ value, onChange, placeholder = "0", prefix = "$", currency, rates, ariaLabel }: {
   value: number; onChange: (v: number) => void;
-  placeholder?: string; prefix?: string;
+  placeholder?: string; prefix?: string; ariaLabel?: string;
   currency?: string; rates?: Record<string, number>;
 }) {
   const [focused, setFocused] = useState(false);
@@ -689,7 +691,7 @@ function NumberInput({ value, onChange, placeholder = "0", prefix = "$", currenc
     }}>
       <span style={{ color: "var(--uf-text-3, #94A3B8)", fontSize: 13, fontFamily: "Inter, sans-serif" }}>{prefix}</span>
       <input
-        type="number" value={displayValue || ""} placeholder={placeholder}
+        type="number" value={displayValue || ""} placeholder={placeholder} aria-label={ariaLabel}
         onChange={e => {
           const nextValue = Number(e.target.value);
           if (currency && rates && currency !== "USD") {
@@ -2342,7 +2344,7 @@ function _CalculatorsTab() {
 }
 
 // ─── Budget Tracker Tab ───────────────────────────────────────────────────────
-function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], bills = [], onOpenUpcoming, spreadCategories = [] }: {
+function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], bills = [], onOpenUpcoming, spreadCategories = [], categoryNeeds = {} }: {
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
   actuals: Record<string, number>;
@@ -2356,12 +2358,14 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   spendToggles?: Record<string, boolean>;
   onSpendToggle?: (id: string, on: boolean) => void;
   displayCurrency: string; displayRates: Record<string, number>;
-  recentTransactions?: { date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; category?: string; tags?: string[]; description?: string }[];
+  recentTransactions?: { date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; category?: string; sub_category?: string | null; tags?: string[]; description?: string }[];
   /** Upcoming expense bills (USD): which categories are bills, and what falls due before payday. */
   bills?: Bill[];
   /** Categories judged over 12 months, set on the phone (FIRE profile spreadCategories). */
   spreadCategories?: string[];
   onOpenUpcoming?: () => void;
+  /** Need or want per category (FIRE profile), for the 50/30/20 starter. */
+  categoryNeeds?: NeedOverrides;
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
@@ -2399,6 +2403,27 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const monthTxns = recentTransactions.filter(t => t.date.startsWith(curMonth));
 
+  /* The 50/30/20 starter (D-116), while no category has a budget. The
+     onboarding estimate under "other" doesn't count, as in setup step 5. */
+  const noRealBudget = !Object.entries(expenses).some(([k, v]) => !k.startsWith("_") && k !== "other" && typeof v === "number" && v > 0);
+  const starter = useMemo(() => noRealBudget && income > 0
+    ? starterBudget(income, usualByCategory(
+        recentTransactions.map((t) => ({ ...t, usd: toUSD(netAmt(t), t.currency, displayRates) })),
+        new Date(), categoryNeeds, billCategorySet(bills)))
+    : null, [noRealBudget, income, recentTransactions, displayRates, categoryNeeds, bills]);
+  const starterCard = starter && (
+    <StarterBudgetCard
+      takeHome={income}
+      starter={starter}
+      cats={allExpenseCats}
+      fmt={fmtMoney}
+      amountInput={(value, onChange, label) => <NumberInput value={value} onChange={onChange} ariaLabel={label} prefix={currencyPrefix} currency={displayCurrency} rates={displayRates} />}
+      // Replaces the onboarding estimate under "other", so nothing is counted twice.
+      onUse={(limits) => setExpenses({ ...expenses, other: 0, ...limits })}
+      onOwn={() => setBudgetSetupOpen(true)}
+    />
+  );
+
   const guidedSetupModal = budgetSetupOpen && (
     <BudgetSetupModal
       transactions={recentTransactions.map(t => ({
@@ -2418,7 +2443,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   if (isEmpty) {
     return (
       <div className="uf-budget-grid">
-        <div className="uf-card" style={{ padding: "48px 32px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 14 }}>
+        {starterCard || <div className="uf-card" style={{ padding: "48px 32px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 14 }}>
           <div style={{ fontSize: 32 }}>🧭</div>
           <div style={{ fontSize: 16, fontWeight: 800 }}>You haven&apos;t set a budget yet</div>
           <div style={{ color: "var(--uf-text-2)", fontSize: 13, maxWidth: "34ch", lineHeight: 1.5 }}>
@@ -2427,7 +2452,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
           <Button variant="primary" onClick={() => setBudgetSetupOpen(true)} style={{ marginTop: 6 }}>
             Set up my budget
           </Button>
-        </div>
+        </div>}
 
         <div className="uf-card" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 8, padding: "8px 0" }}>
@@ -2590,6 +2615,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
         ]} />
         {showMonth && <MonthCalendar today={now} spentByDay={spentByDay} bills={bills} perDay={leftInBudget > 0 ? leftInBudget / daysLeftInMonth : 0} fmt={fmtMoney} />}
       </MoneyHead>
+      {starterCard}
 
       {editAll ? (
         <>
@@ -6477,7 +6503,7 @@ export default function Dashboard() {
                 {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} startOn={categoriesStart} onCategoryNeeds={setCategoryNeeds} />}
                 {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} plan={sharedPlan} facts={contributionFacts} billDue={billDue} onMarkDone={setContributionDone} onOpenTransactions={() => setCashflowSubTab("cashflow")} />}
                 {cashflowSubTab === "budgets" && (
-                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} spreadCategories={spreadCategories} />
+                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} spreadCategories={spreadCategories} categoryNeeds={categoryNeeds} />
                 )}
               </div>
             )}
