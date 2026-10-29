@@ -20,6 +20,8 @@ to start unrelated work. Status here describes evidence, not live verification.
 
 29 October: John asked for all website interaction-audit fixes ("fix all"); handled as a reliability interrupt within N2 because a failed plan load could overwrite saved data. In review on branch `claude/project-thread-x6thrn`; audit in project files `untilfire/web-interaction-audit-2026-10-29/`. No fourth Now item is created.
 
+29 October: John asked for the city pages to match Next Horizon (mock approved in thread, "go"). Handled within N1 on branch `claude/project-thread-yhurmt`: single city pages, the city share image (previously 404) and geo-arbitrage pages. Ranking and state share images (`app/api/og/ranking/[slug].tsx`, `app/api/og/state/[state].tsx`) have the same non-route file problem and remain to fix.
+
 27 October: John authorized these reproduced persistence repairs within N2. They take precedence over N1 runtime copy until reviewed; N1 remains Ready and N3 remains Planned. No fourth Now item is created.
 
 Reliability, financial correctness, security and billing blockers may interrupt
