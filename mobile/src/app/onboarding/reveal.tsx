@@ -44,25 +44,25 @@ export default function Reveal() {
   }, [reached])
 
   return (
-    <RevealFrame next="Continue" onNext={() => router.push('/onboarding/life')} second={{ label: 'Change my answers', onPress: () => router.back() }}
+    <RevealFrame next="Continue" onNext={() => router.push('/onboarding/life')}
       overlay={<ConfettiBurst play={landed && reached} />}>
-      <Sunny mood={landed ? (reached ? 'win' : 'quiet') : 'think'} size={112} />
+      <Sunny onAccent mood={landed ? (reached ? 'win' : 'quiet') : 'think'} size={112} />
       <Animated.View entering={FadeIn.duration(400)}>
-        <Text className="text-[18px] font-semibold text-aqua">
+        <Text className="text-[18px] font-semibold text-ink">
           {reached ? (result.years === 0 ? 'Work is already optional' : 'Work becomes optional in') : 'At this pace'}
         </Text>
       </Animated.View>
       {reached ? (
-        <CountUp from={thisYear} to={result.year!} duration={COUNT_MS} className="mt-1 font-display text-[110px] font-bold leading-[118px] text-aqua" />
+        <CountUp from={thisYear} to={result.year!} duration={COUNT_MS} className="mt-1 font-display text-[110px] font-bold leading-[118px] text-ink" />
       ) : (
-        <Text className="mt-2 font-display text-[36px] font-bold leading-[42px] text-white">Freedom is more than 65 years away</Text>
+        <Text className="mt-2 font-display text-[36px] font-bold leading-[42px] text-ink">Freedom is more than 65 years away</Text>
       )}
       {result.ageAtFreedom != null && (
         <Animated.View entering={FadeInDown.delay(COUNT_MS).duration(500)}>
-          <Text className="mt-1 text-[22px] text-mint">You'll be {result.ageAtFreedom}.</Text>
+          <Text className="mt-1 text-[22px] text-ink-2">You&apos;ll be {result.ageAtFreedom}.</Text>
         </Animated.View>
       )}
-      {!reached && <Text className="mt-3 text-[17px] leading-6 text-mint">Spending less or saving more moves this a lot.</Text>}
+      {!reached && <Text className="mt-3 text-[17px] leading-6 text-ink-2">Spending less or saving more moves this a lot.</Text>}
     </RevealFrame>
   )
 }

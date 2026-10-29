@@ -36,7 +36,7 @@ export default function SiteHeader({
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [pathname]);
 
-  if (!fixed && !showsSiteHeader(pathname)) return null;
+  if (!fixed && !onStart && !showsSiteHeader(pathname)) return null;
 
   const home = pathname === "/";
   const isSignedIn = signedIn ?? !!user;

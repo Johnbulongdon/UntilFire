@@ -115,7 +115,7 @@ export default function BudgetSetupModal({
         style={{
           background: "#111118", border: "1px solid #23232d", borderRadius: 20,
           padding: 32, width: "100%", maxWidth: 440,
-          fontFamily: "Manrope, sans-serif",
+          fontFamily: "Inter, sans-serif",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
@@ -142,7 +142,7 @@ export default function BudgetSetupModal({
           style={{
             width: "100%", padding: "12px 14px", borderRadius: 10,
             border: "1px solid #23232d", background: "#1a1a24", color: "#e2e8f0",
-            fontSize: 18, fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 24,
+            fontSize: 18, fontWeight: 700, fontFamily: "Inter, sans-serif", marginBottom: 24,
           }}
         />
 
@@ -168,7 +168,7 @@ export default function BudgetSetupModal({
           <button
             onClick={() => advance(drafts)}
             disabled={saving}
-            style={{ flex: 1, padding: "10px 16px", borderRadius: 10, border: "none", background: "#047857", color: "#fff", fontSize: 13, fontWeight: 700, cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1 }}
+            style={{ flex: 1, padding: "10px 16px", borderRadius: 10, border: "none", background: "#151719", color: "#fff", fontSize: 13, fontWeight: 700, cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1 }}
           >
             {saving ? "Saving…" : isLast ? "Save budget" : "Next"}
           </button>

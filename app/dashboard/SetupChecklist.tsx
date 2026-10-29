@@ -210,7 +210,7 @@ export default function SetupChecklist({ userId, facts, freedomYear, untilPayday
             <h2 className="uf-t-h2" style={{ margin: 0 }}>You&rsquo;re set up</h2>
             {freedomYear != null && <>
               <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 6 }}>Your freedom date</div>
-              {/* The freedom date's Fraunces exception (design system). */}
+              {/* The freedom date's Inter exception (design system). */}
               <div style={{ fontFamily: "var(--uf-font-display)", fontWeight: 700, fontSize: 44, letterSpacing: "-0.02em", lineHeight: 1.1, margin: "4px 0 6px" }}>{freedomYear}</div>
             </>}
             <Button variant="primary" fullWidth onClick={finish} style={{ marginTop: 12 }}>Nice</Button>

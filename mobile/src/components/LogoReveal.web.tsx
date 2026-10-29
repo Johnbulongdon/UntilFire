@@ -1,6 +1,3 @@
-import { Text } from './Text'
-
-/** Browser preview only: the Lottie player needs native code, so show a plain wordmark. */
-export function LogoReveal(_props: { width?: number }) {
-  return <Text className="text-[34px] font-bold tracking-tight text-white">UntilFire</Text>
-}
+import { Image, View } from 'react-native'
+/** Same outlined Inter lockup on phone and website; no media playback controls. */
+export function LogoReveal({width=300}:{width?:number}){return <View style={{width,height:width*150/772}}><Image source={require('../../assets/brand-logo-white.png')} resizeMode="contain" style={{width:'100%',height:'100%'}}/></View>}

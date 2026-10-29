@@ -21,8 +21,9 @@ check(
 
 check(
   "achieved FIRE shows 'Now' and says the portfolio covers living costs, not a future age or year",
-  /\{isAlreadyFire \? "Now" : ageText\}/.test(flow) &&
-    /isAlreadyFire \? "Your investments cover your cost of living\." : `in the year \$\{freedomYear\}`/.test(flow)
+  /isAlreadyFire\s*\?\s*['"]Now['"]\s*:\s*ageText/.test(flow) &&
+    /Your entered savings cover your freedom number\./.test(flow) &&
+    /Check your bills and balances before making plans\./.test(flow)
 );
 
 check(

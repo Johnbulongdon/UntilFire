@@ -188,7 +188,7 @@ export function MoneyRow({ dot, icon, name, meta, value, valueTone, strong, bar,
         <span className="uf-t-body" style={{ display: "block", fontWeight: 600, color: "var(--uf-ink)", ...(wrap ? {} : { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }) }}>{name}</span>
         {meta && <span className="uf-t-small" style={{ display: "block", ...muted }}>{meta}</span>}
       </span>
-      {/* Amounts in DM Mono; a word value ("Lisbon ›", "Standard ›") in the body font (D-42). */}
+      {/* Amounts in Inter; a word value ("Lisbon ›", "Standard ›") in the body font (D-42). */}
       <span className="uf-t-small" style={{ ...(typeof value === "string" && !/\d/.test(value) ? {} : moneyMono), flex: "none", fontWeight: strong ? 700 : 500, color: valueTone ?? "var(--uf-ink)" }}>{value}</span>
     </div>
   );

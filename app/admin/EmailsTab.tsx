@@ -302,8 +302,8 @@ export default function EmailsTab({ token }: { token: string }) {
     <SendStats token={token} />
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <div style={{ background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase" }}>
+        <div style={{ background: "var(--uf-ground)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-ink-3)", textTransform: "uppercase" }}>
             Drafts &amp; templates
           </div>
           <select
@@ -458,13 +458,13 @@ export default function EmailsTab({ token }: { token: string }) {
             </p>
             <div style={{ display: "flex", gap: 8 }}>
               <button disabled={sending} onClick={send} style={primaryBtn}>{sending ? "Sending…" : "Yes, send now"}</button>
-              <button disabled={sending} onClick={() => setConfirming(false)} style={{ ...primaryBtn, background: "#fff", color: "#19181E", border: "1px solid #E2E8F0" }}>Cancel</button>
+              <button disabled={sending} onClick={() => setConfirming(false)} style={{ ...primaryBtn, background: "var(--uf-card)", color: "var(--uf-ink)", border: "1px solid var(--uf-border)" }}>Cancel</button>
             </div>
           </div>
         )}
 
         {result && (
-          <p style={{ fontSize: 13, color: typeof result === "string" ? "#DC2626" : "#059669", fontWeight: 700 }}>
+          <p style={{ fontSize: 13, color: typeof result === "string" ? "#DC2626" : "var(--uf-pos)", fontWeight: 700 }}>
             {typeof result === "string" ? result : `Sent ${result.sent} of ${result.total} emails.`}
           </p>
         )}
@@ -472,8 +472,8 @@ export default function EmailsTab({ token }: { token: string }) {
 
       <div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase" }}>Preview</div>
-          <div style={{ fontSize: 11, color: "#94A3B8" }}>the real email, rendered</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-ink-3)", textTransform: "uppercase" }}>Preview</div>
+          <div style={{ fontSize: 11, color: "var(--uf-ink-3)" }}>the real email, rendered</div>
         </div>
         {/* The preview used to be a hand-built React approximation of the
             email, which meant it could look right while the thing that
@@ -485,8 +485,8 @@ export default function EmailsTab({ token }: { token: string }) {
           srcDoc={previewHtml}
           sandbox=""
           style={{
-            width: "100%", height: 900, border: "1px solid #E2E8F0",
-            borderRadius: 12, background: "#fff", display: "block",
+            width: "100%", height: 900, border: "1px solid var(--uf-border)",
+            borderRadius: 12, background: "var(--uf-card)", display: "block",
           }}
         />
       </div>
@@ -560,13 +560,13 @@ function SendStats({ token }: { token: string | null }) {
   const on = tracking?.openTracking && tracking?.clickTracking;
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: 16 }}>
+    <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase" }}>Results</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-ink-3)", textTransform: "uppercase" }}>Results</div>
         {tracking && (
           <span style={{
             fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 999,
-            background: on ? "#ECFDF5" : "#FEF3C7", color: on ? "#065F46" : "#92400E",
+            background: on ? "#ECFDF5" : "#FEF3C7", color: on ? "#151719" : "#92400E",
           }}>
             {on ? "Tracking on" : "Tracking off"}
           </span>
@@ -580,22 +580,22 @@ function SendStats({ token }: { token: string | null }) {
       </div>
 
       {tracking && !on && (
-        <p style={{ fontSize: 12, color: "#64748B", margin: "0 0 12px", lineHeight: 1.6 }}>
+        <p style={{ fontSize: 12, color: "var(--uf-ink-2)", margin: "0 0 12px", lineHeight: 1.6 }}>
           Tracking applies to mail sent after it is switched on — it cannot be applied to a send that already went out.
         </p>
       )}
 
       {rows === null ? (
-        <p style={{ fontSize: 13, color: "#94A3B8", margin: 0 }}>Loading…</p>
+        <p style={{ fontSize: 13, color: "var(--uf-ink-3)", margin: 0 }}>Loading…</p>
       ) : rows.length === 0 ? (
-        <p style={{ fontSize: 13, color: "#94A3B8", margin: 0 }}>Nothing sent yet.</p>
+        <p style={{ fontSize: 13, color: "var(--uf-ink-3)", margin: 0 }}>Nothing sent yet.</p>
       ) : (
         <div style={{ overflow: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
-              <tr style={{ background: "#F8FAFC", textAlign: "left" }}>
+              <tr style={{ background: "var(--uf-ground)", textAlign: "left" }}>
                 {["Subject", "Sent", "To", "Delivered", "Opened", "Clicked"].map((h) => (
-                  <th key={h} style={{ padding: "8px 10px", fontWeight: 700, color: "#64748B", fontSize: 11, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+                  <th key={h} style={{ padding: "8px 10px", fontWeight: 700, color: "var(--uf-ink-2)", fontSize: 11, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -608,20 +608,20 @@ function SendStats({ token }: { token: string | null }) {
                   >
                     <td style={{ padding: "8px 10px", maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {r.tracked && (
-                        <span style={{ color: "#94A3B8", marginRight: 6, fontSize: 10 }}>
+                        <span style={{ color: "var(--uf-ink-3)", marginRight: 6, fontSize: 10 }}>
                           {openSend === r.id ? "\u25bc" : "\u25b6"}
                         </span>
                       )}
                       {r.subject}
                     </td>
-                    <td style={{ padding: "8px 10px", color: "#64748B", whiteSpace: "nowrap" }}>
+                    <td style={{ padding: "8px 10px", color: "var(--uf-ink-2)", whiteSpace: "nowrap" }}>
                       {new Date(r.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                     </td>
-                    <td style={{ padding: "8px 10px", color: "#64748B" }}>{r.recipients}</td>
+                    <td style={{ padding: "8px 10px", color: "var(--uf-ink-2)" }}>{r.recipients}</td>
                     {/* A send with no events at all is not a zero — it is a send
                         that predates tracking, and saying "0%" would be a lie. */}
                     {!r.tracked ? (
-                      <td colSpan={3} style={{ padding: "8px 10px", color: "#94A3B8" }}>Not tracked</td>
+                      <td colSpan={3} style={{ padding: "8px 10px", color: "var(--uf-ink-3)" }}>Not tracked</td>
                     ) : (
                       <>
                         <td style={{ padding: "8px 10px" }}>{r.delivered}</td>
@@ -633,7 +633,7 @@ function SendStats({ token }: { token: string | null }) {
 
                   {openSend === r.id && (
                     <tr>
-                      <td colSpan={6} style={{ padding: "4px 10px 16px", background: "#F8FAFC" }}>
+                      <td colSpan={6} style={{ padding: "4px 10px 16px", background: "var(--uf-ground)" }}>
                         <StageStrip stages={r.stages} />
                         <RecipientList rows={people[r.id]} />
                       </td>
@@ -663,13 +663,13 @@ function StageStrip({ stages }: { stages: Stage[] }) {
       {stages.map((st) => (
         <div key={st.key} style={{ flex: "1 1 120px", minWidth: 120 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#64748B", textTransform: "uppercase" }}>{st.label}</span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: "#19181E" }}>{st.count}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-ink-2)", textTransform: "uppercase" }}>{st.label}</span>
+            <span style={{ fontSize: 13, fontWeight: 800, color: "var(--uf-ink)" }}>{st.count}</span>
           </div>
-          <div style={{ height: 6, background: "#E2E8F0", borderRadius: 99, overflow: "hidden" }}>
-            <div style={{ width: `${Math.min(100, (st.count / top) * 100)}%`, height: "100%", background: "#059669", borderRadius: 99 }} />
+          <div style={{ height: 6, background: "var(--uf-border)", borderRadius: 99, overflow: "hidden" }}>
+            <div style={{ width: `${Math.min(100, (st.count / top) * 100)}%`, height: "100%", background: "var(--uf-pos)", borderRadius: 99 }} />
           </div>
-          <div style={{ fontSize: 11, color: "#94A3B8", marginTop: 3 }}>
+          <div style={{ fontSize: 11, color: "var(--uf-ink-3)", marginTop: 3 }}>
             {st.of === null ? "recipients" : `${st.of}% of previous`}
           </div>
         </div>
@@ -679,21 +679,21 @@ function StageStrip({ stages }: { stages: Stage[] }) {
 }
 
 const STAGE_LABEL: Record<string, { text: string; fg: string; bg: string }> = {
-  sent: { text: "Sent", fg: "#64748B", bg: "#F1F5F9" },
+  sent: { text: "Sent", fg: "var(--uf-ink-2)", bg: "#F1F5F9" },
   delivered: { text: "Delivered", fg: "#0369A1", bg: "#E0F2FE" },
   opened: { text: "Opened", fg: "#92400E", bg: "#FEF3C7" },
-  clicked: { text: "Clicked", fg: "#065F46", bg: "#ECFDF5" },
+  clicked: { text: "Clicked", fg: "#151719", bg: "#ECFDF5" },
 };
 
 /** Who reached how far. At this list size the names matter more than the rate. */
 function RecipientList({ rows }: { rows: Recipient[] | undefined }) {
-  if (!rows) return <p style={{ fontSize: 12.5, color: "#94A3B8", margin: 0 }}>Loading recipients…</p>;
-  if (rows.length === 0) return <p style={{ fontSize: 12.5, color: "#94A3B8", margin: 0 }}>No events for this send.</p>;
+  if (!rows) return <p style={{ fontSize: 12.5, color: "var(--uf-ink-3)", margin: 0 }}>Loading recipients…</p>;
+  if (rows.length === 0) return <p style={{ fontSize: 12.5, color: "var(--uf-ink-3)", margin: 0 }}>No events for this send.</p>;
 
   return (
     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
       <thead>
-        <tr style={{ textAlign: "left", color: "#94A3B8" }}>
+        <tr style={{ textAlign: "left", color: "var(--uf-ink-3)" }}>
           <th style={{ padding: "4px 8px 4px 0", fontWeight: 700 }}>Recipient</th>
           <th style={{ padding: "4px 8px", fontWeight: 700 }}>Reached</th>
           <th style={{ padding: "4px 8px", fontWeight: 700 }}>Opens</th>
@@ -705,8 +705,8 @@ function RecipientList({ rows }: { rows: Recipient[] | undefined }) {
         {rows.map((p) => {
           const lab = STAGE_LABEL[p.stage] ?? STAGE_LABEL.sent;
           return (
-            <tr key={p.email} style={{ borderTop: "1px solid #E2E8F0" }}>
-              <td style={{ padding: "6px 8px 6px 0", color: "#19181E", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <tr key={p.email} style={{ borderTop: "1px solid var(--uf-border)" }}>
+              <td style={{ padding: "6px 8px 6px 0", color: "var(--uf-ink)", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {p.email}
                 {p.bounced && <span style={{ color: "#DC2626", fontWeight: 800, marginLeft: 6, fontSize: 10.5 }}>BOUNCED</span>}
                 {p.complained && <span style={{ color: "#DC2626", fontWeight: 800, marginLeft: 6, fontSize: 10.5 }}>SPAM</span>}
@@ -716,9 +716,9 @@ function RecipientList({ rows }: { rows: Recipient[] | undefined }) {
                   {lab.text}
                 </span>
               </td>
-              <td style={{ padding: "6px 8px", color: p.opens ? "#19181E" : "#CBD5E1" }}>{p.opens || "–"}</td>
-              <td style={{ padding: "6px 8px", color: p.clicks ? "#19181E" : "#CBD5E1" }}>{p.clicks || "–"}</td>
-              <td style={{ padding: "6px 0", color: "#64748B", maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <td style={{ padding: "6px 8px", color: p.opens ? "var(--uf-ink)" : "var(--uf-border-2)" }}>{p.opens || "–"}</td>
+              <td style={{ padding: "6px 8px", color: p.clicks ? "var(--uf-ink)" : "var(--uf-border-2)" }}>{p.clicks || "–"}</td>
+              <td style={{ padding: "6px 0", color: "var(--uf-ink-2)", maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {p.link ?? ""}
               </td>
             </tr>
@@ -752,9 +752,9 @@ function ItemListEditor({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: "#64748B" }}>{label}</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-ink-2)" }}>{label}</div>
       {items.map((it, i) => (
-        <div key={i} style={{ display: "flex", gap: 6, alignItems: "flex-start", background: "#F8FAFC", border: "1px solid #E2E8F0", borderRadius: 8, padding: 8 }}>
+        <div key={i} style={{ display: "flex", gap: 6, alignItems: "flex-start", background: "var(--uf-ground)", border: "1px solid var(--uf-border)", borderRadius: 8, padding: 8 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
             <input value={it.title} onChange={(e) => update(i, "title", e.target.value)} placeholder="Title" style={inputStyle} />
             <input value={it.desc} onChange={(e) => update(i, "desc", e.target.value)} placeholder="One-line description" style={inputStyle} />
@@ -779,7 +779,7 @@ function ItemListEditor({
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, fontWeight: 700, color: "#64748B" }}>
+    <label style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 12, fontWeight: 700, color: "var(--uf-ink-2)" }}>
       {label}
       {children}
     </label>
@@ -789,10 +789,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const inputStyle: React.CSSProperties = {
   fontSize: 14,
   padding: "10px 12px",
-  border: "1px solid #E2E8F0",
+  border: "1px solid var(--uf-border)",
   borderRadius: 8,
   fontFamily: "inherit",
-  color: "#19181E",
+  color: "var(--uf-ink)",
 };
 
 const primaryBtn: React.CSSProperties = {
@@ -801,7 +801,7 @@ const primaryBtn: React.CSSProperties = {
   padding: "10px 18px",
   borderRadius: 8,
   border: "none",
-  background: "#059669",
+  background: "var(--uf-pos)",
   color: "#fff",
   cursor: "pointer",
   fontFamily: "inherit",
@@ -812,8 +812,8 @@ const smallBtn: React.CSSProperties = {
   fontWeight: 700,
   padding: "6px 10px",
   borderRadius: 6,
-  border: "1px solid #E2E8F0",
-  background: "#fff",
+  border: "1px solid var(--uf-border)",
+  background: "var(--uf-card)",
   cursor: "pointer",
   fontFamily: "inherit",
   whiteSpace: "nowrap",

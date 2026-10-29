@@ -77,24 +77,15 @@ function Hero({ result }: { result: Freedom }) {
   const date = result.year == null ? '65+ years' : result.date ? result.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : String(result.year)
   const sub = [yearsAway != null ? (yearsAway <= 0 ? 'Now' : yearsAway < 1 ? 'Under a year away' : `${yearsAway.toFixed(1)} years away`) : null, result.ageAtFreedom != null ? `age ${result.ageAtFreedom}` : null].filter(Boolean).join(' · ')
   return (
-    <View {...useTourAnchor('hero')} style={{ borderRadius: 28, overflow: 'hidden', backgroundColor: TAB_COLOR.home }}>
-      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100">
-        <Defs>
-          <SvgGradient id="hero" x1="0" y1="0" x2="0.4" y2="1">
-            <Stop offset="0" stopColor="#0E9C86" />
-            <Stop offset="1" stopColor="#06412F" />
-          </SvgGradient>
-        </Defs>
-        <Rect x="0" y="0" width="100" height="100" fill="url(#hero)" />
-      </Svg>
+    <View {...useTourAnchor('hero')} style={{ borderRadius: 28, overflow: 'hidden', backgroundColor: brand.yellow }}>
       <View style={{ padding: 18, paddingBottom: 14 }}>
         <Pressable accessibilityRole="button" accessibilityLabel={`Free in ${date}. Open your freedom date`} onPress={() => { haptic.tick(); router.push('/plan/freedom') }}>
-          <Text style={{ color: 'rgba(255,255,255,0.8)' }} className="text-[12px] font-bold uppercase tracking-[2px]">Free in</Text>
-          <Text style={{ color: '#FFFFFF' }} className="font-display text-[50px] font-bold leading-[56px] tracking-tight">{date}</Text>
-          {!!sub && <Text style={{ color: 'rgba(255,255,255,0.85)' }} className="text-[15px]">{sub}</Text>}
+          <Text style={{ color: '#5C5130' }} className="text-[12px] font-bold uppercase tracking-[2px]">Free in</Text>
+          <Text style={{ color: '#151719' }} className="font-display text-[50px] font-bold leading-[56px] tracking-tight">{date}</Text>
+          {!!sub && <Text style={{ color: '#5C5130' }} className="text-[15px]">{sub}</Text>}
         </Pressable>
         <HowFar result={result} />
-        <View className="mt-4"><FreedomLineChart f={result} onDark /></View>
+        <View className="mt-4"><FreedomLineChart f={result} /></View>
       </View>
     </View>
   )
@@ -112,11 +103,11 @@ function HowFar({ result }: { result: Freedom }) {
   return (
     <View className="mt-4" accessible accessibilityLabel={`${pct} of your freedom number. ${next}`}>
       <View className="flex-row items-baseline justify-between">
-        <Text style={{ color: '#FFFFFF' }} className="font-mono text-[15px] font-bold">{pct} there</Text>
-        <Text style={{ color: 'rgba(255,255,255,0.85)' }} className="text-[13px]">{next}</Text>
+        <Text style={{ color: '#151719' }} className="font-mono text-[15px] font-bold">{pct} there</Text>
+        <Text style={{ color: '#5C5130' }} className="text-[13px]">{next}</Text>
       </View>
-      <View className="mt-2 h-2.5 overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
-        <View className="h-full rounded-full" style={{ width: `${Math.max(2, p.share * 100)}%`, backgroundColor: brand.aqua }} />
+      <View className="mt-2 h-2.5 overflow-hidden rounded-full" style={{ backgroundColor: '#D8C67B' }}>
+        <View className="h-full rounded-full" style={{ width: `${Math.max(2, p.share * 100)}%`, backgroundColor: brand.deep }} />
         {[0.25, 0.5, 0.75].map(m => (
           <View key={m} className="absolute bottom-0 top-0 w-[2px]" style={{ left: `${m * 100}%`, backgroundColor: 'rgba(6,65,47,0.55)' }} />
         ))}
@@ -184,7 +175,7 @@ function SavingsGap({ data }: { data: AccountData }) {
 }
 
 /** A soft panel that shows against the page in both themes (surface in light, card in dark). */
-const panel = () => (Appearance.getColorScheme() === 'dark' ? colors.card : colors.surface)
+const panel = () => (Appearance.getColorScheme() === 'dark' ? '#213F35' : '#E3F7EF')
 
 /**
  * Today on Home (D-108): what's left to answer, opening into the one-at-a-time

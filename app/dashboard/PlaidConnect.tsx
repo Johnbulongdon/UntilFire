@@ -258,7 +258,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
     padding: variant === "primary" ? "9px 18px" : "7px 12px",
     borderRadius: 8,
     border: variant === "primary" ? "none" : "1px solid var(--uf-border)",
-    background: variant === "primary" ? "#047857" : "var(--uf-card)",
+    background: variant === "primary" ? "#151719" : "var(--uf-card)",
     color: variant === "primary" ? "#ffffff" : "var(--uf-text-2)",
     fontSize: 13,
     fontWeight: 700,
@@ -289,7 +289,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
             maxWidth: 360,
             padding: "14px 18px",
             borderRadius: 12,
-            background: connectResult.added > 0 ? "#064E3B" : "#78350F",
+            background: connectResult.added > 0 ? "#151719" : "#78350F",
             color: "#ffffff",
             boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
             display: "flex",
@@ -375,7 +375,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 12, fontWeight: 800, color: "#047857", letterSpacing: "0.08em" }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: "#151719", letterSpacing: "0.08em" }}>
               BANK
             </span>
             <div>
@@ -396,7 +396,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                color: "#047857",
+                color: "#151719",
                 fontSize: 13,
                 fontWeight: 600,
               }}
@@ -407,7 +407,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                   width: 14,
                   height: 14,
                   border: "2px solid #D1FAE5",
-                  borderTopColor: "#047857",
+                  borderTopColor: "#151719",
                   borderRadius: "50%",
                   animation: "plaid-spin 0.8s linear infinite",
                 }}
@@ -454,7 +454,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
               💧
             </div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Inter, sans-serif" }}>
                 Park your emergency fund where it can quietly earn more.
               </div>
               <p style={{ fontSize: 13, lineHeight: 1.6, color: "#475569", margin: "6px 0 0" }}>
@@ -554,11 +554,11 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
       {items.length > 0 && !collapsed && layout === "tiles" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {importing && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#047857", fontSize: 13, fontWeight: 600 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#151719", fontSize: 13, fontWeight: 600 }}>
               <span
                 style={{
                   display: "inline-block", width: 14, height: 14,
-                  border: "2px solid #D1FAE5", borderTopColor: "#047857",
+                  border: "2px solid #D1FAE5", borderTopColor: "#151719",
                   borderRadius: "50%", animation: "plaid-spin 0.8s linear infinite",
                 }}
               />
@@ -566,7 +566,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
             </div>
           )}
 
-          <div style={{ fontSize: 11, fontWeight: 800, color: "#047857", letterSpacing: "0.08em" }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#151719", letterSpacing: "0.08em" }}>
             CONNECTED BANKS
           </div>
 
@@ -584,7 +584,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                   : result
                     ? "up to date"
                     : fmtSynced(item.last_synced_at);
-              const metaColor = isSyncing ? "#047857" : result && result.added > 0 ? "#059669" : "#94A3B8";
+              const metaColor = isSyncing ? "#151719" : result && result.added > 0 ? "#17684B" : "#94A3B8";
 
               const tileBody = (
                 <>
@@ -596,7 +596,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                       aria-label="Sync now"
                       style={{
                         width: 36, height: 36, borderRadius: 9, border: "none",
-                        background: "#047857", color: "#fff",
+                        background: "#151719", color: "#fff",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 16, cursor: isSyncing || isDisconnecting ? "default" : "pointer",
                         animation: isSyncing ? "plaid-spin 0.8s linear infinite" : "none",
@@ -616,9 +616,9 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                     <div
                       style={{
                         width: 36, height: 36, borderRadius: 9,
-                        background: item.institution_color || "#047857",
+                        background: item.institution_color || "#151719",
                         color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
-                        fontWeight: 700, fontSize: 15, fontFamily: "Manrope, sans-serif",
+                        fontWeight: 700, fontSize: 15, fontFamily: "Inter, sans-serif",
                       }}
                     >
                       {item.institution_name.charAt(0).toUpperCase()}
@@ -662,7 +662,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                   style={{
                     width: 92, position: "relative",
                     display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                    background: "var(--uf-surface)", border: "1.5px solid #047857", borderRadius: 12,
+                    background: "var(--uf-surface)", border: "1.5px solid #151719", borderRadius: 12,
                     padding: "10px 8px", cursor: "pointer", textAlign: "center",
                   }}
                 >
@@ -692,12 +692,12 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                 width: 92,
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
                 background: "var(--uf-card)", border: "1.5px dashed var(--uf-border)", borderRadius: 12,
-                padding: "10px 8px", cursor: "pointer", fontFamily: "inherit", color: "#047857",
+                padding: "10px 8px", cursor: "pointer", fontFamily: "inherit", color: "#151719",
               }}
             >
               <div
                 style={{
-                  width: 36, height: 36, borderRadius: 9, border: "1.5px dashed #047857",
+                  width: 36, height: 36, borderRadius: 9, border: "1.5px dashed #151719",
                   display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 300,
                 }}
               >

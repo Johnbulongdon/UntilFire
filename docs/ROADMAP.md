@@ -568,3 +568,5 @@ John has chosen the next product direction:
 - Native mobile app — web-first until the funnel and retention are proven
 - Heavy budgeting-app parity — UntilFire should show how money choices affect freedom and what to do next, not become another generic budgeting tool
 - Login-first onboarding — conflicts with the free/no-login first value promise
+
+29 October — N2 subtask: John approved the complete Next Horizon rebrand across public web, onboarding, app, native and admin. Codex is implementing on `codex/next-horizon-rebrand`; verification in progress. Logo exports and current contract: `public/brand/`, `docs/design/design-system.md`. Typical city savings remains a research to-do. No production release claimed; native assets require a store build.

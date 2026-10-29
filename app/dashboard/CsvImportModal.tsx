@@ -832,7 +832,7 @@ export default function CsvImportModal({
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "8px 10px", borderRadius: 8,
     border: "1px solid #23232d", background: "#1a1a24", color: "#e2e8f0",
-    fontSize: 13, fontFamily: "Manrope, sans-serif",
+    fontSize: 13, fontFamily: "Inter, sans-serif",
   };
 
   const selectStyle: React.CSSProperties = {
@@ -843,7 +843,7 @@ export default function CsvImportModal({
   const selectOptionStyle: React.CSSProperties = {
     backgroundColor: "#1a1a24",
     color: "#e2e8f0",
-    fontFamily: "Manrope, sans-serif",
+    fontFamily: "Inter, sans-serif",
   };
 
   const placeholderOptionStyle: React.CSSProperties = {
@@ -870,12 +870,12 @@ export default function CsvImportModal({
           background: "#111118", border: "1px solid #23232d", borderRadius: 20,
           padding: 32, width: "100%", maxWidth: 520,
           maxHeight: "90dvh", overflowY: "auto",
-          fontFamily: "Manrope, sans-serif",
+          fontFamily: "Inter, sans-serif",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", fontFamily: "Manrope, sans-serif" }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", fontFamily: "Inter, sans-serif" }}>
               Import bank transactions
             </div>
             {step === "upload" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Upload a CSV, Excel, or PDF statement from your bank</div>}
@@ -892,7 +892,7 @@ export default function CsvImportModal({
             onDragLeave={() => setDragging(false)}
             onClick={() => fileRef.current?.click()}
             style={{
-              border: `2px dashed ${dragging ? "#059669" : "#23232d"}`,
+              border: `2px dashed ${dragging ? "#17684B" : "#23232d"}`,
               borderRadius: 14, padding: "48px 32px", textAlign: "center",
               cursor: "pointer", transition: "border-color 0.15s",
               background: dragging ? "rgba(5,150,105,0.05)" : "transparent",
@@ -955,7 +955,7 @@ export default function CsvImportModal({
                 type="checkbox"
                 checked={flipSigns}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFlipSigns(e.target.checked)}
-                style={{ width: 15, height: 15, accentColor: "#059669" }}
+                style={{ width: 15, height: 15, accentColor: "#17684B" }}
               />
               My bank shows expenses as positive numbers (flip signs)
             </label>
@@ -1064,7 +1064,7 @@ export default function CsvImportModal({
                 style={{
                   width: "100%", padding: "12px 0", borderRadius: 10, border: "1px solid #334155",
                   background: "transparent", color: "#cbd5e1", fontSize: 14, fontWeight: 700, cursor: "pointer",
-                  fontFamily: "Manrope, sans-serif",
+                  fontFamily: "Inter, sans-serif",
                 }}
               >
                 Choose another file
@@ -1074,10 +1074,10 @@ export default function CsvImportModal({
                 disabled={!colDate || !colDesc || !colAmount || parsedTransactions.length === 0}
                 style={{
                   width: "100%", padding: "12px 0", borderRadius: 10, border: "none",
-                  background: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "#1a1a24" : "#059669",
+                  background: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "#1a1a24" : "#151719",
                   color: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "#475569" : "#fff",
                   fontSize: 14, fontWeight: 700, cursor: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "not-allowed" : "pointer",
-                  fontFamily: "Manrope, sans-serif",
+                  fontFamily: "Inter, sans-serif",
                 }}
               >
                 Import {parsedTransactions.length} transactions
@@ -1146,7 +1146,7 @@ export default function CsvImportModal({
                   width: "100%", padding: "12px 0", borderRadius: 10,
                   border: "1px solid #334155", background: "transparent",
                   color: "#cbd5e1", fontSize: 13, fontWeight: 700, cursor: "pointer",
-                  fontFamily: "Manrope, sans-serif",
+                  fontFamily: "Inter, sans-serif",
                 }}
               >
                 Import all anyway
@@ -1155,9 +1155,9 @@ export default function CsvImportModal({
                 onClick={() => handleImport(skipIndices)}
                 style={{
                   width: "100%", padding: "12px 0", borderRadius: 10, border: "none",
-                  background: "#059669", color: "#fff",
+                  background: "#151719", color: "#fff",
                   fontSize: 13, fontWeight: 700, cursor: "pointer",
-                  fontFamily: "Manrope, sans-serif",
+                  fontFamily: "Inter, sans-serif",
                 }}
               >
                 Skip checked &amp; continue →
@@ -1176,7 +1176,7 @@ export default function CsvImportModal({
               {progress} / {total}
             </div>
             <div style={{ height: 6, background: "#23232d", borderRadius: 99, overflow: "hidden" }}>
-              <div style={{ height: "100%", background: "#059669", borderRadius: 99, width: `${total > 0 ? (progress / total) * 100 : 0}%`, transition: "width 0.2s" }} />
+              <div style={{ height: "100%", background: "#151719", borderRadius: 99, width: `${total > 0 ? (progress / total) * 100 : 0}%`, transition: "width 0.2s" }} />
             </div>
           </div>
         )}
@@ -1184,7 +1184,7 @@ export default function CsvImportModal({
         {step === "done" && (
           <div style={{ textAlign: "center", padding: "24px 0" }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>✅</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#f1f5f9", marginBottom: 8, fontFamily: "Manrope, sans-serif" }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#f1f5f9", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>
               {importedCount} transaction{importedCount !== 1 ? "s" : ""} imported
               {skippedCount > 0 ? `, ${skippedCount} duplicate${skippedCount !== 1 ? "s" : ""} skipped` : ""}
             </div>
@@ -1195,8 +1195,8 @@ export default function CsvImportModal({
               onClick={onClose}
               style={{
                 padding: "10px 28px", borderRadius: 10, border: "none",
-                background: "#059669", color: "#fff", fontSize: 14, fontWeight: 700,
-                cursor: "pointer", fontFamily: "Manrope, sans-serif",
+                background: "#151719", color: "#fff", fontSize: 14, fontWeight: 700,
+                cursor: "pointer", fontFamily: "Inter, sans-serif",
               }}
             >
               Done

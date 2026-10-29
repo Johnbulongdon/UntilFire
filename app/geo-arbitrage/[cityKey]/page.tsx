@@ -101,7 +101,7 @@ export default function GeoArbitragePage() {
           alignItems: 'center',
           justifyContent: 'center',
           padding: '40px 20px',
-          fontFamily: 'Manrope, sans-serif',
+          fontFamily: 'Inter, sans-serif',
           color: '#fff',
           textAlign: 'center',
         }}
@@ -144,7 +144,7 @@ export default function GeoArbitragePage() {
           alignItems: 'center',
           justifyContent: 'center',
           padding: '40px 20px',
-          fontFamily: 'Manrope, sans-serif',
+          fontFamily: 'Inter, sans-serif',
           color: '#fff',
         }}
       >
@@ -234,7 +234,7 @@ export default function GeoArbitragePage() {
       style={{
         minHeight: '100vh',
         background: '#f8fafc',
-        fontFamily: 'Manrope, sans-serif',
+        fontFamily: 'Inter, sans-serif',
       }}
     >
       {/* Header */}
@@ -272,7 +272,7 @@ export default function GeoArbitragePage() {
         {/* Title */}
         <h1
           style={{
-            fontFamily: 'Fraunces, Georgia, serif',
+            fontFamily: 'Inter, Georgia, serif',
             fontSize: 28,
             fontWeight: 800,
             color: '#0F172A',
@@ -299,13 +299,13 @@ export default function GeoArbitragePage() {
               style={{
                 fontSize: 32,
                 fontWeight: 800,
-                color: '#059669',
-                fontFamily: 'Fraunces, Georgia, serif',
+                color: '#17684B',
+                fontFamily: 'Inter, Georgia, serif',
               }}
             >
               You could FIRE here NOW
             </div>
-            <div style={{ fontSize: 14, color: '#065F46', marginTop: 8 }}>
+            <div style={{ fontSize: 14, color: '#151719', marginTop: 8 }}>
               Your portfolio covers {targetCity!.name} expenses at the 4% rule.
             </div>
           </div>
@@ -330,7 +330,7 @@ export default function GeoArbitragePage() {
                 fontSize: 42,
                 fontWeight: 800,
                 color: '#22d3a5',
-                fontFamily: 'Fraunces, Georgia, serif',
+                fontFamily: 'Inter, Georgia, serif',
                 lineHeight: 1,
               }}
             >
@@ -356,7 +356,7 @@ export default function GeoArbitragePage() {
                 fontSize: 42,
                 fontWeight: 800,
                 color: '#ef4444',
-                fontFamily: 'Fraunces, Georgia, serif',
+                fontFamily: 'Inter, Georgia, serif',
                 lineHeight: 1,
               }}
             >
@@ -464,7 +464,7 @@ export default function GeoArbitragePage() {
               style={{
                 fontSize: 22,
                 fontWeight: 800,
-                color: monthlyDiff >= 0 ? '#059669' : '#ef4444',
+                color: monthlyDiff >= 0 ? '#17684B' : '#ef4444',
               }}
             >
               {monthlyDiff >= 0

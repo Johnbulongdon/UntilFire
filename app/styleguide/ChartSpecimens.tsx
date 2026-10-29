@@ -44,7 +44,7 @@ function Plot({ children }: { children: React.ReactNode }) {
  * Every chart here follows the same rules the app should:
  *   · horizontal grid only, in --uf-chart-grid, never vertical
  *   · axes in --uf-chart-axis at 11px, no axis lines
- *   · figures in DM Mono with tabular numerals
+ *   · figures in Inter with tabular numerals
  *   · a legend whenever there are two or more series, so identity is never
  *     carried by colour alone (the dark palette sits in the tritan floor band,
  *     which makes the legend a requirement rather than a nicety)

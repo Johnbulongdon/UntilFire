@@ -58,7 +58,7 @@ export default function APYPage() {
     <>
       <APYCalculator />
 
-      <section style={{ background: 'var(--uf-surface)', padding: '0 24px 72px', fontFamily: "'Manrope', sans-serif" }}>
+      <section style={{ background: 'var(--uf-surface)', padding: '0 24px 72px', fontFamily: "'Inter', sans-serif" }}>
         {/* minmax(0, 1fr) rather than the default auto: an auto grid track
             sizes to its widest item, so the table's min-content width leaked
             out through the track and stretched every card with it. */}

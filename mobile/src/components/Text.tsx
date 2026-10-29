@@ -8,6 +8,7 @@ import { StyleSheet, Text as RNText, type TextProps, type TextStyle } from 'reac
  * here. Manrope is the default, as on untilfire.com.
  */
 const FILES: Record<string, Record<number, string>> = {
+  Inter: {400:'Inter_400Regular',500:'Inter_500Medium',600:'Inter_600SemiBold',700:'Inter_700Bold',800:'Inter_800ExtraBold'},
   Fraunces: { 400: 'Fraunces_400Regular', 500: 'Fraunces_500Medium', 600: 'Fraunces_600SemiBold', 700: 'Fraunces_700Bold' },
   Manrope: { 400: 'Manrope_400Regular', 500: 'Manrope_500Medium', 600: 'Manrope_600SemiBold', 700: 'Manrope_700Bold', 800: 'Manrope_800ExtraBold' },
   DMMono: { 400: 'DMMono_400Regular', 500: 'DMMono_500Medium' },

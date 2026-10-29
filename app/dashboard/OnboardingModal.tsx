@@ -3,9 +3,9 @@ import { useState } from "react";
 
 const OnboardingMoneyField = ({ label, hint, value, onChange, defaultCurrency }: { label: string; hint: string; value: string; defaultCurrency: string; onChange: (v: string) => void }) => (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label htmlFor={`onboarding-${label.replace(/[^a-z0-9]/gi, "-")}`} style={{ fontSize: 12, fontWeight: 700, color: "#374151", fontFamily: "Manrope, sans-serif", letterSpacing: "0.02em" }}>{label}</label>
+      <label htmlFor={`onboarding-${label.replace(/[^a-z0-9]/gi, "-")}`} style={{ fontSize: 12, fontWeight: 700, color: "#374151", fontFamily: "Inter, sans-serif", letterSpacing: "0.02em" }}>{label}</label>
       <div style={{ position: "relative" }}>
-        <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 600, color: "#6B7280", fontFamily: "Manrope, sans-serif" }}>{defaultCurrency}</span>
+        <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 600, color: "#6B7280", fontFamily: "Inter, sans-serif" }}>{defaultCurrency}</span>
         <input
           id={`onboarding-${label.replace(/[^a-z0-9]/gi, "-")}`}
           type="text"
@@ -14,11 +14,11 @@ const OnboardingMoneyField = ({ label, hint, value, onChange, defaultCurrency }:
           onChange={e => onChange(e.target.value.replace(/[^0-9.,]/g, ""))}
 
           placeholder="0"
-          style={{ width: "100%", paddingLeft: 52, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 16, fontWeight: 600, fontFamily: "Manrope, sans-serif", outline: "none", boxSizing: "border-box", color: "#111827" }}
-          onFocus={e => { e.target.style.borderColor = "#064E3B"; }}
+          style={{ width: "100%", paddingLeft: 52, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 16, fontWeight: 600, fontFamily: "Inter, sans-serif", outline: "none", boxSizing: "border-box", color: "#111827" }}
+          onFocus={e => { e.target.style.borderColor = "#151719"; }}
         />
       </div>
-      <span style={{ fontSize: 11, color: "#6B7280", fontFamily: "Manrope, sans-serif" }}>{hint}</span>
+      <span style={{ fontSize: 11, color: "#6B7280", fontFamily: "Inter, sans-serif" }}>{hint}</span>
     </div>
   );
 
@@ -43,11 +43,11 @@ export default function OnboardingModal({ defaultCurrency, onComplete, onDismiss
       <div style={{ background: "#fff", borderRadius: 20, padding: "36px 32px 28px", maxWidth: 440, width: "100%", boxShadow: "0 24px 64px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 24, margin: "auto" }}>
         {/* Header */}
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#20D4BF", marginBottom: 8, fontFamily: "Manrope, sans-serif" }}>Welcome to UntilFire</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px", lineHeight: 1.25 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#20D4BF", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Welcome to UntilFire</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", lineHeight: 1.25 }}>
             Let&apos;s find your FIRE number
           </div>
-          <div style={{ fontSize: 13, color: "#6B7280", marginTop: 6, fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>
+          <div style={{ fontSize: 13, color: "#6B7280", marginTop: 6, fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>
             Income, spending, and current savings are enough to get started. You can refine everything later.
           </div>
         </div>
@@ -64,11 +64,11 @@ export default function OnboardingModal({ defaultCurrency, onComplete, onDismiss
           <button
             onClick={handleSubmit}
             disabled={!valid}
-            style={{ background: valid ? "#064E3B" : "#E5E7EB", color: valid ? "#fff" : "#9CA3AF", border: "none", borderRadius: 10, padding: "13px 20px", fontSize: 15, fontWeight: 700, cursor: valid ? "pointer" : "not-allowed", fontFamily: "Manrope, sans-serif", transition: "background 0.15s" }}
+            style={{ background: valid ? "#151719" : "#E5E7EB", color: valid ? "#fff" : "#9CA3AF", border: "none", borderRadius: 10, padding: "13px 20px", fontSize: 15, fontWeight: 700, cursor: valid ? "pointer" : "not-allowed", fontFamily: "Inter, sans-serif", transition: "background 0.15s" }}
           >
             Get my FIRE number →
           </button>
-          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: "4px 0" }}>
+          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "Inter, sans-serif", padding: "4px 0" }}>
             Skip for now
           </button>
         </div>

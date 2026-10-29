@@ -45,14 +45,14 @@ interface Data {
   nonHousing: number;
 }
 
-const INK = "#19181E";
-const MUTED = "#64748B";
-const FAINT = "#94A3B8";
-const LINE = "#E2E8F0";
-const GOOD = "#059669";
+const INK = "var(--uf-ink)";
+const MUTED = "var(--uf-ink-2)";
+const FAINT = "var(--uf-ink-3)";
+const LINE = "var(--uf-border)";
+const GOOD = "var(--uf-pos)";
 const BAD = "#DC2626";
 const WARN = "#B45309";
-const MONO = "'DM Mono', monospace";
+const MONO = "'Inter', monospace";
 
 const money = (n: number | null) => (n == null ? "—" : "$" + n.toLocaleString("en-US"));
 
@@ -129,7 +129,7 @@ export default function CensusPanel({ token }: { token: string }) {
   const shown = onlyChanged ? changed : rows;
 
   return (
-    <div style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 12, padding: 18, marginBottom: 20 }}>
+    <div style={{ background: "var(--uf-card)", border: `1px solid ${LINE}`, borderRadius: 12, padding: 18, marginBottom: 20 }}>
       <h2 style={{ fontSize: 15, fontWeight: 800, color: INK, margin: "0 0 2px" }}>Cost of living — Census ACS</h2>
       <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 10px", lineHeight: 1.6 }}>
         Median gross rent per city, from the American Community Survey. Rent is the only line that
@@ -162,7 +162,7 @@ export default function CensusPanel({ token }: { token: string }) {
           disabled={busy}
           style={{
             fontSize: 14, fontWeight: 700, padding: "10px 18px", borderRadius: 8, border: "none",
-            background: busy ? "#A7F3D0" : GOOD, color: busy ? "#065F46" : "#fff",
+            background: busy ? "#A7F3D0" : GOOD, color: busy ? "#151719" : "#fff",
             cursor: busy ? "default" : "pointer", fontFamily: "inherit",
           }}
         >
@@ -173,7 +173,7 @@ export default function CensusPanel({ token }: { token: string }) {
           onClick={() => inspect("1")}
           style={{
             fontSize: 13, fontWeight: 600, padding: "10px 14px", borderRadius: 8,
-            border: `1px solid ${LINE}`, background: "#fff", color: INK, cursor: "pointer", fontFamily: "inherit",
+            border: `1px solid ${LINE}`, background: "var(--uf-card)", color: INK, cursor: "pointer", fontFamily: "inherit",
           }}
         >
           What rent tables exist?
@@ -206,7 +206,7 @@ export default function CensusPanel({ token }: { token: string }) {
       )}
 
       {tables && (
-        <div style={{ marginTop: 14, background: "#F8FAFC", border: `1px solid ${LINE}`, borderRadius: 8, padding: "12px 14px" }}>
+        <div style={{ marginTop: 14, background: "var(--uf-ground)", border: `1px solid ${LINE}`, borderRadius: 8, padding: "12px 14px" }}>
           <div style={{ fontSize: 12.5, fontWeight: 700, color: INK, marginBottom: 6 }}>
             {tables.length} rent table{tables.length === 1 ? "" : "s"} cut by move-in year, tenure or bedrooms
           </div>
@@ -235,7 +235,7 @@ export default function CensusPanel({ token }: { token: string }) {
           <div style={{ overflowX: "auto", marginTop: 10 }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 660 }}>
               <thead>
-                <tr style={{ textAlign: "left", color: FAINT, background: "#F8FAFC" }}>
+                <tr style={{ textAlign: "left", color: FAINT, background: "var(--uf-ground)" }}>
                   {["City", "Rent / mo", "Housing", "Non-housing", "Total", "Range", "Was", "Change", "Match", "Census geography"].map((h) => (
                     <th key={h} style={{ padding: "8px 10px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                   ))}

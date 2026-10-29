@@ -10,9 +10,9 @@ import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, REFERRED_TRIAL_LABEL, TRIAL_LABEL 
 import { REAL_RETURN, yearsToTarget } from "@/lib/fire/strategies/traditional";
 
 
-const F = "'Manrope', sans-serif";
-const SERIF = "'Instrument Serif', Georgia, 'Times New Roman', serif";
-const MONO = "'DM Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
+const F = "'Inter', sans-serif";
+const SERIF = "'Inter', Georgia, 'Times New Roman', serif";
+const MONO = "'Inter', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
 
 /* The calculator's own projection (lib/fire): REAL_RETURN growth, 25x annual spending. */
 function monthsToTarget(startBalance: number, monthlySave: number, target: number): number {

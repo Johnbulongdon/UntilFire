@@ -63,10 +63,10 @@ export const metadata = {
 
 export default function TopicsPage() {
   return (
-    <main style={{ background: '#F7F9FB', minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
+    <main style={{ background: '#F7F9FB', minHeight: '100vh', fontFamily: "'Inter', sans-serif" }}>
 
       <div style={{ maxWidth: 980, margin: '0 auto', padding: '64px 24px' }}>
-        <p style={{ fontSize: 12, color: '#059669', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 12 }}>Learn</p>
+        <p style={{ fontSize: 12, color: '#17684B', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: 12 }}>Learn</p>
         <h1 style={{ fontSize: 'clamp(36px, 5vw, 52px)', fontWeight: 800, color: '#19181E', letterSpacing: '-0.03em', margin: '0 0 16px' }}>FIRE topics by concept</h1>
         <p style={{ fontSize: 16, color: '#64748B', lineHeight: 1.7, marginBottom: 40 }}>
           Browse the core ideas behind financial independence: savings rate, the 4% rule, Coast FIRE, retirement tax strategy, and sequence of returns risk. Each topic clusters the best supporting guides and calculators.
@@ -82,7 +82,7 @@ export default function TopicsPage() {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 18 }}>
                 <div>
-                  <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#059669' }}>
+                  <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#17684B' }}>
                     Articles
                   </p>
                   <div style={{ display: 'grid', gap: 10 }}>
@@ -100,7 +100,7 @@ export default function TopicsPage() {
                 </div>
 
                 <div>
-                  <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#059669' }}>
+                  <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 700, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#17684B' }}>
                     Related calculators
                   </p>
                   <div style={{ display: 'grid', gap: 10 }}>

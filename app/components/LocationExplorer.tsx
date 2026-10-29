@@ -182,7 +182,7 @@ export default function LocationExplorer({ homeKey, variant = 'expat', onCitySel
                 const xy = p([city.lng, city.lat]);
                 if (!xy || xy[0] < 0 || xy[0] > w || xy[1] < 0 || xy[1] > h)
                     continue;
-                context.font = '600 12px Manrope, sans-serif';
+                context.font = '600 12px Inter, sans-serif';
                 const text = city.name.split(',')[0] + ' · ' + formatMoney(targetFor(city), { style: 'compact' });
                 const width = context.measureText(text).width + 16;
                 const x = Math.max(6, Math.min(w - width - 6, xy[0] - width / 2)), y = xy[1] - 32;

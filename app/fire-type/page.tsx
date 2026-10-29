@@ -28,10 +28,10 @@ const C = {
   textStrong: '#003527',
   muted: '#64748B',
   mutedSoft: '#94A3B8',
-  accent: '#059669',
-  accentDark: '#065F46',
+  accent: '#151719',
+  accentDark: '#151719',
   accentDeep: '#003527',
-  teal: '#62FAE3',
+  teal: '#FFE58A',
   tealSoft: '#ECFDF5',
   cream: '#FBF8EF',
   creamLine: '#E8E1CF',
@@ -239,7 +239,7 @@ function PosterCard({
       <div style={{ fontWeight: 800, fontSize: 54, letterSpacing: '3px', color: C.accent, marginTop: 14, lineHeight: 1 }}>
         {result.code}
       </div>
-      <div style={{ fontWeight: 800, fontSize: 25, color: '#064E3B', marginTop: 12, letterSpacing: '-0.3px', lineHeight: 1.1 }}>
+      <div style={{ fontWeight: 800, fontSize: 25, color: '#151719', marginTop: 12, letterSpacing: '-0.3px', lineHeight: 1.1 }}>
         {result.name}
       </div>
 
@@ -276,16 +276,7 @@ function PosterCard({
       </div>
 
       <div style={{ marginTop: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
-        <svg width={36} height={36} viewBox="0 0 1024 1024" style={{ borderRadius: 9, display: 'block', flexShrink: 0 }} aria-hidden>
-          <rect width="1024" height="1024" rx="180" fill="#003527" />
-          <path d="M 252 620 A 260 260 0 0 1 772 620 Z" fill="#20D4BF" />
-          <rect x="100" y="615" width="824" height="14" rx="7" fill="#62FAE3" />
-          <line x1="325.6" y1="397.9" x2="287.0" y2="351.9" stroke="#62FAE3" strokeWidth="16" strokeLinecap="round" />
-          <line x1="412.8" y1="347.5" x2="392.3" y2="291.1" stroke="#62FAE3" strokeWidth="16" strokeLinecap="round" />
-          <line x1="512" y1="330" x2="512" y2="270" stroke="#62FAE3" strokeWidth="16" strokeLinecap="round" />
-          <line x1="611.2" y1="347.5" x2="631.7" y2="291.1" stroke="#62FAE3" strokeWidth="16" strokeLinecap="round" />
-          <line x1="698.4" y1="397.9" x2="737.0" y2="351.9" stroke="#62FAE3" strokeWidth="16" strokeLinecap="round" />
-        </svg>
+        <img src="/brand/mark-black.svg" width="48" height="26" alt=""/>
         <Wordmark size={20} />
       </div>
     </div>

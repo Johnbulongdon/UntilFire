@@ -206,7 +206,7 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
 
   return (
     <>
-      <main className="city-guide-root" style={{ background: 'var(--uf-surface)', minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
+      <main className="city-guide-root" style={{ background: 'var(--uf-surface)', minHeight: '100vh', fontFamily: "'Inter', sans-serif" }}>
         <div className="city-guide-page" style={{ maxWidth: 860, margin: '0 auto', padding: '28px 24px 88px' }}>
           <nav style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 26, fontSize: 13 }}>
             <Link href="/" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>Home</Link>
@@ -548,7 +548,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
     <>
       <div className="city-guide-root">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         .city-guide-root *, .city-guide-root *::before, .city-guide-root *::after { box-sizing: border-box; }
 
         .city-guide-root a { color: inherit; }

@@ -15,7 +15,7 @@ export default function Age() {
   return (
     <QuestionScreen
       step={7}
-      steps={9}
+      steps={10}
       title="How old are you?"
       hint="So we can tell you how old you'll be when you're free."
       cta="Continue"

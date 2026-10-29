@@ -6,16 +6,9 @@ import { colors } from '@/theme/colors'
 import { Icon } from './Icon'
 import { Text } from './Text'
 
-export type ButtonKind = 'primary' | 'quiet' | 'onDark' | 'onDarkQuiet' | 'danger'
+export type ButtonKind = 'primary' | 'onAccent' | 'quiet' | 'onDark' | 'onDarkQuiet' | 'danger'
 
-/**
- * The one button (V2, Duolingo-style): a solid face on a darker lip that
- * presses down under the finger. Every tappable action looks like this, never
- * a bare word. Green acts; quiet is the neutral second choice; onDark sits on
- * the deep-green and coloured screens. `done` swaps the label for a tick, so
- * an answer shows it landed before the next screen arrives. `busy` swaps it for
- a spinner while something slow (like opening Plaid) is on its way.
- */
+/** Shared flat pill action; pressed, disabled, busy and done states keep their existing behaviour. */
 export function Button({ label, onPress, kind = 'primary', small, disabled, done, busy, style, accessibilityLabel }: {
   label: string
   onPress: () => void
@@ -29,13 +22,14 @@ export function Button({ label, onPress, kind = 'primary', small, disabled, done
 }) {
   const face = {
     primary: colors.green,
+    onAccent: '#151719',
     quiet: colors.card,
     onDark: '#FFFDFA',
     onDarkQuiet: 'rgba(255,255,255,0.14)',
     danger: colors.card,
   }[kind]
-  const ink = { primary: colors.card, quiet: colors.ink, onDark: colors.deep, onDarkQuiet: '#FFFFFF', danger: colors.negInk }[kind]
-  const lip = { primary: 'rgba(0,0,0,0.28)', quiet: colors.border2, onDark: 'rgba(0,0,0,0.22)', onDarkQuiet: 'rgba(0,0,0,0.25)', danger: colors.border2 }[kind]
+  const ink = { onAccent:'#FFFFFF', primary: colors.card, quiet: colors.ink, onDark: colors.deep, onDarkQuiet: '#FFFFFF', danger: colors.negInk }[kind]
+  const lip = { onAccent:'transparent', primary: 'rgba(0,0,0,0.28)', quiet: colors.border2, onDark: 'rgba(0,0,0,0.22)', onDarkQuiet: 'rgba(0,0,0,0.25)', danger: colors.border2 }[kind]
   const outlined = kind === 'quiet' || kind === 'danger'
   return (
     <Pressable
@@ -49,17 +43,17 @@ export function Button({ label, onPress, kind = 'primary', small, disabled, done
       {({ pressed }) => (
         <View style={{
           backgroundColor: face,
-          borderRadius: small ? 14 : 18,
+          borderRadius: 999,
           borderWidth: outlined ? 1.5 : 0,
           borderColor: lip,
-          borderBottomWidth: pressed ? (outlined ? 1.5 : 0) : 5,
+          borderBottomWidth: outlined ? 1 : 0,
           borderBottomColor: lip,
-          marginTop: pressed ? 4 : 0,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
           minHeight: small ? 40 : 56,
           paddingHorizontal: small ? 16 : 22,
           alignItems: 'center',
           justifyContent: 'center',
-          opacity: disabled ? 0.4 : 1,
+          opacity: disabled ? 0.4 : pressed ? 0.9 : 1,
         }}>
           {busy
             ? <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>

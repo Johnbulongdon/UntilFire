@@ -27,24 +27,24 @@ export default function SupportTab({ token }: { token: string }) {
   }, [token]);
 
   if (error) return <p style={{ color: "#DC2626" }}>{error}</p>;
-  if (!items) return <p style={{ color: "#64748B" }}>Loading&hellip;</p>;
-  if (items.length === 0) return <p style={{ color: "#64748B" }}>No feedback or survey responses yet.</p>;
+  if (!items) return <p style={{ color: "var(--uf-ink-2)" }}>Loading&hellip;</p>;
+  if (items.length === 0) return <p style={{ color: "var(--uf-ink-2)" }}>No feedback or survey responses yet.</p>;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {items.map((item) => (
-        <div key={`${item.kind}-${item.id}`} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10, padding: 14 }}>
+        <div key={`${item.kind}-${item.id}`} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: item.kind === "feedback" ? "#059669" : "#0369A1" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: item.kind === "feedback" ? "var(--uf-pos)" : "#0369A1" }}>
               {item.kind === "feedback" ? `Feedback · ${item.type}` : "Survey"}
             </span>
-            <span style={{ fontSize: 11, color: "#94A3B8" }}>{new Date(item.createdAt).toLocaleDateString()}</span>
+            <span style={{ fontSize: 11, color: "var(--uf-ink-3)" }}>{new Date(item.createdAt).toLocaleDateString()}</span>
           </div>
-          <div style={{ fontSize: 12, color: "#64748B", marginBottom: 6 }}>{item.email}</div>
+          <div style={{ fontSize: 12, color: "var(--uf-ink-2)", marginBottom: 6 }}>{item.email}</div>
           {item.kind === "feedback" ? (
-            <p style={{ margin: 0, fontSize: 14, color: "#19181E" }}>{item.message}</p>
+            <p style={{ margin: 0, fontSize: 14, color: "var(--uf-ink)" }}>{item.message}</p>
           ) : (
-            <p style={{ margin: 0, fontSize: 14, color: "#19181E" }}>
+            <p style={{ margin: 0, fontSize: 14, color: "var(--uf-ink)" }}>
               Satisfaction: {item.satisfaction ?? "—"}/5 · Recommend: {item.recommend ?? "—"}
               {item.missing ? ` · Missing: ${item.missing}` : ""}
               {item.notes ? ` · ${item.notes}` : ""}

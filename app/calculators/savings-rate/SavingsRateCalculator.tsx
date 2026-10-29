@@ -60,7 +60,7 @@ export default function SavingsRateCalculator() {
     y === Infinity ? '50+ yrs' : y < 1 ? 'Already FIRE!' : `${y.toFixed(1)} yrs`
 
   return (
-    <div className={styles.page} style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Manrope', sans-serif" }}>
+    <div className={styles.page} style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Inter', sans-serif" }}>
 
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '48px 24px 80px' }}>
         <div style={{ marginBottom: 36 }}>

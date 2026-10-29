@@ -60,15 +60,15 @@ export default function UsersTab({ token }: { token: string }) {
   }
 
   if (error) return <p style={{ color: "#DC2626" }}>{error}</p>;
-  if (!users) return <p style={{ color: "#64748B" }}>Loading&hellip;</p>;
+  if (!users) return <p style={{ color: "var(--uf-ink-2)" }}>Loading&hellip;</p>;
 
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, overflow: "auto" }}>
+    <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, overflow: "auto" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
         <thead>
-          <tr style={{ background: "#F8FAFC", textAlign: "left" }}>
+          <tr style={{ background: "var(--uf-ground)", textAlign: "left" }}>
             {["Email", "Joined", "Last seen", "Plan", "Marketing", "Actions"].map((h) => (
-              <th key={h} style={{ padding: "10px 14px", fontWeight: 700, color: "#64748B", fontSize: 11, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
+              <th key={h} style={{ padding: "10px 14px", fontWeight: 700, color: "var(--uf-ink-2)", fontSize: 11, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
             ))}
           </tr>
         </thead>
@@ -76,22 +76,22 @@ export default function UsersTab({ token }: { token: string }) {
           {users.map((u) => (
             <tr key={u.id} style={{ borderTop: "1px solid #F1F5F9" }}>
               <td style={{ padding: "10px 14px" }}>{u.email}{u.displayName ? ` (${u.displayName})` : ""}</td>
-              <td style={{ padding: "10px 14px", color: "#64748B", whiteSpace: "nowrap" }}>{new Date(u.createdAt).toLocaleDateString()}</td>
-              <td style={{ padding: "10px 14px", color: "#64748B", whiteSpace: "nowrap" }}>{u.lastSignInAt ? new Date(u.lastSignInAt).toLocaleDateString() : "—"}</td>
+              <td style={{ padding: "10px 14px", color: "var(--uf-ink-2)", whiteSpace: "nowrap" }}>{new Date(u.createdAt).toLocaleDateString()}</td>
+              <td style={{ padding: "10px 14px", color: "var(--uf-ink-2)", whiteSpace: "nowrap" }}>{u.lastSignInAt ? new Date(u.lastSignInAt).toLocaleDateString() : "—"}</td>
               <td style={{ padding: "10px 14px" }}>
-                <span style={{ fontWeight: 700, color: u.plan === "pro" ? "#059669" : "#94A3B8" }}>{u.plan === "pro" ? "Pro" : "Free"}</span>
+                <span style={{ fontWeight: 700, color: u.plan === "pro" ? "var(--uf-pos)" : "var(--uf-ink-3)" }}>{u.plan === "pro" ? "Pro" : "Free"}</span>
                 {u.plan === "pro" && u.billing && (
                   <span style={{ marginLeft: 6, fontSize: 11, fontWeight: 700, padding: "2px 6px", borderRadius: 6, background: u.billing === "apple" ? "#E5E7EB" : "#EDE9FE", color: u.billing === "apple" ? "#111827" : "#5B21B6" }}>
                     {u.billing === "apple" ? "Apple" : "Stripe"}
                   </span>
                 )}
                 {u.plan === "pro" && u.periodEnd && (
-                  <div style={{ fontSize: 11, color: "#64748B", marginTop: 2 }}>
+                  <div style={{ fontSize: 11, color: "var(--uf-ink-2)", marginTop: 2 }}>
                     {u.autoRenew === false ? "Ends" : "Renews"} {new Date(u.periodEnd).toLocaleDateString()}
                   </div>
                 )}
               </td>
-              <td style={{ padding: "10px 14px", color: u.unsubscribed ? "#DC2626" : "#94A3B8", whiteSpace: "nowrap" }}>{u.unsubscribed ? "Unsubscribed" : "Subscribed"}</td>
+              <td style={{ padding: "10px 14px", color: u.unsubscribed ? "#DC2626" : "var(--uf-ink-3)", whiteSpace: "nowrap" }}>{u.unsubscribed ? "Unsubscribed" : "Subscribed"}</td>
               <td style={{ padding: "10px 14px" }}>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                   <button disabled={busyId === u.id} onClick={() => togglePro(u)} style={btnStyle}>
@@ -103,7 +103,7 @@ export default function UsersTab({ token }: { token: string }) {
                         value={confirmText}
                         onChange={(e) => setConfirmText(e.target.value)}
                         placeholder="type email to confirm"
-                        style={{ fontSize: 12, padding: "5px 8px", border: "1px solid #E2E8F0", borderRadius: 6, fontFamily: "inherit" }}
+                        style={{ fontSize: 12, padding: "5px 8px", border: "1px solid var(--uf-border)", borderRadius: 6, fontFamily: "inherit" }}
                       />
                       <button
                         disabled={confirmText !== u.email || busyId === u.id}
@@ -132,8 +132,8 @@ const btnStyle: React.CSSProperties = {
   fontWeight: 700,
   padding: "6px 10px",
   borderRadius: 6,
-  border: "1px solid #E2E8F0",
-  background: "#fff",
+  border: "1px solid var(--uf-border)",
+  background: "var(--uf-card)",
   cursor: "pointer",
   fontFamily: "inherit",
   whiteSpace: "nowrap",

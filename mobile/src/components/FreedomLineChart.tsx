@@ -6,7 +6,6 @@ import { freedomPath } from '@/engine'
 import { compactMoney } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import type { Freedom } from '@/state/freedom'
-import { colors } from '@/theme/colors'
 
 import { Text } from './Text'
 
@@ -23,11 +22,9 @@ const PAD_TOP = 26
  * 5Y / 15Y / All sit below. A planned move (D-82) puts the new city's flag
  * and a dashed line on its year, so the move reads without relying on colour.
  */
-/** `onDark` draws it in white and aqua for the teal hero card on Home. */
-export function FreedomLineChart({ f, onDark }: { f: Freedom; onDark?: boolean }) {
-  const c = onDark
-    ? { line: '#62FAE3', target: 'rgba(255,255,255,0.55)', ring: '#06412F', scrub: '#FFFFFF', label: 'rgba(255,255,255,0.75)' }
-    : { line: colors.teal, target: colors.ink, ring: colors.card, scrub: colors.tealDeep, label: colors.ink3 }
+/** Home has a fixed yellow surface: isolate chart ink from the global dark theme. */
+export function FreedomLineChart({ f }: { f: Freedom }) {
+  const c = {line:'#151719',target:'#655A3999',ring:'#FFE58A',scrub:'#151719',label:'#5C5130'}
   const [range, setRange] = useState<number>(0)
   const [width, setWidth] = useState(0)
   const [scrub, setScrub] = useState<number | null>(null)
@@ -116,18 +113,18 @@ export function FreedomLineChart({ f, onDark }: { f: Freedom; onDark?: boolean }
         )}
       </View>
       {f.inputs && <View className="mt-2">
-        <Text className="text-[12px]" style={{ color: onDark ? c.label : colors.ink2 }}>
+        <Text className="text-[12px]" style={{ color: c.label }}>
           Investments {compactMoney(f.invested - (f.inputs.cashSavings ?? 0))} · Safety cash {compactMoney(f.inputs.cashSavings ?? 0)}
         </Text>
-        <Text className="mt-1 text-[11px]" style={{ color: onDark ? c.label : colors.ink2 }}>Cash uses saved APY (0% if unknown), less 3% inflation.</Text>
+        <Text className="mt-1 text-[11px]" style={{ color: c.label }}>Cash uses saved APY (0% if unknown), less 3% inflation.</Text>
       </View>}
       <View className="mt-3 flex-row justify-center gap-2">
         {RANGES.map(r => (
           <Pressable key={r.key} accessibilityRole="button" accessibilityState={{ selected: range === r.key }} hitSlop={6}
             onPress={() => { haptic.select(); setRange(r.key) }}
-            className={onDark ? 'rounded-full px-3.5 py-1' : `rounded-full px-3.5 py-1 ${range === r.key ? 'bg-ink' : 'bg-surface'}`}
-            style={onDark ? { backgroundColor: range === r.key ? '#FFFFFF' : 'rgba(255,255,255,0.14)' } : undefined}>
-            <Text style={onDark ? { color: range === r.key ? '#06412F' : '#FFFFFF' } : undefined} className={`font-mono text-[12px] font-semibold ${onDark ? '' : range === r.key ? 'text-ground' : 'text-ink-2'}`}>{r.label}</Text>
+            className='rounded-full px-3.5 py-1'
+            style={{ backgroundColor: range === r.key ? '#151719' : '#FFFFFF70' }}>
+            <Text style={{color:range === r.key ? '#FFFFFF' : '#151719'}} className='font-mono text-[12px] font-semibold'>{r.label}</Text>
           </Pressable>
         ))}
       </View>

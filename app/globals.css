@@ -1,5 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
+@font-face{font-family:Inter;src:url('/fonts/inter/Inter_400Regular.ttf') format('truetype');font-style:normal;font-weight:400;font-display:swap}
+@font-face{font-family:Inter;src:url('/fonts/inter/Inter_500Medium.ttf') format('truetype');font-style:normal;font-weight:500;font-display:swap}
+@font-face{font-family:Inter;src:url('/fonts/inter/Inter_600SemiBold.ttf') format('truetype');font-style:normal;font-weight:600;font-display:swap}
+@font-face{font-family:Inter;src:url('/fonts/inter/Inter_700Bold.ttf') format('truetype');font-style:normal;font-weight:700;font-display:swap}
+@font-face{font-family:Inter;src:url('/fonts/inter/Inter_800ExtraBold.ttf') format('truetype');font-style:normal;font-weight:800;font-display:swap}
 
 /* ══════════════════════════════════════════════════════════════════════
    UntilFire design system — the single source of truth.
@@ -7,7 +11,7 @@
 
    Green ACTS   (buttons, links, anything interactive)
    Teal is FREEDOM (progress toward the freedom date — never a button)
-   Warm ground, warm ink, warm shadows. Fraunces carries display type.
+   Warm ground, warm ink, warm shadows. Inter carries display type.
 
    These tokens used to live in a <style> block inside the dashboard page,
    which is why dark mode only worked on one route. They belong here.
@@ -17,46 +21,46 @@
 :root {
   /* ground + surfaces — warm all the way down, never cool grey.
      ground = page · card = panels · surface = inset · surface-2 = deeper inset */
-  --uf-ground:    #FDF8F1;
-  --uf-card:      #FFFDFA;
-  --uf-surface:   #F7EFE3;
-  --uf-surface-2: #F0E5D5;
-  --uf-border:    #EFE2D0;
-  --uf-border-2:  #DFCDB4;
+  --uf-ground:    #F8F8FB;
+  --uf-card:      #FFFFFF;
+  --uf-surface:   #F1EFF6;
+  --uf-surface-2: #E9E6F0;
+  --uf-border:    #E7E5ED;
+  --uf-border-2:  #A5A3B3;
 
   /* ink — warm browns, never black */
-  --uf-ink:       #221B12;
-  --uf-ink-2:     #6B5C48;
-  --uf-ink-3:     #9A8B76;
+  --uf-ink:       #151719;
+  --uf-ink-2:     #5C6170;
+  --uf-ink-3:     #686D7C;
 
   /* brand — green ACTS */
-  --uf-green:     #12856A;
-  --uf-green-700: #0C6B55;
-  --uf-green-900: #06412F;
-  --uf-green-100: #CDEBE1;
-  --uf-green-50:  #E6F5EF;
+  --uf-green:     #151719;
+  --uf-green-700: #303238;
+  --uf-green-900: #151719;
+  --uf-green-100: #FFE58A;
+  --uf-green-50:  #FFF5CB;
 
   /* brand — teal is FREEDOM. progress only, never a button.
      The one cool note in a warm system: the colour that doesn't belong to
      the warm world is the one that means escape from it. */
-  --uf-teal:      #0E9C86;
-  --uf-teal-deep: #0A7665;
-  --uf-teal-soft: #D3F1EA;
-  --uf-teal-line: #7FD9C6;
+  --uf-teal:      #151719;
+  --uf-teal-deep: #151719;
+  --uf-teal-soft: #FFE58A;
+  --uf-teal-line: #B49B3E;
 
   /* brand — the logo's sun. public/logo/horizon-color.svg, the disc and rays. */
-  --uf-aqua:      #62FAE3;
+  --uf-aqua:      #FFE58A;
 
   /* semantic — four distinct hues, no two adjacent */
-  --uf-pos:     #12856A;
-  --uf-neg:     #C0483C;
-  --uf-neg-bg:  #FAE6E2;
-  --uf-warn:    #C4831A;
-  --uf-warn-bg: #FCEFD8;
+  --uf-pos:     #17684B;
+  --uf-neg:     #B63D46;
+  --uf-neg-bg:  #FCE8EB;
+  --uf-warn:    #815A16;
+  --uf-warn-bg: #FFF1D2;
 
   /* illustration only (D-50): the onboarding sun. Never buttons, text or numbers. */
-  --uf-sun:      #F2A65A;
-  --uf-sun-soft: #F6C27A;
+  --uf-sun:      #FFE58A;
+  --uf-sun-soft: #FFF3C5;
 
   /* illustration only (D-67): freedom badge medals. Same in both themes, like
      the objects they draw; the stars and the label carry the meaning too. */
@@ -70,14 +74,14 @@
   /* *-ink variants: the AA-compliant text colour for 11px badge text on the
      matching tint. The base colours above pass at display size but not at 11px,
      so badges use these. Solved for >= 4.5:1, not eyeballed. */
-  --uf-pos-ink:  #107B62;
-  --uf-neg-ink:  #B24237;
-  --uf-warn-ink: #936213;
+  --uf-pos-ink:  #17684B;
+  --uf-neg-ink:  #A52C35;
+  --uf-warn-ink: #785010;
 
   /* elevation — warm shadows, never black */
-  --uf-e1: 0 1px 2px rgba(120,80,30,0.06);
-  --uf-e2: 0 6px 20px rgba(120,80,30,0.08);
-  --uf-e3: 0 16px 40px rgba(120,80,30,0.13);
+  --uf-e1: 0 1px 2px rgba(21,23,25,0.06);
+  --uf-e2: 0 6px 20px rgba(21,23,25,0.08);
+  --uf-e3: 0 16px 40px rgba(21,23,25,0.13);
 
   /* modal scrim — warm, like every other neutral here */
   --uf-scrim: rgba(34,27,18,0.50);
@@ -88,9 +92,9 @@
      "Other", becomes small multiples, or is a second chart.
      Assign in fixed order — slot 1 is always the same entity, never
      reassigned when a filter changes how many series are showing. */
-  --uf-chart-1: #0E9C86;
-  --uf-chart-2: #5B5BD6;
-  --uf-chart-3: #B07A12;
+  --uf-chart-1: #151719;
+  --uf-chart-2: #7865B5;
+  --uf-chart-3: #2C826C;
   --uf-chart-grid: var(--uf-border);
   --uf-chart-axis: var(--uf-ink-3);
 
@@ -115,9 +119,9 @@
   --uf-s5: 24px; --uf-s6: 32px; --uf-s7: 48px;
 
   /* type */
-  --uf-font-display: 'Fraunces', Georgia, serif;
-  --uf-font:         'Manrope', ui-sans-serif, system-ui, sans-serif;
-  --uf-font-mono:    'DM Mono', ui-monospace, SFMono-Regular, monospace;
+  --uf-font-display: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --uf-font:         'Inter', ui-sans-serif, system-ui, sans-serif;
+  --uf-font-mono:    'Inter', ui-sans-serif, system-ui, sans-serif;
 
   /* legacy aliases — kept so existing screens keep working during migration */
   --background: var(--uf-ground);
@@ -127,7 +131,7 @@
   --uf-text-2: var(--uf-ink-2);
   --uf-text-3: var(--uf-ink-3);
   --uf-text-muted: var(--uf-ink-3);
-  --uf-topbar-glass: rgba(255,253,250,0.96);
+  --uf-topbar-glass: rgba(255,255,255,0.96);
   --uf-drawer-bg: var(--uf-card);
   --font-primary: var(--uf-font);
   --font-secondary: var(--uf-font);
@@ -136,40 +140,40 @@
 /* ── WARM · dark. Warm near-black, not blue-black — the personality
       has to survive the toggle. ──────────────────────────────────────── */
 .dark {
-  --uf-ground:    #16120D;
-  --uf-card:      #1F1A13;
-  --uf-surface:   #191410;
-  --uf-surface-2: #2A2318;
-  --uf-border:    #332B21;
-  --uf-border-2:  #463C2D;
+  --uf-ground:    #151719;
+  --uf-card:      #202226;
+  --uf-surface:   #282A30;
+  --uf-surface-2: #32353D;
+  --uf-border:    #3A3D46;
+  --uf-border-2:  #747986;
 
-  --uf-ink:       #F5EDE1;
-  --uf-ink-2:     #BAAB95;
-  --uf-ink-3:     #8A7C68;
+  --uf-ink:       #FAFAFD;
+  --uf-ink-2:     #C3C6D0;
+  --uf-ink-3:     #A9ADBA;
 
-  --uf-green:     #2FA383;
-  --uf-green-700: #3CBA97;
-  --uf-green-900: #BFE9DA;
-  --uf-green-100: #123A2E;
-  --uf-green-50:  #0E2C23;
+  --uf-green:     #FAFAFD;
+  --uf-green-700: #E0E2EA;
+  --uf-green-900: #FFFFFF;
+  --uf-green-100: #4B4226;
+  --uf-green-50:  #302D23;
 
-  --uf-teal:      #35C9AE;
-  --uf-teal-deep: #5FDCC4;
-  --uf-aqua:      #62FAE3;
-  --uf-teal-soft: #0F3A33;
-  --uf-teal-line: #1E6B5D;
+  --uf-teal:      #FFE58A;
+  --uf-teal-deep: #FFE58A;
+  --uf-aqua:      #FFE58A;
+  --uf-teal-soft: #3F3825;
+  --uf-teal-line: #B49B3E;
 
   /* in dark the tints are deep and the text is light, so the badge inks
      brighten rather than darken */
-  --uf-pos-ink:  #5FCFAC;
-  --uf-neg-ink:  #EE9B90;
-  --uf-warn-ink: #EDBC72;
+  --uf-pos-ink:  #8FD8B9;
+  --uf-neg-ink:  #F4A5AC;
+  --uf-warn-ink: #F2D18A;
 
-  --uf-pos:     #2FA383;
-  --uf-neg:     #E07A6C;
-  --uf-neg-bg:  #3A201C;
-  --uf-warn:    #E0A84E;
-  --uf-warn-bg: #3A2C13;
+  --uf-pos:     #8FD8B9;
+  --uf-neg:     #F4A5AC;
+  --uf-neg-bg:  #48272E;
+  --uf-warn:    #F2D18A;
+  --uf-warn-bg: #41351D;
 
   --uf-e1: 0 1px 2px rgba(0,0,0,0.40);
   --uf-e2: 0 6px 20px rgba(0,0,0,0.45);
@@ -179,11 +183,11 @@
 
   /* chart series, selected against the dark surface and validated there —
      not an automatic lightening of the light steps. */
-  --uf-chart-1: #26A68E;
-  --uf-chart-2: #8189E6;
-  --uf-chart-3: #B78A26;
+  --uf-chart-1: #FFE58A;
+  --uf-chart-2: #BCABF0;
+  --uf-chart-3: #8FD8B9;
 
-  --uf-topbar-glass: rgba(31,26,19,0.96);
+  --uf-topbar-glass: rgba(32,34,38,0.96);
 }
 
 @theme inline {
@@ -703,3 +707,31 @@ html[data-splash="1"] #uf-splash { display: grid; }
 .uf-home-in { min-width: 0; animation: uf-home-in .5s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes uf-home-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .uf-home-in { animation: none; } }
+
+/* Next Horizon, approved 29 October 2026. Aliases above keep existing features compatible. */
+:root{--uf-yellow:#FFE58A;--uf-mint:#E3F7EF;--uf-lilac:#EEE9FA;--uf-blue:#E8F3FF;--uf-pink:#FBE7F2;--uf-on-accent:#151719;--uf-r-control:14px;--uf-r-card:24px;--uf-r-modal:28px;--uf-font-brand:'Inter',sans-serif}
+.dark{--uf-mint:#213F35;--uf-lilac:#363048;--uf-blue:#26384D;--uf-pink:#432C3D}
+button,input,select,textarea{font-family:inherit}h1,h2{font-weight:800;letter-spacing:-.04em}button:focus-visible,a:focus-visible{outline:3px solid #8E78C2;outline-offset:3px}
+#uf-splash{background:var(--uf-ground)}#uf-splash img{width:180px;height:auto}.dark #uf-splash img{filter:brightness(0) invert(1)}
+.uf-brand-wordmark{font-family:var(--uf-font-brand);font-weight:800;letter-spacing:-.055em}
+.uf-brand-mark-dark{display:none}.dark .uf-brand-mark-light{display:none}.dark .uf-brand-mark-dark{display:block}
+/* Role aliases are retained for feature compatibility, not as new palette names. */
+.uf-freedom-panel{--uf-ink:#151719;--uf-ink-2:#5C5130;--uf-ink-3:#655A39;--uf-teal:#151719;--uf-teal-deep:#151719;--uf-green:#151719;--uf-green-50:#FFFFFF75;--uf-card:#FFFFFF}
+.uf-freedom-panel .uf-t-small{color:#5C5130}
+.rf-root[data-brand-step="2"]{background:#FFE58A!important;--uf-ink:#151719;--uf-ink-2:#5C5130;--uf-ink-3:#655A39;--uf-teal:#151719;--uf-green:#151719;--uf-border:#D6C681}
+.rf-root[data-brand-step="2"] .uf-brand-mark-light{display:block}.rf-root[data-brand-step="2"] .uf-brand-mark-dark{display:none}
+.rf-root[data-brand-step="3"]{background:var(--uf-mint)!important}.rf-root[data-brand-step="5"]{background:var(--uf-blue)!important}
+/* Reveal follows the same rounded desktop canvas as the questions. */
+.rf-root[data-brand-step]{background:var(--uf-ground)!important}
+.rf-root[data-brand-step="2"]{background:#F8F8FB!important;--uf-ink:#151719;--uf-ink-2:#5C5130}
+.rf-root[data-brand-step] .rf-stage{border-radius:32px;background:var(--uf-card);padding:48px;min-height:560px;margin-top:32px;margin-bottom:20px}
+.rf-root[data-brand-step="2"] .rf-stage{background:#FFE58A}
+.rf-root[data-brand-step="3"] .rf-stage{background:var(--uf-mint)}
+.rf-root[data-brand-step="5"] .rf-stage{background:var(--uf-blue)}
+.rf-reveal-layout{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:64px}
+.rf-reveal-chart{min-width:0}.rf-reveal-chart svg{width:100%;height:auto}
+@media(max-width:700px){.rf-root[data-brand-step] .rf-stage{padding:24px;min-height:560px;margin-top:24px}.rf-reveal-layout{grid-template-columns:1fr;gap:32px}.rf-reveal-chart svg{max-height:170px}}
+/* Fixed yellow cards keep their light chart fill in both themes. */
+.uf-freedom-panel{--uf-teal-soft:#FFF1BC;--uf-surface-2:#D6C681}
+.rf-root[data-brand-step] .rf-stage{margin:32px auto 20px;min-height:600px}
+@media(max-width:700px){.rf-root[data-brand-step] .rf-stage{min-height:560px}}

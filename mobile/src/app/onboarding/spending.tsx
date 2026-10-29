@@ -43,7 +43,7 @@ export default function Spending() {
   return (
     <QuestionScreen
       step={5}
-      steps={9}
+      steps={10}
       title={save ? 'How much do you save each month?' : 'How much do you spend each month?'}
       hint="A rough number is fine."
       cta="Continue"
@@ -64,7 +64,7 @@ export default function Spending() {
         {tooMuch ? "That's more than you take home each month."
           : save ? <>So you spend <Text className="font-mono font-bold text-ink">{money(spending)}</Text> a month.</>
           : left >= 0 ? <>Leaves <Text className="font-mono font-bold text-ink">{money(left)}</Text> a month to save{share > 0 ? ` · ${share}%` : ''}.</>
-          : <>That's <Text className="font-mono font-bold text-ink">{money(-left)}</Text> more than you take home.</>}
+          : <>That&apos;s <Text className="font-mono font-bold text-ink">{money(-left)}</Text> more than you take home.</>}
       </Text>
     </QuestionScreen>
   )

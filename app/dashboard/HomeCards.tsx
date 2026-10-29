@@ -57,7 +57,7 @@ export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, progress
   children: React.ReactNode;
 }) {
   return (
-    <Card style={{ display: "grid", gap: 14 }}>
+    <Card className="uf-freedom-panel" style={{ display: "grid", gap: 14, background: "var(--uf-yellow)", color: "var(--uf-on-accent)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
         <div>
           <div className="uf-t-small" style={muted}>Work becomes optional</div>
@@ -296,7 +296,7 @@ export function UntilPaydayCard({ line, paydayIso, billCount, billTotal, icon, f
   );
   const axis: React.CSSProperties = { position: "absolute", bottom: 0, fontSize: 11, fontWeight: 700, color: "var(--uf-ink-3)", whiteSpace: "nowrap" };
   return (
-    <Card style={{ display: "grid", gap: 10, alignContent: "start" }}>
+    <Card style={{ display: "grid", gap: 10, alignContent: "start", background: "var(--uf-blue)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
         <span style={cardLabel}>Until payday</span>
         <DoorChip to="money" onClick={onOpen} />

@@ -92,7 +92,7 @@ export default function ExploreCard({ city, rank, mode, money, freedom, badges =
       <div style={{ position: "absolute", left: 12, right: 12, top: 10, display: "flex", alignItems: "center", gap: 8, pointerEvents: "none", textShadow: "0 1px 4px #0009" }}>
         <button type="button" onClick={onStar} aria-label={star ? `Unstar ${city.name}` : `Star ${city.name}`} aria-pressed={star}
           style={{ pointerEvents: "auto", border: 0, background: "transparent", padding: 0, cursor: "pointer", fontSize: 18, lineHeight: 1, color: star ? "var(--uf-sun)" : "#fff" }}>{star ? "★" : "☆"}</button>
-        <span style={{ font: "600 20px var(--uf-font-display, Fraunces), Georgia, serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{city.name}</span>
+        <span style={{ font: "600 20px var(--uf-font-display, Inter), Georgia, serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{city.name}</span>
         {mode === "badge" && badges
           ? <span style={{ marginLeft: "auto", pointerEvents: "auto", textShadow: "none" }}><MedalRow badges={badges} size={22} retireAge={retireAge} /></span>
           : <span style={{ marginLeft: "auto", ...mono, fontSize: 15, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: "#087D69", color: "#fff", whiteSpace: "nowrap", textShadow: "none" }}>{badge}{mode === "monthly" && <span style={{ fontSize: 11, opacity: 0.85 }}>/mo</span>}</span>}

@@ -49,7 +49,7 @@ export default function Reminder() {
         <Animated.View entering={FadeInDown.duration(500)}>
           <Text className="text-center font-display text-[32px] font-bold leading-10 tracking-tight text-ink">One minute a day</Text>
           <Text className="mt-3 text-center text-[17px] leading-6 text-ink-2">
-            Each evening, Today shows what changed in your money. A nudge at 9pm, only if you haven't looked.
+            Each evening, Today shows what changed in your money. A nudge at 9pm, only if you haven&apos;t looked.
           </Text>
         </Animated.View>
       </View>

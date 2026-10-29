@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — Next Horizon
+
+- Approved yellow horizon/path logo and Inter wordmark across web, native, admin, email and share previews, with downloadable SVG/PNG, palette and font exports.
+- Monthly onboarding with separate Housing and Investing, a freedom-date canvas, own monthly picture and a single saving-improvement action before saving an account.
+- Colourful Home cards, black pill actions and matched phone welcome controls. Financial calculations retain the shared engine; local-currency display values round-trip to USD once.
+- Native icon and splash assets require a new store build; this branch is not a production release.
+
+
 ## 2026-10-27 — Aligned phone welcome actions
 
 - On the phone welcome screen, I already have an account uses the standard full-width, 56-point button and 17-point label, matching Get started. Retain the quieter secondary styling, spacing and existing sign-in behavior. The shared Button component is unchanged.
