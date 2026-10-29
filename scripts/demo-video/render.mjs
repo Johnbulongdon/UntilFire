@@ -785,7 +785,7 @@ function drawS4(c, lf) {
   riseLine('from being a good person.', 143, H*0.63, TEAL);
 
   const tagT = easeOut(progress(lf, 160, 190));
-  if (tagT > 0) drawTextC(c, DMS_R, 26, 'Personal finance that sets you free.', W/2, H*0.93, BODY, tagT * 0.6);
+  if (tagT > 0) drawTextC(c, DMS_R, 26, 'See beyond your balance. Open up your life.', W/2, H*0.93, BODY, tagT * 0.6);
 
   c.restore();
 }
