@@ -3955,7 +3955,7 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgages, setMortgages, conn
         value={fmtMoney(totalLiabilities)}
         sub={startTotal > 0
           ? <><Fig>{fmtMoney(paidTotal)}</Fig> paid off of <Fig>{fmtMoney(startTotal)}</Fig></>
-          : rows.some(r => r.rate != null) ? "Highest rate first" : "Tap a debt to add what it started at and see it paid down."}
+          : rows.some(r => r.rate != null) ? "Highest rate first" : "Choose a debt to add what it started at and see it paid down."}
       >
         {startTotal > 0 && <MoneyTrack share={paidTotal / startTotal} label={`${Math.round((paidTotal / startTotal) * 100)}% of tracked debt paid off`} />}
         <MoneyKey items={[["c", "Cards", debtsEff.cards], ["l", "Loans and other", debtsEff.otherDebt], ["m", "Mortgage", debtsEff.mortgage]]
@@ -6044,7 +6044,7 @@ export default function Dashboard() {
         .uf-shell { display: flex; min-height: 100vh; }
         .uf-sidebar { width: 248px; min-height: 100vh; position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--uf-surface); border-right: 1px solid var(--uf-border); display: flex; flex-direction: column; flex-shrink: 0; }
         .uf-main { flex: 1; overflow-y: auto; min-width: 0; }
-        .uf-content { padding: 32px 36px 60px; }
+        .uf-content { padding: 32px 36px 60px; max-width: 1152px; margin: 0 auto; }
 
         .uf-sidebar-logo { padding: 22px 20px 20px; font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 800; color: var(--uf-ink); letter-spacing: -0.04em; text-decoration: none; display: block; border-bottom: 1px solid var(--uf-border); }
         .uf-sidebar-logo span { color: var(--uf-teal); }
@@ -6244,6 +6244,7 @@ export default function Dashboard() {
         })}
       </nav>
 
+      <a href="#uf-main" className="uf-skip">Skip to content</a>
       <div className="uf-shell">
         {/* ── Sidebar ──────────────────────────────────────────────────────── */}
         <aside className="uf-sidebar">
@@ -6351,7 +6352,7 @@ export default function Dashboard() {
         </aside>
 
         {/* ── Main content ─────────────────────────────────────────────────── */}
-        <main className="uf-main">
+        <main id="uf-main" tabIndex={-1} className="uf-main">
           <MotionScene className="uf-content" scene={`${tab}:${cashflowSubTab}:${fireCalcSubTab}`}>
             {upgradedBanner && (
               <Alert

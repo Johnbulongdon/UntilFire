@@ -218,7 +218,7 @@ export default function RevealFlow(props: RevealFlowProps) {
   if (yearsToFire === null) return (
     <div className="rf-root" data-motion={playMotion ? "play" : "system"} style={shell}>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
-      <main style={{ ...stage, ...anim("rf-page .65s ease both"), flexDirection: "column", gap: 24, textAlign: "center", maxWidth: 560 }}>
+      <main style={{ ...stage, ...anim("rf-page .3s ease both"), flexDirection: "column", gap: 24, textAlign: "center", maxWidth: 560 }}>
         <Logo variant="auto" size={26} />
         <button type="button" onClick={replay} style={{ background: "none", border: "none", color: "var(--uf-green)", font: "inherit", cursor: "pointer" }}>{reduce ? "Play animations" : "Replay reveal"}</button>
         {reduce && <p style={subtle}>Animations are off because your device requests reduced motion.</p>}
@@ -282,7 +282,7 @@ export default function RevealFlow(props: RevealFlowProps) {
       <div style={{ maxWidth: 1120, width: "100%", margin: "18px auto 0", display: "flex", gap: 8, zIndex: 2 }}>
         {Array.from({ length: 6 }, (_, i) => (
           <div key={i} style={{ flex: 1, height: 4, borderRadius: 4, background: "var(--uf-border)", overflow: "hidden" }}>
-            <div style={{ height: "100%", width: [2,3,4,5,8,7].indexOf(step) >= i ? "100%" : "0%", background: TEAL, borderRadius: 4, transition: "width .5s ease" }} />
+            <div style={{ height: "100%", width: [2,3,4,5,8,7].indexOf(step) >= i ? "100%" : "0%", background: TEAL, borderRadius: 4, transition: "width .25s ease" }} />
           </div>
         ))}
       </div>
@@ -327,12 +327,12 @@ export default function RevealFlow(props: RevealFlowProps) {
 
           {/* 4 — freedom number */}
           {step === 4 && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22, textAlign: "center", ...anim("rf-up .55s ease both") }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22, textAlign: "center", ...anim("rf-up .3s ease both") }}>
               <div style={eyebrow}>YOUR FREEDOM NUMBER</div>
               <div style={{ position: "relative", width: 260, height: 260, maxWidth: "80vw", maxHeight: "80vw", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg viewBox="0 0 260 260" style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)", width: "100%", height: "100%" }}>
                   <circle cx="130" cy="130" r="118" fill="none" stroke="var(--uf-border)" strokeWidth="14" />
-                  <circle cx="130" cy="130" r="118" fill="none" stroke={TEAL} strokeWidth="14" strokeLinecap="round" strokeDasharray={RING} strokeDashoffset={ringOffset} style={{ animation: reduce ? undefined : "rf-ring .65s .05s cubic-bezier(.2,.8,.2,1) both" }} />
+                  <circle cx="130" cy="130" r="118" fill="none" stroke={TEAL} strokeWidth="14" strokeLinecap="round" strokeDasharray={RING} strokeDashoffset={ringOffset} style={{ animation: reduce ? undefined : "rf-ring .3s .05s cubic-bezier(.2,.8,.2,1) both" }} />
                 </svg>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                   <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(38px, 9vw, 52px)", fontWeight: 800, letterSpacing: "-0.03em" }}>
@@ -353,7 +353,7 @@ export default function RevealFlow(props: RevealFlowProps) {
           )}
 
           {step === 5 && (
-            <div style={{width:'100%',maxWidth:560,display:'grid',gap:24,...anim('rf-up .55s ease both')}}>
+            <div style={{width:'100%',maxWidth:560,display:'grid',gap:24,...anim('rf-up .3s ease both')}}>
               <div style={eyebrow}>YOUR MONTHLY PICTURE</div>
               <div style={{fontSize:'clamp(32px,5vw,56px)',fontWeight:800,letterSpacing:'-.04em'}}>{savingsRatePct}% saved</div>
               <div style={{display:'flex',height:24,borderRadius:999,overflow:'hidden',background:'var(--uf-border)'}}><div style={{width:Math.min(100,Math.max(0,100-savingsRatePct))+'%',background:'#151719'}}/><div style={{flex:1,background:'#B9E7D6'}}/></div>
@@ -364,7 +364,7 @@ export default function RevealFlow(props: RevealFlowProps) {
 
           {/* 6 — expat globe (real geo-arbitrage deltas) */}
           {step === 6 && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, textAlign: "center", width: "100%", ...anim("rf-up .55s ease both") }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, textAlign: "center", width: "100%", ...anim("rf-up .3s ease both") }}>
               <div style={eyebrow}>EXPAT FIRE</div>
               <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(20px, 4vw, 26px)", fontWeight: 800, letterSpacing: "-0.02em" }}>Retire even earlier somewhere else</div>
               {expatCities.length > 0 ? (
@@ -412,10 +412,10 @@ function ResultLoader({ onDone, reduce, playMotion }: { onDone: () => void; redu
       <Logo variant="auto" size={36} />
       <svg aria-hidden viewBox="0 0 400 180" style={{ width: "min(400px, 85vw)", overflow: "visible" }}>
         <path d="M10 165 H390" fill="none" stroke="var(--uf-border-2)" />
-        <path d="M10 160 C140 160 245 145 300 90 S365 25 390 10" fill="none" stroke={TEAL} strokeWidth="4" strokeLinecap="round" pathLength="1" strokeDasharray="1" style={{ animation: reduce ? undefined : "rf-draw .4s cubic-bezier(.4,0,.2,1) both" }} />
-        <circle cx="390" cy="10" r="7" fill={TEAL} style={{ animation: reduce ? undefined : "rf-dot .15s .3s both", transformBox: "fill-box", transformOrigin: "center" }} />
+        <path d="M10 160 C140 160 245 145 300 90 S365 25 390 10" fill="none" stroke={TEAL} strokeWidth="4" strokeLinecap="round" pathLength="1" strokeDasharray="1" style={{ animation: reduce ? undefined : "rf-draw .3s cubic-bezier(.4,0,.2,1) both" }} />
+        <circle cx="390" cy="10" r="7" fill={TEAL} style={{ animation: reduce ? undefined : "rf-dot .15s .2s both", transformBox: "fill-box", transformOrigin: "center" }} />
       </svg>
-      <div role="status" style={{ textAlign: "center", animation: reduce ? undefined : "rf-up .6s ease both" }}>
+      <div role="status" style={{ textAlign: "center", animation: reduce ? undefined : "rf-up .3s ease both" }}>
         <div style={{ fontFamily: "var(--uf-font-display)", fontSize: 30 }}>Let’s find your place on the curve.</div>
         <p style={{ color: "var(--uf-ink-2)", marginTop: 10 }}>Your numbers. Your starting point.</p>
       </div>

@@ -31,18 +31,6 @@ export type IntakeAnswer = {
   invested: number;
   age?: number;
 };
-const STEPS = [
-  "Goal",
-  "City",
-  "Pay frequency",
-  "Income",
-  "Expenses",
-  "Saved",
-  "Age",
-  "Worry",
-  "Your home",
-  "Investing",
-];
 const TITLES = [
   "What does freedom mean to you?",
   "Where do you live?",
@@ -52,7 +40,7 @@ const TITLES = [
   "What have you saved and invested?",
   "How old are you?",
   "What gets in the way most?",
-  "Your home",
+  "Do you rent or own?",
   "How do you invest?",
 ];
 export default function BrandedIntake({
@@ -477,7 +465,6 @@ export default function BrandedIntake({
               const t = e.target as HTMLElement;
               if (e.key === "Enter" && !e.repeat && !e.nativeEvent.isComposing && !t.closest("input, button, select, textarea, a, summary")) { e.preventDefault(); advance(); }
             }}>
-            <span className="nh-eyebrow">{STEPS[step]}</span>
             <h1 ref={heading} tabIndex={-1}>
               {step===4&&mode==="Saved"?"How much do you save each month?":TITLES[step]}
             </h1>

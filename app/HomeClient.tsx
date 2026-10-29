@@ -1542,10 +1542,10 @@ export default function HomeClient() {
         /* Entrance animations */
         @keyframes heroEnter { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
         .uf-hero--mounted .uf-live-counter { animation: heroEnter 0.5s cubic-bezier(0.22,1,0.36,1) 0s both; }
-        .uf-hero--mounted .uf-badge        { animation: heroEnter 0.65s cubic-bezier(0.22,1,0.36,1) 0.08s both; }
-        .uf-hero--mounted .uf-h1           { animation: heroEnter 0.65s cubic-bezier(0.22,1,0.36,1) 0.20s both; }
-        .uf-hero--mounted .uf-body         { animation: heroEnter 0.65s cubic-bezier(0.22,1,0.36,1) 0.32s both; }
-        .uf-hero--mounted .uf-hero-ctas    { animation: heroEnter 0.65s cubic-bezier(0.22,1,0.36,1) 0.44s both; }
+        .uf-hero--mounted .uf-badge        { animation: heroEnter 0.3s cubic-bezier(0.22,1,0.36,1) 0.08s both; }
+        .uf-hero--mounted .uf-h1           { animation: heroEnter 0.3s cubic-bezier(0.22,1,0.36,1) 0.20s both; }
+        .uf-hero--mounted .uf-body         { animation: heroEnter 0.3s cubic-bezier(0.22,1,0.36,1) 0.32s both; }
+        .uf-hero--mounted .uf-hero-ctas    { animation: heroEnter 0.3s cubic-bezier(0.22,1,0.36,1) 0.44s both; }
         .uf-hero--mounted .uf-social-proof { animation: heroEnter 0.55s cubic-bezier(0.22,1,0.36,1) 0.52s both; }
         .uf-hero--mounted .uf-hero-preview { animation: heroEnter 0.70s cubic-bezier(0.22,1,0.36,1) 0.28s both; }
         .uf-hero--mounted .uf-hero-strip   { animation: heroEnter 0.50s cubic-bezier(0.22,1,0.36,1) 0.60s both; }
@@ -1680,7 +1680,7 @@ export default function HomeClient() {
         }
         .uf-reveal-ring { animation: ringDrift var(--ring-dur,16s) ease-in-out var(--ring-delay,0s) infinite; }
         .uf-stage-chip-anim { animation: chipPulse 3s ease-in-out 1.4s infinite; }
-        .uf-section-up { animation: sectionSlideUp 0.65s cubic-bezier(0.22,1,0.36,1) var(--su-delay,0s) both; }
+        .uf-section-up { animation: sectionSlideUp 0.3s cubic-bezier(0.22,1,0.36,1) var(--su-delay,0s) both; }
         .uf-automate-btn {
           background: linear-gradient(90deg, #22D3A5 0%, #FFE58A 38%, #22D3A5 62%, #1ab896 100%);
           background-size: 200% auto;

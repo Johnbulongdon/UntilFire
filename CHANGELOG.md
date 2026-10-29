@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-29 — Website interaction fixes
+
+- Website only. A failed plan load now shows "Try again" instead of the new-user welcome form, and auto-save waits for a good load, so a brief network blip cannot overwrite a saved plan. Save failures (including account toggles, debt start balances and shares) show a visible message; opening a page no longer flashes "Saved".
+- Dark mode: buttons that hardcoded white text on the ink accent (Pricing Pro, Categories, Transactions, review and spend-range pills, freedom report, share and savings calculators) use the card colour.
+- Calculator: Enter moves on from amount boxes and choice steps; one city match is picked on Enter; an empty city says Skip; disabled Continue explains what is missing. Amounts show commas while typing, the amount field has a rounded focus outline, the slider is ink-filled and 44px tall. When age is skipped, the reveal says the age is assumed; currency wording is neutral and the sign-up backdrop uses the visitor's currency. Duplicate step labels are removed.
+- Transactions: the savings card is one row, "Over by" reads "Short after bills", quick add is a centred dialog on desktop with the amount focused, pill Save and one close button. Delete uses Undo (six seconds, announced) instead of a browser popup; category-change failures are shown. The floating Feedback pill is gone (sidebar and header keep Feedback) and toasts sit above the Add bar.
+- Consistency: Apple sign-in shows "Soon" before it is tapped, "Skip to content" on the dashboard and landing page, Money and Plan content capped at 1,152px on desktop, reveal and onboarding motion at 300ms or less, "Choose a debt" instead of "Tap a debt".
+
 ## Unreleased — Next Horizon
 
 - Browser interaction: try the example plan, clearer onboarding selection and directional transitions, section/editor/button feedback, structural Money loading, and live savings feedback. Decimal slider undo restores the exact original plan. Narrow onboarding removes decorative panels while retaining money summaries.
