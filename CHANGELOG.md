@@ -1632,3 +1632,8 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 ### Calendar date repair
 - Calendar now shows scheduled bills and payday only; ordinary transactions stay in Transactions.
 - Keep past and completed bills on their original scheduled dates instead of moving them onto today. Cash forecasting still accounts for overdue unpaid bills independently.
+
+## Android 0.2.1 — store build preparation
+- Package the approved new icon, splash, fonts and app styling in a native Android release.
+- Fix SDK57 splash configuration and the audio module's missing asset peer; keep signing/app identity unchanged.
+- Submit through the existing alpha/draft Google Play profile after the cloud build succeeds.
