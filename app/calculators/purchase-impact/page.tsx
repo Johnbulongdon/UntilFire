@@ -48,7 +48,7 @@ export default function PurchaseImpactPage() {
     <>
       <PurchaseImpactCalculator />
 
-      <section style={{ background: 'var(--uf-surface)', padding: '0 24px 72px', fontFamily: "'Manrope', sans-serif" }}>
+      <section style={{ background: 'var(--uf-surface)', padding: '0 24px 72px', fontFamily: "'Inter', sans-serif" }}>
         <div style={{ maxWidth: 960, margin: '0 auto', display: 'grid', gap: 18 }}>
           <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 18, padding: '26px 24px' }}>
             <h2 style={{ margin: '0 0 12px', color: 'var(--uf-green-900)', fontSize: 24, letterSpacing: '-0.03em' }}>

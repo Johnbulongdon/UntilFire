@@ -47,21 +47,12 @@ export interface Journey {
 
 /** The calculator questions on the website, in the order HomeClient asks them. */
 const WEB_CALCULATOR: JourneyStep[] = [
-  { label: 'City', action: 'Pick a city or skip', route: '/', shot: '/?start=onboarding' },
-  { label: 'Income', action: 'Enter take-home pay', route: '/', shot: '/?start=onboarding&city=austin' },
-  { label: 'Savings', action: 'Enter monthly savings', route: '/', shot: 'calc:savings' },
-  { label: 'Invested', action: 'Enter what you have', route: '/', shot: 'calc:portfolio' },
-  { label: 'Age', action: 'Enter or skip', route: '/', shot: 'calc:age' },
-  // The RevealFlow pages that follow the questions, in order.
-  { label: 'Freedom age', action: 'Tap Continue', route: '/', shot: 'calc:freedom-age' },
-  { label: 'Life in years', action: 'Tap Continue', route: '/', shot: 'calc:life' },
-  { label: 'Freedom number', action: 'Tap Continue', route: '/', shot: 'calc:number' },
-  { label: 'How you stack up', action: 'Tap Continue', route: '/', shot: 'calc:standing' },
-  { label: 'Expat FIRE', action: 'Tap Try a different pace', route: '/', shot: 'calc:abroad' },
+  ...['Goal','City','Pay frequency','Income','Expenses','Saved','Age','Worry','Your home','Investing'].map((label, i) => ({label, action: 'Answer or skip optional question', route: '/', shot: 'calc:' + ['goal','city','pay','income','expenses','portfolio','age','worry','housing','investing'][i]})),
+  ...['Freedom date','Life in years','Freedom number','Your monthly picture'].map((label,i)=>({label,action:'Continue',route:'/',shot:'calc:'+['freedom-age','life','number','standing'][i]})),
 ]
 
 /** The calculator pages the screenshot script walks through, in order. */
-export const CALC_SHOTS = ['savings', 'portfolio', 'age', 'freedom-age', 'life', 'number', 'standing', 'abroad', 'pace', 'save'] as const
+export const CALC_SHOTS = ['goal','city','pay','income','expenses','portfolio','age','worry','housing','investing','freedom-age','life','number','standing','pace','save'] as const
 
 /** The calculator's save step is the sign-up card itself (Google, Apple soon, or email). */
 const WEB_SIGN_UP: JourneyStep[] = [
@@ -71,10 +62,10 @@ const WEB_SIGN_UP: JourneyStep[] = [
   { label: 'Home', route: '/dashboard', shot: 'user:/dashboard' },
 ]
 
-/** Phone onboarding after sign-in, in the order the screens push each other. */
+/** Phone onboarding before saving an account, in the order the screens push each other. */
 const PHONE_ONBOARDING: JourneyStep[] = [
-  'goal', 'city', 'pay', 'income', 'spending', 'invested', 'age', 'worry', 'housing',
-  'reveal', 'life', 'number', 'standing', 'reminder', 'your-plan',
+  'goal', 'city', 'pay', 'income', 'spending', 'invested', 'age', 'worry', 'housing', 'investing',
+  'reveal', 'life', 'number', 'standing', 'pace', 'reminder', 'your-plan',
 ].map((screen) => ({ label: screen[0].toUpperCase() + screen.slice(1).replace('-', ' '), route: `onboarding/${screen}.tsx`, shot: `app:/onboarding/${screen}` }))
 
 /** Website Money and Plan pages; sub-pages without their own URL are opened like a person would, by their tab. */
@@ -148,7 +139,7 @@ export const JOURNEYS: Journey[] = [
     id: 'web-city-guide', title: 'City guide → plan', platform: 'web', visitor: 'new',
     steps: [
       { label: 'City guide', action: 'Tap Build my plan', route: '/fire-number/[slug]', shot: '/fire-number/austin' },
-      ...WEB_CALCULATOR.slice(1), ...WEB_SIGN_UP,
+      ...WEB_CALCULATOR.slice(3), ...WEB_SIGN_UP,
     ],
   },
   {
@@ -217,7 +208,7 @@ export const JOURNEYS: Journey[] = [
   { id: 'web-money', title: 'Look around: Money', platform: 'web', visitor: 'returning', steps: [WEB_HOME, ...WEB_MONEY] },
   { id: 'web-plan', title: 'Look around: Plan', platform: 'web', visitor: 'returning', steps: [WEB_HOME, ...WEB_PLAN] },
   {
-    id: 'phone-new', title: 'Phone: sign in, then onboarding', platform: 'phone', visitor: 'new',
+    id: 'phone-new', title: 'Phone: questions, reveal, then save', platform: 'phone', visitor: 'new',
     steps: [
       { label: 'Welcome', action: 'Tap Get started', route: 'onboarding/index.tsx', shot: 'app:/onboarding' },
       { label: 'Sign in', action: 'Google or email', route: 'sign-in.tsx', shot: 'app:/sign-in' },

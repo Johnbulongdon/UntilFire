@@ -186,7 +186,7 @@ export function TodayList({ items, count, perDay, fmt, onAnswer, onOpen, onWhatI
     wasFinished.current = finished;
   }, [finished, justFinished]);
   return (
-    <Card style={{ display: "grid", gap: 4 }}>
+    <Card style={{ display: "grid", gap: 4, background: "var(--uf-mint)" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
         <h2 className="uf-t-h3" style={{ margin: 0 }}>Today</h2>
         <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}><span style={mono}>{count.done}</span> of <span style={mono}>{count.of}</span> days</span>

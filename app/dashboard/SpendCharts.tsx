@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import MarkedMonth, { type MarkedEvent } from "./MarkedMonth";
 import { bucketFor, daysInMonth, type DateRange } from "@/lib/spend-range";
 
 /**
@@ -222,7 +223,6 @@ export function BarsView({ range, today, daily, usualMonth, budgetMonth, fmt, va
   );
 }
 
-const SHADES = [0, 22, 46, 72, 100];
 /** Shade cut-offs from the person's own spending days: 40th, 70th and 90th percentile. */
 export function shadeCuts(values: number[]): [number, number, number] {
   const v = values.filter((x) => x > 0).sort((a, b) => a - b);
@@ -230,59 +230,25 @@ export function shadeCuts(values: number[]): [number, number, number] {
   return [q(0.4), q(0.7), q(0.9)];
 }
 
-/** Each day shaded by money out; a full month with numbers, or small months side by side. */
-export function CalendarView({ range, today, daily, fmt, selectedDay, onSelectDay, onZoomMonth }: {
-  range: DateRange; today: string; daily: Daily; fmt: (n: number) => string;
-  selectedDay: string | null; onSelectDay: (d: string | null) => void; onZoomMonth: (month: string) => void;
-}) {
-  const cuts = useMemo(() => shadeCuts(daysOf(range, today).map((d) => daily.get(d) ?? 0)), [range, today, daily]);
-  const lvl = (v: number) => (v <= 0 ? 0 : v <= cuts[0] ? 1 : v <= cuts[1] ? 2 : v <= cuts[2] ? 3 : 4);
-  const shade = (l: number) => `color-mix(in oklab, var(--uf-chart-1) ${SHADES[l]}%, var(--uf-surface-2))`;
-  const single = range.months.length === 1;
-  const legend = ["$0", `< ${fmt(cuts[0])}`, `${fmt(cuts[0])}+`, `${fmt(cuts[1])}+`, `${fmt(cuts[2])}+`];
+/** Marked dates replace the old spending heatmap. */
+export function CalendarView({range,today,fmt,selectedDay,onSelectDay,onZoomMonth,events=[],colorFor,compact}:{
+ range:DateRange;today:string;daily:Daily;fmt:(n:number)=>string;selectedDay:string|null;onSelectDay:(d:string|null)=>void;onZoomMonth:(m:string)=>void;
+ compact?:(n:number)=>string; events?:({iso:string}&MarkedEvent)[];colorFor?:(category:string|null|undefined)=>string|undefined;
+}){
+ const byDay=new Map<string,MarkedEvent[]>();
+ for(const event of events){const lines=byDay.get(event.iso)??[];lines.push(event);byDay.set(event.iso,lines);}
 
-  return (
-    <div style={{ display: "grid", gap: 12 }}>
-      <div style={{ display: "grid", gridTemplateColumns: single ? "1fr" : "repeat(auto-fill, minmax(min(200px, 44%), 1fr))", gap: "16px 20px" }}>
-        {range.months.map((m) => {
-          const lead = (new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)) - 1, 1).getDay() + 6) % 7;
-          return (
-            <div key={m} style={{ display: "grid", gap: 6, alignContent: "start" }}>
-              {!single && (
-                <button type="button" onClick={() => onZoomMonth(m)} aria-label={`Show ${monthShort(m)} only`} className="uf-t-label"
-                  style={{ justifySelf: "start", border: "none", background: "none", padding: 0, cursor: "pointer", color: "var(--uf-ink-2)", font: "inherit", fontWeight: 700 }}>
-                  {monthShort(m)}
-                </button>
-              )}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: single ? 4 : 3 }}>
-                {single && ["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <span key={`h${i}`} className="uf-t-small" style={{ textAlign: "center", color: "var(--uf-ink-3)" }}>{d}</span>)}
-                {Array.from({ length: lead }, (_, i) => <i key={`b${i}`} />)}
-                {Array.from({ length: daysInMonth(m) }, (_, i) => {
-                  const d = `${m}-${String(i + 1).padStart(2, "0")}`, future = d > today, v = daily.get(d) ?? 0, l = lvl(v), on = selectedDay === d;
-                  return (
-                    <button key={d} type="button" disabled={future || !single} onClick={() => onSelectDay(on ? null : d)}
-                      aria-label={future ? undefined : `${d}: ${fmt(v)}`} title={future ? "" : `${Number(d.slice(8))} ${monthShort(m)} · ${fmt(v)}`}
-                      style={{ aspectRatio: single ? "1.4" : "1", minWidth: 0, borderRadius: single ? 6 : 3, padding: single ? 4 : 0, textAlign: "left", font: "inherit",
-                        cursor: future || !single ? "default" : "pointer", border: on ? "2px solid var(--uf-ink)" : future ? "1px dashed var(--uf-border)" : "none",
-                        background: future ? "transparent" : shade(l), color: l >= 3 ? "var(--uf-card)" : "var(--uf-ink-3)" }}>
-                      {single && <span style={{ ...mono, fontSize: 10 }}>{i + 1}</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="uf-t-small" style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", color: "var(--uf-ink-3)" }}>
-        {SHADES.map((_, i) => (
-          <span key={i} style={{ display: "inline-flex", gap: 4, alignItems: "center" }}>
-            <i style={{ width: 12, height: 12, borderRadius: 3, background: shade(i) }} /><span style={mono}>{legend[i]}</span>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
+ return <div style={{display:'grid',gap:20,minWidth:0}}>{range.months.map(month=>{
+ const monthEvents=events.filter(e=>e.iso.startsWith(month));
+ const bills=monthEvents.filter(e=>!e.income).reduce((s,e)=>s+e.amount,0),incoming=monthEvents.filter(e=>e.income).reduce((s,e)=>s+e.amount,0);
+ return <div key={month} style={{display:'grid',gap:12,minWidth:0}}>
+  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flexWrap:'wrap'}}>
+   {range.months.length>1?<button type="button" className="uf-primary-button" onClick={()=>onZoomMonth(month)} aria-label={'Show '+month+' only'}>{new Date(month+'-01T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'})}</button>:<strong>{new Date(month+'-01T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'})}</strong>}
+   <div style={{display:'flex',gap:8,flexWrap:'wrap',fontSize:12,fontWeight:700,color:'#151719'}}><span style={{background:'#EEE9FA',padding:'8px 10px',borderRadius:12}}>{fmt(bills)} scheduled bills</span><span style={{background:'#FFE58A',padding:'8px 10px',borderRadius:12}}>+{fmt(incoming)} scheduled income</span></div>
+  </div>
+  <MarkedMonth month={month} today={today} events={byDay} selected={selectedDay} onSelect={iso=>onSelectDay(iso===selectedDay?null:iso)} fmt={fmt} compact={compact} colorFor={colorFor}/>
+ </div>;
+ })}</div>;
 }
 
 export const calendarAllowed = (months: number, phone: boolean) => months <= (phone ? 6 : 12);

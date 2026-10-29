@@ -1,3 +1,4 @@
+<!-- Current visual contract: docs/design/design-system.md, approved 29 October 2026. Older v3 visual wording below is superseded; money and workflow rules remain in force. -->
 # UntilFire — Claude entry point
 
 Read the user's request and [AGENTS.md](AGENTS.md) first. It owns shared authority,
@@ -60,15 +61,14 @@ retention, trust, and acquisition. Keep work bounded to the user's request.
 - **Profile:** account settings, billing, household setup, and FIRE personality/type.
   Planning assumptions live in Plan (`FireAssumptionsCard`), not ProfileTab.
 
-The current shared system is v3 Warm: cream/light and warm dark via `.dark`,
-Fraunces display headings, Manrope body, DM Mono financial data with tabular
-numerals. A prominent freedom-date display is the explicit Fraunces exception;
-dates in data tables and `Stat` remain DM Mono. Instrument Serif is reserved for
-landing/HomeClient marketing heroes.
+The current shared system is Next Horizon, approved 29 October 2026: Inter at
+400–800 for display, body and financial values, with tabular numerals for money.
+Black actions, a warm-yellow freedom card, white/light grey ground and mint,
+lilac, blue and pink supporting cards. Dark mode uses charcoal and readable
+light ink. The exact logo and wordmark exports live in public/brand/.
 
-**Green acts; teal means freedom/progress.** Primary actions use green; neutral
-secondary/ghost controls and red destructive actions are valid. Teal is not a
-button or generic success color. Meaning must not depend on color alone.
+Primary actions use rounded pills. Preserve separate positive, warning and
+negative financial meanings; meaning must not depend on colour alone.
 
 Reuse `components/ui/` and tokens in `app/globals.css`. Use the named type classes
 and documented scales, with bounded primitive-specific exceptions in the design

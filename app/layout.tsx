@@ -17,7 +17,7 @@ import { BRAND_PROFILES, SITE_URL } from '@/lib/site'
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#08080e',
+  themeColor: '#FFFFFF',
 }
 
 export const metadata: Metadata = {

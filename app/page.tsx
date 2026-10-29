@@ -74,13 +74,13 @@ export default function Home() {
         style={{
           background: "var(--uf-ground)",
           borderTop: "1px solid var(--uf-border)",
-          fontFamily: "'Manrope', sans-serif",
+          fontFamily: "'Inter', sans-serif",
           color: "var(--uf-ink-2)",
         }}
       >
         <div style={{ maxWidth: 980, margin: "0 auto", padding: "56px 24px 72px" }}>
           <p style={seoHeading}>Finance your freedom</p>
-          <h2 style={{ fontFamily: "'Instrument Serif', Georgia, 'Times New Roman', serif", fontSize: "clamp(32px, 4.6vw, 46px)", fontWeight: 400, lineHeight: 1.12, letterSpacing: "-0.02em", color: "var(--uf-ink)", margin: "0 0 16px" }}>
+          <h2 style={{ fontFamily: "'Inter', Georgia, 'Times New Roman', serif", fontSize: "clamp(32px, 4.6vw, 46px)", fontWeight: 400, lineHeight: 1.12, letterSpacing: "-0.02em", color: "var(--uf-ink)", margin: "0 0 16px" }}>
             Understand your FIRE estimate
           </h2>
           <p style={{ fontSize: 18, lineHeight: 1.8, color: "var(--uf-ink-2)", margin: "0 0 16px", maxWidth: 720 }}>

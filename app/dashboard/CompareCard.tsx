@@ -20,7 +20,7 @@ export default function CompareCard({ netWorthUsd, age, currency, onOpenAssumpti
   onOpenAssumptions?: () => void;
 }) {
   const eyebrow = (
-    <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>
+    <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>
       How you compare
     </div>
   );

@@ -34,7 +34,7 @@ const phone = JOURNEYS.find((j) => j.id === 'phone-new')!.steps
 for (let i = 0; i < phone.length - 1; i++) {
   const source = fs.readFileSync(path.join('mobile/src/app', phone[i]), 'utf8')
   const next = '/' + phone[i + 1].replace(/\.tsx$/, '')
-  if (!source.includes(`'${next}'`)) failures.push(`phone-new: ${phone[i]} no longer goes to ${next}`)
+  if (!source.includes(`'${next}'`) && !source.includes(`"${next}"`)) failures.push(`phone-new: ${phone[i]} no longer goes to ${next}`)
 }
 
 if (failures.length) {

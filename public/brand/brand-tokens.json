@@ -1,0 +1,34 @@
+{
+  "name": "UntilFire Next Horizon",
+  "version": 1,
+  "approved": "2026-10-29",
+  "fonts": {
+    "family": "Inter",
+    "weights": [
+      400,
+      500,
+      600,
+      700,
+      800
+    ]
+  },
+  "colors": {
+    "yellow": "#FFE58A",
+    "ink": "#151719",
+    "white": "#FFFFFF",
+    "ground": "#F8F8FB",
+    "muted": "#5C6170",
+    "mint": "#E3F7EF",
+    "lilac": "#EEE9FA",
+    "blue": "#E8F3FF",
+    "pink": "#FBE7F2",
+    "negative": "#B63D46",
+    "positive": "#17684B"
+  },
+  "radius": {
+    "control": 14,
+    "card": 24,
+    "modal": 28,
+    "pill": 999
+  }
+}

@@ -1,14 +1,5 @@
 import '../global.css'
 
-import { DMMono_400Regular, DMMono_500Medium } from '@expo-google-fonts/dm-mono'
-import { Fraunces_400Regular, Fraunces_500Medium, Fraunces_600SemiBold, Fraunces_700Bold } from '@expo-google-fonts/fraunces'
-import {
-  Manrope_400Regular,
-  Manrope_500Medium,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
-  Manrope_800ExtraBold,
-} from '@expo-google-fonts/manrope'
 import { useFonts } from 'expo-font'
 import { Stack, usePathname, type ErrorBoundaryProps } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
@@ -45,9 +36,22 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 function RootLayout() {
   // The website's three faces: Fraunces display, Manrope body, DM Mono numbers.
   const [loaded, error] = useFonts({
-    Fraunces_400Regular, Fraunces_500Medium, Fraunces_600SemiBold, Fraunces_700Bold,
-    Manrope_400Regular, Manrope_500Medium, Manrope_600SemiBold, Manrope_700Bold, Manrope_800ExtraBold,
-    DMMono_400Regular, DMMono_500Medium,
+    Inter_400Regular: require('../../assets/fonts/Inter_400Regular.ttf'),
+    Inter_500Medium: require('../../assets/fonts/Inter_500Medium.ttf'),
+    Inter_600SemiBold: require('../../assets/fonts/Inter_600SemiBold.ttf'),
+    Inter_700Bold: require('../../assets/fonts/Inter_700Bold.ttf'),
+    Inter_800ExtraBold: require('../../assets/fonts/Inter_800ExtraBold.ttf'),
+    Fraunces_400Regular: require('../../assets/fonts/Inter_400Regular.ttf'),
+    Fraunces_500Medium: require('../../assets/fonts/Inter_500Medium.ttf'),
+    Fraunces_600SemiBold: require('../../assets/fonts/Inter_600SemiBold.ttf'),
+    Fraunces_700Bold: require('../../assets/fonts/Inter_700Bold.ttf'),
+    Manrope_400Regular: require('../../assets/fonts/Inter_400Regular.ttf'),
+    Manrope_500Medium: require('../../assets/fonts/Inter_500Medium.ttf'),
+    Manrope_600SemiBold: require('../../assets/fonts/Inter_600SemiBold.ttf'),
+    Manrope_700Bold: require('../../assets/fonts/Inter_700Bold.ttf'),
+    Manrope_800ExtraBold: require('../../assets/fonts/Inter_800ExtraBold.ttf'),
+    DMMono_400Regular: require('../../assets/fonts/Inter_400Regular.ttf'),
+    DMMono_500Medium: require('../../assets/fonts/Inter_500Medium.ttf'),
   })
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync().catch(() => {})

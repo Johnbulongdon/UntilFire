@@ -25,7 +25,7 @@ const inputStyle: React.CSSProperties = {
   width: '100%',
   outline: 'none',
   boxSizing: 'border-box',
-  fontFamily: "'Manrope', sans-serif",
+  fontFamily: "'Inter', sans-serif",
 }
 
 const labelStyle: React.CSSProperties = {
@@ -57,7 +57,7 @@ export default function PurchaseImpactCalculator() {
   }, [price, savings, monthly, target, rate])
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
+    <div style={{ background: C.bg, minHeight: '100vh', fontFamily: "'Inter', sans-serif" }}>
       {/* Nav */}
 
       <div style={{ maxWidth: 960, margin: '0 auto', padding: '48px 24px 80px' }}>
@@ -123,7 +123,7 @@ export default function PurchaseImpactCalculator() {
                   <div style={{ fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginBottom: 8 }}>
                     Worth at your freedom date
                   </div>
-                  <div style={{ fontSize: 'clamp(36px, 6vw, 52px)', fontWeight: 800, color: '#62FAE3', fontFamily: 'Manrope, sans-serif', letterSpacing: '-2px', lineHeight: 1 }}>
+                  <div style={{ fontSize: 'clamp(36px, 6vw, 52px)', fontWeight: 800, color: '#62FAE3', fontFamily: 'Inter, sans-serif', letterSpacing: '-2px', lineHeight: 1 }}>
                     {formatFV(result.futureValue)}
                   </div>
                   <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 10, lineHeight: 1.6 }}>
@@ -135,7 +135,7 @@ export default function PurchaseImpactCalculator() {
                   <div style={{ fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginBottom: 8 }}>
                     Freedom delayed by
                   </div>
-                  <div style={{ fontSize: 'clamp(36px, 6vw, 52px)', fontWeight: 800, color: 'var(--uf-neg)', fontFamily: 'Manrope, sans-serif', letterSpacing: '-2px', lineHeight: 1 }}>
+                  <div style={{ fontSize: 'clamp(36px, 6vw, 52px)', fontWeight: 800, color: 'var(--uf-neg)', fontFamily: 'Inter, sans-serif', letterSpacing: '-2px', lineHeight: 1 }}>
                     {formatDelay(result.delayDays)}
                   </div>
                   <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 10, lineHeight: 1.6 }}>

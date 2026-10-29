@@ -1,4 +1,4 @@
-// Shared HTML email builders — white background, brand green design system
+// Shared HTML email builders — Next Horizon brand system
 // All HTML is table-based for email client compatibility.
 //
 // lib/pricing is the one import allowed here: it is a constants-only module
@@ -16,30 +16,26 @@ const LINKEDIN_URL = "https://www.linkedin.com/company/untilfire";
 /* Design-system tokens, mirrored from app/globals.css. Email has no custom
    properties to read, so the values are duplicated here deliberately; the
    comment is the link back to the source of truth. */
-const GROUND = "#FDF8F1";
-const CARD = "#FFFDFA";
-const BORDER = "#EFE2D0";
-const INK = "#221B12";
-const INK_2 = "#6B5C48";
-const INK_3 = "#9A8B76";
-const GREEN = "#12856A";
-const TEAL = "#0E9C86";
+const GROUND = "#F8F8FB";
+const CARD = "#FFFFFF";
+const BORDER = "#E7E5ED";
+const INK = "#151719";
+const INK_2 = "#5C6170";
+const INK_3 = "#686D7C";
+const GREEN = "#151719";
+const TEAL = "#151719";
 
 /**
- * Design-system faces. Fraunces and Manrope will not load in most mail
- * clients, so each falls back to something with the same posture rather than
- * to whatever the client picks: Georgia is the closest widely-installed
- * companion to Fraunces, and the system sans stack matches Manrope's
- * humanist feel.
+ * Self-hosted Inter with system sans fallbacks for email clients that strip web fonts.
  */
-const DISPLAY = "Fraunces,Georgia,'Times New Roman',serif";
-const BODY = "Manrope,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+const DISPLAY = "Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+const BODY = "Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
 
 const LOGO = `
   <table cellpadding="0" cellspacing="0" style="margin:0 auto">
     <tr>
       <td style="vertical-align:middle;padding-right:10px">
-        <img src="${SITE}/logo/horizon-color.svg" alt="" width="36" height="36" style="display:block;border-radius:8px;border:0" />
+        <img src="${SITE}/brand/icon-192.png" alt="" width="36" height="36" style="display:block;border-radius:8px;border:0" />
       </td>
       <td style="vertical-align:middle">
         <span style="font-size:20px;font-weight:900;color:${GREEN};letter-spacing:-0.5px;font-family:${BODY}">Until</span><span style="font-size:20px;font-weight:900;color:${INK};letter-spacing:-0.5px;font-family:${BODY}">Fire</span>
@@ -60,18 +56,18 @@ function base(preheader: string, body: string): string {
        fallback stack instead, which is why every rule still names one. Both
        are variable fonts, so one file covers the whole weight range. */
     @font-face {
-      font-family: 'Fraunces';
+      font-family: 'Inter';
       font-style: normal;
-      font-weight: 100 900;
+      font-weight: 700;
       font-display: swap;
-      src: url('${SITE}/fonts/email/fraunces.woff2') format('woff2');
+      src: url('${SITE}/fonts/inter/Inter_700Bold.ttf') format('truetype');
     }
     @font-face {
-      font-family: 'Manrope';
+      font-family: 'Inter';
       font-style: normal;
-      font-weight: 200 800;
+      font-weight: 400;
       font-display: swap;
-      src: url('${SITE}/fonts/email/manrope.woff2') format('woff2');
+      src: url('${SITE}/fonts/inter/Inter_400Regular.ttf') format('truetype');
     }
   </style>
   <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->

@@ -3425,3 +3425,40 @@ originals stay private; only anonymized conclusions enter this public repo.
 work, and authorization to open the roadmap refactor PR, 27 October 2026.
 **Revisit:** If the queue becomes stale or duplicates the detailed backlog,
 simplify its maintenance before adding another tracking system.
+
+### D-111 — October 29: approved Next Horizon rebrand
+
+**Status:** Implemented in draft [PR #323](https://github.com/Johnbulongdon/UntilFire/pull/323); reviewed surfaces pass, not released. Authenticated admin and physical-device checks remain.
+**Decision:** Replace the former sun styling with the approved black sunrise/path logo, Inter wordmark, warm yellow #FFE58A and coordinated mint/lilac/blue/pink cards across web, phone, admin, SEO and emails. Black pill actions and one-question pages. Monthly inputs; separate Housing and Investing; own monthly picture before an interactive saving improvement and account save. No final Change my answers link. No invented city savings comparisons.
+**Why:** John approved the complete responsive mock and refined yellow logo, then explicitly requested implementation throughout the product and brand exports. This supersedes older v3 Warm visual defaults; financial rules and security decisions remain in force.
+**Sources:** `docs/design/design-system.md`, `public/brand/`; branch `codex/next-horizon-rebrand`, origin/main baseline d8ad674a71fddf284a96718ea8be7c3b30c57a2b. Merge/deploy and native store release remain separate.
+
+29 October refinement: John selected lighter category palette B. Apply the shared pastel fills across web and phone while preserving category identities, readable labels and semantic warning/loss colors. The detailed payday C remains a review mock; no implementation selection or release authorized.
+
+### D-112 — October 29: payday C, direct chart inspection
+
+**Status:** Implemented on the rebrand branch, pending release verification; no publication authorized.
+**Decision:** John selected payday C and explicitly removed the visible bottom slider. Home shows the future cash line from today to payday at actual date positions. Mouse movement inspects events; horizontal touch dragging, separate bill buttons and keyboard/screen-reader adjustment reach every bill. Details stay above the chart. No +N clustering or hidden bill totals. The card has dedicated Money navigation, so inspecting it does not open another page. Preserve negative amounts and empty states.
+**Scope:** Supersedes only D-90's visual history/icon grouping. D-90's cash-only calculation and fallback remain unchanged. Selection uses the shared payday chart presentation helper on website and phone. Lighter category palette B is the separately approved style refinement. No financial data mutation, migration, SDK change or phone release.
+
+### D-113 — October 29: purposeful browser interaction
+
+**Status:** Implemented locally on the rebrand branch; publication pending.
+**Decision:** Make the approved style respond to input through a real example-plan control, selected-answer feedback, short directional question/section transitions, disclosure feedback and structural transaction loading. Preserve Home/reveal motion already present. Use 120–300ms feedback, readable stable amounts and reduced-motion cancellation. Do not remount financial editors to replay an animation. Hide decorative onboarding side illustrations on narrow browsers, retain money summaries. Slider undo restores exact original values, including decimal/local-currency amounts. No mascot, perpetual decorative motion or change to projection assumptions.
+**Source:** John requested a website/browser interaction and animation audit and implementation after approving category B and payday C. Phone release and production deployment were not requested. This pass does not assert native pacing-control parity or full accessibility compliance.
+
+### D-114 — October 29: simpler, stable browser onboarding
+
+**Status:** Implemented locally on the approved rebrand branch; not released.
+**Decision:** Try one improvement shows whole local-currency amounts and moves in whole units. Restoring the rounded original amount retains the exact original stored plan. Keep the improvement step pending a definite removal decision. Hide visible Skip actions without making optional answers mandatory. Show the freedom target only in today's dollars. Show exact reveal values immediately; use a short, reduced-motion-aware year-grid wave. City edits invalidate the previous choice, and changing currency converts already-entered answers rather than relabelling them. Existing sign-in sessions get a direct Continue to Home action; failed or slow callbacks show recovery.
+**Source:** John's screenshot and onboarding feedback, 29 October. This supersedes D-113's decimal slider display, while preserving exact underlying financial values. No backend migration or publication.
+
+### D-115 — October 29: marked bills calendar B
+
+**Status:** Implemented locally on the approved rebrand branch; not released.
+**Decision:** Replace the Transactions calendar heatmap and Calendar page's cash-level date cells with the selected B marked calendar. Use Sunday-first date alignment, pastel category labels, yellow incoming-payment marks, and selected-day details below the month. Every same-day payment stays individually present. Narrow date cells use compact display-currency amounts; exact values remain in accessible labels and details. Keep line/bars as alternatives.
+**Scope:** Presentation only. Preserve actual-versus-expected status, recurrence/FX sources, cash forecast, emergency reserve and contribution/mark-done/add-payment actions. No migrations, stored data edits or native phone release. Supersedes the visual cash-level colouring in D-63, not its financial meanings.
+
+29 October D-115 clarification: calendar markers are scheduled bills and payday only. Bank transactions remain in Transactions. Original scheduled occurrences stay on their dates after the day passes; a calendar must not use cash-forecast overdue catch-up dates. Completed one-offs remain visible on their scheduled dates. Selected-day labels distinguish paid, overdue and expected entries. The existing cash forecast still reserves overdue unpaid expenses.
+
+John authorized the website deployment of PR #323 and its accumulated approved fixes on 29 October. Native store submission is not part of this release.

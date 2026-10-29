@@ -1,45 +1,71 @@
-import { useMemo, useState } from 'react'
-import { TextInput, View } from 'react-native'
+import {useEffect,useRef,useState} from 'react';
+import Slider from "@/components/AmountSlider";
+import { TextInput, View } from "react-native";
+import { currencySymbol, fromUSD } from "@/lib/display-currency";
+import { colors } from "@/theme/colors";
+import { Text } from "./Text";
 
-import { currencySymbol, fromUSD } from '@/lib/display-currency'
-import { colors } from '@/theme/colors'
-
-import { Button } from './Button'
-import { Text } from './Text'
-import { Wheel } from './Wheel'
-
-/**
- * A money wheel in steps of 100, with typing as the way out for an exact
- * number. `value` is in the display currency.
- */
-export function MoneyWheel({ value, onChange, max, unit, label }: { value: number; onChange: (n: number) => void; max: number; unit: string; label: string }) {
-  const [typing, setTyping] = useState(false)
-  // Steps of 100 in dollars, and about that much in other currencies (HK$1,000, ¥10,000), so the wheel stays short.
-  const step = niceStep(fromUSD(100))
-  const values = useMemo(() => Array.from({ length: Math.floor(max / step) + 1 }, (_, i) => i * step), [max, step])
-  const sym = currencySymbol().trim()
+/** Compatibility name for the shared monthly amount field. Value is in display currency. */
+export function MoneyWheel({
+  value,
+  onChange,
+  max,
+  unit,
+  label,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  max: number;
+  unit: string;
+  label: string;
+}) {
+  const limit = Math.max(max, value, 1);
+  const [text,setText]=useState(String(value));
+  const editing=useRef(false);
+  useEffect(()=>{if(!editing.current)setText(String(value))},[value]);
   return (
-    <View className="gap-3">
-      {typing ? (
-        <View className="flex-row items-baseline border-b-2 border-border-2 pb-2">
-          <Text className="font-mono text-[40px] text-ink">{sym}</Text>
-          <TextInput autoFocus accessibilityLabel={label} keyboardType="number-pad" value={value ? String(value) : ''}
-            onChangeText={t => onChange(Math.min(Number(t.replace(/[^0-9]/g, '')) || 0, 99_999_999))}
-            placeholder="0" placeholderTextColor={colors.border2}
-            className="ml-1 flex-1 text-[40px] text-ink" style={{ fontFamily: 'DMMono_500Medium' }} />
-        </View>
-      ) : (
-        <Wheel key={step} values={values} value={Math.min(values[values.length - 1], Math.round(value / step) * step)} onChange={onChange} accessibilityLabel={label}
-          format={n => `${sym}${n.toLocaleString('en-US')}`} />
-      )}
-      <Text className="text-center text-[15px] text-ink-2">{unit}</Text>
-      <Button small kind="quiet" style={{ alignSelf: 'center' }} label={typing ? 'Use the wheel' : 'Type it instead'} onPress={() => setTyping(t => !t)} />
+    <View className="gap-5">
+      <View className="flex-row items-baseline gap-1">
+        <Text className="text-[40px] font-bold text-ink">
+          {currencySymbol().trim()}
+        </Text>
+        <TextInput
+          accessibilityLabel={label}
+          keyboardType="decimal-pad"
+          value={text}
+          onFocus={()=>{editing.current=true}}
+          onBlur={()=>{editing.current=false;setText(String(value))}}
+          onChangeText={(t) => {
+            const clean=t.replace(",", ".").replace(/[^0-9.]/g, "").replace(/(\..*)\./g,"$1");
+            setText(clean);
+            const n = Number(clean);
+            if (Number.isFinite(n)) onChange(Math.min(n, 99999999));
+          }}
+          selectTextOnFocus
+          placeholder="0"
+          placeholderTextColor={colors.border2}
+          style={{
+            flex: 1, minWidth: 0, width: 0,
+            fontFamily: "Inter_700Bold",
+            fontSize: 48,
+            color: colors.ink,
+            paddingVertical: 8,
+          }}
+        />
+      </View>
+      <Text className="text-[15px] text-ink-2">{unit}</Text>
+      <Slider
+        accessibilityLabel={label + " slider"}
+        minimumValue={0}
+        maximumValue={limit}
+        step={Math.max(1, Math.round(fromUSD(10)))}
+        value={value}
+        onValueChange={n=>{setText(String(n));onChange(n)}}
+        minimumTrackTintColor={colors.ink}
+        maximumTrackTintColor={colors.border}
+        thumbTintColor={colors.ink}
+        style={{ height: 48 }}
+      />
     </View>
-  )
-}
-
-/** The nearest 1, 2 or 5 times a power of ten at or above n: 100, 200, 500, 1,000. */
-function niceStep(n: number): number {
-  const p = Math.pow(10, Math.floor(Math.log10(Math.max(1, n))))
-  return [1, 2, 5, 10].map(k => k * p).find(v => v >= n * 0.75) ?? p * 10
+  );
 }

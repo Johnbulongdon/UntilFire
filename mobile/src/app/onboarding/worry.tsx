@@ -24,7 +24,7 @@ export default function Worry() {
   const next = () => router.push('/onboarding/housing')
 
   return (
-    <QuestionScreen step={8} steps={9} title="What gets in the way most?" hint="Your first move will tackle it."
+    <QuestionScreen step={8} steps={10} title="What gets in the way most?" hint="Your first move will tackle it."
       skipLabel="Skip" onSkip={() => { setDraft({ worry: undefined }); next() }}>
       <View className="gap-3">
         {WORRIES.map(w => (

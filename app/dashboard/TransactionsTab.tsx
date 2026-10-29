@@ -7,6 +7,8 @@ import { fetchAllPages } from "@/lib/supabase-pages";
 import CsvImportModal from "./CsvImportModal";
 import PlaidConnect, { type BankStatus } from "./PlaidConnect";
 import SpendRangePill, { rangeLabel } from "./SpendRangePill";
+import TransactionsLoading from "./TransactionsLoading";
+import type { ScheduledCalendarItem } from "@/lib/marked-calendar";
 import SpendCard, { type CatDisplay } from "./SpendCard";
 import ReviewPill from "./ReviewPill";
 import WorthALook from "./WorthALook";
@@ -180,7 +182,7 @@ function ProjectInput({
           <button
             type="button"
             onClick={commit}
-            style={{ background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 8, padding: "0 14px", fontSize: 12, fontWeight: 700, color: "#047857", cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit" }}
+            style={{ background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 8, padding: "0 14px", fontSize: 12, fontWeight: 700, color: "#151719", cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit" }}
           >
             + Add
           </button>
@@ -333,7 +335,7 @@ function QuickAddForm({
     <div className="cf-quick-form" style={{ display: "flex", flexDirection: "column" }}>
       {/* Header */}
       <div style={{ padding: "14px 20px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--uf-border)" }}>
-        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "1.1px", textTransform: "uppercase", color: "#047857" }}>
+        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "1.1px", textTransform: "uppercase", color: "#151719" }}>
           {editing ? "Edit transaction" : "Quick add"}
         </div>
         {editing ? (
@@ -355,7 +357,7 @@ function QuickAddForm({
               onClick={() => setDraft((d) => ({ ...d, transaction_type: t, category: t === "income" ? "salary" : "", sub_category: "", aiSuggestion: null }))}
               style={{
                 background: draft.transaction_type === t ? (t === "income" ? "#ECFDF5" : t === "transfer" ? "#F3F4F6" : "var(--uf-card)") : "transparent",
-                color: draft.transaction_type === t ? (t === "income" ? "#047857" : t === "transfer" ? "#6B7280" : "var(--uf-text)") : "var(--uf-text-2)",
+                color: draft.transaction_type === t ? (t === "income" ? "#151719" : t === "transfer" ? "#6B7280" : "var(--uf-text)") : "var(--uf-text-2)",
                 border: "none", borderRadius: 999, padding: "5px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer",
                 boxShadow: draft.transaction_type === t && t === "expense" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
               }}
@@ -374,7 +376,7 @@ function QuickAddForm({
           display: "flex", alignItems: "baseline", gap: 6,
           transition: "border-color 0.15s",
         }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = "#047857")}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "#151719")}
           onBlur={(e) => (e.currentTarget.style.borderColor = "var(--uf-border)")}
         >
           <span style={{ fontSize: 26, fontWeight: 700, color: "var(--uf-text-3)", letterSpacing: "-0.6px" }}>$</span>
@@ -389,7 +391,7 @@ function QuickAddForm({
               setField("amount", v);
             }}
             autoFocus
-            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 34, fontWeight: 800, color: isIncome ? "#059669" : "#064E3B", letterSpacing: "-1px", fontVariantNumeric: "tabular-nums", minWidth: 0, width: "100%", fontFamily: "inherit" }}
+            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 34, fontWeight: 800, color: isIncome ? "#151719" : "#151719", letterSpacing: "-1px", fontVariantNumeric: "tabular-nums", minWidth: 0, width: "100%", fontFamily: "inherit" }}
           />
           <select
             value={draft.currency}
@@ -479,7 +481,7 @@ function QuickAddForm({
             style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               background: "linear-gradient(95deg, rgba(32,212,191,0.12), rgba(98,250,227,0.12))",
-              border: "1px solid #6EE7B7", color: "#047857",
+              border: "1px solid #6EE7B7", color: "#151719",
               borderRadius: 999, padding: "6px 12px 6px 10px",
               fontSize: 12, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start",
             }}
@@ -527,7 +529,7 @@ function QuickAddForm({
                     onClick={() => { setField("category", c.key); setField("sub_category", ""); setShowSubForm(false); }}
                     style={{
                       background: isSelected ? "#ECFDF5" : "transparent",
-                      border: `1px solid ${isSelected ? "#047857" : "var(--uf-border)"}`,
+                      border: `1px solid ${isSelected ? "#151719" : "var(--uf-border)"}`,
                       borderRadius: 8, padding: "8px 4px 6px",
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                       cursor: "pointer", transition: "all 0.12s",
@@ -538,7 +540,7 @@ function QuickAddForm({
                       <span style={{ position: "absolute", top: 4, right: 4, width: 6, height: 6, borderRadius: "50%", background: "#f97316", flexShrink: 0 }} title="Custom category" />
                     )}
                     <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.emoji}</div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#047857" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2 }}>{c.label}</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#151719" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2 }}>{c.label}</span>
                   </button>
                 );
               })}
@@ -579,7 +581,7 @@ function QuickAddForm({
                     <button
                       key={c} type="button"
                       onClick={() => setNewCatColor(c)}
-                      style={{ width: 22, height: 22, borderRadius: "50%", background: c, border: "none", cursor: "pointer", outline: newCatColor === c ? "2.5px solid #047857" : "2px solid transparent", outlineOffset: 2 }}
+                      style={{ width: 22, height: 22, borderRadius: "50%", background: c, border: "none", cursor: "pointer", outline: newCatColor === c ? "2.5px solid #151719" : "2px solid transparent", outlineOffset: 2 }}
                     />
                   ))}
                 </div>
@@ -587,7 +589,7 @@ function QuickAddForm({
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 4 }}>
                   {emojiPalette.map((em) => (
                     <button key={em} type="button" onClick={() => setNewCatEmoji(newCatEmoji === em ? "" : em)}
-                      style={{ width: 28, height: 28, background: newCatEmoji === em ? "#DCFCE7" : "transparent", border: `1.5px solid ${newCatEmoji === em ? "#059669" : "var(--uf-border)"}`, borderRadius: 5, cursor: "pointer", fontSize: 15, lineHeight: 1 }}>
+                      style={{ width: 28, height: 28, background: newCatEmoji === em ? "#DCFCE7" : "transparent", border: `1.5px solid ${newCatEmoji === em ? "#151719" : "var(--uf-border)"}`, borderRadius: 5, cursor: "pointer", fontSize: 15, lineHeight: 1 }}>
                       {em}
                     </button>
                   ))}
@@ -604,7 +606,7 @@ function QuickAddForm({
                       setField("category", key); setField("sub_category", "");
                       setShowCatForm(false); setNewCatLabel(""); setNewCatColor(colorPalette[0]); setNewCatEmoji("");
                     }}
-                    style={{ flex: 1, background: "#047857", color: "#fff", border: "none", borderRadius: 6, padding: "7px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                    style={{ flex: 1, background: "#151719", color: "#fff", border: "none", borderRadius: 6, padding: "7px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                   >
                     Add
                   </button>
@@ -635,10 +637,10 @@ function QuickAddForm({
                     onClick={() => setField("sub_category", isSelected ? "" : sc)}
                     style={{
                       background: isSelected ? "#ECFDF5" : "var(--uf-surface-2)",
-                      border: `1px solid ${isSelected ? "#047857" : "transparent"}`,
+                      border: `1px solid ${isSelected ? "#151719" : "transparent"}`,
                       borderRadius: 999, padding: "5px 12px",
                       fontSize: 12, fontWeight: 600,
-                      color: isSelected ? "#047857" : "var(--uf-text-2)",
+                      color: isSelected ? "#151719" : "var(--uf-text-2)",
                       cursor: "pointer", fontFamily: "inherit",
                     }}>
                     {sc}
@@ -773,7 +775,7 @@ function QuickAddForm({
               )}
             </div>
             {draft.refund_amount && parseFloat(draft.refund_amount) > 0 && draft.amount && parseFloat(draft.amount) > 0 && (
-              <div style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>
+              <div style={{ fontSize: 12, color: "#17684B", fontWeight: 600 }}>
                 {parseFloat(draft.refund_amount) >= parseFloat(draft.amount)
                   ? "✓ Fully refunded — net cost: 0"
                   : `Net cost: ${txMoney(parseFloat(draft.amount) - parseFloat(draft.refund_amount), draft.currency)}`}
@@ -791,7 +793,7 @@ function QuickAddForm({
             {draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").map((tag) => (
-                  <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "#047857" }}>
+                  <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "#151719" }}>
                     #{tag}
                     <button
                       type="button"
@@ -824,14 +826,14 @@ function QuickAddForm({
                     onClick={() => setField("category", c.key)}
                     style={{
                       background: isSelected ? "#ECFDF5" : "transparent",
-                      border: `1px solid ${isSelected ? "#047857" : "var(--uf-border)"}`,
+                      border: `1px solid ${isSelected ? "#151719" : "var(--uf-border)"}`,
                       borderRadius: 8, padding: "8px 4px 6px",
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                       cursor: "pointer",
                     }}
                   >
                     <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.emoji}</div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#047857" : "var(--uf-text-2)", textAlign: "center" }}>{c.label}</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#151719" : "var(--uf-text-2)", textAlign: "center" }}>{c.label}</span>
                   </button>
                 );
               })}
@@ -851,7 +853,7 @@ function QuickAddForm({
                 onClick={() => setSaveAndAddAnother((v) => !v)}
                 style={{
                   display: "inline-block", width: 32, height: 18,
-                  background: saveAndAddAnother ? "#059669" : "#CBD5E1",
+                  background: saveAndAddAnother ? "#151719" : "#CBD5E1",
                   borderRadius: 999, position: "relative", cursor: "pointer", transition: "background 0.12s", flexShrink: 0,
                 }}
               >
@@ -874,7 +876,7 @@ function QuickAddForm({
           onClick={() => handleSubmit()}
           disabled={!canSave || saving}
           style={{
-            background: canSave ? "#047857" : "#CBD5E1",
+            background: canSave ? "#151719" : "#CBD5E1",
             color: "#fff", border: "none", borderRadius: 8,
             padding: "12px 16px", fontSize: 14, fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
@@ -997,7 +999,7 @@ function TransactionList({
       {/* List header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid var(--uf-border)", gap: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", letterSpacing: "-0.2px" }}>Transactions</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "#151719", letterSpacing: "-0.2px" }}>Transactions</span>
           <span style={{ fontSize: 12, color: "var(--uf-text-3)", fontWeight: 600, marginLeft: 8 }}>{filtered.length}</span>
           {shownSpent > 0 && (
             <span style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 600, marginLeft: 12, fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" }}>
@@ -1029,7 +1031,7 @@ function TransactionList({
                 border: `1px solid ${filter === f ? "#6EE7B7" : "transparent"}`,
                 borderRadius: 999, padding: "6px 14px",
                 fontSize: 12, fontWeight: 600,
-                color: filter === f ? "#047857" : "var(--uf-text-2)",
+                color: filter === f ? "#151719" : "var(--uf-text-2)",
                 cursor: "pointer", fontFamily: "inherit",
               }}
             >
@@ -1055,7 +1057,7 @@ function TransactionList({
               borderRadius: 999, padding: "4px 12px",
               fontSize: 11, fontWeight: 600,
               color: tagFilter === tag
-                ? tag === "need" ? "#22d3a5" : tag === "want" ? "#f97316" : tag === "work" ? "#6366f1" : "#047857"
+                ? tag === "need" ? "#22d3a5" : tag === "want" ? "#f97316" : tag === "work" ? "#6366f1" : "#151719"
                 : "var(--uf-text-2)",
               cursor: "pointer", fontFamily: "inherit",
             }}
@@ -1070,7 +1072,7 @@ function TransactionList({
         {groups.length === 0 ? (
           <div style={{ padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}>
             <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#17684B" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 17 9 13l3 3 7-7" /><path d="M14 6h5v5" />
               </svg>
             </div>
@@ -1078,7 +1080,7 @@ function TransactionList({
               <>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "var(--uf-text)" }}>No matches</div>
                 <div style={{ fontSize: 13, color: "var(--uf-text-2)", maxWidth: 260 }}>Try clearing the search or tag filter.</div>
-                <button onClick={() => { setSearch(""); setTagFilter("all"); }} style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Clear filters</button>
+                <button onClick={() => { setSearch(""); setTagFilter("all"); }} style={{ background: "#151719", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Clear filters</button>
               </>
             ) : (
               <>
@@ -1199,11 +1201,11 @@ function TransactionList({
                                     key={c.key}
                                     data-cat-picker
                                     onClick={(e) => { e.stopPropagation(); onCategoryChange(tx, c.key); setCatPickerTxId(null); }}
-                                    style={{ background: isCurrent ? "#ECFDF5" : "transparent", border: `1px solid ${isCurrent ? "#047857" : "var(--uf-border)"}`, borderRadius: 8, padding: "7px 3px 5px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer", transition: "all 0.1s" }}
+                                    style={{ background: isCurrent ? "#ECFDF5" : "transparent", border: `1px solid ${isCurrent ? "#151719" : "var(--uf-border)"}`, borderRadius: 8, padding: "7px 3px 5px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer", transition: "all 0.1s" }}
                                     title={c.label}
                                   >
                                     <div style={{ width: 26, height: 26, borderRadius: "50%", background: cColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>{cEmoji}</div>
-                                    <span style={{ fontSize: 9, fontWeight: 600, color: isCurrent ? "#047857" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{c.label}</span>
+                                    <span style={{ fontSize: 9, fontWeight: 600, color: isCurrent ? "#151719" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{c.label}</span>
                                   </button>
                                 );
                               })}
@@ -1267,13 +1269,13 @@ function TransactionList({
                                 −{txMoney(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
                               </div>
                               {tx.refund_amount >= tx.amount ? (
-                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#059669", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ fully refunded</span>
+                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#17684B", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ fully refunded</span>
                               ) : (
-                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#059669", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ −{txMoney(tx.refund_amount, tx.currency).replace(/^−/, "")} net {txMoney(netAmt(tx), tx.currency).replace(/^−/, "")}</span>
+                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#17684B", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ −{txMoney(tx.refund_amount, tx.currency).replace(/^−/, "")} net {txMoney(netAmt(tx), tx.currency).replace(/^−/, "")}</span>
                               )}
                             </>
                           ) : (
-                            <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "#059669" : "var(--uf-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "#17684B" : "var(--uf-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
                               {isIncome ? "+" : "−"}{txMoney(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
                             </div>
                           )}
@@ -1322,7 +1324,7 @@ function Toast({
       position: "fixed", bottom: 28, left: "50%",
       transform: `translateX(-50%) translateY(${toast ? 0 : 20}px)`,
       opacity: toast ? 1 : 0, transition: "all 220ms",
-      background: isErr ? "#7F1D1D" : "#064E3B", color: "#fff", borderRadius: 999,
+      background: isErr ? "#7F1D1D" : "#151719", color: "#fff", borderRadius: 999,
       padding: "10px 16px 10px 14px", fontSize: 13, fontWeight: 600,
       display: "flex", alignItems: "center", gap: 12, zIndex: 50,
       pointerEvents: toast ? "auto" : "none",
@@ -1333,7 +1335,7 @@ function Toast({
       </span>
       <span>{toast?.msg}</span>
       {toast?.undoId && (
-        <button onClick={onUndo} style={{ background: "transparent", border: "none", color: "#62FAE3", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px", cursor: "pointer", padding: 0 }}>
+        <button onClick={onUndo} style={{ background: "transparent", border: "none", color: "#FFE58A", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px", cursor: "pointer", padding: 0 }}>
           Undo
         </button>
       )}
@@ -1348,7 +1350,7 @@ function MobileBar({ onOpen, onImport }: { onOpen: () => void; onImport: () => v
       <button
         onClick={onOpen}
         aria-label="Add transaction"
-        style={{ flex: 1, background: "#047857", color: "#fff", border: "none", borderRadius: "999px 0 0 999px", padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
+        style={{ flex: 1, background: "#151719", color: "#fff", border: "none", borderRadius: "999px 0 0 999px", padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
         Add
@@ -1357,7 +1359,7 @@ function MobileBar({ onOpen, onImport }: { onOpen: () => void; onImport: () => v
       <button
         onClick={onImport}
         aria-label="Import CSV"
-        style={{ background: "#047857", color: "#fff", border: "none", borderRadius: "0 999px 999px 0", padding: "12px 16px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
+        style={{ background: "#151719", color: "#fff", border: "none", borderRadius: "0 999px 999px 0", padding: "12px 16px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
       >
         ↑ CSV
       </button>
@@ -1772,6 +1774,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       .map((d) => ({ description: d.description, category: d.category, usd: d.avgAmountUSD, due: d.nextDueDate, recurrence: d.frequency as Recurrence }));
     return mergeBills(listed, spotted);
   }, [listedBills, transactions, rates, usd]);
+  const calendarItems=useMemo<ScheduledCalendarItem[]>(()=>expected.filter(r=>(r.transaction_type==='income'||r.transaction_type==='expense')&&r.due_date).map(r=>({description:r.description??(r.transaction_type==='income'?'Income':'Bill'),amountUSD:usd(Number(r.amount)||0,r.currency??'USD'),type:r.transaction_type as 'income'|'expense',dueDate:r.due_date.slice(0,10),category:r.category,completed:!!r.completed_at&&(r.recurrence??'none')==='none',recurrence: (['weekly','biweekly','monthly','quarterly','annual'].includes(r.recurrence??'')?r.recurrence:'none') as Recurrence})),[expected,usd]);
   const expenseCatDisplay = useMemo(() => catDisplay(allExpenseCats), [catDisplay, allExpenseCats]);
   const incomeCatDisplay = useMemo(() => catDisplay(INCOME_CATEGORIES), [catDisplay]);
   const spentThisMonth = useMemo(() => transactions
@@ -2097,7 +2100,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   }, [showToast, toast, transactions]);
 
   if (loading) {
-    return <div style={{ textAlign: "center", padding: "60px 0", color: "var(--uf-text-3)" }}>Loading transactions…</div>;
+    return <TransactionsLoading />;
   }
 
   return (
@@ -2154,7 +2157,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           selectedDay={selectedDay} onSelectDay={setSelectedDay}
           onZoomMonth={(m) => { setRange(1, m); setSelectedDay(null); }}
           palette={COLOR_PALETTE} onColor={handleCategoryColor}
-          budgets={budgets} expectedIncome={expectedIncome} bills={bills} periodLabel={rangePreset === 1 && rangeEnd === currentMonth ? "This month" : rangeLabel(rangePreset, rangeEnd)} />
+          budgets={budgets} expectedIncome={expectedIncome} bills={bills} calendarItems={calendarItems} compact={n=>formatUSDInCurrency(n,displayCurrency,displayRates,{compact:true})} periodLabel={rangePreset === 1 && rangeEnd === currentMonth ? "This month" : rangeLabel(rangePreset, rangeEnd)} />
         <WorthALook flags={flags} notes={billNotes} rows={monthTxns} fmt={fmtDisplay} toUSD={usd} displayCurrency={displayCurrency}
           onYes={(r, k) => resolveFlag(r, k, true)} onNo={(r, k) => resolveFlag(r, k, false)} />
       </div>

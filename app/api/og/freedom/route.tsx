@@ -1,15 +1,17 @@
+import { BRAND_LOCKUP_DATA_URI } from '@/lib/brand'
+import {brandOgFonts} from '@/lib/brand-og'
 import { ImageResponse } from 'next/og'
 import { NextRequest } from 'next/server'
 import { parseFreedomYear } from '@/lib/freedom-share'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 
-// v3 Warm tokens as literals: the image renderer can't read CSS variables.
-const GROUND = '#FDF8F1'
-const INK = '#221B12'
-const INK_2 = '#6B5C48'
-const GREEN = '#12856A'
-const TEAL = '#0E9C86'
+// Next Horizon tokens as literals: the image renderer can't read CSS variables.
+const GROUND = '#F8F8FB'
+const INK = '#151719'
+const INK_2 = '#5C6170'
+const GREEN = '#151719'
+const TEAL = '#151719'
 
 /**
  * The preview image for a shared freedom year (D-98). It shows the year
@@ -19,19 +21,17 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const year = parseFreedomYear(searchParams.get('y'))
 
+  const fonts = await brandOgFonts()
   return new ImageResponse(
     (
       <div
         style={{
           width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
           justifyContent: 'space-between', background: GROUND, padding: '56px 72px',
-          fontFamily: 'sans-serif', color: INK,
+          fontFamily: 'Inter', color: INK,
         }}
       >
-        <div style={{ display: 'flex', fontSize: 28, fontWeight: 800, letterSpacing: '-1px' }}>
-          <span>Until</span>
-          <span style={{ color: GREEN }}>Fire</span>
-        </div>
+        <img src={BRAND_LOCKUP_DATA_URI} width={216} height={42} alt="UntilFire" />
 
         {year ? (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -54,6 +54,6 @@ export async function GET(req: NextRequest) {
         </div>
       </div>
     ),
-    { width: 1200, height: 630 },
+    { width: 1200, height: 630, fonts },
   )
 }

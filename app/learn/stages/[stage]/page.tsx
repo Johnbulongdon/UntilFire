@@ -59,7 +59,7 @@ export default async function LearnStagePage({ params }: Props) {
               border: '1px solid #E2E8F0',
             }}
           >
-            <div style={{ fontSize: 12, color: '#059669', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
+            <div style={{ fontSize: 12, color: '#17684B', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>
               What matters now
             </div>
             <div style={{ fontSize: 15, lineHeight: 1.8, color: '#334155' }}>
@@ -109,7 +109,7 @@ export default async function LearnStagePage({ params }: Props) {
                   href={calculator.href}
                   style={{
                     textDecoration: 'none',
-                    color: '#064E3B',
+                    color: '#151719',
                     background: '#F8FAFC',
                     border: '1px solid #E2E8F0',
                     borderRadius: 14,
@@ -140,9 +140,9 @@ export default async function LearnStagePage({ params }: Props) {
                     textDecoration: 'none',
                     padding: '10px 14px',
                     borderRadius: 999,
-                    border: candidate.id === stageData.id ? '1px solid #047857' : '1px solid #E2E8F0',
+                    border: candidate.id === stageData.id ? '1px solid #151719' : '1px solid #E2E8F0',
                     background: candidate.id === stageData.id ? 'rgba(209,250,229,0.45)' : '#ffffff',
-                    color: candidate.id === stageData.id ? '#065F46' : '#334155',
+                    color: candidate.id === stageData.id ? '#151719' : '#334155',
                     fontSize: 13,
                     fontWeight: 700,
                   }}

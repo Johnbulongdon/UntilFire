@@ -55,24 +55,17 @@ const settle = (page: Page) => page.waitForTimeout(900) // let entrance motion f
  * per CALC_SHOTS page, and ends on the save step, which is the sign-up card.
  */
 async function walkCalculator(page: Page, shoot: (name: string) => Promise<void>) {
-  await page.goto(`${base}/?start=onboarding&city=austin&uf_internal=1`, { waitUntil: 'networkidle', timeout: 45_000 })
-  await settle(page)
-  const step = page.locator('[data-onboarding-step]:not([hidden])')
+  await page.goto(base+'/?start=onboarding&uf_internal=1', {waitUntil:'networkidle',timeout:45000})
   for (const name of CALC_SHOTS) {
-    const next = step.getByRole('button', { name: /^(Continue|Show my freedom date)/ })
-    if (await next.count()) {
-      // A question with nothing filled in yet: type the same sample amount on every size.
-      if (await next.first().isDisabled()) await step.locator('input:visible').first().fill(SAMPLE_ANSWER)
-      await next.first().click()
-    } else {
-      await page.getByRole('button', { name: /^(Continue →|Save my starting point →|Try a different pace →|Use original plan|Use updated plan)$/ }).first().click()
-    }
     await settle(page)
-    // The freedom date first plays a short loading scene.
-    if (name === 'freedom-age') await page.getByRole('button', { name: 'Continue →' }).waitFor({ timeout: 20_000 })
-    // Result pages count their numbers up; wait for them to land.
-    if (!(await next.count())) await page.waitForTimeout(2200)
-    await shoot(`calc:${name}`)
+    if(name==='freedom-age') await page.getByRole('button',{name:'Continue →',exact:true}).waitFor({timeout:20000})
+    if(['freedom-age','life','number','standing'].includes(name)) await page.waitForTimeout(2200) // capture settled reveal scenes
+    await shoot('calc:'+name)
+    const answers: Record<string,string>={income:'6000',expenses:'3000',portfolio:'6000',age:'32'}
+    if(answers[name]) await page.locator('.nh-intake input[type=number]').fill(answers[name])
+    if(name==='city') await page.getByRole('button',{name:'Continue',exact:true}).click()
+    else if(name==='save') break
+    else await page.getByRole('button',{name:/^(Continue|Continue →|Show my freedom date|Try one improvement →|Use original plan|Use updated plan)$/}).last().click()
   }
 }
 
@@ -96,10 +89,12 @@ const APP_ANSWERS: Record<string, (page: Page) => Promise<void>> = {
   goal: (page) => tapText(page, 'Financial freedom'),
   city: (page) => tapText(page, 'Skip'),
   pay: (page) => tapText(page, 'Once a month'),
-  income: (page) => tapText(page, 'Continue'),
+  income: async (page) => {
+    await page.getByRole('textbox', { name: 'Take-home pay', exact: true }).fill(SAMPLE_ANSWER)
+    await tapText(page, 'Continue')
+  },
   spending: async (page) => {
-    await tapText(page, 'Type it instead')
-    await page.locator('input:visible').last().fill('3000')
+    await page.getByRole('textbox', { name: 'Monthly spending', exact: true }).fill('3000')
     await tapText(page, 'Continue')
   },
   invested: async (page) => {
@@ -109,9 +104,13 @@ const APP_ANSWERS: Record<string, (page: Page) => Promise<void>> = {
   age: (page) => tapText(page, 'Continue'),
   worry: (page) => tapText(page, 'Money runs out before payday'),
   housing: async (page) => {
-    for (const text of ['Rent', 'Dividends']) await tapText(page, text)
-    await tapText(page, 'Show my freedom date')
+    await tapText(page, 'Rent')
+    await tapText(page, 'Continue')
   },
+  investing: async (page) => { await tapText(page, 'Dividends'); await tapText(page, 'Show my freedom date') },
+  standing: (page) => tapText(page, 'Try one improvement'),
+  pace: (page) => tapText(page, 'Use original plan'),
+  'your-plan': (page) => tapText(page, 'Start my plan'),
   // Not the last screen any more (Your plan follows, D-105); the web build has no notifications to turn on.
   reminder: (page) => tapText(page, 'Not now'),
 }
@@ -344,7 +343,7 @@ for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
         for (const name of click ?? []) {
           // Visible only: the computer sidebar's buttons and the phone-size tabs share labels.
           const pattern = new RegExp(name)
-          await page.getByRole('button', { name: pattern }).or(page.getByRole('tab', { name: pattern })).filter({ visible: true }).first().click()
+          await page.getByRole('button', { name: pattern }).or(page.getByRole('tab', { name: pattern })).or(page.getByRole('radio', { name: pattern })).filter({ visible: true }).first().click()
           await settle(page)
         }
         await shoot(shot!, click)

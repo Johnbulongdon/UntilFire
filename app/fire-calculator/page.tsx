@@ -141,7 +141,7 @@ const breadcrumbSchema = {
 export default function FireCalculatorLandingPage() {
   return (
     <>
-      <main style={{ background: 'var(--uf-surface)', minHeight: '100vh', color: 'var(--uf-ink)', fontFamily: "'Manrope', sans-serif" }}>
+      <main style={{ background: 'var(--uf-surface)', minHeight: '100vh', color: 'var(--uf-ink)', fontFamily: "'Inter', sans-serif" }}>
         <div style={{ maxWidth: 1120, margin: '0 auto', padding: '56px 24px 88px' }}>
           <nav style={{ fontSize: 13, color: 'var(--uf-ink-3)', marginBottom: 28, display: 'flex', gap: 8 }}>
             <Link href="/" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none', fontWeight: 700 }}>UntilFire</Link>

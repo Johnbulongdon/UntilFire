@@ -68,7 +68,7 @@ export default function APYCalculator() {
   }, [apr, freqIndex, principal])
 
   return (
-    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Manrope', sans-serif" }}>
+    <div style={{ background: C.bg, minHeight: '100vh', color: C.text, fontFamily: "'Inter', sans-serif" }}>
 
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '48px 24px 80px' }}>
         <div style={{ marginBottom: 36 }}>

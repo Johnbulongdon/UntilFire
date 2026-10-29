@@ -56,7 +56,7 @@ export default function HeroScreen({ onStart }: { onStart: () => void }) {
             <div style={{ background: "rgba(5,150,105,0.15)", border: "1px solid rgba(5,150,105,0.3)", borderRadius: 8, padding: "10px 12px" }}>
               <div style={{ display: "flex", gap: 3, marginBottom: 8 }}>
                 {[0, 1, 2, 3].map(i => (
-                  <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i <= 1 ? "#059669" : "rgba(255,255,255,0.12)" }} />
+                  <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i <= 1 ? "#151719" : "rgba(255,255,255,0.12)" }} />
                 ))}
               </div>
               <div style={{ fontSize: 10, fontWeight: 800, color: "#34D399", textTransform: "uppercase", letterSpacing: "0.08em" }}>Stage 2 of 4 — Momentum</div>

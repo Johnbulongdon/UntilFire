@@ -568,3 +568,25 @@ John has chosen the next product direction:
 - Native mobile app — web-first until the funnel and retention are proven
 - Heavy budgeting-app parity — UntilFire should show how money choices affect freedom and what to do next, not become another generic budgeting tool
 - Login-first onboarding — conflicts with the free/no-login first value promise
+
+29 October — N2 subtask: John approved the complete Next Horizon rebrand across public web, onboarding, app, native and admin. In review; Codex — [PR #323](https://github.com/Johnbulongdon/UntilFire/pull/323), branch `codex/next-horizon-rebrand`. Reviewed surfaces and automated checks pass; authenticated admin visual review and physical-phone/store-build verification remain the next release checks. Logo exports and current contract: `public/brand/`, `docs/design/design-system.md`. Typical city savings remains a research to-do. No production release claimed; native assets require a store build.
+
+29 October N2 follow-up — Codex: lighter category palette B selected and implemented on the rebrand branch; mapping preserves legacy category hue families. Standalone high-resolution payday C remains a design review, pending John’s choice. No change to payday calculations or release status.
+
+29 October N2 refinement — John approved payday C without a bottom slider. Codex implemented the real web and phone cards with above-chart details, per-bill selection and direct chart inspection. Shared same-day/empty/shortfall checks pass; browser/phone verification is in progress. No production or phone release authorized.
+
+29 October N2 verification update — category B / payday C: web production build, types, changed-file lint, iOS/Android/web export and focused financial/presentation regressions passed. Real component desktop/390px, direct mouse drag, keyboard, shortfall and empty states checked with fictional data. Physical device touch QA remains pending; changes are local on the review branch, not released.
+
+29 October N2 browser follow-up — Codex: interactive example plan, directional question transitions, selection/press/focus feedback, stable section transitions, Money loading placeholders and live savings feedback implemented locally. Exact decimal slider restoration fixed during QA. Landing/onboarding and Home/Money/Plan/Profile fit at 390px; no signed-in financial data changed. See docs/design/design-qa.md for evidence and limits. Native pace precision parity, physical-touch/Safari/screen-reader checks remain follow-ups. No release authorized.
+
+29 October N2 browser verification completed — final production build and focused regressions passed; loaded landing/onboarding at 390px and 1280px, signed-in four main sections at 390px, input focus, exact decimal undo and Plan disclosure checked. Review evidence in docs/design/design-qa.md. Changes are local on the review branch and have not yet been committed/pushed to PR323. Safari, physical touch and screen-reader coverage remain pending.
+
+### October 29 onboarding feedback follow-up
+- Implemented locally: whole-number improvement control, today-dollar target, hidden Skip, corrected city selection/currency conversion, visible year grid and shorter reveal, sign-in recovery.
+- Keep improvement in the journey until a definite removal decision.
+- Before release: fresh Google sign-in on the canonical production origin and physical-device QA; existing local signed-in session was verified read-only.
+
+### N2 — marked calendar follow-up, 29 October
+Owner: Codex. Implemented locally under the existing rebrand review (PR #323), not yet pushed or released. Replace both browser calendar presentations with selected B. Calendar date/recurrence/selection/refund tests pass; desktop and narrow browser checks in progress. Native app calendar styling remains outside this browser-only change; financial engines are unchanged.
+
+N2 release update — 29 October, Codex: John authorized website publication of PR #323 plus the accumulated approved refinements. Calendar repair removes bank-history markers and preserves scheduled occurrence dates, with regression coverage added to Financial consistency CI. Full release validation and production deployment verification in progress; no separate database migration or store submission.

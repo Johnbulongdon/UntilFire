@@ -1,4 +1,5 @@
 import { View } from 'react-native'
+import {colors} from '@/theme/colors'
 import { Text } from './Text'
 import { Icon } from './Icon'
 
@@ -17,11 +18,11 @@ export function OptionCard({ emoji, icon, title, detail, selected, onPress }: {
     <Bouncy accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress}>
       <View
         className={`flex-row items-center gap-4 rounded-2xl border-2 px-4 py-4 ${selected ? 'border-green bg-green-50' : 'border-border bg-card'}`}
-        style={{ borderBottomWidth: 4 }}
+        style={{ borderWidth: 1 }}
       >
         {icon ? (
-          <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: icon.tint, alignItems: 'center', justifyContent: 'center' }}>
-            <Icon name={icon.name} size={30} color="#FFFFFF" />
+          <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: selected ? colors.green100 : colors.tealSoft, alignItems: 'center', justifyContent: 'center' }}>
+            <Icon name={icon.name} size={24} color={colors.ink} />
           </View>
         ) : emoji ? <Text className="text-[30px]">{emoji}</Text> : null}
         <View className="flex-1">

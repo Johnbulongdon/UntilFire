@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { markedCalendarEntries } from "@/lib/marked-calendar";
+import type { ScheduledCalendarItem } from "@/lib/marked-calendar";
 import { Card, InfoTip } from "@/components/ui";
 import { trackTxViewChanged } from "@/lib/analytics";
 import { type DateRange, monthOf, netAmount, type RangeTx, usualToDay } from "@/lib/spend-range";
@@ -56,7 +58,7 @@ function CategoryBar({ r, fmt }: { r: { now: number; due: number; budget: number
   );
 }
 
-export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategories, onToggleCategory, onClearFilters, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel, expectedIncome = 0, bills = [] }: {
+export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategories, onToggleCategory, onClearFilters, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel, expectedIncome = 0, bills = [], calendarItems = [], compact = fmt }: {
   transactions: Tx[]; range: DateRange; today: string;
   toUSD: (amount: number, currency: string) => number; fmt: (usd: number) => string;
   expenseCats: CatDisplay[]; incomeCats: CatDisplay[];
@@ -70,7 +72,10 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
   expectedIncome?: number;
   /** Upcoming expense bills (USD, next due date), which date the forecast and budget line. */
   bills?: Bill[];
+  calendarItems?: ScheduledCalendarItem[];
+  compact?: (usd:number)=>string;
 }) {
+  const calendarEvents=useMemo(()=>markedCalendarEntries({start:range.start,end:range.end,today,items:calendarItems}).filter(e=>!selectedCategories.length||selectedCategories.includes(e.category??'')),[range.start,range.end,today,calendarItems,selectedCategories]);
   const [picking, setPicking] = useState<string | null>(null);
   const [mode, setMode] = useState<"spent" | "earned">("spent");
   const [view, setView] = useState<View>("line");
@@ -188,7 +193,7 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
 
   return (
     <Card style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 24 }}>
-      <div style={{ display: "grid", gap: 10, alignContent: "start", gridColumn: shown === "cal" && range.months.length > 3 ? "1 / -1" : undefined }}>
+      <div style={{ display: "grid", gap: 10, alignContent: "start", gridColumn: shown === "cal" ? "1 / -1" : undefined }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
           <div style={{ display: "grid", gap: 4 }}>
             <div role="radiogroup" aria-label="Show money" style={{ display: "inline-flex", justifySelf: "start", background: "var(--uf-surface-2)", borderRadius: 999, padding: 3 }}>
@@ -231,7 +236,7 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
         </div>
         {shown === "line" && <LineView range={range} today={today} daily={daily} usualByDay={usualByDay} usualMonth={usualByDay?.[31] ?? null} budgetLine={budgetLine} billsOver={billsOver} vsBudget={vsBudget} unbudgeted={unbudgeted} forecast={forecastLine} periodLabel={periodLabel} fmt={fmt} />}
         {shown === "bars" && <BarsView range={range} today={today} daily={daily} usualMonth={usualByDay?.[31] ?? null} budgetMonth={budgetMonth} fmt={fmt} valueLabel={mode === "spent" ? "Expenses" : "Income"} />}
-        {shown === "cal" && <CalendarView range={range} today={today} daily={daily} fmt={fmt} selectedDay={selectedDay} onSelectDay={onSelectDay} onZoomMonth={onZoomMonth} />}
+        {shown === "cal" && <CalendarView range={range} today={today} daily={daily} fmt={fmt} selectedDay={selectedDay} onSelectDay={onSelectDay} onZoomMonth={onZoomMonth} events={calendarEvents} compact={compact} colorFor={category=>expenseCats.find(c=>c.key===category)?.color} />}
       </div>
 
       <div style={{ display: "grid", gap: 2, alignContent: "start" }}>

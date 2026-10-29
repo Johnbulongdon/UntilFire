@@ -6,7 +6,7 @@ import React from "react";
  * Label, figure, delta. You render this shape on nearly every screen, so it's
  * a primitive rather than something to rebuild each time.
  *
- * The figure always uses DM Mono with tabular numerals so columns of numbers
+ * The figure always uses Inter with tabular numerals so columns of numbers
  * align. `tone="freedom"` is the teal treatment and belongs only to the
  * freedom date and time-saved figures — not to generic good news.
  *
