@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import SavingsRateCalculator from './SavingsRateCalculator'
+import { DEFAULT_OG_IMAGE } from '@/lib/site'
 
 export const metadata: Metadata = {
   // Page one (7.6) with no clicks: say what the answer looks like. 50% is 15
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
     'savings rate calculator, FIRE savings rate, how long to retire calculator, financial independence calculator, savings percentage calculator, how much to save to retire',
   alternates: { canonical: 'https://www.untilfire.com/calculators/savings-rate' },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: 'Savings Rate Calculator | UntilFire',
     description: 'Find your savings percentage and compare estimated years to financial independence. Free, no signup required.',
     url: 'https://www.untilfire.com/calculators/savings-rate',
@@ -20,6 +22,7 @@ export const metadata: Metadata = {
     type: 'website',
   },
   twitter: {
+    images: [DEFAULT_OG_IMAGE.url],
     card: 'summary_large_image',
     title: 'Savings Rate Calculator | UntilFire',
     description: 'Find your savings percentage and compare estimated years to financial independence. Free, no signup required.',

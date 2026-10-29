@@ -31,6 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       follow: true,
     },
     alternates: { canonical: page.canonicalUrl },
+    twitter: { card: 'summary_large_image', images: [`/api/og/state/${slug}`] },
     openGraph: {
       title: `FIRE Number in ${page.stateName} | UntilFire`,
       description: page.description,

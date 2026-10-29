@@ -5,7 +5,8 @@ export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
-      allow: "/",
+      // Share images live under /api/og/; X only fetches what robots.txt allows.
+      allow: ["/", "/api/og/"],
       disallow: ["/dashboard", "/transactions", "/expenses", "/api/", "/auth/", "/go/"],
     },
     sitemap: siteUrl('/sitemap.xml'),

@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import APYCalculator from './APYCalculator'
+import { DEFAULT_OG_IMAGE } from '@/lib/site'
 
 // Deliberately not indexed. APR/APY conversion is a generic banking tool, not a financial-independence page: it
 // ranks 50th to 94th for head terms owned by sites with a thousand referring
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
     'APY calculator, annual percentage yield calculator, APR to APY, APY vs APR, compounding interest calculator, savings account calculator',
   alternates: { canonical: 'https://www.untilfire.com/calculators/apy' },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: 'APY Calculator | UntilFire',
     description: 'Convert APR to APY. See your true annual return after compounding.',
     url: 'https://www.untilfire.com/calculators/apy',
@@ -24,6 +26,7 @@ export const metadata: Metadata = {
     type: 'website',
   },
   twitter: {
+    images: [DEFAULT_OG_IMAGE.url],
     card: 'summary_large_image',
     title: 'APY Calculator | UntilFire',
     description: 'Convert APR to APY. See your true annual return after compounding.',

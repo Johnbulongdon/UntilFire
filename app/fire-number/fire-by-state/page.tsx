@@ -34,6 +34,7 @@ export const metadata: Metadata = {
   description: 'Compare sourced FIRE planning baselines across 50 states and Washington, D.C. See sampled cities, annual costs, 25x targets, tax context, methodology, and Census sources.',
   robots: { index: true, follow: true },
   alternates: { canonical: siteUrl('/fire-number/fire-by-state') },
+  twitter: { card: 'summary_large_image', images: ['/api/og/ranking/fire-by-state'] },
   openGraph: {
     images: [{ url: '/api/og/ranking/fire-by-state', width: 1200, height: 630, alt: 'FIRE by state comparison' }],
     title: 'FIRE Number by State | UntilFire',

@@ -13,6 +13,7 @@ export const metadata: Metadata = {
     'Which US states are best for FIRE? Compare annual living costs and spending-based retirement targets.',
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://www.untilfire.com/fire-number/best-states' },
+  twitter: { card: 'summary_large_image', images: ['/api/og/ranking/best-states'] },
   openGraph: {
     title: 'Best States for FIRE | UntilFire',
     description: 'Compare US states by living costs and spending-based retirement targets.',

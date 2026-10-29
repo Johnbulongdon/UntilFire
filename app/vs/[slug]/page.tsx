@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { siteUrl } from "@/lib/site";
+import { siteUrl, DEFAULT_OG_IMAGE } from "@/lib/site";
 import { VS_PAGES, getVsPage } from "@/lib/vs/pages";
 import VsPageView from "../VsPageView";
 
@@ -18,8 +18,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     title: page.title,
     description: page.description,
     alternates: { canonical: url },
-    openGraph: { title: page.title, description: page.description, url, siteName: "UntilFire", type: "website" },
-    twitter: { card: "summary_large_image", title: page.title, description: page.description },
+    openGraph: { images: [DEFAULT_OG_IMAGE], title: page.title, description: page.description, url, siteName: "UntilFire", type: "website" },
+    twitter: { images: [DEFAULT_OG_IMAGE.url], card: "summary_large_image", title: page.title, description: page.description },
   };
 }
 

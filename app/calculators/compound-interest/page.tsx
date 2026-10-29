@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import CompoundInterestCalculator from './CompoundInterestCalculator'
+import { DEFAULT_OG_IMAGE } from '@/lib/site'
 
 // Deliberately not indexed. a generic compounding tool, not a financial-independence page: it
 // ranks 50th to 94th for head terms owned by sites with a thousand referring
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
     'compound interest calculator, investment growth calculator, savings growth calculator, compounding calculator, investment returns calculator, wealth projector',
   alternates: { canonical: 'https://www.untilfire.com/calculators/compound-interest' },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: 'Compound Interest Calculator | UntilFire',
     description: 'See how your investments grow with compound interest and regular contributions.',
     url: 'https://www.untilfire.com/calculators/compound-interest',
@@ -24,6 +26,7 @@ export const metadata: Metadata = {
     type: 'website',
   },
   twitter: {
+    images: [DEFAULT_OG_IMAGE.url],
     card: 'summary_large_image',
     title: 'Compound Interest Calculator | UntilFire',
     description: 'See how your investments grow with compound interest and regular contributions.',

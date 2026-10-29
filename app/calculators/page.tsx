@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Icon, type IconName } from '@/components/ui'
 import styles from './CalculatorsHub.module.css'
+import { DEFAULT_OG_IMAGE } from '@/lib/site'
 
 /**
  * The calculators hub: a signpost, not an article. Calculators are grouped
@@ -63,6 +64,7 @@ export const metadata: Metadata = {
     'FIRE calculators, financial calculators, FIRE number calculator, coast FIRE calculator, savings rate calculator, compound interest calculator, APY calculator',
   alternates: { canonical: 'https://www.untilfire.com/calculators' },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: 'Financial Calculators for FIRE Planning | UntilFire',
     description:
       'Explore free calculators for FIRE planning, retirement math, savings rate, compounding, and Coast FIRE.',
@@ -71,6 +73,7 @@ export const metadata: Metadata = {
     type: 'website',
   },
   twitter: {
+    images: [DEFAULT_OG_IMAGE.url],
     card: 'summary_large_image',
     title: 'Financial Calculators for FIRE Planning | UntilFire',
     description:
