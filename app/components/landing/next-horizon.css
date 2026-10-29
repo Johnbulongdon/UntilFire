@@ -389,7 +389,7 @@
   margin-top: 12px;
   color: var(--uf-ink);
 }
-.nh-number-input input[type="number"] {
+.nh-number-input .nh-amount {
   background: none;
   border: 0;
   width: 100%;
@@ -398,8 +398,19 @@
   letter-spacing: -2px;
   font-weight: 800;
   color: inherit;
-  outline-offset: 4px;
+  outline: none;
   padding: 0;
+  font-variant-numeric: tabular-nums;
+}
+/* One rounded ring around the symbol and the number together. */
+.nh-number-input > label > span {
+  border-radius: 16px;
+  padding: 2px 8px;
+  margin-left: -8px;
+}
+.nh-number-input > label > span:focus-within {
+  outline: 2px solid var(--uf-ink);
+  outline-offset: 2px;
 }
 .nh-number-input > small {
   font-size: 13px;
@@ -409,8 +420,9 @@
 }
 .nh-number-input input[type="range"] {
   width: 100%;
-  accent-color: #9d84d0;
-  margin: 35px 0 15px;
+  accent-color: var(--uf-ink);
+  height: 44px;
+  margin: 21px 0 1px;
   cursor: pointer;
 }
 .nh-number-input > div {
@@ -440,6 +452,10 @@
 .nh-segment button.active {
   background: var(--uf-green);
   color: var(--uf-card);
+}
+.nh-actions > .nh-input-hint {
+  flex-basis: 100%;
+  margin: 0;
 }
 .nh-input-hint {
   font-size: 13px;
@@ -643,7 +659,7 @@
     width: 120px;
     height: auto;
   }
-  .nh-number-input input[type="number"] {
+  .nh-number-input .nh-amount {
     font-size: 42px;
   }
   .nh-intake-summary {

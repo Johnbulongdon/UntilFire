@@ -26,7 +26,7 @@
   padding: var(--uf-s3) var(--uf-s5);
   border-radius: var(--uf-r-pill);
   background: var(--uf-green);
-  color: #fff;
+  color: var(--uf-card);
   font-weight: 700;
   font-size: 14px;
   text-decoration: none;

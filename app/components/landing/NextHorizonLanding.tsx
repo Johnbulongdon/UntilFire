@@ -41,8 +41,9 @@ export default function NextHorizonLanding({
     .join(" ");
   return (
     <div className="nh-landing">
+      <a href="#uf-landing-main" className="uf-skip">Skip to content</a>
       <SiteHeader onStart={onStart} signedIn={signedIn} />
-      <main className="nh-public">
+      <main id="uf-landing-main" tabIndex={-1} className="nh-public">
         <section className="nh-public-hero">
           <div>
             <span className="nh-eyebrow">Your money. Your next chapter.</span>

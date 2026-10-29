@@ -15,7 +15,7 @@
 .uf-growth-details>span { overflow:hidden;min-height:0; }
 .uf-motion-sr { position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap; }
 .uf-year-cube { aspect-ratio:1;perspective:180px; }
-.uf-year-cube-inner { width:100%;height:100%;position:relative;transform-style:preserve-3d;animation:uf-year-flip 650ms cubic-bezier(.22,1,.36,1) both; }
+.uf-year-cube-inner { width:100%;height:100%;position:relative;transform-style:preserve-3d;animation:uf-year-flip 300ms cubic-bezier(.22,1,.36,1) both; }
 .uf-year-face { position:absolute;inset:0;border-radius:3px;backface-visibility:hidden; }
 .uf-year-face-back { transform:rotateY(180deg); }
 @keyframes uf-year-flip { from {transform:rotateY(0)} 75% {transform:rotateY(188deg)} to {transform:rotateY(180deg)} }
@@ -23,7 +23,7 @@
  .uf-onboarding-motion:not([data-motion="play"]) button, .uf-onboarding-motion:not([data-motion="play"]) .uf-choice-check, .uf-growth-details, .uf-nav-dot { animation:none !important;transition:none !important; }
  .uf-onboarding-motion:not([data-motion="play"]) button:not(:disabled):active {scale:1;}
  .uf-year-cube-inner {animation:none;transform:rotateY(180deg);}
- .uf-onboarding-motion[data-motion="play"] .uf-year-cube-inner, .rf-root[data-motion="play"] .uf-year-cube-inner { animation:uf-year-flip 650ms cubic-bezier(.22,1,.36,1) both !important; }
+ .uf-onboarding-motion[data-motion="play"] .uf-year-cube-inner, .rf-root[data-motion="play"] .uf-year-cube-inner { animation:uf-year-flip 300ms cubic-bezier(.22,1,.36,1) both !important; }
 }
 
 @media(max-width:600px){.uf-onboarding-motion [data-onboarding-step] .uf-screen{padding-top:16px;}}

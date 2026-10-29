@@ -655,7 +655,7 @@ html[data-splash="1"] #uf-splash { display: grid; }
 
 .uf-pricing-cta--primary {
   background: var(--uf-green);
-  color: #fff;
+  color: var(--uf-card);
   border: 1px solid var(--uf-green);
 }
 .uf-pricing-cta--primary:hover { background: var(--uf-green-700); border-color: var(--uf-green-700); }
@@ -704,7 +704,7 @@ html[data-splash="1"] #uf-splash { display: grid; }
    two equal columns made the cards compete. */
 .uf-home { display: flex; flex-direction: column; gap: 20px; max-width: 760px; margin-left: auto; margin-right: auto; }
 .uf-home-col { display: contents; }
-.uf-home-in { min-width: 0; animation: uf-home-in .5s cubic-bezier(.2,.8,.2,1) both; }
+.uf-home-in { min-width: 0; animation: uf-home-in .3s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes uf-home-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .uf-home-in { animation: none; } }
 
@@ -745,3 +745,8 @@ button,input,select,textarea{font-family:inherit}h1,h2{font-weight:800;letter-sp
 .uf-transactions-loading{display:grid;gap:20px;min-width:0}.uf-loading-label{font-size:13px;color:var(--uf-ink-2)}.uf-loading-chart,.uf-loading-rows{background:var(--uf-card);border:1px solid var(--uf-border);border-radius:24px;padding:24px}.uf-loading-chart{display:flex;align-items:flex-end;gap:18px;height:230px}.uf-loading-chart i{width:28%;height:45%;border-radius:12px 12px 0 0;background:var(--uf-surface-2)}.uf-loading-chart i:nth-child(2){height:65%;background:var(--uf-lilac)}.uf-loading-chart i:nth-child(3){height:85%;background:var(--uf-mint)}.uf-loading-rows{display:grid;gap:20px}.uf-loading-rows>div{display:flex;align-items:center;gap:14px}.uf-loading-rows i{width:36px;height:36px;border-radius:12px;background:var(--uf-surface-2)}.uf-loading-rows span{height:10px;width:42%;border-radius:12px;background:var(--uf-surface-2)}.uf-loading-rows b{height:10px;width:18%;margin-left:auto;border-radius:12px;background:var(--uf-surface-2)}
 @media(prefers-reduced-motion:no-preference){.uf-transactions-loading [aria-hidden]{animation:uf-loading-breathe 1.8s ease-in-out infinite}@keyframes uf-loading-breathe{50%{opacity:.65}}}
 @media(prefers-reduced-motion:reduce){.uf-button,.nh-primary,.nh-secondary,.nh-choices>button,.nh-city-options>button,.uf-section-button,.uf-sidebar-item,.uf-sidebar-sub-item,.uf-money-row>button,.pace-submit,.uf-disclosure{animation:none!important;transition:none!important;transform:none!important}}
+
+/* Keyboard users jump past the navigation; hidden until focused. */
+.uf-skip { position: fixed; top: 12px; left: 12px; z-index: 1000; padding: 10px 16px; border-radius: 999px; background: var(--uf-ink); color: var(--uf-card); font-weight: 600; text-decoration: none; transform: translateY(-200%); }
+.uf-skip:focus-visible { transform: none; outline: 2px solid var(--uf-ink); outline-offset: 2px; }
+#uf-main:focus, #uf-landing-main:focus { outline: none; }

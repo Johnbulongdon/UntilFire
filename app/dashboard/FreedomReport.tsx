@@ -221,7 +221,7 @@ export default function FreedomReport({ d, money, compact, onClose, onExport }: 
         <button type="button" role="radio" aria-checked={!branded} onClick={() => setBranded(false)} style={pill(!branded)}>No branding</button>
       </div>}
       <button type="button" onClick={format === "page" ? () => { onExport?.("page", branded); window.print(); } : format === "reddit" ? copy : download}
-        style={{ marginLeft: "auto", padding: "9px 16px", borderRadius: 12, border: 0, cursor: "pointer", fontWeight: 700, background: "var(--uf-green)", color: "#fff" }}>
+        style={{ marginLeft: "auto", padding: "9px 16px", borderRadius: 12, border: 0, cursor: "pointer", fontWeight: 700, background: "var(--uf-green)", color: "var(--uf-card)" }}>
         {format === "page" ? "Save as PDF" : format === "reddit" ? (copied ? "Copied ✓" : "Copy as Markdown") : "Download PNG"}</button>
     </div>
     {format === "page" && <ReportPage d={d} branded={branded} money={money} compact={compact} />}

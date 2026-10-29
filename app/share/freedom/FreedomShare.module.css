@@ -91,7 +91,7 @@
 .cta {
   display: inline-block;
   background: var(--uf-green);
-  color: #fff;
+  color: var(--uf-card);
   padding: 16px 28px;
   border-radius: 14px;
   font-weight: 700;

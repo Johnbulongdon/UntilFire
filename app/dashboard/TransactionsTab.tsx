@@ -335,16 +335,9 @@ function QuickAddForm({
     <div className="cf-quick-form" style={{ display: "flex", flexDirection: "column" }}>
       {/* Header */}
       <div style={{ padding: "14px 20px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--uf-border)" }}>
-        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "1.1px", textTransform: "uppercase", color: "#151719" }}>
-          {editing ? "Edit transaction" : "Quick add"}
-        </div>
-        {editing ? (
-          <button onClick={onCancelEdit} style={{ background: "transparent", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-            ✕ Cancel
-          </button>
-        ) : (
-          <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--uf-text-3)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Pinned</div>
-        )}
+        <h2 id="cf-quick-form-title" style={{ margin: 0, fontSize: 17, fontWeight: 800, color: "var(--uf-ink)" }}>
+          {editing ? "Edit transaction" : "Add a transaction"}
+        </h2>
       </div>
 
       {/* Body */}
@@ -376,7 +369,7 @@ function QuickAddForm({
           display: "flex", alignItems: "baseline", gap: 6,
           transition: "border-color 0.15s",
         }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = "#151719")}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--uf-ink)")}
           onBlur={(e) => (e.currentTarget.style.borderColor = "var(--uf-border)")}
         >
           <span style={{ fontSize: 26, fontWeight: 700, color: "var(--uf-text-3)", letterSpacing: "-0.6px" }}>$</span>
@@ -390,8 +383,8 @@ function QuickAddForm({
               const v = e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*?)\./g, "$1");
               setField("amount", v);
             }}
-            autoFocus
-            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 34, fontWeight: 800, color: isIncome ? "#151719" : "#151719", letterSpacing: "-1px", fontVariantNumeric: "tabular-nums", minWidth: 0, width: "100%", fontFamily: "inherit" }}
+            data-drawer-autofocus
+            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 34, fontWeight: 800, color: "var(--uf-ink)", letterSpacing: "-1px", fontVariantNumeric: "tabular-nums", minWidth: 0, width: "100%", fontFamily: "inherit" }}
           />
           <select
             value={draft.currency}
@@ -843,7 +836,7 @@ function QuickAddForm({
       </div>
 
       {/* Footer */}
-      <div className="cf-quick-form-footer" style={{ padding: "14px 20px 18px", paddingBottom: "calc(18px + env(safe-area-inset-bottom, 0px))", borderTop: "1px solid var(--uf-border)", background: "linear-gradient(180deg, rgba(250,251,252,0.92), var(--uf-card) 24%)", display: "flex", flexDirection: "column", gap: 10, position: "sticky", bottom: 0, zIndex: 2 }}>
+      <div className="cf-quick-form-footer" style={{ padding: "14px 20px 18px", paddingBottom: "calc(18px + env(safe-area-inset-bottom, 0px))", borderTop: "1px solid var(--uf-border)", background: "var(--uf-card)", display: "flex", flexDirection: "column", gap: 10, position: "sticky", bottom: 0, zIndex: 2 }}>
         {!editing && (
           <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontSize: 12 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -876,8 +869,8 @@ function QuickAddForm({
           onClick={() => handleSubmit()}
           disabled={!canSave || saving}
           style={{
-            background: canSave ? "#151719" : "#CBD5E1",
-            color: "#fff", border: "none", borderRadius: 8,
+            background: canSave ? "var(--uf-ink)" : "var(--uf-surface-2)",
+            color: canSave ? "var(--uf-card)" : "var(--uf-ink-3)", border: "none", borderRadius: 999,
             padding: "12px 16px", fontSize: 14, fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             cursor: canSave ? "pointer" : "not-allowed",
@@ -1320,22 +1313,22 @@ function Toast({
 }) {
   const isErr = toast?.isError;
   return (
-    <div style={{
-      position: "fixed", bottom: 28, left: "50%",
+    <div className="cf-toast" role="status" aria-live="polite" style={{
+      position: "fixed", left: "50%",
       transform: `translateX(-50%) translateY(${toast ? 0 : 20}px)`,
-      opacity: toast ? 1 : 0, transition: "all 220ms",
-      background: isErr ? "#7F1D1D" : "#151719", color: "#fff", borderRadius: 999,
+      opacity: toast ? 1 : 0, transition: "opacity 200ms, transform 200ms",
+      background: isErr ? "var(--uf-neg-bg)" : "var(--uf-ink)", color: isErr ? "var(--uf-neg-ink)" : "var(--uf-card)", borderRadius: 999,
       padding: "10px 16px 10px 14px", fontSize: 13, fontWeight: 600,
-      display: "flex", alignItems: "center", gap: 12, zIndex: 50,
+      display: "flex", alignItems: "center", gap: 12, zIndex: 60, maxWidth: "calc(100vw - 32px)",
       pointerEvents: toast ? "auto" : "none",
       boxShadow: "0 12px 32px rgba(15,23,42,0.14)",
     }}>
-      <span style={{ width: 18, height: 18, background: isErr ? "#EF4444" : "#10B981", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12 }}>
+      <span aria-hidden style={{ width: 18, height: 18, background: isErr ? "var(--uf-neg)" : "var(--uf-pos)", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, flexShrink: 0 }}>
         {isErr ? "✕" : "✓"}
       </span>
       <span>{toast?.msg}</span>
       {toast?.undoId && (
-        <button onClick={onUndo} style={{ background: "transparent", border: "none", color: "#FFE58A", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px", cursor: "pointer", padding: 0 }}>
+        <button type="button" onClick={onUndo} style={{ background: "transparent", border: "none", color: "inherit", fontSize: 13, fontWeight: 800, textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer", padding: "4px 0" }}>
           Undo
         </button>
       )}
@@ -1368,20 +1361,30 @@ function MobileBar({ onOpen, onImport }: { onOpen: () => void; onImport: () => v
 }
 
 function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  const panel = useRef<HTMLDivElement>(null);
+  // The parent passes a new onClose each render; read it through a ref so
+  // typing doesn't re-run the open/close effect (which returns focus).
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const back = document.activeElement as HTMLElement | null;
+    // Typing straight away should go into the amount.
+    const t = setTimeout(() => panel.current?.querySelector<HTMLElement>("[data-drawer-autofocus]")?.focus(), 60);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeRef.current(); };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+    return () => { clearTimeout(t); window.removeEventListener("keydown", onKey); back?.focus?.(); };
+  }, [open]);
 
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 40, opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none", transition: "opacity 200ms" }} />
-      <div className="cf-mobile-drawer" style={{ position: "fixed", left: 0, right: 0, bottom: 0, background: "var(--uf-card)", borderTopLeftRadius: 18, borderTopRightRadius: 18, zIndex: 50, transform: `translateY(${open ? 0 : "100%"})`, transition: "transform 240ms cubic-bezier(0.2,0,0,1)", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 -10px 32px rgba(15,23,42,0.2)" }}>
+      <style>{`@media (min-width: 900px){.cf-mobile-drawer{left:50%!important;right:auto!important;top:50%;bottom:auto!important;width:min(560px,calc(100vw - 48px));max-height:88vh!important;border-radius:28px!important;transform:translate(-50%,-50%)!important;transition:opacity 180ms ease!important}.cf-mobile-drawer:not([data-open]){opacity:0;visibility:hidden}.cf-mobile-drawer .cf-drawer-handle{display:none}.cf-mobile-drawer > div:first-of-type{min-height:48px}}`}</style>
+      <div ref={panel} className="cf-mobile-drawer" role="dialog" aria-modal="true" aria-labelledby="cf-quick-form-title"
+        data-open={open ? "" : undefined} inert={!open} style={{ position: "fixed", left: 0, right: 0, bottom: 0, background: "var(--uf-card)", borderTopLeftRadius: 18, borderTopRightRadius: 18, zIndex: 50, transform: `translateY(${open ? 0 : "100%"})`, transition: "transform 240ms cubic-bezier(0.2,0,0,1)", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 -10px 32px rgba(15,23,42,0.2)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "10px 16px 4px", position: "relative" }}>
-          <div onClick={onClose} style={{ width: 44, height: 5, borderRadius: 99, background: "#CBD5E1", cursor: "pointer" }} />
-          <button onClick={onClose} style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", fontSize: 20, color: "var(--uf-text-3)", cursor: "pointer", lineHeight: 1, padding: "4px 8px" }}>✕</button>
+          <div className="cf-drawer-handle" aria-hidden onClick={onClose} style={{ width: 44, height: 5, borderRadius: 99, background: "var(--uf-border-2)", cursor: "pointer" }} />
+          <button type="button" aria-label="Close" onClick={onClose} style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", fontSize: 20, color: "var(--uf-text-3)", cursor: "pointer", lineHeight: 1, padding: "4px 8px" }}>✕</button>
         </div>
         <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "contain" }}>
           <div style={{ maxWidth: 480, margin: "0 auto" }}>{children}</div>
@@ -1477,7 +1480,7 @@ function AiReviewModal({
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button onClick={() => onApproveAll(pending.map(resolve))}
-              style={{ background: "var(--uf-green)", color: "#fff", border: "none", borderRadius: 7, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              style={{ background: "var(--uf-green)", color: "var(--uf-card)", border: "none", borderRadius: 7, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
               Approve all
             </button>
             <button onClick={onClose} aria-label="Close" style={{ background: "none", border: "none", fontSize: 18, color: "var(--uf-text-3)", cursor: "pointer", padding: "4px 8px" }}>✕</button>
@@ -1527,7 +1530,7 @@ function AiReviewModal({
                   </div>
                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                     <button onClick={() => approve(item)}
-                      style={{ background: "var(--uf-green)", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Approve</button>
+                      style={{ background: "var(--uf-green)", color: "var(--uf-card)", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Approve</button>
                     <button onClick={() => onSkip(tx.id)}
                       style={{ background: "none", color: "var(--uf-text-3)", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "6px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Skip</button>
                   </div>
@@ -1796,7 +1799,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const showToast = useCallback((msg: string, undoId?: string, removed?: Transaction, isError?: boolean) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast({ msg, undoId, _removed: removed, isError });
-    toastTimer.current = setTimeout(() => setToast(null), undoId ? 4000 : 3200);
+    toastTimer.current = setTimeout(() => setToast(null), undoId ? 6000 : 3200);
   }, []);
 
   const applyClassifications = useCallback(async (toApply: { tx: Transaction; suggestion: "need" | "want"; filing?: { category: string; sub_category: string | null } }[]) => {
@@ -2051,11 +2054,12 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 
   const handleCategoryChange = useCallback(async (tx: Transaction, category: string) => {
     const { error } = await supabase.from("expenses").update({ category }).eq("id", tx.id);
-    if (!error) setTransactions(prev => prev.map(t => t.id === tx.id ? { ...t, category } : t));
-  }, []);
+    if (error) { showToast("Couldn't change the category. Try again.", undefined, undefined, true); return; }
+    setTransactions(prev => prev.map(t => t.id === tx.id ? { ...t, category } : t));
+  }, [showToast]);
 
   const handleDelete = useCallback(async (tx: Transaction) => {
-    if (!window.confirm(`Delete "${tx.description}"?`)) return;
+    // No confirm popup: the toast offers Undo for six seconds.
     const { error } = await supabase.from("expenses").delete().eq("id", tx.id);
     if (error) {
       showToast("Failed to delete — please try again", undefined, undefined, true);
@@ -2113,6 +2117,9 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         @media (min-width: 1025px) {
           .cf-mobile-bar { left: 50%; right: auto; width: 100%; max-width: 340px; transform: translateX(-50%); bottom: 28px; }
         }
+        /* Toasts sit above the Add bar, never on it. */
+        .cf-toast { bottom: calc(140px + env(safe-area-inset-bottom, 0px)); }
+        @media (min-width: 1025px) { .cf-toast { bottom: 88px; } }
         .uf-cat-scrim { display: none; }
         /* The row clips its overflow, so on phones the picker is a bottom sheet instead of a popover. */
         @media (max-width: 700px) {
@@ -2175,6 +2182,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         expenseCategories={allExpenseCats}
         categoryNeeds={categoryNeeds}
       />
+      {/* Room for the floating Add bar, so the last row is never under it. */}
+      <div aria-hidden style={{ height: 72 }} />
 
       <MobileBar
         onOpen={() => { setEditingId(null); setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency }); setDrawerOpen(true); }}

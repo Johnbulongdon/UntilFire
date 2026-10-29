@@ -175,7 +175,8 @@ export default function SignInCard({ verb, onStart }: {
           </Button>
           <Button variant="secondary" size="lg" fullWidth onClick={() => setAppleSoon(true)} aria-describedby={appleSoon ? 'apple-soon' : undefined}
             style={{ ...bigButton, background: 'var(--uf-ink)', borderColor: 'var(--uf-ink)', color: 'var(--uf-card)' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>{APPLE_LOGO}{verb} with Apple</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>{APPLE_LOGO}{verb} with Apple
+              <span style={{ fontSize: 12, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: 'var(--uf-card)', color: 'var(--uf-ink)' }}>Soon</span></span>
           </Button>
           {appleSoon && (
             <p id="apple-soon" role="status" style={{ margin: 0, textAlign: 'center', fontSize: 13, color: 'var(--uf-ink-2)' }}>

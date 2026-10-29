@@ -49,7 +49,7 @@ export default function WorthALook({ flags, notes, rows, fmt, toUSD, displayCurr
   const listed = open ? rows.filter((r) => flags.get(r.id) === open) : [];
   const btn = (primary: boolean): React.CSSProperties => ({
     border: primary ? "none" : "1px solid var(--uf-border-2)", borderRadius: 999, padding: "6px 12px", cursor: "pointer", font: "inherit", fontSize: 13, fontWeight: 700,
-    background: primary ? "var(--uf-green)" : "var(--uf-card)", color: primary ? "#fff" : "var(--uf-ink-2)", whiteSpace: "nowrap",
+    background: primary ? "var(--uf-green)" : "var(--uf-card)", color: primary ? "var(--uf-card)" : "var(--uf-ink-2)", whiteSpace: "nowrap",
   });
 
   return (
