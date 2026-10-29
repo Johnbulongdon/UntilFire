@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-29 — Starting budget (50/30/20)
+
+- Website only (D-116). With no budget yet, Money › Budget suggests 50% needs, 30% wants and 20% saving of take-home pay, built from what you usually spend. No limit is ever higher than your usual spending: only wants that aren't bills are trimmed, by one shared percentage; needs over 50% stay and wants give way. "Use this" saves it, "Set my own" opens guided setup. With no spending yet, the three totals show as a guide. Nothing is saved, and the freedom date doesn't move, until "Use this".
+
 ## 2026-10-29 — Website interaction fixes
 
 - Website only. A failed plan load now shows "Try again" instead of the new-user welcome form, and auto-save waits for a good load, so a brief network blip cannot overwrite a saved plan. Save failures (including account toggles, debt start balances and shares) show a visible message; opening a page no longer flashes "Saved".
