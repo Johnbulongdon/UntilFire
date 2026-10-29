@@ -10,6 +10,8 @@
 
 ## Unreleased — Next Horizon
 
+- Homepage "Listed on" tray restores the directory badges that live listings require, in a quiet light tray that stays readable in dark mode.
+
 - Browser interaction: try the example plan, clearer onboarding selection and directional transitions, section/editor/button feedback, structural Money loading, and live savings feedback. Decimal slider undo restores the exact original plan. Narrow onboarding removes decorative panels while retaining money summaries.
 
 - Until payday uses approved C: inspect each bill on the chart or list, with details above it and no visible slider. Cash calculations remain unchanged.

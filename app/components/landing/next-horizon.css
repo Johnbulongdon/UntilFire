@@ -196,9 +196,60 @@
   font-size: 13px;
   color: var(--uf-ink-2);
 }
+/* Directory badges are third-party images made for light pages, so the tray
+   keeps the light ground in both themes to stay readable. */
+.nh-listed {
+  max-width: 1280px;
+  margin: auto;
+  padding: 0 48px 56px;
+}
+.nh-listed h2 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--uf-ink-2);
+  margin-bottom: 12px;
+}
+.nh-listed ul {
+  list-style: none;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 24px;
+  background: #f8f8fb;
+  border: 1px solid var(--uf-border);
+}
+.nh-listed a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  border-radius: 8px;
+}
+.nh-listed img {
+  display: block;
+  height: 36px;
+  width: auto;
+}
+.nh-listed .nh-listed-text {
+  font-size: 13px;
+  color: #4a4f57;
+  padding: 0 8px;
+}
 @media (max-width: 760px) {
   .nh-public {
     padding: 35px 22px 48px;
+  }
+  .nh-listed {
+    padding: 0 16px 40px;
+  }
+  .nh-listed ul {
+    gap: 8px;
+    padding: 12px;
+  }
+  .nh-listed img {
+    height: 28px;
   }
   .nh-public-hero {
     grid-template-columns: 1fr;

@@ -9,6 +9,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import SiteHeader from "@/app/components/SiteHeader";
+import DirectoryBadges from "./DirectoryBadges";
 import { quickFreedom, freedomPath } from "@/lib/quick-freedom";
 import {
   PRO_ANNUAL_LABEL,
@@ -173,6 +174,7 @@ export default function NextHorizonLanding({
           </div>
         </section>
       </main>
+      <DirectoryBadges />
     </div>
   );
 }
