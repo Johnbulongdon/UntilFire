@@ -3428,7 +3428,7 @@ simplify its maintenance before adding another tracking system.
 
 ### D-111 — October 29: approved Next Horizon rebrand
 
-**Status:** Approved direction; implementation and verification in progress, not released.
+**Status:** Implemented in draft [PR #323](https://github.com/Johnbulongdon/UntilFire/pull/323); reviewed surfaces pass, not released. Authenticated admin and physical-device checks remain.
 **Decision:** Replace the former sun styling with the approved black sunrise/path logo, Inter wordmark, warm yellow #FFE58A and coordinated mint/lilac/blue/pink cards across web, phone, admin, SEO and emails. Black pill actions and one-question pages. Monthly inputs; separate Housing and Investing; own monthly picture before an interactive saving improvement and account save. No final Change my answers link. No invented city savings comparisons.
 **Why:** John approved the complete responsive mock and refined yellow logo, then explicitly requested implementation throughout the product and brand exports. This supersedes older v3 Warm visual defaults; financial rules and security decisions remain in force.
 **Sources:** `docs/design/design-system.md`, `public/brand/`; branch `codex/next-horizon-rebrand`, origin/main baseline d8ad674a71fddf284a96718ea8be7c3b30c57a2b. Merge/deploy and native store release remain separate.
