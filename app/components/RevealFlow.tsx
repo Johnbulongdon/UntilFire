@@ -311,14 +311,16 @@ export default function RevealFlow(props: RevealFlowProps) {
                 <YearCubes colors={dots} reduce={reduce} />
               </div>
               <div style={{ display: "flex", gap: 22, flexWrap: "wrap", justifyContent: "center", marginTop: 4 }}>
-                <Legend color="var(--uf-border-2)" label={`Lived (${lived})`} />
+                <Legend color="var(--uf-border-2)" label={ageWasAssumed ? `So far (${lived}, assumed)` : `Lived (${lived})`} />
                 <Legend color={WORKING} label={`Still working (${working})`} />
                 <Legend color={TEAL} label={`Free years (${freeYears})`} highlight />
               </div>
               <div style={subtle}>
                 {isAlreadyFire
                   ? <>You&apos;ve already bought back <b style={{ color: TEAL }}>{freeYears} free years</b> — assuming you live to 100.</>
-                  : <>Retiring at {freedomAge} buys back <b style={{ color: TEAL }}>{freeYears} free years</b> — assuming you live to 100.</>}
+                  : ageWasAssumed
+                    ? <>Freedom in {working} years buys back <b style={{ color: TEAL }}>{freeYears} free years</b>. This uses an assumed age of {lived}, since you skipped it.</>
+                    : <>Retiring at {freedomAge} buys back <b style={{ color: TEAL }}>{freeYears} free years</b> — assuming you live to 100.</>}
               </div>
             </div>
           )}
@@ -337,7 +339,7 @@ export default function RevealFlow(props: RevealFlowProps) {
                     {numText}
                   </div>
                   <div style={{ fontSize: 14, color: "var(--uf-ink-2)", fontWeight: 600 }}>
-                    in today’s dollars
+                    in today’s money
                   </div>
                 </div>
               </div>
@@ -346,7 +348,7 @@ export default function RevealFlow(props: RevealFlowProps) {
                   ? <>You&apos;re already <b style={{ color: TEAL }}>{Math.round(pctThere)}%</b> of the way there</>
                   : <>This is your target to reach.</>}
               </div>
-              <div style={subtle}>{isAlreadyFire ? "Your inputs cover the target. Review your balances and bills." : pctThere >= 75 ? "Your target is getting closer." : "Every saved dollar is part of the picture."}</div>
+              <div style={subtle}>{isAlreadyFire ? "Your inputs cover the target. Review your balances and bills." : pctThere >= 75 ? "Your target is getting closer." : "Everything you save is part of the picture."}</div>
             </div>
           )}
 

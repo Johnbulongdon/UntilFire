@@ -10,6 +10,7 @@ import {
   Home,
   ChartNoAxesCombined,
   ShieldCheck,
+  KeyRound,
 } from "lucide-react";
 import Logo from "@/app/components/Logo";
 import Flag from "@/app/components/Flag";
@@ -107,6 +108,18 @@ export default function BrandedIntake({
     setSavedInput(v=>convertIntakeAmount(v,rate,nextRate));
     setCurrency(next);
   };
+  // Amounts are typed as plain digits but shown grouped (4,500), matching the
+  // monthly picture beside them.
+  const grouped = (v: string) => {
+    if (v === "") return "";
+    const [whole, frac] = v.split(".");
+    return (whole === "" ? "0" : Number(whole).toLocaleString("en-US")) + (frac !== undefined ? "." + frac : "");
+  };
+  const ungroup = (v: string) => {
+    const clean = v.replace(/[^0-9.]/g, "");
+    const dot = clean.indexOf(".");
+    return dot < 0 ? clean : clean.slice(0, dot + 1) + clean.slice(dot + 1).replace(/\./g, "").slice(0, 2);
+  };
   const money = (n: number) =>
     new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -117,11 +130,12 @@ export default function BrandedIntake({
     options: string[],
     value: string | string[],
     select: (v: string) => void,
+    icons?: (typeof Home)[],
   ) => (
     <div className="nh-choices">
       {options.map((v, i) => {
         const active = Array.isArray(value) ? value.includes(v) : value === v;
-        const I = [CalendarDays, Wallet, ChartNoAxesCombined, ShieldCheck][
+        const I = icons?.[i] ?? [CalendarDays, Wallet, ChartNoAxesCombined, ShieldCheck][
           i % 4
         ];
         return (
@@ -161,16 +175,15 @@ export default function BrandedIntake({
             }
           </span>
           <input
-            type="number"
+            className="nh-amount"
+            type="text"
             inputMode="decimal"
-            min="0"
-            max="999999999"
-            step="any"
+            autoComplete="off"
             aria-label={label}
             required
-            value={value}
+            value={grouped(value)}
             placeholder="0"
-            onChange={(e) => change(e.target.value)}
+            onChange={(e) => change(ungroup(e.target.value))}
           />
         </span>
       </label>
@@ -198,10 +211,15 @@ export default function BrandedIntake({
       goal,
       setGoal,
     );
+  const matches = CITIES.filter(
+    (c) => !citySearch(query) || c.name.toLowerCase().includes(citySearch(query)),
+  ).slice(0, 5);
+  const chooseCity = (c: (typeof CITIES)[number]) => {
+    setCity({ name: c.name, col: c.col, stateKey: c.state, isCustom: false });
+    setQuery(c.name);
+    changeCurrency(currencyForState(c.state));
+  };
   if (step === 1) {
-    const matches = CITIES.filter(
-      (c) => !citySearch(query) || c.name.toLowerCase().includes(citySearch(query)),
-    ).slice(0, 5);
     body = (
       <>
         <label className="nh-city-search">
@@ -215,18 +233,10 @@ export default function BrandedIntake({
         <div className="nh-city-options">
           {matches.map((c) => (
             <button
+              type="button"
               key={c.key}
               aria-pressed={city?.name === c.name}
-              onClick={() => {
-                setCity({
-                  name: c.name,
-                  col: c.col,
-                  stateKey: c.state,
-                  isCustom: false,
-                });
-                setQuery(c.name);
-                changeCurrency(currencyForState(c.state));
-              }}
+              onClick={() => chooseCity(c)}
             >
               <Flag emoji={c.flag} size={18} />
               <span>{c.name}</span>
@@ -236,6 +246,7 @@ export default function BrandedIntake({
           {query.trim() &&
             matches.length === 0 && (
               <button
+                type="button"
                 aria-pressed={city?.isCustom && city.name===query.trim()}
                 onClick={() =>
                   setCity({
@@ -365,7 +376,7 @@ export default function BrandedIntake({
       worry,
       setWorry,
     );
-  if (step === 8) body = pick(["Rent", "Own"], housing, setHousing);
+  if (step === 8) body = pick(["Rent", "Own"], housing, setHousing, [KeyRound, Home]);
   if (step === 9)
     body = (
       <>
@@ -397,6 +408,11 @@ export default function BrandedIntake({
               (Number.isInteger(+age) && +age >= 18 && +age <= 100)
             : true;
   const advance = () => {
+    if (step === 1 && !valid && matches.length === 1) {
+      chooseCity(matches[0]);
+      goToStep(2);
+      return;
+    }
     if (!valid) return;
     if (step < 9) {
       goToStep(step + 1);
@@ -425,6 +441,12 @@ export default function BrandedIntake({
     });
   };
   const summary = step >= 3 && step <= 5;
+  const skip = step === 1 && !query.trim();
+  // Say why Continue is unavailable instead of leaving a silent grey button.
+  const hint = valid || (step === 1 && matches.length === 1) ? null
+    : step === 1 ? (matches.length ? "Pick your city from the list, or clear the box to skip." : "Pick the option below, or clear the box to skip.")
+    : step === 6 ? "Enter an age from 18 to 100, or leave it blank."
+    : "Enter an amount to continue.";
   return (
     <div className="nh-intake" data-direction={direction}>
       <header>
@@ -434,6 +456,7 @@ export default function BrandedIntake({
       <main>
         <div className="nh-intake-progress">
           <button
+            type="button"
             aria-label="Previous question"
             onClick={() => (step === 0 ? onBack() : goToStep(step - 1))}
           >
@@ -448,7 +471,12 @@ export default function BrandedIntake({
           <b>{step + 1} / 10</b>
         </div>
         <section className={"nh-intake-panel tone-step-" + step} key={step} data-summary={summary}>
-          <div>
+          <form noValidate onSubmit={(e) => { e.preventDefault(); advance(); }}
+            onKeyDown={(e) => {
+              // Fields submit natively; from the heading or empty space Enter still moves on.
+              const t = e.target as HTMLElement;
+              if (e.key === "Enter" && !e.repeat && !e.nativeEvent.isComposing && !t.closest("input, button, select, textarea, a, summary")) { e.preventDefault(); advance(); }
+            }}>
             <span className="nh-eyebrow">{STEPS[step]}</span>
             <h1 ref={heading} tabIndex={-1}>
               {step===4&&mode==="Saved"?"How much do you save each month?":TITLES[step]}
@@ -456,16 +484,17 @@ export default function BrandedIntake({
             {body}
             <div className="nh-actions">
               <button
+                type="submit"
                 className="nh-primary"
-                disabled={!valid}
-                onClick={advance}
+                disabled={!valid && !(step === 1 && matches.length === 1)}
+                aria-describedby={hint ? "nh-step-hint" : undefined}
               >
-                {step === 9 ? "Show my freedom date" : "Continue"}
+                {step === 9 ? "Show my freedom date" : skip ? "Skip" : "Continue"}
                 <ArrowRight size={17} />
               </button>
-
+              {hint && <p id="nh-step-hint" className="nh-input-hint">{hint}</p>}
             </div>
-          </div>
+          </form>
           <aside>
             {summary ? (
               <div className="nh-intake-summary">
