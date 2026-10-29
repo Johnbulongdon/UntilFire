@@ -14,6 +14,8 @@
 
 ## Unreleased — Next Horizon
 
+- Website: the first-visit logo screen is gone (D-117). Every page, including city and calculator pages from search, shows straight away; the logo stays in the header.
+
 - City guides use Next Horizon: each city page drops its own sage-green palette for the yellow freedom-number card, mint/blue tiles, a numbered plan card and black pill actions. The city share image is now the yellow card and works again (it was a non-route file, so links returned 404). Move-to-a-cheaper-city pages use theme tokens, so dark mode works; positive and negative results keep their own colours and words.
 
 - Slogan rollout (D-109): search and social titles, descriptions, structured data, the install-app description, email footer and demo video now say "See beyond your balance. Open up your life." instead of "Personal finance that sets you free."
