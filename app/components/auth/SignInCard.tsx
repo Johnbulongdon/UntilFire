@@ -6,7 +6,8 @@ import { siteUrl } from '@/lib/site'
 import { getAcquisitionSource } from '@/lib/acquisition'
 import { trackSignupStarted } from '@/lib/analytics'
 import { peekCalculatorPrefill } from '@/lib/journey'
-import { finishSignIn } from '@/lib/auth-finish'
+import { finishSignIn, afterSignInPath } from '@/lib/auth-finish'
+import { useAuth } from '@/lib/auth-context'
 import { isPlausibleEmail, normaliseCode } from '@/lib/auth-user'
 import { Button, Field, Input } from '@/components/ui'
 
@@ -64,6 +65,8 @@ export default function SignInCard({ verb, onStart }: {
   /** Runs before any sign-in starts, e.g. to keep the calculator result in this browser. */
   onStart?: () => void
 }) {
+  const {user}=useAuth()
+  const [oauthError,setOAuthError]=useState('')
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [stage, setStage] = useState<'email' | 'code'>('email')
@@ -85,19 +88,23 @@ export default function SignInCard({ verb, onStart }: {
   }
 
   async function signInWithGoogle() {
-    started('google')
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: oauthRedirectTo(), skipBrowserRedirect: true },
-    })
-    if (error) throw error
-    if (data?.url) window.location.assign(data.url)
+    if(busy)return
+    setBusy(true);setOAuthError('')
+    try {
+      started('google')
+      const {data,error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:oauthRedirectTo(),skipBrowserRedirect:true}})
+      if(error||!data?.url)throw error??new Error('Missing sign-in URL')
+      window.location.assign(data.url)
+    } catch {
+      setOAuthError('Could not start Google sign-in. Check your connection and try again.')
+      setBusy(false)
+    }
   }
 
   useEffect(() => {
     if (resendIn <= 0) return
     const timer = setTimeout(() => setResendIn((s) => s - 1), 1000)
-    return () => clearTimeout(timer)
+  return () => clearTimeout(timer)
   }, [resendIn])
 
   async function sendCode(isResend = false) {
@@ -151,6 +158,8 @@ export default function SignInCard({ verb, onStart }: {
     finishSignIn(data.session, 'email')
   }
 
+  if(user)return <div style={{background:'var(--uf-card)',border:'1px solid var(--uf-border)',borderRadius:16,padding:'28px'}}><p style={{margin:'0 0 18px',color:'var(--uf-ink-2)',fontSize:14}}>You’re already signed in.</p><Button variant="primary" size="lg" fullWidth onClick={()=>{onStart?.();window.location.assign(afterSignInPath())}}>Continue to Home</Button></div>
+
   return (
     <div style={{
       background: 'var(--uf-card)',
@@ -161,8 +170,8 @@ export default function SignInCard({ verb, onStart }: {
     }}>
       {stage === 'email' && (
         <div style={{ display: 'grid', gap: 10 }}>
-          <Button variant="primary" size="lg" fullWidth onClick={signInWithGoogle} style={bigButton}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>{GOOGLE_G}{verb} with Google</span>
+          <Button variant="primary" size="lg" fullWidth onClick={signInWithGoogle} disabled={busy} aria-busy={busy} style={bigButton}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>{GOOGLE_G}{busy?'Connecting…':`${verb} with Google`}</span>
           </Button>
           <Button variant="secondary" size="lg" fullWidth onClick={() => setAppleSoon(true)} aria-describedby={appleSoon ? 'apple-soon' : undefined}
             style={{ ...bigButton, background: 'var(--uf-ink)', borderColor: 'var(--uf-ink)', color: 'var(--uf-card)' }}>
@@ -176,6 +185,7 @@ export default function SignInCard({ verb, onStart }: {
         </div>
       )}
 
+      {oauthError&&<p role="alert" style={errorText}>{oauthError}</p>}
       {EMAIL_SIGNIN && (
         <>
           {stage === 'email' && (

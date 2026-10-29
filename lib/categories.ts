@@ -7,20 +7,20 @@ export type CategoryDef = {
 };
 
 export const EXPENSE_CATEGORIES: CategoryDef[] = [
-  { key: "food",          label: "Food",          code: "FD", color: "#eb6834", emoji: "🍔" },
-  { key: "transport",     label: "Transport",     code: "TR", color: "#1baf7a", emoji: "🚗" },
-  { key: "housing",       label: "Housing",       code: "HO", color: "#2a78d6", emoji: "🏠" },
-  { key: "utilities",     label: "Utilities",     code: "UT", color: "#eda100", emoji: "💡" },
-  { key: "healthcare",    label: "Healthcare",    code: "HC", color: "#e34948", emoji: "🏥" },
-  { key: "shopping",      label: "Shopping",      code: "SH", color: "#e87ba4", emoji: "🛍️" },
-  { key: "entertainment", label: "Entertain",     code: "EN", color: "#008300", emoji: "🎬" },
-  { key: "travel",        label: "Travel",        code: "TV", color: "#6b5bd2", emoji: "✈️" },
-  { key: "education",     label: "Education",     code: "ED", color: "#eda100", emoji: "🎓" },
-  { key: "subscriptions", label: "Subscriptions", code: "SB", color: "#6b5bd2", emoji: "📱" },
-  { key: "personal_care", label: "Personal Care", code: "PC", color: "#e87ba4", emoji: "💆" },
-  { key: "pets",          label: "Pets",          code: "PT", color: "#eb6834", emoji: "🐾" },
-  { key: "work",          label: "Work",          code: "WK", color: "#2a78d6", emoji: "💼" },
-  { key: "other",         label: "Other",         code: "OT", color: "#8a7c68", emoji: "📦" },
+  { key: "food",          label: "Food",          code: "FD", color: "#ffd4b8", emoji: "🍔" },
+  { key: "transport",     label: "Transport",     code: "TR", color: "#bce9da", emoji: "🚗" },
+  { key: "housing",       label: "Housing",       code: "HO", color: "#b9d9f7", emoji: "🏠" },
+  { key: "utilities",     label: "Utilities",     code: "UT", color: "#ffe58a", emoji: "💡" },
+  { key: "healthcare",    label: "Healthcare",    code: "HC", color: "#f7c6cb", emoji: "🏥" },
+  { key: "shopping",      label: "Shopping",      code: "SH", color: "#f4cee3", emoji: "🛍️" },
+  { key: "entertainment", label: "Entertain",     code: "EN", color: "#cde6ae", emoji: "🎬" },
+  { key: "travel",        label: "Travel",        code: "TV", color: "#d9cef3", emoji: "✈️" },
+  { key: "education",     label: "Education",     code: "ED", color: "#ffe58a", emoji: "🎓" },
+  { key: "subscriptions", label: "Subscriptions", code: "SB", color: "#d9cef3", emoji: "📱" },
+  { key: "personal_care", label: "Personal Care", code: "PC", color: "#f4cee3", emoji: "💆" },
+  { key: "pets",          label: "Pets",          code: "PT", color: "#ffd4b8", emoji: "🐾" },
+  { key: "work",          label: "Work",          code: "WK", color: "#b9d9f7", emoji: "💼" },
+  { key: "other",         label: "Other",         code: "OT", color: "#ded8cd", emoji: "📦" },
 ];
 
 /** Default sub-categories per expense category; transactions and Upcoming bills share them. */
@@ -41,11 +41,11 @@ export const SUB_CATEGORIES: Record<string, string[]> = {
 };
 
 export const INCOME_CATEGORIES: CategoryDef[] = [
-  { key: "salary",       label: "Salary",     code: "SA", color: "#1baf7a", emoji: "💵" },
-  { key: "freelance",    label: "Freelance",  code: "FR", color: "#008300", emoji: "💻" },
-  { key: "investment",   label: "Investment", code: "IV", color: "#2a78d6", emoji: "📈" },
-  { key: "gift",         label: "Gift",       code: "GF", color: "#e87ba4", emoji: "🎁" },
-  { key: "other_income", label: "Other",      code: "OI", color: "#8a7c68", emoji: "📦" },
+  { key: "salary",       label: "Salary",     code: "SA", color: "#bce9da", emoji: "💵" },
+  { key: "freelance",    label: "Freelance",  code: "FR", color: "#cde6ae", emoji: "💻" },
+  { key: "investment",   label: "Investment", code: "IV", color: "#b9d9f7", emoji: "📈" },
+  { key: "gift",         label: "Gift",       code: "GF", color: "#f4cee3", emoji: "🎁" },
+  { key: "other_income", label: "Other",      code: "OI", color: "#ded8cd", emoji: "📦" },
 ];
 
 export const ALL_CATEGORIES: CategoryDef[] = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
@@ -59,7 +59,7 @@ export const ALL_CATEGORIES: CategoryDef[] = [...EXPENSE_CATEGORIES, ...INCOME_C
  * identity too, so colour is never the only cue.
  */
 export const COLOR_PALETTE = [
-  "#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6b5bd2", "#e34948", "#8a7c68",
+  "#b9d9f7", "#ffd4b8", "#bce9da", "#ffe58a", "#f4cee3", "#cde6ae", "#d9cef3", "#f7c6cb", "#ded8cd",
 ];
 
 /** The palette colour closest to any hex, so older custom colours land on the new set. */
@@ -71,7 +71,22 @@ export const ACCOUNT_TYPE_COLORS = {
   home: COLOR_PALETTE[8],
 } as const;
 
+/** Keep saved legacy category hues in the same family without rewriting user data. */
+const LEGACY_CATEGORY_COLORS: Record<string, string> = {
+  "#2a78d6": "#b9d9f7",
+  "#eb6834": "#ffd4b8",
+  "#1baf7a": "#bce9da",
+  "#eda100": "#ffe58a",
+  "#e87ba4": "#f4cee3",
+  "#008300": "#cde6ae",
+  "#6b5bd2": "#d9cef3",
+  "#e34948": "#f7c6cb",
+  "#8a7c68": "#ded8cd"
+};
+
 export function nearestPaletteColor(hex: string): string {
+  const legacy = LEGACY_CATEGORY_COLORS[hex.toLowerCase()];
+  if (legacy) return legacy;
   const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
   if (!/^#[0-9a-f]{6}$/i.test(hex) || COLOR_PALETTE.includes(hex.toLowerCase())) return hex.toLowerCase();
   const [r, g, b] = rgb(hex);

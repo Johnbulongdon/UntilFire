@@ -3,6 +3,8 @@
 import { useId, useState } from 'react';
 import {FALLBACK_RATES} from '@/lib/currency';
 import Logo from '@/app/components/Logo';
+import MotionScene from '@/app/components/motion/MotionScene';
+import { savingsSliderAmount, savingsDisplayUSD } from '@/lib/savings-slider';
 import { savingsPace, paceDate } from '@/lib/savings-pace';
 import type { CalculatorPrefill } from '@/lib/journey';
 
@@ -11,12 +13,12 @@ export default function SavingsPace({ prefill, value, onUse, onBack }: {
 }) {
   const id = useId();
   const displayRate=FALLBACK_RATES[prefill.defaultCurrency ?? "USD"] ?? 1;
-  const [amount, setAmount] = useState(String(value * displayRate));
+  const [amount, setAmount] = useState(String(Math.round(value * displayRate)));
   const [now] = useState(() => Date.now());
   const income = Math.max(0, prefill.monthlyIncome ?? 0);
   const original = prefill.monthlySavings ?? 0;
-  const valid = amount.trim() !== '' && Number.isFinite(Number(amount)) && Number(amount) >= 0 && Number(amount) <= income * displayRate;
-  const pace = savingsPace(prefill, valid ? Number(amount) / displayRate : original);
+  const valid = amount.trim() !== '' && Number.isFinite(Number(amount)) && Number(amount) >= 0 && Number(amount) <= Math.round(income * displayRate) && Number.isInteger(Number(amount));
+  const pace = savingsPace(prefill, valid ? savingsDisplayUSD(Number(amount), original, displayRate) : original);
   const baseline = savingsPace(prefill, original);
   const money = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: prefill.defaultCurrency ?? 'USD', maximumFractionDigits: 0 }).format(n * displayRate);
   const months = baseline.result.years !== null && pace.result.years !== null ? Math.round((baseline.result.years - pace.result.years) * 12) : null;
@@ -40,6 +42,7 @@ export default function SavingsPace({ prefill, value, onUse, onBack }: {
       .pace-range input{width:100%;height:44px;accent-color:var(--uf-green);cursor:ew-resize;margin:0;touch-action:pan-y}
       .pace-tick{position:absolute;top:34px;height:10px;width:2px;background:var(--uf-ink-2);pointer-events:none}
       .pace-labels{display:flex;justify-content:space-between;color:var(--uf-ink-2);font-size:12px;gap:8px}
+      .pace-live-split{height:16px;overflow:hidden;border-radius:999px;background:#B9D9F7;margin-top:24px}.pace-live-split span{display:block;height:100%;background:#151719;border-radius:999px;transition:width 180ms ease}@media(prefers-reduced-motion:reduce){.pace-live-split span{transition:none}}
       .pace-summary{font-size:16px;color:var(--uf-ink-2);margin:28px 0 0;line-height:1.6}
       .pace-summary strong{color:var(--uf-teal);font-weight:700}
       .pace-result{border-left:1px solid var(--uf-border);padding-left:40px}
@@ -59,20 +62,21 @@ export default function SavingsPace({ prefill, value, onUse, onBack }: {
     <main className="pace-main">
       <div className="pace-input">
         <label htmlFor={id}>Try one improvement.</label>
-        <div className="pace-amount"><span aria-hidden="true">{new Intl.NumberFormat("en-US", { style: "currency", currency: prefill.defaultCurrency ?? "USD" }).formatToParts(0).find(p => p.type === "currency")?.value}</span><input id={id} type="number" inputMode="decimal" min={0} max={income * displayRate} step="any" value={amount} aria-describedby={`${id}-summary${valid ? '' : ` ${id}-error`}`} aria-invalid={!valid} onChange={e => setAmount(e.target.value)} /><span>/month</span></div>
-        {!valid && <p id={`${id}-error`} role="alert">Enter an amount from {money(0)} to {money(income)}.</p>}
+        <div className="pace-amount"><span aria-hidden="true">{new Intl.NumberFormat("en-US", { style: "currency", currency: prefill.defaultCurrency ?? "USD" }).formatToParts(0).find(p => p.type === "currency")?.value}</span><input id={id} type="number" inputMode="numeric" min={0} max={Math.round(income * displayRate)} step="1" value={amount} aria-describedby={`${id}-summary${valid ? '' : ` ${id}-error`}`} aria-invalid={!valid} onChange={e => setAmount(e.target.value)} onBlur={()=>{if(amount.trim()!==''&&Number.isFinite(Number(amount)))setAmount(String(savingsSliderAmount(Number(amount),original*displayRate,income*displayRate)))}} /><span>/month</span></div>
+        {!valid && <p id={`${id}-error`} role="alert">Enter a whole amount from {money(0)} to {money(income)}.</p>}
         <div className="pace-range">
-          <input className="uf-slider" type="range" min={0} max={income * displayRate} step="any" value={pace.amount * displayRate} disabled={income <= 0} aria-label="Monthly savings" aria-valuetext={`${money(pace.amount)} a month`} onChange={e => setAmount(String(Math.round(Number(e.target.value))))} />
+          <input className="uf-slider" type="range" min={0} max={Math.round(income * displayRate)} step="1" value={Math.round(pace.amount * displayRate)} disabled={income <= 0} aria-label="Monthly savings" aria-valuetext={`${money(pace.amount)} a month`} onChange={e => setAmount(String(savingsSliderAmount(Number(e.target.value),original*displayRate,income*displayRate)))} />
           <span className="pace-tick" style={{ left: `${income > 0 ? Math.min(100, Math.max(0, original / income * 100)) : 0}%` }} />
         </div>
         <div className="pace-labels"><span>{money(0)}</span><span>Original: {money(original)}</span><span>{money(income)}</span></div>
+        <div className="pace-live-split" role="img" aria-label={money(pace.spending)+' to spend, '+money(pace.amount)+' saved each month'}><span style={{width:Math.min(100,Math.max(0,pace.rate))+'%'}}/></div>
         <p className="pace-summary" id={`${id}-summary`}><strong>{Math.round(pace.rate)}% of income</strong> · {money(pace.spending)} to spend</p>
       </div>
-      <div className="pace-result" role="status" aria-live="polite" aria-atomic="true">
+      <MotionScene className="pace-result" scene={paceDate(pace.result.years, now)} role="status" aria-live="polite" aria-atomic="true">
         {pace.changed && <p className="pace-original">{paceDate(baseline.result.years, now)} <span aria-hidden="true">↘</span></p>}
         <h1 className="pace-date">{paceDate(pace.result.years, now)}</h1>
         <p className="pace-difference">{difference}</p>
-      </div>
+      </MotionScene>
     </main>
     <button type="button" className="pace-submit" disabled={!valid} onClick={() => onUse(pace.plan)}>{pace.changed ? 'Use updated plan' : 'Use original plan'}</button>
   </section>;

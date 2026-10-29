@@ -38,6 +38,8 @@ assert.equal(helpers.paceDate(null, 0), 'Not reached yet');
 assert.equal(helpers.paceDate(0, 0), 'Now');
 const ui = load('app/components/SavingsPace.tsx', {
  'react': { ...React, useId: () => 'pace', useState: v => [typeof v === 'function' ? v() : v, () => {}] },
+ '@/lib/savings-slider': load('lib/savings-slider.ts'),
+ '@/app/components/motion/MotionScene': load('app/components/motion/MotionScene.tsx', { '@/lib/browser-motion': load('lib/browser-motion.ts') }),
  '@/app/components/Logo': { default: () => null }, '@/lib/savings-pace': helpers, '@/lib/currency':load('lib/currency.ts'),
 });
 function walk(node, predicate) {
@@ -63,8 +65,21 @@ for(const currency of ['HKD','EUR','JPY']){
  const rate=load('lib/currency.ts').FALLBACK_RATES[currency];let used;
  const tree=ui.default({prefill:{...plan,defaultCurrency:currency},value:1750,onBack:()=>{},onUse:p=>{used=p}});
  const input=walk(tree,n=>n.type==='input'&&n.props.type==='number');
- assert.equal(Number(input.props.value),1750*rate,'local input must show converted money');
+ assert.equal(Number(input.props.value),Math.round(1750*rate),'local input must show converted money');
  walk(tree,n=>n.type==='button'&&n.props.className==='pace-submit').props.onClick();
  assert.ok(Math.abs(used.monthlySavings-1750)<1e-8,'saved plan must stay in USD');
 }
 console.log('Display currencies round-trip without changing the USD projection.');
+
+const slider=load('lib/savings-slider.ts');
+for(const [rate,digits] of [[1,2],[7.8,2],[.92,2],[150,0]]){
+ const originalUSD=1500.25,display=Math.round(originalUSD*rate),max=Math.round(4500.25*rate);
+ const step=1;
+ const right=slider.savingsSliderAmount(display+step,display,max,digits);
+ const restored=slider.savingsSliderAmount(right-step,display,max,digits);
+ assert.equal(restored,Math.round(display),'Arrow round trip preserves the original display value');
+ assert.equal(slider.savingsDisplayUSD(restored,originalUSD,rate),originalUSD,'Restored currency returns exact USD original');
+ assert.equal(helpers.savingsPace({...plan,monthlySavings:originalUSD},slider.savingsDisplayUSD(restored,originalUSD,rate)).changed,false);
+}
+assert.equal(slider.savingsSliderAmount(560.46,500,3000),560);
+console.log('Whole-number display and local-currency slider undo preserve the exact original plan.');

@@ -2,6 +2,12 @@
 
 ## Unreleased — Next Horizon
 
+- Browser interaction: try the example plan, clearer onboarding selection and directional transitions, section/editor/button feedback, structural Money loading, and live savings feedback. Decimal slider undo restores the exact original plan. Narrow onboarding removes decorative panels while retaining money summaries.
+
+- Until payday uses approved C: inspect each bill on the chart or list, with details above it and no visible slider. Cash calculations remain unchanged.
+
+- Lighter category palette B across the shared web/phone category system; existing saved hue families stay recognizable without rewriting account data.
+
 - Approved yellow horizon/path logo and Inter wordmark across web, native, admin, email and share previews, with downloadable SVG/PNG, palette and font exports.
 - Monthly onboarding with separate Housing and Investing, a freedom-date canvas, own monthly picture and a single saving-improvement action before saving an account.
 - Colourful Home cards, black pill actions and matched phone welcome controls. Financial calculations retain the shared engine; local-currency display values round-trip to USD once.
@@ -1610,3 +1616,19 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - SEO: OG image, JSON-LD, canonical URLs, sitemap, robots.txt
 - Supabase + Google OAuth auth flow
 - Stripe integration with Pro paywall (later opened to all users)
+
+### Unreleased — onboarding feedback, 29 October
+- Use whole-number improvement controls while retaining exact original plan values on undo.
+- Fix stale city choices and convert entered answers when currency changes; correct Saved question wording.
+- Hide Skip actions, show today's-dollar freedom target, and repair/shorten the year-grid reveal.
+- Give existing sessions a Home action and failed/slow sign-ins visible recovery.
+
+- Fix Saved-mode keystroke corruption by preserving typed input instead of recomputing it on each key.
+
+### Unreleased — marked calendar B
+- Replace the browser's Transactions heatmap and Calendar date cells with pastel bill labels, yellow income/payday markers, and exact selected-day details.
+- Keep every same-day payment, date navigation, and existing cash/contribution actions; use compact display-currency amounts in narrow cells.
+
+### Calendar date repair
+- Calendar now shows scheduled bills and payday only; ordinary transactions stay in Transactions.
+- Keep past and completed bills on their original scheduled dates instead of moving them onto today. Cash forecasting still accounts for overdue unpaid bills independently.

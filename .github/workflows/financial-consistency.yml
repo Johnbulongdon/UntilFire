@@ -17,3 +17,4 @@ jobs:
       - run: npm run test:plan-freedom-date
       - run: npm run test:account-currency
       - run: npm run test:fire-projection
+      - run: npm run test:marked-calendar

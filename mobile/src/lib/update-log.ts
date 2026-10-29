@@ -7,7 +7,7 @@ import * as Updates from 'expo-updates'
  * each line short and in plain words (the founder reads it to check a build).
  */
 export const UPDATE_LOG: { version: string; date: string; changes: string[] }[] = [
-  { version: '0.2.0', date: '2026-10-29', changes: ['A new yellow horizon logo, clearer type and colourful cards across the app', 'See your plan before signing up, with monthly amounts and one question at a time'] },
+  { version: '0.2.0', date: '2026-10-29', changes: ['Browse every upcoming bill directly on the payday chart, with details above your finger', 'Categories now use lighter colors that match Home', 'A new yellow horizon logo, clearer type and colourful cards across the app', 'See your plan before signing up, with monthly amounts and one question at a time'] },
   { version: '0.2.0', date: '2026-10-27', changes: ['The welcome screen sign-in button now matches Get started in width and height'] },
   { version: '0.2.0', date: '2026-10-27', changes: ['Freedom dates respect pension access, paid-off accounts stay at zero, and debt interest and shared-account safety coverage use your current numbers'] },
   { version: '0.2.0', date: '2026-10-25', changes: ['Needs and wants are sorted for you, so Today stops asking about every purchase', 'Today only asks about shops that sell both, like Target, and remembers your answer', 'New Needs & wants screen in Budget to move anything that\'s wrong for you'] },

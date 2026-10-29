@@ -22,6 +22,10 @@ Black sunrise and winding path, paired with the outlined Inter UntilFire wordmar
 
 Pastels group content. They do not replace positive, warning or negative financial meanings. Use black text on pastel cards in either theme. Dark mode uses charcoal surfaces, readable light ink and the same accents. Legacy `green` and `teal` token names remain compatibility aliases; they no longer mandate those hues.
 
+## Category fills — lighter palette B
+
+Approved 29 October: blue `#B9D9F7`, peach `#FFD4B8`, mint `#BCE9DA`, yellow `#FFE58A`, pink `#F4CEE3`, lime `#CDE6AE`, lilac `#D9CEF3`, rose `#F7C6CB`, neutral `#DED8CD`. Shared source: `lib/categories.ts`, used by web and phone. Use readable theme ink for labels; category fills are not text colors. Keep semantic loss/shortfall ink and patterns. Legacy saved hues map to their matching pastel family at display time without changing stored financial data.
+
 ## Type and shape
 
 Inter 400, 500, 600, 700, 800, bundled locally on web and native. Tabular numerals for financial values. Clear bold headings, short labels, one idea per card. Rounded cards 24–28px; black pill actions; equal full-width welcome actions on phone. No serif display typography, heavy button lips, mascot, decorative glow or media-player controls.
@@ -39,3 +43,17 @@ Short coordinated transitions and reactions; reduced-motion support; numeric foc
 ## Release
 
 This migration is reviewed on `codex/next-horizon-rebrand`, based on origin/main d8ad674a71fddf284a96718ea8be7c3b30c57a2b. It is not a production release. Keep money logic and current security work separate. Native icon/splash changes need a store build and a separately authorized phone release.
+
+## Until payday — C
+
+Approved 29 October: show future cash from today to payday at real date spacing, with one readout above the chart and individually selectable bills. Mouse movement and horizontal touch dragging inspect points. Keep keyboard/screen-reader adjustment and Previous/Next buttons. No visible range slider, stacked category icons or +N aggregation. Keep Money navigation separate from inspection. Negative cash keeps an explicit shortfall label and zero reference. Shared presentation helpers: lib/payday-chart.ts. Money calculations remain lib/payday-line.ts / Until payday D-90; no changes to amounts or saved data.
+
+## Browser interaction and motion
+
+Short feedback, not constant movement: 120–160ms hover/press, 180ms disclosures, 240ms section/result entry, up to 300ms question choreography. Preserve focused fields, original answers and financial values. Animate section containers without remounting their editors. Respect system reduced motion and cancel active section motion if that preference changes. Decorative onboarding panels collapse at narrow widths; useful monthly numbers stay. Loading placeholders announce loading and never display invented balances. Public example controls are clearly labelled and use the existing engine; they do not save to an account.
+
+## Browser calendar — marked dates B
+
+Transactions calendar and Money → Calendar use the same marked month: Sunday-first, quiet date cells, pastel category payment labels, yellow incoming-payment labels and full selected-day details below. Keep every same-day payment. Narrow cells use compact amounts in the display currency, with exact amounts in accessible labels and details. Keep line/bars alternatives and the existing recorded/expected distinction, recurrence sources and cash/contribution actions. This browser presentation does not change native money logic or release the phone app.
+
+Calendar clarification (29 October): only scheduled bills and income/payday appear in date cells and selected-day details. Do not fill the calendar with bank transactions. Preserve original occurrence dates as today advances. Forecast catch-up dates are for cash planning only, never for calendar placement.

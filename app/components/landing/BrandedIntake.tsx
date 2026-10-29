@@ -12,6 +12,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Logo from "@/app/components/Logo";
+import Flag from "@/app/components/Flag";
+import { citySearch, convertIntakeAmount } from "@/lib/intake-inputs";
 import { CITIES } from "@/lib/fire-data";
 import {
   FALLBACK_RATES,
@@ -72,17 +74,20 @@ export default function BrandedIntake({
   const [step, setStep] = useState(startAt),
     [city, setCity] = useState(initialCity),
     [currency, setCurrency] = useState(initialCurrency),
-    [query, setQuery] = useState(""),
+    [query, setQuery] = useState(initialCity?.name ?? ""),
     [income, setIncome] = useState(""),
     [expenses, setExpenses] = useState(""),
     [invested, setInvested] = useState(""),
     [age, setAge] = useState(""),
     [mode, setMode] = useState("Expenses"),
+    [savedInput, setSavedInput] = useState(""),
     [goal, setGoal] = useState(""),
     [pay, setPay] = useState("Monthly"),
     [worry, setWorry] = useState(""),
     [housing, setHousing] = useState(""),
     [investing, setInvesting] = useState<string[]>([]);
+  const [direction,setDirection]=useState("forward");
+  const goToStep=(next:number)=>{setDirection(next<step?"back":"forward");setStep(next)};
   const heading = useRef<HTMLHeadingElement>(null),
     rate = FALLBACK_RATES[currency] ?? 1,
     inc = Number(income),
@@ -93,6 +98,15 @@ export default function BrandedIntake({
     onStep?.(step);
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [step]);
+  const changeCurrency=(next:SupportedCurrency)=>{
+    if(next===currency)return;
+    const nextRate=FALLBACK_RATES[next]??1;
+    setIncome(v=>convertIntakeAmount(v,rate,nextRate));
+    setExpenses(v=>convertIntakeAmount(v,rate,nextRate));
+    setInvested(v=>convertIntakeAmount(v,rate,nextRate));
+    setSavedInput(v=>convertIntakeAmount(v,rate,nextRate));
+    setCurrency(next);
+  };
   const money = (n: number) =>
     new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -186,7 +200,7 @@ export default function BrandedIntake({
     );
   if (step === 1) {
     const matches = CITIES.filter(
-      (c) => !query || c.name.toLowerCase().includes(query.toLowerCase()),
+      (c) => !citySearch(query) || c.name.toLowerCase().includes(citySearch(query)),
     ).slice(0, 5);
     body = (
       <>
@@ -194,7 +208,7 @@ export default function BrandedIntake({
           City
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {setQuery(e.target.value);setCity(null)}}
             placeholder="Search cities"
           />
         </label>
@@ -210,19 +224,19 @@ export default function BrandedIntake({
                   stateKey: c.state,
                   isCustom: false,
                 });
-                setCurrency(currencyForState(c.state));
+                setQuery(c.name);
+                changeCurrency(currencyForState(c.state));
               }}
             >
-              <Globe2 size={18} />
-              {c.name}
+              <Flag emoji={c.flag} size={18} />
+              <span>{c.name}</span>
               {city?.name === c.name && <Check size={18} />}
             </button>
           ))}
           {query.trim() &&
-            !matches.some(
-              (c) => c.name.toLowerCase() === query.trim().toLowerCase(),
-            ) && (
+            matches.length === 0 && (
               <button
+                aria-pressed={city?.isCustom && city.name===query.trim()}
                 onClick={() =>
                   setCity({
                     name: query.trim(),
@@ -232,7 +246,7 @@ export default function BrandedIntake({
                   })
                 }
               >
-                Use “{query.trim()}”
+                Use “{query.trim()}” as my city
                 {city?.name === query.trim() && <Check size={18} />}
               </button>
             )}
@@ -261,11 +275,7 @@ export default function BrandedIntake({
               value={currency}
               onChange={(e) => {
                 const next = e.target.value as SupportedCurrency;
-                const scale = (FALLBACK_RATES[next] ?? 1) / rate;
-                setIncome((v) => (v ? String(Math.round(+v * scale)) : ""));
-                setExpenses((v) => (v ? String(Math.round(+v * scale)) : ""));
-                setInvested((v) => (v ? String(Math.round(+v * scale)) : ""));
-                setCurrency(next);
+                changeCurrency(next);
               }}
             >
               {SUPPORTED_CURRENCIES.map((c) => (
@@ -292,7 +302,7 @@ export default function BrandedIntake({
               key={v}
               aria-pressed={mode === v}
               className={mode === v ? "active" : ""}
-              onClick={() => setMode(v)}
+              onClick={() => {if(v==="Saved")setSavedInput(expenses===""?"":String(Math.round(Math.max(0,sav)*100)/100));setMode(v)}}
             >
               {v}
             </button>
@@ -300,15 +310,11 @@ export default function BrandedIntake({
         </div>
         {numeric(
           mode === "Expenses" ? "Monthly expenses" : "Monthly saved",
-          mode === "Expenses"
-            ? expenses
-            : expenses === ""
-              ? ""
-              : String(Math.max(0, sav)),
-          (v) =>
-            setExpenses(
-              mode === "Expenses" ? v : String(inc - Math.min(inc, +v)),
-            ),
+          mode === "Expenses" ? expenses : savedInput,
+          (v) => {
+            if(mode === "Expenses")setExpenses(v);
+            else {setSavedInput(v);setExpenses(v === "" ? "" : String(Math.round((inc - Math.min(inc,+v))*100)/100));}
+          },
           Math.max(inc, exp, 1),
         )}
         {exp > inc && (
@@ -379,12 +385,13 @@ export default function BrandedIntake({
       </>
     );
   const valid =
+    step === 1 ? !query.trim() || (city !== null && citySearch(city.name) === citySearch(query)) :
     step === 3
-      ? income !== "" && Number.isFinite(inc) && inc > 0
+      ? income !== "" && Number.isFinite(inc) && inc > 0 && inc <= 999999999
       : step === 4
-        ? expenses !== "" && Number.isFinite(exp) && exp > 0
+        ? expenses !== "" && Number.isFinite(exp) && exp > 0 && exp <= 999999999
         : step === 5
-          ? invested !== "" && Number.isFinite(+invested) && +invested >= 0
+          ? invested !== "" && Number.isFinite(+invested) && +invested >= 0 && +invested <= 999999999
           : step === 6
             ? age === "" ||
               (Number.isInteger(+age) && +age >= 18 && +age <= 100)
@@ -392,7 +399,7 @@ export default function BrandedIntake({
   const advance = () => {
     if (!valid) return;
     if (step < 9) {
-      setStep(step + 1);
+      goToStep(step + 1);
       return;
     }
     try {
@@ -419,7 +426,7 @@ export default function BrandedIntake({
   };
   const summary = step >= 3 && step <= 5;
   return (
-    <div className="nh-intake">
+    <div className="nh-intake" data-direction={direction}>
       <header>
         <Logo size={28} />
         <span>See beyond your balance.</span>
@@ -428,7 +435,7 @@ export default function BrandedIntake({
         <div className="nh-intake-progress">
           <button
             aria-label="Previous question"
-            onClick={() => (step === 0 ? onBack() : setStep(step - 1))}
+            onClick={() => (step === 0 ? onBack() : goToStep(step - 1))}
           >
             <ArrowLeft size={19} />
           </button>
@@ -440,11 +447,11 @@ export default function BrandedIntake({
           />
           <b>{step + 1} / 10</b>
         </div>
-        <section className={"nh-intake-panel tone-step-" + step} key={step}>
+        <section className={"nh-intake-panel tone-step-" + step} key={step} data-summary={summary}>
           <div>
             <span className="nh-eyebrow">{STEPS[step]}</span>
             <h1 ref={heading} tabIndex={-1}>
-              {TITLES[step]}
+              {step===4&&mode==="Saved"?"How much do you save each month?":TITLES[step]}
             </h1>
             {body}
             <div className="nh-actions">
@@ -456,22 +463,7 @@ export default function BrandedIntake({
                 {step === 9 ? "Show my freedom date" : "Continue"}
                 <ArrowRight size={17} />
               </button>
-              {![3, 4, 5].includes(step) && (
-                <button
-                  className="nh-skip"
-                  onClick={() => {
-                    if (step === 1) setCity(null);
-                    if (step === 6) {
-                      setAge("");
-                      setStep(7);
-                      return;
-                    }
-                    advance();
-                  }}
-                >
-                  Skip
-                </button>
-              )}
+
             </div>
           </div>
           <aside>

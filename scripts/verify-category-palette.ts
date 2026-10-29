@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import { COLOR_PALETTE, EXPENSE_CATEGORIES, INCOME_CATEGORIES, nearestPaletteColor, resolveDisplay } from '../lib/categories.ts';
+const legacy = ['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#6b5bd2','#e34948','#8a7c68'];
+const expected = ['#b9d9f7','#ffd4b8','#bce9da','#ffe58a','#f4cee3','#cde6ae','#d9cef3','#f7c6cb','#ded8cd'];
+assert.deepEqual(COLOR_PALETTE, expected);
+legacy.forEach((old,i)=>{assert.equal(nearestPaletteColor(old),expected[i]);assert.equal(nearestPaletteColor(old.toUpperCase()),expected[i]);assert.equal(nearestPaletteColor(expected[i]),expected[i]);});
+for(const c of [...EXPENSE_CATEGORIES,...INCOME_CATEGORIES]) assert.ok(COLOR_PALETTE.includes(c.color));
+const saved={housing:{color:'#2a78d6',emoji:'🏡'}};
+assert.deepEqual(resolveDisplay({color:'#2a78d6',emoji:'🏠'},saved,'housing'),{color:'#b9d9f7',emoji:'🏡'});
+assert.equal(saved.housing.color,'#2a78d6');
+console.log('Category palette: legacy families, uppercase, stable new hues and non-mutating display mapping passed.');

@@ -198,7 +198,7 @@ export function MoneyRow({ dot, icon, name, meta, value, valueTone, strong, bar,
       {onClick
         ? <button type="button" onClick={onClick} style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 8, width: "100%", padding: 0, border: "none", background: "none", font: "inherit", color: "inherit", textAlign: "left", cursor: "pointer" }}>{head}{under}</button>
         : <>{head}{under}</>}
-      {after && <div style={{ paddingLeft: ICON + GAP }}>{after}</div>}
+      {after && <div className="uf-disclosure" style={{ paddingLeft: ICON + GAP }}>{after}</div>}
     </div>
   );
 }

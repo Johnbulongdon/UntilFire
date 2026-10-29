@@ -7,6 +7,8 @@ import { fetchAllPages } from "@/lib/supabase-pages";
 import CsvImportModal from "./CsvImportModal";
 import PlaidConnect, { type BankStatus } from "./PlaidConnect";
 import SpendRangePill, { rangeLabel } from "./SpendRangePill";
+import TransactionsLoading from "./TransactionsLoading";
+import type { ScheduledCalendarItem } from "@/lib/marked-calendar";
 import SpendCard, { type CatDisplay } from "./SpendCard";
 import ReviewPill from "./ReviewPill";
 import WorthALook from "./WorthALook";
@@ -1772,6 +1774,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       .map((d) => ({ description: d.description, category: d.category, usd: d.avgAmountUSD, due: d.nextDueDate, recurrence: d.frequency as Recurrence }));
     return mergeBills(listed, spotted);
   }, [listedBills, transactions, rates, usd]);
+  const calendarItems=useMemo<ScheduledCalendarItem[]>(()=>expected.filter(r=>(r.transaction_type==='income'||r.transaction_type==='expense')&&r.due_date).map(r=>({description:r.description??(r.transaction_type==='income'?'Income':'Bill'),amountUSD:usd(Number(r.amount)||0,r.currency??'USD'),type:r.transaction_type as 'income'|'expense',dueDate:r.due_date.slice(0,10),category:r.category,completed:!!r.completed_at&&(r.recurrence??'none')==='none',recurrence: (['weekly','biweekly','monthly','quarterly','annual'].includes(r.recurrence??'')?r.recurrence:'none') as Recurrence})),[expected,usd]);
   const expenseCatDisplay = useMemo(() => catDisplay(allExpenseCats), [catDisplay, allExpenseCats]);
   const incomeCatDisplay = useMemo(() => catDisplay(INCOME_CATEGORIES), [catDisplay]);
   const spentThisMonth = useMemo(() => transactions
@@ -2097,7 +2100,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   }, [showToast, toast, transactions]);
 
   if (loading) {
-    return <div style={{ textAlign: "center", padding: "60px 0", color: "var(--uf-text-3)" }}>Loading transactions…</div>;
+    return <TransactionsLoading />;
   }
 
   return (
@@ -2154,7 +2157,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           selectedDay={selectedDay} onSelectDay={setSelectedDay}
           onZoomMonth={(m) => { setRange(1, m); setSelectedDay(null); }}
           palette={COLOR_PALETTE} onColor={handleCategoryColor}
-          budgets={budgets} expectedIncome={expectedIncome} bills={bills} periodLabel={rangePreset === 1 && rangeEnd === currentMonth ? "This month" : rangeLabel(rangePreset, rangeEnd)} />
+          budgets={budgets} expectedIncome={expectedIncome} bills={bills} calendarItems={calendarItems} compact={n=>formatUSDInCurrency(n,displayCurrency,displayRates,{compact:true})} periodLabel={rangePreset === 1 && rangeEnd === currentMonth ? "This month" : rangeLabel(rangePreset, rangeEnd)} />
         <WorthALook flags={flags} notes={billNotes} rows={monthTxns} fmt={fmtDisplay} toUSD={usd} displayCurrency={displayCurrency}
           onYes={(r, k) => resolveFlag(r, k, true)} onNo={(r, k) => resolveFlag(r, k, false)} />
       </div>

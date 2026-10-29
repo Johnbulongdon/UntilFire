@@ -16,6 +16,7 @@ import TourModal from "./TourModal";
 import CitizenshipTab from "./CitizenshipTab";
 import OnboardingModal from "./OnboardingModal";
 import SavedPlanLoading from "./SavedPlanLoading";
+import MotionScene from "@/app/components/motion/MotionScene";
 import { CITIES, STATE_TAX, TAX_US_STATES } from "@/lib/fire-data";
 import LearnTab from "./LearnTab";
 import ContributionsTab from "./ContributionsTab";
@@ -6328,7 +6329,7 @@ export default function Dashboard() {
 
         {/* ── Main content ─────────────────────────────────────────────────── */}
         <main className="uf-main">
-          <div className="uf-content">
+          <MotionScene className="uf-content" scene={`${tab}:${cashflowSubTab}:${fireCalcSubTab}`}>
             {upgradedBanner && (
               <Alert
                 tone="positive"
@@ -6682,7 +6683,7 @@ export default function Dashboard() {
                 trialLabel={referredTrial ? REFERRED_TRIAL_LABEL : TRIAL_LABEL}
               />
             )}
-          </div>
+          </MotionScene>
         </main>
       </div>
       <FeedbackWidget />

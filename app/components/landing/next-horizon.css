@@ -664,3 +664,15 @@
 .nh-public-hero .nh-eyebrow,.nh-public-hero p,.nh-public-hero .nh-reassurance{color:#5C5130}
 .nh-public-hero .nh-example{padding:24px;background:#FFE58A;border:1px solid #D9C779;box-shadow:none}
 @media(max-width:760px){.nh-public-hero{padding:28px;gap:28px}.nh-public-hero h1{font-size:44px}}
+
+/* Question choreography stays keyed only to question, never input values. */
+.nh-intake-panel{--nh-enter-x:18px;animation:nh-question-in 300ms cubic-bezier(.2,.8,.2,1) both}.nh-intake[data-direction=back] .nh-intake-panel{--nh-enter-x:-18px}
+@keyframes nh-question-in{from{opacity:0;transform:translateX(var(--nh-enter-x))}to{opacity:1;transform:none}}
+.nh-intake-panel h1{animation:nh-copy-in 300ms ease both}.nh-choices>button{animation:nh-copy-in 260ms ease both}.nh-choices>button:nth-child(2){animation-delay:30ms}.nh-choices>button:nth-child(3){animation-delay:60ms}.nh-choices>button:nth-child(4){animation-delay:90ms}
+@keyframes nh-copy-in{from{opacity:0;translate:0 7px}to{opacity:1;translate:0 0}}
+.nh-choices>button.selected .nh-choice-icon{animation:nh-choice-confirm 260ms ease}.nh-choices>button.selected>svg:last-child{animation:nh-choice-confirm 220ms ease}
+@keyframes nh-choice-confirm{0%{scale:.85}65%{scale:1.08}100%{scale:1}}
+.nh-number-input:focus-within>label>span,.nh-city-search:focus-within input,.nh-age-input:focus-within input{box-shadow:0 0 0 3px color-mix(in srgb,var(--uf-ink) 10%,transparent)}
+.nh-example-control{margin:20px 0;padding:16px 0;border-top:1px solid #15171925}.nh-example-control label{display:flex;justify-content:space-between;align-items:center;font-size:12px;gap:12px}.nh-example-control label strong{font-size:12px;letter-spacing:0;white-space:nowrap}.nh-example-control input{width:100%;min-height:44px;accent-color:#151719;cursor:ew-resize;touch-action:pan-y}.nh-example-control small{display:block;font-size:10px;color:#5c5130}.nh-example-control :is(input):focus-visible{outline:3px solid #151719;outline-offset:3px}.nh-example-control output{font:inherit}
+@media(prefers-reduced-motion:reduce){.nh-intake-panel,.nh-intake-panel h1,.nh-choices>button,.nh-choices>button.selected .nh-choice-icon,.nh-choices>button.selected>svg:last-child{animation:none!important;transition:none!important;translate:none!important;transform:none!important;scale:none!important}.nh-split-meter i{transition:none!important}}
+.nh-intake-progress progress{appearance:none;-webkit-appearance:none;border:0;border-radius:999px;overflow:hidden;background:var(--uf-surface-2)}.nh-intake-progress progress::-webkit-progress-bar{background:var(--uf-surface-2);border-radius:999px}.nh-intake-progress progress::-webkit-progress-value{background:var(--uf-ink);border-radius:999px;transition:width 240ms ease}.nh-intake-progress progress::-moz-progress-bar{background:var(--uf-ink);border-radius:999px}@media(max-width:760px){.nh-intake-panel[data-summary=false]>aside{display:none}}@media(prefers-reduced-motion:reduce){.nh-intake-progress progress::-webkit-progress-value{transition:none}}

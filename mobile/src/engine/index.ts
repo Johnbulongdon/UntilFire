@@ -19,7 +19,7 @@ export { detectRecurring, recurrenceToMonthly, sameMerchant, toMonthly, toRecurr
 export { guessBillCategory } from '@engine/spend-forecast.ts'
 export { paycheck, pensionFor, type PlanSettings } from '@engine/plan-settings.ts'
 export { STATE_TAX } from '@engine/fire-data.ts'
-export { COLOR_PALETTE, EMOJI_PALETTE } from '@engine/categories.ts'
+export { COLOR_PALETTE, EMOJI_PALETTE, nearestPaletteColor } from '@engine/categories.ts'
 export { learnArticles, learnStages, getLearnArticle, getStageArticles, getRelatedArticles, type LearnArticle, type LearnStage, type LearnStageId, type BodyNode } from '@engine/learn.ts'
 export { CITIZENSHIP_SCORES, CITIZENSHIP_TAX_RATE_LABEL, CITIZENSHIP_CGT_LABEL, CITIZENSHIP_ACCOUNT_LABEL, citizenshipScore, citizenshipBand, type CitizenshipScore } from '@engine/citizenship-data.ts'
 export { EXPLORE_CITIES, freedomIn, freedomBadges, bestBadge, MEDAL, type ExploreCity, type ExplorePlan, type Badges } from '@engine/explore.ts'

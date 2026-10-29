@@ -16,7 +16,7 @@ const loadTs = (path, deps = {}) => {
   return mod.exports;
 };
 const fireNumber = loadTs('lib/fire-number.ts', { './sp500-history.ts': loadTs('lib/sp500-history.ts') });
-const yearCubes = loadTs('components/ui/YearCubes.tsx');
+const yearCubes = loadTs('components/ui/YearCubes.tsx', {'./YearCubes.module.css':{default:{cell:'year-cell'}}});
 // Exercise the real final-step component/callback without the video or animation.
 let selectedOverride = null;
 let targetStep = 7;

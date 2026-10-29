@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Redirect, router } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { Appearance, Pressable, StyleSheet, View } from 'react-native'
-import Svg, { Circle, Defs, Line, LinearGradient as SvgGradient, Path, Pattern, Rect, Stop } from 'react-native-svg'
+import { Appearance, Pressable, View } from 'react-native'
+import Svg, { Circle, Line, Path } from 'react-native-svg'
 
+import { UntilPaydayCard } from '@/components/UntilPaydayCard'
 import { Button } from '@/components/Button'
 import { FreedomLineChart } from '@/components/FreedomLineChart'
 import { GuidedTour } from '@/components/GuidedTour'
@@ -11,7 +12,7 @@ import { useTourAnchor } from '@/components/tour-anchors'
 import { HouseholdCard } from '@/components/HouseholdCard'
 import { RecurringTeaser } from '@/components/RecurringCard'
 import { SetupCard, useSetupOpen } from '@/components/SetupCard'
-import { CategoryGlyph, Icon } from '@/components/Icon'
+import { Icon } from '@/components/Icon'
 import { ProgressTrack, Screen } from '@/components/Screen'
 import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
@@ -25,7 +26,7 @@ import { useFreedom, type Freedom } from '@/state/freedom'
 import { useLivePlan } from '@/state/live-plan'
 import { everydayByDay, freedomProgress, guessBillCategory, progressPercent, isCounted, isoDay, paydayLine, quickFreedom, type NextMove } from '@/engine'
 import { usePlan } from '@/state/plan'
-import { brand, colors, TAB_COLOR } from '@/theme/colors'
+import { brand, colors } from '@/theme/colors'
 import { splitBudget } from '@/lib/budget-split'
 import { freeUntilPayday, unpaid, upcoming } from '@/lib/bills'
 import { phoneNextMove, snoozedMoves, snoozeMove } from '@/lib/next-move'
@@ -275,8 +276,6 @@ const MOVE_ICON: Record<NextMove['tab'] | 'lease', { name: 'chart.pie.fill' | 'c
   lease: { name: 'house.fill', fallback: '🏠' },
 }
 
-const signed = (n: number) => `${n < 0 ? '−' : ''}${money(Math.abs(n))}`
-const dayLabel = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
 /**
  * Until payday (D-90), the website's card: one number, then the line behind
@@ -285,7 +284,6 @@ const dayLabel = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString
  * payday at the number. Below zero is striped red.
  */
 function UntilPayday({ data }: { data: AccountData }) {
-  const [w, setW] = useState(0)
   const f = freeUntilPayday(data)
   if (!f) return null
   const counted = new Set(data.plaidAccounts.filter(a => a.type === 'depository' && isCounted({ id: a.id, name: a.name, type: a.type, subtype: a.subtype, balanceUSD: 0 }, data.spendToggles ?? {})).map(a => a.plaid_account_id).filter(Boolean))
@@ -296,74 +294,8 @@ function UntilPayday({ data }: { data: AccountData }) {
   const bills = f.bills.map(b => ({ iso: b.iso, usd: -b.amount, description: b.description, category: b.category ?? guessBillCategory(b.description) }))
   if (f.cardsOwed > 0) bills.unshift({ iso: isoDay(new Date()), usd: f.cardsOwed, description: 'Card balance', category: 'credit_card' })
   const line = paydayLine({ today: new Date(), cash: f.spending, paydayIso: f.payday.iso, bills, rows, payMin: biggestPay * 0.5 })
-  const { span, today, past, dips, end } = line
-  const short = end < 0
-  const H = 130, TOP = 32
-  const vals = [...past, end, ...line.bills.map(b => b.before)]
-  const hi = Math.max(...vals), lo = Math.min(0, ...vals)
-  const floor = short ? Math.min(lo, -(hi - lo) * 0.3) : lo
-  const x = (d: number) => (d / Math.max(1, span)) * w
-  const y = (v: number) => TOP + ((hi - v) / Math.max(1, hi - floor)) * (H - TOP)
-  const pastPath = past.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
-  let fut = `M${x(today).toFixed(1)},${y(past[today]).toFixed(1)}`
-  for (const b of line.bills) fut += ` L${x(b.day).toFixed(1)},${y(b.before).toFixed(1)} L${x(b.day).toFixed(1)},${y(b.before - b.usd).toFixed(1)}`
-  fut += ` L${w},${y(end).toFixed(1)}`
-  const zero = y(0)
-  const marks: (typeof line.bills[number] & { more: number })[] = []
-  for (const b of line.bills) {
-    const near = marks.find(m => Math.abs(x(m.day) - x(b.day)) < 32)
-    if (!near) marks.push({ ...b, more: 0 })
-    else { near.more += 1; if (b.usd > near.usd) Object.assign(near, { day: b.day, usd: b.usd, before: b.before, category: b.category }) }
-  }
   const cats = expenseCategories()
-  const Pin = ({ left, top, category, more = 0, faded = false }: { left: number; top: number; category: string | null; more?: number; faded?: boolean }) => (
-    <View style={{ position: 'absolute', left: left - 14, top: top - 32, width: 28, height: 28, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface2, borderWidth: 2, borderColor: panel(), opacity: faded ? 0.8 : 1 }}>
-      <CategoryGlyph cat={{ key: category ?? 'other', color: cats.find(c => c.key === category)?.color }} size={13} />
-      {more > 0 && <View style={{ position: 'absolute', right: -8, top: -8, borderRadius: 7, paddingHorizontal: 4, backgroundColor: colors.ink }}><Text style={{ fontSize: 10, fontWeight: '800', color: panel() }}>+{more}</Text></View>}
-    </View>
-  )
-  return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`Until payday: ${signed(end)} ${short ? 'short' : 'yours'} until ${dayLabel(f.payday.iso)}. Open your budget`} onPress={() => { haptic.tick(); router.push('/money/budget') }}
-      className="gap-2 rounded-3xl p-4 active:opacity-80" style={{ backgroundColor: panel() }}>
-      <View className="flex-row items-center justify-between">
-        <Text className="text-[12px] font-bold uppercase tracking-[1.5px] text-ink-3">Until payday</Text>
-        <Text className="text-[13px] font-bold" style={{ color: colors.green }}>Money ›</Text>
-      </View>
-      <View className="flex-row items-baseline gap-2">
-        <Text className={`font-mono text-[30px] ${short ? 'text-neg-ink' : 'text-ink'}`}>{signed(end)}</Text>
-        <Text className="text-[13px] text-ink-3">{short ? 'short before payday' : 'yours until payday'}</Text>
-      </View>
-      <View style={{ height: H + 22, marginTop: 4 }} onLayout={e => setW(e.nativeEvent.layout.width - 14)}>
-        {w > 0 && (
-          <>
-            <Svg width={w + 14} height={H} style={{ overflow: 'visible' }}>
-              <Defs>
-                <SvgGradient id="payfill" x1="0" y1="0" x2="0" y2="1"><Stop offset="0" stopColor={colors.teal} stopOpacity={0.22} /><Stop offset="1" stopColor={colors.teal} stopOpacity={0} /></SvgGradient>
-                <Pattern id="payshort" width={7} height={7} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                  <Rect width={7} height={7} fill={colors.negBg} /><Line x1={0} y1={0} x2={0} y2={7} stroke={colors.neg} strokeWidth={2} opacity={0.45} />
-                </Pattern>
-              </Defs>
-              <Path d={`${fut} L${w},${Math.min(zero, H)} L${x(today)},${Math.min(zero, H)} Z`} fill="url(#payfill)" />
-              {short && <Rect x={0} y={zero} width={w} height={H - zero} fill="url(#payshort)" />}
-              {short && <Line x1={0} x2={w} y1={zero} y2={zero} stroke={colors.neg} strokeWidth={1.5} />}
-              <Path d={pastPath} fill="none" stroke={colors.teal} strokeOpacity={0.35} strokeWidth={2.5} strokeLinejoin="round" />
-              <Path d={fut} fill="none" stroke={colors.teal} strokeWidth={2.5} strokeLinejoin="round" />
-              <Line x1={x(today)} x2={x(today)} y1={y(past[today])} y2={H} stroke={colors.teal} strokeWidth={1.5} strokeDasharray="2 3" />
-              <Circle cx={x(today)} cy={y(past[today])} r={6} fill={colors.tealDeep} stroke={panel()} strokeWidth={2.5} />
-            </Svg>
-            {dips.map(d => <Pin key={`d${d.day}`} left={x(d.day - 1)} top={y(past[d.day - 1])} category={d.category} faded />)}
-            {marks.map(m => <Pin key={`b${m.day}`} left={x(m.day)} top={y(m.before)} category={m.category} more={m.more} />)}
-            <View style={{ position: 'absolute', left: w - 12, top: y(end) - 12, width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: short ? colors.neg : colors.green, borderWidth: 2, borderColor: panel() }}>
-              <Text style={{ fontSize: 12, fontWeight: '800', color: '#FFFFFF' }}>$</Text>
-            </View>
-            <Text className="absolute bottom-0 left-0 text-[11px] font-bold text-ink-3">{dayLabel(line.startIso)}</Text>
-            <Text className="absolute bottom-0 right-0 text-[11px] font-bold text-ink-3">Payday · {dayLabel(f.payday.iso)}</Text>
-          </>
-        )}
-      </View>
-      {f.bills.length > 0 && <Text className="text-[13px] text-ink-2">{money(f.billsBefore)} in {f.bills.length} {f.bills.length === 1 ? 'bill' : 'bills'} before payday</Text>}
-    </Pressable>
-  )
+  return <UntilPaydayCard line={line} paydayIso={f.payday.iso} billCount={f.bills.length} billTotal={f.bills.reduce((s,b)=>s+Math.abs(b.amount),0)} icon={key=>cats.find(c=>c.key===key)?.emoji??'💳'} onOpen={()=>{haptic.tick();router.push('/money/budget')}} />
 }
 
 /**

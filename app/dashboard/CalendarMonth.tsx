@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button, InfoTip } from "@/components/ui";
 import CalendarDayPanel, { type DayLine } from "./CalendarDayPanel";
 import { expandExpected, isoDay, type CashflowForecast, type ExpectedItem } from "@/lib/cashflow-forecast";
+import { markedCalendarEntries, type ScheduledCalendarItem } from "@/lib/marked-calendar";
+import MarkedMonth, { type MarkedEvent } from "./MarkedMonth";
 import { moneyMono } from "./MoneyCards";
 
 /**
@@ -15,7 +17,7 @@ import { moneyMono } from "./MoneyCards";
  * nothing more is safe to invest until the next one.
  */
 export default function CalendarMonth({ items, forecast, reserve = 0, accounts = [], allowanceFrom = null, safe, done, onMarkDone,
-  selected, onSelect, recorded = [], addForm, onAdd, onOpenTransactions, emojiFor, fmt, compact }: {
+  selected, onSelect, scheduledItems = items, addForm, onAdd, onOpenTransactions, emojiFor, fmt, compact }: {
   /** Pending items, in USD. */
   items: ExpectedItem[];
   /** The cash forecast to the next contribution, or null with no plan. */
@@ -30,11 +32,11 @@ export default function CalendarMonth({ items, forecast, reserve = 0, accounts =
   safe: number;
   done: { iso: string; amount: number } | null;
   onMarkDone?: (done: { iso: string; amount: number } | null) => void;
-  /** The day open in the panel (D-64); null shows today on a computer and no sheet on a phone. */
+  /** Selected day. Details stay below the marked month at every browser width. */
   selected: string | null;
   onSelect: (iso: string | null) => void;
-  /** What was recorded on past days, in USD, read-only here. */
-  recorded?: (DayLine & { iso: string })[];
+  /** Complete scheduled rows, including completed one-offs; never transaction history. */
+  scheduledItems?: ScheduledCalendarItem[];
   /** The add form while it is open, shown in the day panel. */
   addForm: React.ReactNode;
   /** Open the add form on a day. */
@@ -48,24 +50,16 @@ export default function CalendarMonth({ items, forecast, reserve = 0, accounts =
   const [cursor, setCursor] = useState(() => ({ y: today.getFullYear(), m: today.getMonth() }));
   const { y, m } = cursor;
   const daysInMonth = new Date(y, m + 1, 0).getDate();
-  const lead = (new Date(y, m, 1).getDay() + 6) % 7; // Monday first
   const todayIso = isoDay(today);
-
-  // A phone gets the day as a bottom sheet; a computer keeps it beside the month.
-  const [phone, setPhone] = useState(false);
-  useEffect(() => {
-    const q = matchMedia("(max-width: 900px)"); const set = () => setPhone(q.matches);
-    set(); q.addEventListener("change", set); return () => q.removeEventListener("change", set);
-  }, []);
 
   const byDay = useMemo(() => {
     const map = new Map<string, DayLine[]>();
     const from = new Date(y, m, 1) < today ? today : new Date(y, m, 1);
-    const itemOf = new Map(items.map((it) => [it.description, it]));
+
     for (const e of expandExpected(items, from, new Date(y, m, daysInMonth))) {
       if (!map.has(e.iso)) map.set(e.iso, []);
-      const it = itemOf.get(e.description);
-      map.get(e.iso)!.push({ label: e.description, amount: Math.abs(e.amount), income: e.type === "income", category: it?.category, repeats: e.recurring });
+      if(e.overdue && (y !== today.getFullYear() || m !== today.getMonth())) continue;
+      map.get(e.iso)!.push({ label: e.description, amount: Math.abs(e.amount), income: e.type === "income", category: e.category, repeats: e.recurring });
     }
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- today only matters by day
@@ -108,26 +102,15 @@ export default function CalendarMonth({ items, forecast, reserve = 0, accounts =
   const monthName = new Date(y, m, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
   const step = (d: number) => setCursor(({ y, m }) => ({ y: new Date(y, m + d, 1).getFullYear(), m: new Date(y, m + d, 1).getMonth() }));
   const dayLabel = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  const recordedOn = useMemo(() => {
-    const map = new Map<string, DayLine[]>();
-    for (const r of recorded) { if (!map.has(r.iso)) map.set(r.iso, []); map.get(r.iso)!.push(r); }
-    return map;
-  }, [recorded]);
-  const linesOn = (iso: string) => (iso < todayIso ? recordedOn.get(iso) : byDay.get(iso)) ?? [];
-  const day = selected ?? (phone ? null : todayIso);
+  const monthKey = String(y)+'-'+String(m+1).padStart(2,'0');
+  const scheduled = useMemo(()=>markedCalendarEntries({start:monthKey+'-01',end:monthKey+'-'+String(daysInMonth).padStart(2,'0'),today:todayIso,items:scheduledItems}),[monthKey,daysInMonth,todayIso,scheduledItems]);
+  const markedEvents = new Map<string, MarkedEvent[]>();
+  for(const entry of scheduled)markedEvents.set(entry.iso,[...(markedEvents.get(entry.iso)??[]),entry]);
+  const linesOn = (iso:string)=>markedEvents.get(iso)??[];
+  const day = selected?.startsWith(monthKey+'-') ? selected : todayIso.startsWith(monthKey+'-') ? todayIso : monthKey+'-01';
+  const scheduledBills = scheduled.filter(e=>!e.income).reduce((sum,e)=>sum+e.amount,0);
+  const scheduledIncome = scheduled.filter(e=>e.income).reduce((sum,e)=>sum+e.amount,0);
 
-  // Option B (D-63): each day tinted by its closing cash against a month of
-  // going out, so "Plenty" means the same thing for any income. The figure
-  // and the level are also in each day's label: colour never says it alone.
-  const monthOut = Math.max(1, bills + (forecast?.dailyAllowance ?? 0) * daysInMonth);
-  const level = (v: number) => (v < 0 ? 0 : v < monthOut * 0.25 ? 1 : v < monthOut * 0.5 ? 2 : v < monthOut ? 3 : 4);
-  const LEVELS = [
-    { name: "Tight", bg: "color-mix(in srgb, var(--uf-neg-ink) 20%, var(--uf-card))" },
-    { name: "Low", bg: "color-mix(in srgb, var(--uf-warn) 22%, var(--uf-card))" },
-    { name: "OK", bg: "color-mix(in srgb, var(--uf-teal) 10%, var(--uf-card))" },
-    { name: "Good", bg: "color-mix(in srgb, var(--uf-teal) 22%, var(--uf-card))" },
-    { name: "Plenty", bg: "color-mix(in srgb, var(--uf-teal) 36%, var(--uf-card))" },
-  ];
   const tiles: [string, string, string, string, string][] = [
     ["↓", `In · ${span}`, `+${fmt(comingIn)}`, "var(--uf-pos-ink)", "color-mix(in srgb, var(--uf-pos-ink) 14%, var(--uf-card))"],
     ["↑", `Out · ${span}`, `−${fmt(bills + dayToDay)}`, "var(--uf-ink)", "var(--uf-surface-2)"],
@@ -136,7 +119,7 @@ export default function CalendarMonth({ items, forecast, reserve = 0, accounts =
   ];
 
   const panel = day && (
-    <CalendarDayPanel iso={day} todayIso={todayIso} lines={linesOn(day)} cash={balanceOn(day)} sheet={phone}
+    <CalendarDayPanel iso={day} todayIso={todayIso} lines={linesOn(day)} cash={balanceOn(day)} sheet={false} scheduled
       invest={day === investIso ? (done ? `Invested ${fmt(done.amount)}` : `Invest day · ${fmt(safe)} safe`) : null}
       addForm={addForm} onAdd={() => onAdd(day)} onClose={() => onSelect(null)} onOpenTransactions={onOpenTransactions}
       emojiFor={emojiFor} fmt={fmt} />
@@ -163,73 +146,20 @@ export default function CalendarMonth({ items, forecast, reserve = 0, accounts =
         </div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: phone || !day ? "minmax(0, 1fr)" : "minmax(0, 1fr) 320px", gap: 18, alignItems: "start" }}>
-        <div style={{ display: "grid", gap: 10, paddingBottom: phone && day ? 260 : 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <Button variant="ghost" size="sm" onClick={() => step(-1)} aria-label="Previous month">‹</Button>
-              <span className="uf-t-h3" style={{ margin: 0, minWidth: 150, textAlign: "center" }}>{monthName}</span>
-              <Button variant="ghost" size="sm" onClick={() => step(1)} aria-label="Next month">›</Button>
-            </div>
-            {forecast && (
-              <div className="uf-t-small" aria-label="Cash at day end, from tight to plenty" style={{ display: "flex", gap: 10, flexWrap: "wrap", color: "var(--uf-ink-2)", alignItems: "center" }}>
-                {LEVELS.map((l) => (
-                  <span key={l.name} style={{ display: "inline-flex", gap: 5, alignItems: "center" }}>
-                    <i style={{ width: 11, height: 11, borderRadius: 4, background: l.bg, border: "1px solid var(--uf-border)" }} />{l.name}
-                  </span>
-                ))}
-              </div>
-            )}
+      <div style={{display:'grid',gap:16,minWidth:0,background:'var(--uf-card)',border:'1px solid var(--uf-border)',borderRadius:24,padding:16}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+          <div style={{display:'flex',alignItems:'center',gap:4}}>
+            <Button variant="ghost" size="sm" onClick={()=>{step(-1);onSelect(null)}} aria-label="Previous month">‹</Button>
+            <h2 style={{fontSize:20,margin:0}}>{monthName}</h2>
+            <Button variant="ghost" size="sm" onClick={()=>{step(1);onSelect(null)}} aria-label="Next month">›</Button>
           </div>
-
-          <div role="grid" aria-label={monthName} style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: phone ? 4 : 6 }}>
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
-              <span key={d} className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, paddingLeft: 4 }}>{d.slice(0, 1)}</span>
-            ))}
-            {Array.from({ length: lead }, (_, i) => <span key={`lead${i}`} />)}
-            {Array.from({ length: daysInMonth }, (_, i) => {
-              const iso = isoDay(new Date(y, m, i + 1));
-              const evs = linesOn(iso);
-              const bal = balanceOn(iso);
-              const past = iso < todayIso, isToday = iso === todayIso, invest = iso === investIso, isLow = iso === lowIso, isSel = iso === day;
-              const lv = bal !== null ? LEVELS[level(bal)] : null;
-              const label = [isToday ? `Today, ${dayLabel(iso)}` : dayLabel(iso), ...evs.map((e) => `${e.label} ${e.income ? "+" : "−"}${fmt(e.amount)}`),
-                ...(invest ? [done ? `Invested ${fmt(done.amount)}` : `Invest day, ${fmt(safe)} safe`] : []),
-                ...(bal !== null && lv ? [`cash ${fmt(bal)}, ${lv.name.toLowerCase()}`] : []), ...(isLow ? ["lowest point"] : [])].join(", ");
-              const ring = isSel ? "var(--uf-ink)" : invest ? "var(--uf-green)" : isToday ? "var(--uf-ink-2)" : null;
-              return (
-                <button key={iso} type="button" aria-label={label} aria-pressed={isSel} title={label} onClick={() => onSelect(isSel && phone ? null : iso)}
-                  style={{ position: "relative", minHeight: phone ? 64 : 82, padding: "7px 6px 6px", borderRadius: 13, textAlign: "left", display: "flex", flexDirection: "column", gap: 3, overflow: "hidden",
-                    cursor: "pointer", color: past ? "var(--uf-ink-2)" : "var(--uf-ink)",
-                    background: past ? "var(--uf-surface)" : lv?.bg ?? "var(--uf-card)",
-                    border: isLow && !ring ? "1.5px dashed var(--uf-ink-3)" : `1px solid ${lv && !past ? "transparent" : "var(--uf-border)"}`,
-                    boxShadow: ring ? `inset 0 0 0 ${isSel ? 2.5 : 2}px ${ring}` : undefined }}>
-                  <span style={{ fontSize: phone ? 14 : 16, fontWeight: 800, lineHeight: 1 }}>{i + 1}</span>
-                  {/* Today and invest day carry a ring; the corner mark says which. */}
-                  {(invest || isToday) && (
-                    <span aria-hidden style={{ position: "absolute", top: 6, right: 6 }}>
-                      {invest
-                        ? <i style={{ display: "block", width: 8, height: 8, borderRadius: done ? 99 : 1.5, transform: done ? undefined : "rotate(45deg)", background: "var(--uf-green)" }} />
-                        : <i style={{ display: "block", width: 7, height: 7, borderRadius: 99, background: "var(--uf-ink)" }} />}
-                    </span>
-                  )}
-                  {evs.length > 0 && (phone
-                    ? <span aria-hidden style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
-                        {evs.slice(0, 4).map((e, k) => <i key={k} style={{ width: 6, height: 6, borderRadius: 99, background: e.income ? "var(--uf-pos-ink)" : "var(--uf-ink-2)" }} />)}
-                      </span>
-                    : <span aria-hidden className="uf-t-small" style={{ fontSize: 11, fontWeight: 600, color: e0Tone(evs[0].income), whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {emojiFor(evs[0].category, evs[0].income)} {evs[0].label}{evs.length > 1 ? ` +${evs.length - 1}` : ""}
-                      </span>)}
-                  {bal !== null && (
-                    <span style={{ ...moneyMono, marginTop: "auto", fontSize: "clamp(10px, 2.9vw, 12.5px)", fontWeight: 500, whiteSpace: "nowrap", color: bal < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink)" }}>
-                      {bal < 0 ? "−" : ""}{compact(Math.abs(bal))}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+          <div style={{display:'flex',gap:8,flexWrap:'wrap',fontSize:13,fontWeight:700,color:'#151719'}}>
+            <span style={{background:'#EEE9FA',borderRadius:12,padding:'9px 12px'}}>{fmt(scheduledBills)} scheduled bills</span>
+            <span style={{background:'#FFE58A',borderRadius:12,padding:'9px 12px'}}>+{fmt(scheduledIncome)} scheduled income</span>
           </div>
-
+        </div>
+        <MarkedMonth month={monthKey} today={todayIso} events={markedEvents} selected={day} onSelect={onSelect} fmt={fmt} compact={compact} showDetails={false}
+          marker={investIso?{iso:investIso,label:done?'Invested':'Invest day'}:undefined}/>
           {forecast && investIso && (
             <div style={{ display: "flex", gap: 12, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", padding: "10px 14px", borderRadius: 14, background: "var(--uf-teal-soft)" }}>
               <span className="uf-t-small" style={{ color: "var(--uf-teal-deep)", fontWeight: 800 }}>
@@ -242,11 +172,8 @@ export default function CalendarMonth({ items, forecast, reserve = 0, accounts =
             </div>
           )}
           {!forecast && <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Set when you invest in Plan → Contributions to see your cash day by day.</span>}
-        </div>
         {panel}
       </div>
     </div>
   );
 }
-
-const e0Tone = (income: boolean) => (income ? "var(--uf-pos-ink)" : "var(--uf-ink-2)");

@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useId, useMemo, useState } from "react";
 import {
   ArrowRight,
   Wallet,
@@ -27,8 +27,11 @@ export default function NextHorizonLanding({
   signedIn?: boolean;
   referred?: boolean;
 }) {
-  const result = useMemo(() => quickFreedom(sample), []);
-  const values = useMemo(() => freedomPath(sample), []);
+  const [extra,setExtra]=useState(0);
+  const controlId=useId();
+  const example=useMemo(()=>({...sample,monthlyIncome:sample.monthlyIncome+extra}),[extra]);
+  const result = useMemo(() => quickFreedom(example), [example]);
+  const values = useMemo(() => freedomPath(example), [example]);
   const target = result.target || 1;
   const line = values
     .map(
@@ -69,7 +72,7 @@ export default function NextHorizonLanding({
           <div className="nh-example">
             <div className="nh-example-label">Example plan</div>
             <span>Work becomes optional</span>
-            <strong>{result.year ?? "—"}</strong>
+            <strong aria-live="polite" aria-atomic="true">{result.year ?? "—"}</strong>
             <p>15% of the way</p>
             <svg
               viewBox="0 0 620 220"
@@ -92,6 +95,11 @@ export default function NextHorizonLanding({
                 fill="#151719"
               />
             </svg>
+            <div className="nh-example-control">
+              <label htmlFor={controlId}>Try saving a little more <strong>+$<output htmlFor={controlId}>{extra}</output>/month</strong></label>
+              <input id={controlId} aria-label="Extra monthly savings in the example" type="range" min="0" max="500" step="50" value={extra} onChange={e=>setExtra(Number(e.target.value))}/>
+              <small>Example only · extra income saved · your plan is unchanged</small>
+            </div>
             <div className="nh-chart-key">
               <span>Saved $135,000</span>
               <span>Target $900,000</span>

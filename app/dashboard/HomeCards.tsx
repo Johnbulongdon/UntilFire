@@ -12,7 +12,6 @@
 import { Button, Card, Icon } from "@/components/ui";
 import type { IconName } from "@/components/ui";
 import type { NextMove } from "@/lib/next-move";
-import type { PaydayLine } from "@/lib/payday-line";
 import Flag, { flagUri } from "@/app/components/Flag";
 
 /** A drawn flag, or the emoji as-is when it is a pin or a house rather than a country. */
@@ -243,109 +242,7 @@ export function MonthCard({ spent, budget, left, paceSoFar, monthDays, nextBills
   );
 }
 
-/** "Nov 1" from an ISO date, read as a local day. */
-const shortDay = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-
-/** A signed amount with a real minus, so a shortfall reads as one. */
-const signed = (n: number, fmt: (n: number) => string) => `${n < 0 ? "−" : ""}${fmt(Math.abs(n))}`;
-
-const CHART_H = 150, CHART_TOP = 34, ICON = 30;
-
-/**
- * Until payday (D-90): one number, then the line behind it (lib/payday-line).
- * Faded from the last paycheck to today, the balance as it was; from today,
- * flat but for the bills, each marked by its icon at the start of its drop,
- * ending on payday at the card's number. Below zero is striped red.
- */
-export function UntilPaydayCard({ line, paydayIso, billCount, billTotal, icon, fmt, onOpen }: {
-  line: PaydayLine;
-  paydayIso: string;
-  billCount: number;
-  billTotal: number;
-  /** The emoji for a category, as Money shows it. */
-  icon: (category: string | null, description?: string) => string;
-  fmt: (n: number) => string;
-  onOpen: () => void;
-}) {
-  const { span, today, past, dips, bills, end } = line;
-  const short = end < 0;
-  const vals = [...past, end, ...bills.map((b) => b.before)];
-  const hi = Math.max(...vals), lo = Math.min(0, ...vals);
-  // A shortfall gets room under zero, so the red reads as a place, not a line.
-  const floor = short ? Math.min(lo, -(hi - lo) * 0.3) : lo;
-  const x = (d: number) => (d / Math.max(1, span)) * 100;
-  const y = (v: number) => CHART_TOP + ((hi - v) / Math.max(1, hi - floor)) * (CHART_H - CHART_TOP);
-  const pastPath = past.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(2)},${y(v).toFixed(1)}`).join(" ");
-  let futPath = `M${x(today).toFixed(2)},${y(past[today]).toFixed(1)}`;
-  for (const b of bills) futPath += ` L${x(b.day).toFixed(2)},${y(b.before).toFixed(1)} L${x(b.day).toFixed(2)},${y(b.before - b.usd).toFixed(1)}`;
-  futPath += ` L100,${y(end).toFixed(1)}`;
-  const zero = y(0);
-  // Bills too close to draw apart fold into the biggest, with a count.
-  const marks: { day: number; usd: number; before: number; category: string | null; description: string; more: number }[] = [];
-  for (const b of bills) {
-    const near = marks.find((m) => Math.abs(x(m.day) - x(b.day)) < 7);
-    if (!near) marks.push({ ...b, more: 0 });
-    else { near.more += 1; if (b.usd > near.usd) Object.assign(near, { day: b.day, usd: b.usd, before: b.before, category: b.category, description: b.description }); }
-  }
-  const pin = (left: number, top: number, child: React.ReactNode, key: string, faded = false, more = 0) => (
-    <span key={key} aria-hidden style={{ position: "absolute", left: `${left}%`, top, transform: "translate(-50%, -100%)", width: ICON, height: ICON, borderRadius: 10,
-      display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, background: "var(--uf-surface-2)", border: "2px solid var(--uf-card)", opacity: faded ? 0.8 : 1 }}>
-      {child}
-      {more > 0 && <span style={{ position: "absolute", right: -8, top: -8, background: "var(--uf-ink)", color: "var(--uf-card)", fontSize: 10, fontWeight: 800, borderRadius: 7, padding: "1px 5px" }}>+{more}</span>}
-    </span>
-  );
-  const axis: React.CSSProperties = { position: "absolute", bottom: 0, fontSize: 11, fontWeight: 700, color: "var(--uf-ink-3)", whiteSpace: "nowrap" };
-  return (
-    <Card style={{ display: "grid", gap: 10, alignContent: "start", background: "var(--uf-blue)" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-        <span style={cardLabel}>Until payday</span>
-        <DoorChip to="money" onClick={onOpen} />
-      </div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-        <span style={{ ...mono, fontSize: 36, fontWeight: 500, lineHeight: 1, color: short ? "var(--uf-neg-ink)" : "var(--uf-ink)" }}>{signed(end, fmt)}</span>
-        <span className="uf-t-small" style={muted}>{short ? "short before payday" : "yours until payday"}</span>
-      </div>
-      <div role="img" aria-label={`${fmt(past[today])} today; ${billCount} ${billCount === 1 ? "bill" : "bills"} of ${fmt(billTotal)} before payday on ${shortDay(paydayIso)} leave ${signed(end, fmt)}`}
-        style={{ position: "relative", height: CHART_H + 26, marginTop: 8 }}>
-        {/* Below zero, striped red; drawn in CSS, as the stretched chart would skew an SVG pattern. */}
-        {short && <span aria-hidden style={{ position: "absolute", left: 0, right: 0, top: zero, height: CHART_H - zero,
-          background: "repeating-linear-gradient(135deg, var(--uf-neg-bg) 0 5px, color-mix(in srgb, var(--uf-neg) 40%, var(--uf-neg-bg)) 5px 7px)" }} />}
-        <svg viewBox={`0 0 100 ${CHART_H}`} preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: CHART_H, overflow: "visible" }}>
-          <defs>
-            <linearGradient id="uf-payday-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="var(--uf-teal)" stopOpacity={0.22} /><stop offset="1" stopColor="var(--uf-teal)" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <path d={`${futPath} L100,${Math.min(zero, CHART_H)} L${x(today).toFixed(2)},${Math.min(zero, CHART_H)} Z`} fill="url(#uf-payday-fill)" />
-          {short && <>
-            <line x1={0} x2={100} y1={zero} y2={zero} stroke="var(--uf-neg)" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
-          </>}
-          <path d={pastPath} fill="none" stroke="var(--uf-teal)" strokeOpacity={0.35} strokeWidth={2.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-          <path d={futPath} fill="none" stroke="var(--uf-teal)" strokeWidth={2.5} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-          <line x1={x(today)} x2={x(today)} y1={y(past[today])} y2={CHART_H} stroke="var(--uf-teal)" strokeWidth={1.5} strokeDasharray="2 3" vectorEffect="non-scaling-stroke" />
-        </svg>
-        {dips.map((d) => pin(x(d.day - 1), y(past[d.day - 1]) - 4, icon(d.category), `dip-${d.day}`, true))}
-        {marks.map((m) => pin(x(m.day), y(m.before) - 4, icon(m.category, m.description), `bill-${m.day}`, false, m.more))}
-        {marks.filter((m) => m.usd >= Math.max(100, (hi - floor) * 0.15)).map((m) => (
-          <span key={`amt-${m.day}`} className="uf-t-small" style={{ ...mono, position: "absolute", left: `${x(m.day)}%`, top: (y(m.before) + y(m.before - m.usd)) / 2 - 8, transform: "translateX(calc(-100% - 6px))", color: "var(--uf-ink-2)", fontSize: 11, whiteSpace: "nowrap" }}>
-            {signed(-m.usd, fmt)}
-          </span>
-        ))}
-        <span aria-hidden style={{ position: "absolute", left: `${x(today)}%`, top: y(past[today]), transform: "translate(-50%, -50%)", width: 12, height: 12, borderRadius: 6, background: "var(--uf-teal-deep)", boxShadow: "0 0 0 2.5px var(--uf-card)" }} />
-        <span aria-hidden style={{ position: "absolute", left: "100%", top: y(end), transform: "translate(-50%, -50%)", width: 26, height: 26, borderRadius: 13,
-          display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: "var(--uf-card)", background: short ? "var(--uf-neg)" : "var(--uf-green)", boxShadow: "0 0 0 2.5px var(--uf-card)" }}>$</span>
-        <span style={{ ...axis, left: 0 }}>{shortDay(line.startIso)}</span>
-        {x(today) > 14 && x(today) < 80 && <span style={{ ...axis, left: `${x(today)}%`, transform: "translateX(-50%)", color: "var(--uf-teal-deep)" }}>Today</span>}
-        <span style={{ ...axis, right: 0 }}>Payday · {shortDay(paydayIso)}</span>
-      </div>
-      {billCount > 0 && (
-        <span className="uf-t-small" style={{ justifySelf: "start", display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 11px", borderRadius: 12, background: "var(--uf-surface-2)", color: "var(--uf-ink-2)" }}>
-          <b style={{ ...mono, color: "var(--uf-ink)" }}>{fmt(billTotal)}</b> in {billCount} {billCount === 1 ? "bill" : "bills"} before payday
-        </span>
-      )}
-    </Card>
-  );
-}
+export { UntilPaydayCard } from "./UntilPaydayCard";
 
 // Each tile draws its own divider, so a row that wraps 2 + 1 leaves card, not a border-coloured hole.
 const cell: React.CSSProperties = { display: "grid", gap: 10, alignContent: "start", padding: "16px 18px", background: "var(--uf-card)", color: "inherit", textAlign: "left", border: "none", font: "inherit", cursor: "pointer", boxShadow: "0 0 0 0.5px var(--uf-border)" };

@@ -125,36 +125,9 @@ function useReducedMotion() {
   return reduce;
 }
 
-/**
- * Count a value up to `to` over `dur` ms, formatting each frame with `fmt`.
- * `fmt` is held in a ref so its (per-render) identity never restarts the
- * animation — otherwise each setText re-render would relaunch it from zero.
- */
-function useCountUp(active: boolean, to: number, dur: number, reduce: boolean, fmt: (v: number) => string, from = 0) {
-  const fmtRef = useRef(fmt);
-  fmtRef.current = fmt;
-  const [text, setText] = useState(() => fmt(reduce ? to : from));
-  useEffect(() => {
-    if (!active) return;
-    if (reduce) { setText(fmtRef.current(to)); return; }
-    setText(fmtRef.current(from));
-    let raf = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / dur);
-      const eased = 1 - Math.pow(1 - t, 3);
-      setText(fmtRef.current(from + (to - from) * eased));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [active, to, dur, reduce, from]);
-  return text;
-}
-
 export default function RevealFlow(props: RevealFlowProps) {
   const {
-    freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, returnPct, growthPicker, futureDollars, isAlreadyFire,
+    freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, returnPct, growthPicker, isAlreadyFire,
     fireTarget, pctThere, savingsRatePct, usBaselineRate, fireBenchmarkRate, netWorthComparison,
     expatHome, expatBaseAge, expatCities, formatCompact,
     onSave, prefill, onKeepResult, onAdjust, onShare, onStepViewed,
@@ -169,10 +142,8 @@ export default function RevealFlow(props: RevealFlowProps) {
   const [selectedPlan, setSelectedPlan] = useState<CalculatorPrefill | null>(null);
   const savedPlan = selectedPlan ?? prefill;
   const [showGrowth, setShowGrowth] = useState(false);
-  const [showFuture, setShowFuture] = useState(false);
 
   const replay = () => { setPlayMotion(true); setStep(1); };
-  const goTo = (n: number) => setStep(Math.min(7, Math.max(2, n)));
   const next = () => setStep((s) => s === 5 ? 8 : s === 8 ? 7 : Math.min(7, s + 1));
   const back = () => setStep((s) => Math.max(2, s - 1));
 
@@ -219,8 +190,8 @@ export default function RevealFlow(props: RevealFlowProps) {
   const ringOffset = RING * (1 - Math.max(0, Math.min(100, pctThere)) / 100);
 
   // Count-ups.
-  const ageText = useCountUp(step === 2, freedomYear ?? new Date().getFullYear(), 1100, reduce, (v) => String(Math.round(v)), new Date().getFullYear());
-  const numText = useCountUp(step === 4, fireTarget, 1700, reduce, (v) => formatCompact(v));
+  const ageText = String(freedomYear ?? new Date().getFullYear());
+  const numText = formatCompact(fireTarget);
 
   // Honest savings comparison bars.
   const maxRate = Math.max(savingsRatePct, fireBenchmarkRate, usBaselineRate, 1);
@@ -271,7 +242,7 @@ export default function RevealFlow(props: RevealFlowProps) {
     <div className="rf-root" style={{ minHeight: "100vh", position: "relative", background: BG, display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 0" }}>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
       <HomeBackdrop prefill={savedPlan} />
-      <main style={{ width: "100%", maxWidth: 400, padding: "0 24px", position: "relative", zIndex: 1, ...anim("rf-up .55s ease both") }}>
+      <main style={{ width: "100%", maxWidth: 400, padding: "0 24px", position: "relative", zIndex: 1, ...anim("rf-up .3s ease both") }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ marginBottom: 10 }}><Logo variant="auto" size={28} /></div>
           <h1 className="uf-t-h1" style={{ margin: 0, color: "var(--uf-ink)", textWrap: "balance" }}>
@@ -302,11 +273,7 @@ export default function RevealFlow(props: RevealFlowProps) {
         <button type="button" onClick={replay} style={{ background: "none", border: "none", color: "var(--uf-green)", font: "600 13px Inter, sans-serif", cursor: "pointer", padding: 8 }}>
           {reduce ? "Play animations" : "Replay reveal"}
         </button>
-        {step < 7 && (
-          <button onClick={() => goTo(7)} style={{ background: "none", border: "none", color: "var(--uf-ink-2)", font: "600 13px Inter, sans-serif", cursor: "pointer", padding: "6px 4px" }}>
-            Skip to save →
-          </button>
-        )}
+
       </div>
 
       {reduce && <p role="status" style={{ ...subtle, textAlign: "center", marginTop: 12 }}>Animations are off because your device requests reduced motion. You can choose Play animations above.</p>}
@@ -322,14 +289,14 @@ export default function RevealFlow(props: RevealFlowProps) {
 
       {/* stage — the keyed wrapper re-mounts per step, so rf-page animates every page-to-page transition */}
       <div className="rf-stage" style={stage}>
-        <div key={step} className={step === 2 ? "rf-reveal-layout" : undefined} style={{ width: "100%", display: "flex", justifyContent: "center", ...anim("rf-page .45s cubic-bezier(.2,.8,.2,1) both") }}>
+        <div key={step} className={step === 2 ? "rf-reveal-layout" : undefined} style={{ width: "100%", display: "flex", justifyContent: "center", ...anim("rf-page .28s cubic-bezier(.2,.8,.2,1) both") }}>
 
           {step === 2 && <>
             <div className="rf-reveal-copy" style={{display:'grid',gap:20}}>
               <div style={eyebrow}>YOUR FREEDOM PICTURE</div>
               <h1 style={{fontSize:'clamp(32px,4vw,44px)',lineHeight:1.08,margin:0}}>{isAlreadyFire?'Your starting point':'Your freedom date'}</h1>
               <div style={subtle}>{isAlreadyFire?'Your entered savings cover your freedom number.':ageWasAssumed?'At your current saving pace.': 'Work could become optional at '+freedomAge+'.'}</div>
-              <div style={{fontSize:'clamp(72px,9vw,120px)',fontWeight:800,letterSpacing:'-.06em',lineHeight:1,...anim('rf-pop .7s ease both')}}>{isAlreadyFire?'Now':ageText}</div>
+              <div style={{fontSize:'clamp(72px,9vw,120px)',fontWeight:800,letterSpacing:'-.06em',lineHeight:1,...anim('rf-pop .35s ease both')}}>{isAlreadyFire?'Now':ageText}</div>
               <div style={subtle}>{isAlreadyFire?'Check your bills and balances before making plans.':'More choices ahead.'}</div>
               <button onClick={next} style={{justifySelf:'start',marginTop:12,border:0,borderRadius:999,padding:'17px 28px',background:'#151719',color:'#FFFFFF',font:'700 16px Inter,sans-serif',cursor:'pointer'}}>Continue →</button>
             </div>
@@ -339,7 +306,7 @@ export default function RevealFlow(props: RevealFlowProps) {
           {/* 3 — life in years */}
           {step === 3 && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, textAlign: "center" }}>
-              <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(22px, 4vw, 28px)", fontWeight: 800, letterSpacing: "-0.02em", ...anim("rf-up .5s ease both") }}>Here&apos;s your life, in years</div>
+              <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(22px, 4vw, 28px)", fontWeight: 800, letterSpacing: "-0.02em", ...anim("rf-up .3s ease both") }}>Here&apos;s your life, in years</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(20, 1fr)", gap: 7, width: "min(520px, 82vw)" }}>
                 <YearCubes colors={dots} reduce={reduce} />
               </div>
@@ -363,37 +330,17 @@ export default function RevealFlow(props: RevealFlowProps) {
               <div style={{ position: "relative", width: 260, height: 260, maxWidth: "80vw", maxHeight: "80vw", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg viewBox="0 0 260 260" style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)", width: "100%", height: "100%" }}>
                   <circle cx="130" cy="130" r="118" fill="none" stroke="var(--uf-border)" strokeWidth="14" />
-                  <circle cx="130" cy="130" r="118" fill="none" stroke={TEAL} strokeWidth="14" strokeLinecap="round" strokeDasharray={RING} strokeDashoffset={ringOffset} style={{ animation: reduce ? undefined : "rf-ring 1.7s .2s cubic-bezier(.2,.8,.2,1) both" }} />
+                  <circle cx="130" cy="130" r="118" fill="none" stroke={TEAL} strokeWidth="14" strokeLinecap="round" strokeDasharray={RING} strokeDashoffset={ringOffset} style={{ animation: reduce ? undefined : "rf-ring .65s .05s cubic-bezier(.2,.8,.2,1) both" }} />
                 </svg>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                   <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(38px, 9vw, 52px)", fontWeight: 800, letterSpacing: "-0.03em" }}>
-                    {showFuture && futureDollars ? formatCompact(futureDollars.amount) : numText}
+                    {numText}
                   </div>
                   <div style={{ fontSize: 14, color: "var(--uf-ink-2)", fontWeight: 600 }}>
-                    {showFuture && futureDollars ? `in ${futureDollars.year} dollars` : "in today's dollars"}
+                    in today’s dollars
                   </div>
                 </div>
               </div>
-              {futureDollars && (
-                <div style={{ display: "grid", gap: 8, justifyItems: "center", maxWidth: 440 }}>
-                  <div role="radiogroup" aria-label="Show amounts in" style={{ display: "inline-flex", gap: 2, padding: 3, borderRadius: 999, background: "var(--uf-surface-2)" }}>
-                    {([["today", "Today's dollars"], ["future", `${futureDollars.year} dollars`]] as const).map(([v, label]) => {
-                      const on = (v === "future") === showFuture;
-                      return (
-                        <button key={v} role="radio" aria-checked={on} onClick={() => setShowFuture(v === "future")}
-                          style={{ font: "700 12px Inter, sans-serif", padding: "6px 12px", borderRadius: 999, border: "1px solid transparent", cursor: "pointer", background: on ? "var(--uf-card)" : "transparent", color: on ? "var(--uf-ink)" : "var(--uf-ink-3)", boxShadow: on ? "var(--uf-e1)" : "none" }}>
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {showFuture && (
-                    <div className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>
-                      What your account may show, with {futureDollars.inflationPct.toFixed(1)}% inflation. Same buying power, same date.
-                    </div>
-                  )}
-                </div>
-              )}
               <div style={{ fontSize: 18, fontWeight: 700, color: "var(--uf-ink)" }}>
                 {pctThere > 0
                   ? <>You&apos;re already <b style={{ color: TEAL }}>{Math.round(pctThere)}%</b> of the way there</>
@@ -454,7 +401,7 @@ function ResultLoader({ onDone, reduce, playMotion }: { onDone: () => void; redu
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
   useEffect(() => {
-    const timer = setTimeout(() => onDoneRef.current(), reduce ? 0 : 2200);
+    const timer = setTimeout(() => onDoneRef.current(), reduce ? 0 : 500);
     return () => clearTimeout(timer);
   }, [reduce]);
   return (
@@ -463,8 +410,8 @@ function ResultLoader({ onDone, reduce, playMotion }: { onDone: () => void; redu
       <Logo variant="auto" size={36} />
       <svg aria-hidden viewBox="0 0 400 180" style={{ width: "min(400px, 85vw)", overflow: "visible" }}>
         <path d="M10 165 H390" fill="none" stroke="var(--uf-border-2)" />
-        <path d="M10 160 C140 160 245 145 300 90 S365 25 390 10" fill="none" stroke={TEAL} strokeWidth="4" strokeLinecap="round" pathLength="1" strokeDasharray="1" style={{ animation: reduce ? undefined : "rf-draw 1.8s cubic-bezier(.4,0,.2,1) both" }} />
-        <circle cx="390" cy="10" r="7" fill={TEAL} style={{ animation: reduce ? undefined : "rf-dot .4s 1.6s both", transformBox: "fill-box", transformOrigin: "center" }} />
+        <path d="M10 160 C140 160 245 145 300 90 S365 25 390 10" fill="none" stroke={TEAL} strokeWidth="4" strokeLinecap="round" pathLength="1" strokeDasharray="1" style={{ animation: reduce ? undefined : "rf-draw .4s cubic-bezier(.4,0,.2,1) both" }} />
+        <circle cx="390" cy="10" r="7" fill={TEAL} style={{ animation: reduce ? undefined : "rf-dot .15s .3s both", transformBox: "fill-box", transformOrigin: "center" }} />
       </svg>
       <div role="status" style={{ textAlign: "center", animation: reduce ? undefined : "rf-up .6s ease both" }}>
         <div style={{ fontFamily: "var(--uf-font-display)", fontSize: 30 }}>Let’s find your place on the curve.</div>
