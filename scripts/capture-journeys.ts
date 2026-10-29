@@ -94,7 +94,6 @@ const APP_ANSWERS: Record<string, (page: Page) => Promise<void>> = {
     await tapText(page, 'Continue')
   },
   spending: async (page) => {
-    await tapText(page, 'Type it instead')
     await page.getByRole('textbox', { name: 'Monthly spending', exact: true }).fill('3000')
     await tapText(page, 'Continue')
   },
@@ -105,8 +104,8 @@ const APP_ANSWERS: Record<string, (page: Page) => Promise<void>> = {
   age: (page) => tapText(page, 'Continue'),
   worry: (page) => tapText(page, 'Money runs out before payday'),
   housing: async (page) => {
-    for (const text of ['Rent', 'Dividends']) await tapText(page, text)
-    await tapText(page, 'Show my freedom date')
+    await tapText(page, 'Rent')
+    await tapText(page, 'Continue')
   },
   investing: async (page) => { await tapText(page, 'Dividends'); await tapText(page, 'Show my freedom date') },
   standing: (page) => tapText(page, 'Try one improvement'),
@@ -344,7 +343,7 @@ for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
         for (const name of click ?? []) {
           // Visible only: the computer sidebar's buttons and the phone-size tabs share labels.
           const pattern = new RegExp(name)
-          await page.getByRole('button', { name: pattern }).or(page.getByRole('tab', { name: pattern })).filter({ visible: true }).first().click()
+          await page.getByRole('button', { name: pattern }).or(page.getByRole('tab', { name: pattern })).or(page.getByRole('radio', { name: pattern })).filter({ visible: true }).first().click()
           await settle(page)
         }
         await shoot(shot!, click)
