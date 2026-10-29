@@ -33,7 +33,7 @@ export default function ReviewPill({ filed, need, busy, onReview, bank, banksOpe
           )}
           <div style={{ flex: "0 0 auto", background: free.amount < 0 ? "var(--uf-warn-bg)" : "var(--uf-ink)", color: free.amount < 0 ? "var(--uf-warn-ink)" : "var(--uf-card)",
             display: "flex", alignItems: "center", gap: 8, padding: "0 16px", whiteSpace: "nowrap" }}>
-            <span className="uf-t-small">{free.amount < 0 ? "Over by" : "Free to spend"}</span>
+            <span className="uf-t-small">{free.amount < 0 ? "Short after bills" : "Free to spend"}</span>
             <b style={{ ...mono, fontSize: 15 }}>{fmt(Math.abs(free.amount))}</b>
             <span className="uf-t-small uf-free-until" style={{ opacity: 0.75 }}>until {until}</span>
             <style>{`@media (max-width: 480px){.uf-free-until{display:none}}`}</style>

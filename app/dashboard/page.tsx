@@ -5269,7 +5269,7 @@ export default function Dashboard() {
     setSpendToggles((prev) => {
       const next = { ...prev, [id]: on };
       if (userId) supabase.from("profiles").update({ free_to_spend_accounts: next }).eq("user_id", userId)
-        .then(({ error }) => { if (error) console.error("[free-to-spend] saving account toggles", error); });
+        .then(({ error }) => { if (error) { console.error("[free-to-spend] saving account toggles", error); setSaveStatus("error"); setTimeout(() => setSaveStatus("idle"), 6000); } });
       return next;
     });
   }, [userId]);
@@ -5284,7 +5284,7 @@ export default function Dashboard() {
         const { error } = await supabase.from("user_budget").update({
           expenses: { ...ex, _fire_profile: { ...((ex._fire_profile as Record<string, unknown>) ?? {}), accountShares: next } },
         }).eq("user_id", userId);
-        if (error) console.error("[account-share] saving", error);
+        if (error) { console.error("[account-share] saving", error); setSaveStatus("error"); setTimeout(() => setSaveStatus("idle"), 6000); }
       })();
       return next;
     });
@@ -5575,7 +5575,7 @@ export default function Dashboard() {
       const next = { ...prev };
       if (usd > 0) next[key] = usd; else delete next[key];
       if (userId) supabase.from("profiles").update({ debt_originals: next }).eq("user_id", userId)
-        .then(({ error }) => { if (error) console.error("[debts] saving original balances", error); });
+        .then(({ error }) => { if (error) { console.error("[debts] saving original balances", error); setSaveStatus("error"); setTimeout(() => setSaveStatus("idle"), 6000); } });
       return next;
     });
   }, [userId]);
@@ -5626,6 +5626,7 @@ export default function Dashboard() {
   );
   const saveTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoaded   = useRef(false);
+  const quietSave  = useRef(false);
   const plaidFetchedAt = useRef<number>(0);
   const [profileLoading, setProfileLoading] = useState(true);
   // A failed read is not a new account: keep the plan hidden, never open the
@@ -5873,6 +5874,10 @@ export default function Dashboard() {
           if (prefill.realReturn) setGrowthRate(prefill.realReturn);
         }
         isLoaded.current = true;
+        // Loading itself triggers one save (to store normalised values); it is
+        // not a change the person made, so it is not announced as "Saved".
+        quietSave.current = true;
+        setTimeout(() => { quietSave.current = false; }, 2500);
         setProfileLoading(false);
         if (!sessionStorage.getItem('uf_dv')) {
           sessionStorage.setItem('uf_dv', '1');
@@ -5927,7 +5932,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!isLoaded.current) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    setSaveStatus("saving");
+    if (!quietSave.current) setSaveStatus("saving");
     saveTimer.current = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -5937,7 +5942,7 @@ export default function Dashboard() {
       const { data: existingRow, error: readError } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
       if (readError) {
         setSaveStatus("error");
-        setTimeout(() => setSaveStatus("idle"), 3000);
+        setTimeout(() => setSaveStatus("idle"), 6000);
         return;
       }
       const existingExpenses = (existingRow?.expenses as Record<string, unknown>) || {};
@@ -5965,10 +5970,10 @@ export default function Dashboard() {
       }, { onConflict: "user_id" });
       if (saveError) {
         setSaveStatus("error");
-        setTimeout(() => setSaveStatus("idle"), 3000);
+        setTimeout(() => setSaveStatus("idle"), 6000);
       } else {
-        setSaveStatus("saved");
-        setTimeout(() => setSaveStatus("idle"), 2000);
+        if (quietSave.current) { quietSave.current = false; setSaveStatus("idle"); }
+        else { setSaveStatus("saved"); setTimeout(() => setSaveStatus("idle"), 2000); }
         // Capture net worth snapshot when portfolio value changes
         const currentInvestable = k401 + rothIRA + taxable + cashSavings;
         if (currentInvestable !== lastSnapshotRef.current) {
@@ -6324,9 +6329,14 @@ export default function Dashboard() {
               <span style={{ fontSize: 14 }}>{isDark ? "☀️" : "🌙"}</span>
               {isDark ? "Light mode" : "Dark mode"}
             </button>
-            {saveStatus === "saving" && <span style={{ color: "#64748B", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Saving…</span>}
-            {saveStatus === "saved"  && <span style={{ color: "#17684B", fontSize: 12, fontFamily: "Inter, sans-serif" }}>✓ Saved</span>}
-            {saveStatus === "error"  && <span style={{ color: "#dc2626", fontSize: 12, fontFamily: "Inter, sans-serif" }}>Save failed</span>}
+            <span role="status" className="uf-t-small" style={{ minHeight: 16, color: saveStatus === "saved" ? "var(--uf-pos-ink)" : "var(--uf-ink-3)" }}>
+              {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "✓ Saved" : ""}
+            </span>
+            <button type="button" onClick={() => window.dispatchEvent(new Event("uf:feedback"))} className="uf-t-small"
+              style={{ background: "none", border: "none", color: "var(--uf-ink-2)", cursor: "pointer", font: "inherit", fontSize: 12, padding: "2px 0", textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}>
+              <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+              Send feedback
+            </button>
             <div data-tour-item="profile">
               <UserNav onProfileClick={() => setTab("profile")} isProfileActive={tab === "profile"} />
             </div>
@@ -6705,6 +6715,11 @@ export default function Dashboard() {
         </main>
       </div>
       <FeedbackWidget />
+      {saveStatus === "error" && (
+        <div role="alert" className="uf-t-small" style={{ position: "fixed", left: "50%", transform: "translateX(-50%)", bottom: "calc(96px + env(safe-area-inset-bottom))", zIndex: 300, maxWidth: "calc(100vw - 32px)", padding: "10px 16px", borderRadius: 999, background: "var(--uf-neg-bg)", color: "var(--uf-neg-ink)", border: "1px solid var(--uf-neg)", fontWeight: 700 }}>
+          Couldn&apos;t save your last change. Check your connection and try again.
+        </div>
+      )}
       <UpgradeModal
         open={upgradeOpen}
         onClose={() => setUpgradeOpen(false)}
