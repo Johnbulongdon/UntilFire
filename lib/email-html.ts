@@ -80,7 +80,7 @@ function base(preheader: string, body: string): string {
         <tr><td style="padding:0 0 28px;text-align:center">${LOGO}</td></tr>
         ${body}
         <tr><td style="padding:32px 0 0;text-align:center;border-top:1px solid ${BORDER}">
-          <p style="margin:0 0 4px;font-size:12px;color:${INK_2};line-height:1.6;font-family:${BODY}">UntilFire &mdash; Personal finance that sets you free.</p>
+          <p style="margin:0 0 4px;font-size:12px;color:${INK_2};line-height:1.6;font-family:${BODY}">UntilFire &mdash; See beyond your balance. Open up your life.</p>
           <p style="margin:0;font-size:11px;color:${INK_3};line-height:1.6;font-family:${BODY}">
             <a href="${SITE}" style="color:${INK_3};text-decoration:none">untilfire.com</a>
           </p>

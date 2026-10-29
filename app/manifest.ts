@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'UntilFire — Know When You Can Stop Working',
     short_name: 'UntilFire',
-    description: 'Find your FIRE number and freedom date in 60 seconds. Free, no login required.',
+    description: 'See beyond your balance. Open up your life. Free, no login required.',
     start_url: '/?source=pwa',
     id: '/?source=pwa',
     display: 'standalone',

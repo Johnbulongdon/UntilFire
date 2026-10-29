@@ -10,6 +10,8 @@
 
 ## Unreleased — Next Horizon
 
+- Slogan rollout (D-109): search and social titles, descriptions, structured data, the install-app description, email footer and demo video now say "See beyond your balance. Open up your life." instead of "Personal finance that sets you free."
+
 - Homepage "Listed on" tray restores the directory badges that live listings require, in a quiet light tray that stays readable in dark mode.
 
 - Browser interaction: try the example plan, clearer onboarding selection and directional transitions, section/editor/button feedback, structural Money loading, and live savings feedback. Decimal slider undo restores the exact original plan. Narrow onboarding removes decorative panels while retaining money summaries.
