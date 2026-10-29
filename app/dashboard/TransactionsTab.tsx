@@ -1477,7 +1477,7 @@ function AiReviewModal({
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button onClick={() => onApproveAll(pending.map(resolve))}
-              style={{ background: "var(--uf-green)", color: "#fff", border: "none", borderRadius: 7, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              style={{ background: "var(--uf-green)", color: "var(--uf-card)", border: "none", borderRadius: 7, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
               Approve all
             </button>
             <button onClick={onClose} aria-label="Close" style={{ background: "none", border: "none", fontSize: 18, color: "var(--uf-text-3)", cursor: "pointer", padding: "4px 8px" }}>✕</button>
@@ -1527,7 +1527,7 @@ function AiReviewModal({
                   </div>
                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                     <button onClick={() => approve(item)}
-                      style={{ background: "var(--uf-green)", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Approve</button>
+                      style={{ background: "var(--uf-green)", color: "var(--uf-card)", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Approve</button>
                     <button onClick={() => onSkip(tx.id)}
                       style={{ background: "none", color: "var(--uf-text-3)", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "6px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Skip</button>
                   </div>

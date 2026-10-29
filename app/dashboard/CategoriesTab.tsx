@@ -754,7 +754,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
             <div style={{ display: "flex", gap: 8 }}>
               <button
                 onClick={handleApplyMismatch}
-                style={{ background: "var(--uf-green)", color: "#fff", border: "none", borderRadius: 7, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", flex: 1 }}
+                style={{ background: "var(--uf-green)", color: "var(--uf-card)", border: "none", borderRadius: 7, padding: "8px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", flex: 1 }}
               >
                 Update {mismatchPrompt.mismatched.length} transaction{mismatchPrompt.mismatched.length !== 1 ? "s" : ""}
               </button>

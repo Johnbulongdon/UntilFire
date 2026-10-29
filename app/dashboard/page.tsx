@@ -5628,6 +5628,9 @@ export default function Dashboard() {
   const isLoaded   = useRef(false);
   const plaidFetchedAt = useRef<number>(0);
   const [profileLoading, setProfileLoading] = useState(true);
+  // A failed read is not a new account: keep the plan hidden, never open the
+  // welcome form and never auto-save defaults over the saved row.
+  const [planLoadFailed, setPlanLoadFailed] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [surveyOpen,     setSurveyOpen]     = useState(false);
   const [tourOpen,       setTourOpen]       = useState(false);
@@ -5799,7 +5802,12 @@ export default function Dashboard() {
         if (d?.accounts) setPlaidAccounts(d.accounts);
       }).catch(() => {});
 
-      supabase.from("user_budget").select("*").eq("user_id", session.user.id).single().then(({ data }) => {
+      supabase.from("user_budget").select("*").eq("user_id", session.user.id).maybeSingle().then(({ data, error }) => {
+        if (error) {
+          console.error("[dashboard] loading saved plan", error);
+          setPlanLoadFailed(true);
+          return;
+        }
         // Consume calculator wizard prefill (written by landing page before login redirect)
         let prefill: import("@/lib/journey").CalculatorPrefill = {};
         let hadPrefill = false;
@@ -5926,7 +5934,12 @@ export default function Dashboard() {
       const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, taxEnabled, retirementTaxRate, rothPct, plan: planSettings, mortgages, mortgageTerms, contributionDone, comparisons };
       // Read first so this write can't clobber _custom_cats/_custom_subcats written
       // independently (and asynchronously) by useCustomCategories().
-      const { data: existingRow } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
+      const { data: existingRow, error: readError } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
+      if (readError) {
+        setSaveStatus("error");
+        setTimeout(() => setSaveStatus("idle"), 3000);
+        return;
+      }
       const existingExpenses = (existingRow?.expenses as Record<string, unknown>) || {};
       const preserved: Record<string, unknown> = {};
       if (existingExpenses._custom_cats !== undefined) preserved._custom_cats = existingExpenses._custom_cats;
@@ -6384,7 +6397,12 @@ export default function Dashboard() {
                 <HouseholdCard displayCurrency={defaultCurrency} />
               </div>
             )}
-            {profileLoading && <SavedPlanLoading />}
+            {profileLoading && (planLoadFailed ? (
+              <div style={{ maxWidth: 560, margin: "var(--uf-s7) auto" }}>
+                <Alert tone="warning" title="We couldn't load your plan. Nothing has changed."
+                  action={<Button variant="primary" size="sm" onClick={() => window.location.reload()}>Try again</Button>} />
+              </div>
+            ) : <SavedPlanLoading />)}
             {tab === "overview" && !profileLoading && (
               <DashTab homeValue={homeValue} spreadCategories={spreadCategories} coastRetireAge={compareRetireAge}
                 plan={plan}

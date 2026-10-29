@@ -97,7 +97,7 @@ export default function SpendRangePill({ preset, endMonth, currentMonth, onChang
                       style={{ font: "inherit", padding: "8px 10px", borderRadius: "var(--uf-r-control)", border: "1px solid var(--uf-border-2)", background: "var(--uf-card)", color: "var(--uf-ink)" }} />
                   </label>
                 ))}
-                <button type="submit" style={{ ...item(true), justifyContent: "center", background: "var(--uf-green)", color: "#fff" }}>Show</button>
+                <button type="submit" style={{ ...item(true), justifyContent: "center", background: "var(--uf-green)", color: "var(--uf-card)" }}>Show</button>
               </form>
             )}
           </div>

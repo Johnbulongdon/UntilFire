@@ -655,7 +655,7 @@ html[data-splash="1"] #uf-splash { display: grid; }
 
 .uf-pricing-cta--primary {
   background: var(--uf-green);
-  color: #fff;
+  color: var(--uf-card);
   border: 1px solid var(--uf-green);
 }
 .uf-pricing-cta--primary:hover { background: var(--uf-green-700); border-color: var(--uf-green-700); }
