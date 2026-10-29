@@ -59,9 +59,9 @@ function pill(
 }
 
 function readinessPill(col: number, portfolioBalance: number): React.ReactElement {
-  if (portfolioBalance >= col * 25) return pill('FIRE ready', '#003527', '#A7F3D0');
-  if (portfolioBalance >= col * 12.5) return pill('Barista FIRE', '#78350F', '#FEF3C7');
-  return pill('Not yet', '#991B1B', '#FEE2E2');
+  if (portfolioBalance >= col * 25) return pill('FIRE ready', 'var(--uf-pos-ink)', 'var(--uf-mint)');
+  if (portfolioBalance >= col * 12.5) return pill('Barista FIRE', 'var(--uf-warn-ink)', 'var(--uf-warn-bg)');
+  return pill('Not yet', 'var(--uf-neg-ink)', 'var(--uf-neg-bg)');
 }
 
 // ---------------------------------------------------------------------------
@@ -95,14 +95,14 @@ export default function GeoArbitragePage() {
       <div
         style={{
           minHeight: '100vh',
-          background: '#08080e',
+          background: 'var(--uf-ground)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           padding: '40px 20px',
           fontFamily: 'Inter, sans-serif',
-          color: '#fff',
+          color: 'var(--uf-ink)',
           textAlign: 'center',
         }}
       >
@@ -110,7 +110,7 @@ export default function GeoArbitragePage() {
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 12px' }}>
           Complete the free calculator first
         </h1>
-        <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', marginBottom: 28 }}>
+        <p style={{ fontSize: 14, color: 'var(--uf-ink-2)', marginBottom: 28 }}>
           Enter your income and savings to see how your FIRE date changes in different cities.
         </p>
         <Link
@@ -118,11 +118,11 @@ export default function GeoArbitragePage() {
           style={{
             display: 'inline-block',
             padding: '12px 28px',
-            background: '#22d3a5',
-            color: '#003527',
+            background: 'var(--uf-ink)',
+            color: 'var(--uf-card)',
             fontSize: 14,
             fontWeight: 700,
-            borderRadius: 10,
+            borderRadius: 999,
             textDecoration: 'none',
           }}
         >
@@ -138,20 +138,20 @@ export default function GeoArbitragePage() {
       <div
         style={{
           minHeight: '100vh',
-          background: '#08080e',
+          background: 'var(--uf-ground)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           padding: '40px 20px',
           fontFamily: 'Inter, sans-serif',
-          color: '#fff',
+          color: 'var(--uf-ink)',
         }}
       >
-        <p style={{ color: 'rgba(255,255,255,0.6)' }}>City not found.</p>
+        <p style={{ color: 'var(--uf-ink-2)' }}>City not found.</p>
         <button
           onClick={() => router.back()}
-          style={{ marginTop: 16, background: 'none', border: 'none', color: '#22d3a5', cursor: 'pointer', fontSize: 14 }}
+          style={{ marginTop: 16, background: 'none', border: 'none', color: 'var(--uf-ink)', textDecoration: 'underline', cursor: 'pointer', fontSize: 14 }}
         >
           ← Back
         </button>
@@ -165,7 +165,7 @@ export default function GeoArbitragePage() {
       <div
         style={{
           minHeight: '100vh',
-          background: '#08080e',
+          background: 'var(--uf-ground)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -217,14 +217,14 @@ export default function GeoArbitragePage() {
           gridTemplateColumns: '1fr 1fr 1fr',
           gap: 8,
           padding: '12px 0',
-          borderBottom: '1px solid #E2E8F0',
+          borderBottom: '1px solid var(--uf-border)',
           fontSize: 13,
           alignItems: 'center',
         }}
       >
-        <div style={{ color: '#6B7280', fontWeight: 500 }}>{label}</div>
-        <div style={{ color: '#0F172A', fontWeight: 700, textAlign: 'center' }}>{current}</div>
-        <div style={{ color: '#0F172A', fontWeight: 700, textAlign: 'center' }}>{target}</div>
+        <div style={{ color: 'var(--uf-ink-2)', fontWeight: 500 }}>{label}</div>
+        <div style={{ color: 'var(--uf-ink)', fontWeight: 700, textAlign: 'center' }}>{current}</div>
+        <div style={{ color: 'var(--uf-ink)', fontWeight: 700, textAlign: 'center' }}>{target}</div>
       </div>
     );
   }
@@ -233,15 +233,15 @@ export default function GeoArbitragePage() {
     <div
       style={{
         minHeight: '100vh',
-        background: '#f8fafc',
+        background: 'var(--uf-ground)',
         fontFamily: 'Inter, sans-serif',
       }}
     >
       {/* Header */}
       <div
         style={{
-          background: '#fff',
-          borderBottom: '1px solid #E2E8F0',
+          background: 'var(--uf-card)',
+          borderBottom: '1px solid var(--uf-border)',
           padding: '14px 20px',
           display: 'flex',
           alignItems: 'center',
@@ -256,7 +256,7 @@ export default function GeoArbitragePage() {
             cursor: 'pointer',
             fontSize: 14,
             fontWeight: 600,
-            color: '#374151',
+            color: 'var(--uf-ink)',
             display: 'flex',
             alignItems: 'center',
             gap: 6,
@@ -272,10 +272,9 @@ export default function GeoArbitragePage() {
         {/* Title */}
         <h1
           style={{
-            fontFamily: 'Inter, Georgia, serif',
             fontSize: 28,
             fontWeight: 800,
-            color: '#0F172A',
+            color: 'var(--uf-ink)',
             margin: '0 0 4px',
           }}
         >
@@ -288,9 +287,9 @@ export default function GeoArbitragePage() {
           <div
             style={{
               textAlign: 'center',
-              background: '#F0FDF4',
-              border: '1px solid #A7F3D0',
-              borderRadius: 16,
+              background: 'var(--uf-yellow)',
+              color: 'var(--uf-on-accent)',
+              borderRadius: 28,
               padding: '24px 20px',
               marginBottom: 24,
             }}
@@ -299,13 +298,12 @@ export default function GeoArbitragePage() {
               style={{
                 fontSize: 32,
                 fontWeight: 800,
-                color: '#17684B',
-                fontFamily: 'Inter, Georgia, serif',
+                color: 'var(--uf-on-accent)',
               }}
             >
               You could FIRE here NOW
             </div>
-            <div style={{ fontSize: 14, color: '#151719', marginTop: 8 }}>
+            <div style={{ fontSize: 14, color: 'var(--uf-on-accent)', marginTop: 8 }}>
               Your portfolio covers {targetCity!.name} expenses at the 4% rule.
             </div>
           </div>
@@ -318,9 +316,9 @@ export default function GeoArbitragePage() {
           <div
             style={{
               textAlign: 'center',
-              background: '#F0FDF4',
-              border: '1px solid #A7F3D0',
-              borderRadius: 16,
+              background: 'var(--uf-yellow)',
+              color: 'var(--uf-on-accent)',
+              borderRadius: 28,
               padding: '24px 20px',
               marginBottom: 24,
             }}
@@ -329,14 +327,14 @@ export default function GeoArbitragePage() {
               style={{
                 fontSize: 42,
                 fontWeight: 800,
-                color: '#22d3a5',
-                fontFamily: 'Inter, Georgia, serif',
+                color: 'var(--uf-on-accent)',
+                fontVariantNumeric: 'tabular-nums',
                 lineHeight: 1,
               }}
             >
               {yearDiff.toFixed(1)} years sooner
             </div>
-            <div style={{ fontSize: 14, color: '#374151', marginTop: 8 }}>
+            <div style={{ fontSize: 14, color: 'var(--uf-on-accent)', marginTop: 8 }}>
               by moving to {targetCity!.name}
             </div>
           </div>
@@ -344,9 +342,9 @@ export default function GeoArbitragePage() {
           <div
             style={{
               textAlign: 'center',
-              background: '#FFF5F5',
-              border: '1px solid #FECACA',
-              borderRadius: 16,
+              background: 'var(--uf-neg-bg)',
+              border: '1px solid var(--uf-neg)',
+              borderRadius: 28,
               padding: '24px 20px',
               marginBottom: 24,
             }}
@@ -355,14 +353,14 @@ export default function GeoArbitragePage() {
               style={{
                 fontSize: 42,
                 fontWeight: 800,
-                color: '#ef4444',
-                fontFamily: 'Inter, Georgia, serif',
+                color: 'var(--uf-neg-ink)',
+                fontVariantNumeric: 'tabular-nums',
                 lineHeight: 1,
               }}
             >
               {yearDiff.toFixed(1)} years later
             </div>
-            <div style={{ fontSize: 14, color: '#374151', marginTop: 8 }}>
+            <div style={{ fontSize: 14, color: 'var(--uf-ink)', marginTop: 8 }}>
               {targetCity!.name} has a higher cost of living than your current city
             </div>
           </div>
@@ -371,9 +369,9 @@ export default function GeoArbitragePage() {
         {/* Comparison table */}
         <div
           style={{
-            background: '#fff',
-            borderRadius: 16,
-            border: '1px solid #E2E8F0',
+            background: 'var(--uf-card)',
+            borderRadius: 24,
+            border: '1px solid var(--uf-border)',
             padding: '0 20px',
             marginBottom: 20,
           }}
@@ -385,16 +383,16 @@ export default function GeoArbitragePage() {
               gridTemplateColumns: '1fr 1fr 1fr',
               gap: 8,
               padding: '14px 0 10px',
-              borderBottom: '2px solid #E2E8F0',
+              borderBottom: '2px solid var(--uf-border)',
             }}
           >
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B7280' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--uf-ink-2)' }}>
               Metric
             </div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B7280', textAlign: 'center' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--uf-ink-2)', textAlign: 'center' }}>
               Current
             </div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#22d3a5', textAlign: 'center' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--uf-ink)', textAlign: 'center' }}>
               <Flag emoji={targetCity!.flag} size={11} /> Target
             </div>
           </div>
@@ -406,16 +404,16 @@ export default function GeoArbitragePage() {
               gridTemplateColumns: '1fr 1fr 1fr',
               gap: 8,
               padding: '12px 0',
-              borderBottom: '1px solid #E2E8F0',
+              borderBottom: '1px solid var(--uf-border)',
               fontSize: 13,
               alignItems: 'center',
             }}
           >
-            <div style={{ color: '#6B7280', fontWeight: 500 }}>City</div>
-            <div style={{ color: '#0F172A', fontWeight: 700, textAlign: 'center', fontSize: 12 }}>
+            <div style={{ color: 'var(--uf-ink-2)', fontWeight: 500 }}>City</div>
+            <div style={{ color: 'var(--uf-ink)', fontWeight: 700, textAlign: 'center', fontSize: 12 }}>
               {currentCityName}
             </div>
-            <div style={{ color: '#0F172A', fontWeight: 700, textAlign: 'center', fontSize: 12 }}>
+            <div style={{ color: 'var(--uf-ink)', fontWeight: 700, textAlign: 'center', fontSize: 12 }}>
               {targetCity!.name}
             </div>
           </div>
@@ -445,9 +443,9 @@ export default function GeoArbitragePage() {
         {/* Monthly impact */}
         <div
           style={{
-            background: '#fff',
-            borderRadius: 14,
-            border: '1px solid #E2E8F0',
+            background: 'var(--uf-card)',
+            borderRadius: 24,
+            border: '1px solid var(--uf-border)',
             padding: '16px 20px',
             marginBottom: 20,
             display: 'flex',
@@ -457,14 +455,14 @@ export default function GeoArbitragePage() {
           }}
         >
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B7280', marginBottom: 4 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--uf-ink-2)', marginBottom: 4 }}>
               Monthly cost impact
             </div>
             <div
               style={{
                 fontSize: 22,
                 fontWeight: 800,
-                color: monthlyDiff >= 0 ? '#17684B' : '#ef4444',
+                color: monthlyDiff >= 0 ? 'var(--uf-pos-ink)' : 'var(--uf-neg-ink)',
               }}
             >
               {monthlyDiff >= 0
@@ -481,12 +479,12 @@ export default function GeoArbitragePage() {
             onClick={removeFromGlobe}
             style={{
               background: 'none',
-              border: '1px solid #CBD5E1',
-              borderRadius: 10,
+              border: '1px solid var(--uf-border-2)',
+              borderRadius: 999,
               padding: '12px 20px',
               fontSize: 13,
               fontWeight: 600,
-              color: '#6B7280',
+              color: 'var(--uf-ink-2)',
               cursor: 'pointer',
               fontFamily: 'inherit',
               textAlign: 'center',
@@ -497,13 +495,13 @@ export default function GeoArbitragePage() {
           <button
             onClick={() => router.back()}
             style={{
-              background: '#22d3a5',
+              background: 'var(--uf-ink)',
               border: 'none',
-              borderRadius: 10,
-              padding: '12px 20px',
-              fontSize: 13,
+              borderRadius: 999,
+              padding: '14px 20px',
+              fontSize: 14,
               fontWeight: 700,
-              color: '#003527',
+              color: 'var(--uf-card)',
               cursor: 'pointer',
               fontFamily: 'inherit',
               textAlign: 'center',
