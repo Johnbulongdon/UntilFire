@@ -157,3 +157,22 @@
   touch-action: pan-y pinch-zoom;
   cursor: grab;
 }
+
+.rotation {
+  display: block;
+  margin: 8px auto 0;
+  padding: 10px 16px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 99px;
+  background: transparent;
+  color: var(--uf-ink-2, #626873);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rotation {
+    display: none;
+  }
+}

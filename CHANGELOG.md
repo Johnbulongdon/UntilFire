@@ -1676,3 +1676,5 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 ### Calendar date repair
 - Calendar now shows scheduled bills and payday only; ordinary transactions stay in Transactions.
 - Keep past and completed bills on their original scheduled dates instead of moving them onto today. Cash forecasting still accounts for overdue unpaid bills independently.
+
+- Landing globe follow-up: slow automatic rotation, pause/resume control, interaction hold, reduced-motion and off-screen/hidden-tab suspension.
