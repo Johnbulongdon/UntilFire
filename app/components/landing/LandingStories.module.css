@@ -1,0 +1,230 @@
+.root {
+  margin: 0 0 64px;
+  scroll-margin-top: 24px;
+}
+.heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 28px;
+  padding: 0 4px;
+  margin-bottom: 34px;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--uf-ink-2);
+}
+.heading h2 {
+  font-size: clamp(32px, 4vw, 48px);
+  font-weight: 750;
+  line-height: 1.08;
+  letter-spacing: -0.045em;
+  margin: 14px 0;
+}
+.heading p {
+  color: var(--uf-ink-2);
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 0;
+}
+.viewport:focus-visible {
+  outline: 3px solid #9278bf;
+  outline-offset: 4px;
+}
+.previewNotice {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--uf-ink-2);
+  margin: 0 0 22px;
+  padding: 9px 12px;
+  border: 1px solid var(--uf-border);
+  border-radius: 9px;
+}
+.viewport {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  overscroll-behavior-inline: contain;
+  touch-action: pan-x pan-y pinch-zoom;
+  cursor: grab;
+  user-select: none;
+}
+.viewport::-webkit-scrollbar {
+  display: none;
+}
+.viewport[data-dragging] {
+  cursor: grabbing;
+}
+.track {
+  display: flex;
+  width: max-content;
+}
+.group {
+  --card-width: 340px;
+  display: flex;
+  align-items: stretch;
+  gap: 22px;
+  padding-right: 22px;
+}
+.card {
+  width: var(--card-width);
+  flex-shrink: 0;
+  min-height: 320px;
+  padding: 28px 26px;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  color: #151719;
+}
+.tone0 {
+  background: #eee9fa;
+}
+.tone1 {
+  background: #fff1bc;
+}
+.tone2 {
+  background: #e3f7ef;
+}
+.tone3 {
+  background: #e8f3ff;
+}
+.root .card h3 {
+  font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+  font-weight: 750;
+  margin: 0 0 19px;
+}
+.card blockquote {
+  font-size: 20px;
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+  margin: 0 0 28px;
+}
+.card blockquote:before {
+  content: "“";
+}
+.card blockquote:after {
+  content: "”";
+}
+.person {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-top: auto;
+}
+.portrait {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #d6e7df;
+  color: #256b54;
+  flex-shrink: 0;
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 700;
+}
+.portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.demoPortrait {
+  background-image: url(/landing/testimonial-demo-portraits.webp);
+  background-size: 400% auto;
+  background-repeat: no-repeat;
+}
+.person strong {
+  display: block;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+.person span:not(.portrait) {
+  display: block;
+  max-width: 207px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #646a73;
+  margin-top: 4px;
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 1000px) {
+  .group {
+    --card-width: 310px;
+  }
+  .card {
+    padding: 26px 24px;
+  }
+  .root .card h3 {
+    font-size: 21px;
+  }
+  .card blockquote {
+    font-size: 19px;
+  }
+}
+@media (max-width: 760px) {
+  .root {
+    margin-bottom: 38px;
+  }
+  .heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 24px;
+    padding: 0 2px;
+  }
+  .heading h2 {
+    font-size: 34px;
+  }
+  .heading p {
+    font-size: 14px;
+  }
+  .group {
+    --card-width: min(300px, calc(100vw - 74px));
+    gap: 16px;
+    padding-right: 16px;
+  }
+  .card {
+    min-height: 315px;
+    padding: 26px 23px;
+  }
+  .root .card h3 {
+    font-size: 21px;
+  }
+  .card blockquote {
+    font-size: 18px;
+  }
+  .previewNotice {
+    font-size: 10px;
+    margin-bottom: 20px;
+  }
+  .person span:not(.portrait) {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 760px) {
+  .portrait {
+    width: 64px;
+    height: 64px;
+  }
+  .person strong {
+    font-size: 15px;
+  }
+}

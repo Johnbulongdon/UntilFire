@@ -95,7 +95,8 @@
     "test:reward-month": "node --experimental-strip-types scripts/verify-reward-month.ts",
     "test:replay-repairs": "node --experimental-strip-types --no-warnings scripts/verify-replay-repairs.mjs",
     "test:financial-consistency": "node --experimental-strip-types --no-warnings scripts/verify-financial-consistency.mjs",
-    "test:marked-calendar": "node --experimental-strip-types --no-warnings scripts/verify-marked-calendar.mjs"
+    "test:marked-calendar": "node --experimental-strip-types --no-warnings scripts/verify-marked-calendar.mjs",
+    "test:landing-stories": "node --experimental-strip-types --no-warnings scripts/verify-landing-story-rail.ts"
   },
   "dependencies": {
     "@apple/app-store-server-library": "^3.1.0",

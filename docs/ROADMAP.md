@@ -31,6 +31,8 @@ this order. Record the reason and which Now item is displaced; do not silently
 create a fourth active priority. Existing authorized work is not canceled by this
 queue: reconcile its scope and dependencies before starting overlapping changes.
 
+30 October: John selected landing-page option 2 (centered hero and connected product example), with a dedicated wrapping directory-badge area. N1 design follow-up, Codex, In review on `codex/landing-connected-preview`; production build and local desktop/phone design QA passed (see design-qa.md). Review http://127.0.0.1:4203/ before merge. Preserve onboarding, metadata and directory links. Follow-up: remove the landing FAQ/article appendage and end with grouped calculator, city-guide, Learn/account and legal navigation as John requested. John subsequently approved the connected closing/footer and continuous review rail, requested removal of its visible controls/dots, and explicitly authorized build and merge. D-118 records scope; genuine review content is still pending and the public review list remains empty.
+
 ### Next — ordered follow-ups
 
 | ID | Task | Start condition / done when |
@@ -596,3 +598,7 @@ John has chosen the next product direction:
 Owner: Codex. Implemented locally under the existing rebrand review (PR #323), not yet pushed or released. Replace both browser calendar presentations with selected B. Calendar date/recurrence/selection/refund tests pass; desktop and narrow browser checks in progress. Native app calendar styling remains outside this browser-only change; financial engines are unchanged.
 
 N2 release update — 29 October, Codex: John authorized website publication of PR #323 plus the accumulated approved refinements. Calendar repair removes bank-history markers and preserves scheduled occurrence dates, with regression coverage added to Financial consistency CI. Full release validation and production deployment verification in progress; no separate database migration or store submission.
+
+30 October landing follow-up within N1: selected conversion options 1/2 implemented, option 3 rotating layout scaffold verified locally; actual approved testimonials and portraits pending. Normal/public landing hides an empty story list; explicit localhost-only preview uses labeled placeholders. Options 4/5 excluded. No publication authorized or performed.
+
+Landing review-rail follow-up: approved compact mock implemented as continuous looping cards; local desktop, phone swipe, reduced motion and seam navigation verified on e2d1f36. Actual testimonial content remains pending; demo profiles are local-only and labeled. Marketing/promotion scope awaits clarification of the user's wording; no external outreach or posting performed.
