@@ -12,10 +12,12 @@ export default function LandingWorldCanvas({
   selected,
   turn,
   onSelect,
+  spinning,
 }: {
   selected: number;
   turn: number;
   onSelect: (i: number) => void;
+  spinning: boolean;
 }) {
   const ref = useRef<HTMLCanvasElement>(null),
     savedRotation = useRef<[number, number]>(
@@ -113,34 +115,91 @@ export default function LandingWorldCanvas({
       -cities[selected].coords[0],
       -cities[selected].coords[1],
     ];
-    if (previous.current !== turn) {
-      const from = [...rotation],
-        delta = ((target[0] - from[0] + 540) % 360) - 180,
-        begin = performance.now();
-      const tick = (now: number) => {
-        const k = reduce.matches ? 1 : Math.min((now - begin) / 800, 1),
-          ease = 1 - Math.pow(1 - k, 3);
+    let visible = false;
+    let focused = false;
+    let last = 0;
+    let resumeAt = performance.now() + (turn > 0 ? 5000 : 0);
+    const changingCity = previous.current !== turn;
+    const from = [...rotation];
+    const delta = ((target[0] - from[0] + 540) % 360) - 180;
+    const begin = performance.now();
+    let tweening = changingCity;
+    previous.current = turn;
+    function tick(now: number) {
+      frame = 0;
+      const dt = last ? Math.min(now - last, 50) : 0;
+      last = now;
+      if (tweening) {
+        const k = reduce.matches ? 1 : Math.min((now - begin) / 800, 1);
+        const ease = 1 - Math.pow(1 - k, 3);
         rotation = [
           from[0] + delta * ease,
           from[1] + (target[1] - from[1]) * ease,
         ];
+        tweening = k < 1;
         draw();
-        if (k < 1) frame = requestAnimationFrame(tick);
-      };
-      frame = requestAnimationFrame(tick);
-      previous.current = turn;
-    }
-    const onPreference = () => {
-      if (reduce.matches) {
-        cancelAnimationFrame(frame);
-        rotation = target;
+      } else if (
+        spinning &&
+        !reduce.matches &&
+        !drag &&
+        !focused &&
+        now >= resumeAt
+      ) {
+        rotation = [(rotation[0] + dt * 0.005) % 360, rotation[1]];
         draw();
       }
+      if (
+        visible &&
+        !document.hidden &&
+        (tweening || (spinning && !reduce.matches))
+      )
+        frame = requestAnimationFrame(tick);
+    }
+    function wake() {
+      if (!frame && visible && !document.hidden) {
+        last = 0;
+        frame = requestAnimationFrame(tick);
+      }
+    }
+    function suspend() {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      last = 0;
+    }
+    const viewport = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (visible) wake();
+      else suspend();
+    });
+    viewport.observe(canvas);
+    const visibility = () => {
+      if (document.hidden) suspend();
+      else wake();
     };
+    const onPreference = () => {
+      suspend();
+      if (reduce.matches && tweening) {
+        rotation = target;
+        tweening = false;
+        draw();
+      }
+      wake();
+    };
+    const focus = () => {
+      focused = true;
+    };
+    const blur = () => {
+      focused = false;
+      resumeAt = performance.now() + 2500;
+      wake();
+    };
+    document.addEventListener("visibilitychange", visibility);
     reduce.addEventListener("change", onPreference);
+    canvas.addEventListener("focus", focus);
+    canvas.addEventListener("blur", blur);
     const down = (e: PointerEvent) => {
       if (e.pointerType === "mouse" && e.button !== 0) return;
-      cancelAnimationFrame(frame);
+      tweening = false;
       drag = { x: e.clientX, y: e.clientY, rotation: [...rotation] };
       moved = false;
       canvas.setPointerCapture(e.pointerId);
@@ -167,17 +226,22 @@ export default function LandingWorldCanvas({
         if (hit) onSelect(hit.i);
       }
       drag = null;
+      resumeAt = performance.now() + 2500;
+      wake();
       if (canvas.hasPointerCapture(e.pointerId))
         canvas.releasePointerCapture(e.pointerId);
     };
     const cancel = () => {
       drag = null;
+      resumeAt = performance.now() + 2500;
+      wake();
     };
     const key = (e: KeyboardEvent) => {
       if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key))
         return;
       e.preventDefault();
-      cancelAnimationFrame(frame);
+      tweening = false;
+      resumeAt = performance.now() + 2500;
       rotation = [
         rotation[0] +
           (e.key === "ArrowRight" ? 10 : e.key === "ArrowLeft" ? -10 : 0),
@@ -202,6 +266,10 @@ export default function LandingWorldCanvas({
       savedRotation.current = rotation;
       cancelAnimationFrame(frame);
       observer.disconnect();
+      viewport.disconnect();
+      document.removeEventListener("visibilitychange", visibility);
+      canvas.removeEventListener("focus", focus);
+      canvas.removeEventListener("blur", blur);
       reduce.removeEventListener("change", onPreference);
       canvas.removeEventListener("pointerdown", down);
       canvas.removeEventListener("pointermove", move);
@@ -210,7 +278,7 @@ export default function LandingWorldCanvas({
       canvas.removeEventListener("lostpointercapture", cancel);
       canvas.removeEventListener("keydown", key);
     };
-  }, [selected, turn, onSelect]);
+  }, [selected, turn, onSelect, spinning]);
   return (
     <canvas
       ref={ref}

@@ -606,3 +606,5 @@ Landing review-rail follow-up: approved compact mock implemented as continuous l
 30 October — N1 landing refinement, Codex, [PR #332](https://github.com/Johnbulongdon/UntilFire/pull/332), `codex/landing-polish`, In review: preserve opening copy; tighten phone hero; clarify slider interaction; show bank-connection plan comparison; improve small controls; quiet directory badges. Baseline f2da67c (merged PR #331). Build, changed-component lint, SEO/start-action checks and desktop/phone visual review passed; docs/design/landing-polish/verification.md records evidence. No production change yet.
 
 30 October — N1, John approved the interactive city globe and requested merge and shipment with the landing refinements (PR #332). Codex implementing on codex/landing-polish from f2da67c; D-120 records the final scope. Validation and final release checks in progress.
+
+30 October — N1 globe automatic rotation follow-up, Codex, codex/globe-auto-spin. Baseline origin/main 16d8904. Implementation and production-build verification in progress; no unrelated open PR overlap found.

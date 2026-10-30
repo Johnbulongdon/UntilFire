@@ -22,6 +22,7 @@ export default function LandingWorld() {
       setSelection((value) => ({ index, turn: value.turn + 1 })),
     [],
   );
+  const [spinning, setSpinning] = useState(true);
   const [ready, setReady] = useState(false);
   const root = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -65,6 +66,7 @@ export default function LandingWorld() {
         <div className={s.globe}>
           {ready ? (
             <Globe
+              spinning={spinning}
               selected={selected}
               turn={selection.turn}
               onSelect={selectCity}
@@ -88,6 +90,14 @@ export default function LandingWorld() {
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          className={s.rotation}
+          onClick={() => setSpinning((value) => !value)}
+          aria-pressed={!spinning}
+        >
+          {spinning ? "Pause rotation" : "Resume rotation"}
+        </button>
         <div
           className={s.summary}
           role="status"

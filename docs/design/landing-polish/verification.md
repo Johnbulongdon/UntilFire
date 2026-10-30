@@ -29,3 +29,6 @@ The earlier local-only globe/motion study is now implemented as production React
 - Final npm run validate passed (production build, TypeScript and lint); changed-component ESLint and test:seo, test:start-ctas, test:landing-stories passed. Existing unrelated warnings remain.
 - Actual production-build browser QA at port 4204: desktop 922px and phone 390px layouts; Lisbon-to-Chiang Mai cost updates, globe rotation, dragging, same-city recentering and keyboard rotation verified. Phone viewport and document scroll width both 390px. See globe-desktop.webp and globe-phone.webp. Reduced-motion behavior reviewed in source; not claimed as browser-emulated QA.
 - Public testimonials remain sourced from the approved data file; fictional preview stories stay localhost-only. Local extension and analytics warnings described above remain outside this landing release.
+
+
+Automatic rotation follow-up (30 October): production build and focused component ESLint passed. Local port 4206 pause/resume control verified in browser. Rotation uses elapsed time (5 degrees/second), viewport and document visibility suspension, reduced-motion opt-out, focus/drag pause and city-selection hold. No new dependencies or financial changes.
