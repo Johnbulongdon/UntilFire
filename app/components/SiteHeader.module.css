@@ -43,3 +43,9 @@
   .links a { padding: 12px 0; font-size: 16px; border-bottom: 1px solid var(--uf-surface); }
   .links a:last-child { border-bottom: none; }
 }
+
+.signIn { color: var(--uf-ink); font-size: 13px; font-weight: 600; text-decoration: none; padding: 12px; }
+@media(max-width:760px){.signIn{display:none}}
+
+.mobileLabel{display:none}
+@media(max-width:760px){.desktopLabel{display:none}.mobileLabel{display:inline}}

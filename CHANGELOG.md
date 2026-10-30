@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased — Connected landing page
+
+- Replaced the rejected single-story rotator with the approved compact, continuously scrolling multi-card review rail. Added swipe/drag, manual arrows, pause controls, seam wrapping, optional approved membership dates and reduced-motion handling. Generated fictional portraits/quotes are explicit local-preview content; no reviews are published while the approved list is empty.
+
+- Selected conversion options 1 and 2: clearer hero supporting message and a compact free/no-account/optional-bank reassurance row. Added a multi-story rotating component for option 3, with pause/manual navigation and reduced-motion support. No fabricated reviews: approved story data is empty pending quotes and attribution. Explicit localhost-only layout preview uses labeled placeholders. Options 4 (founder) and 5 (savings-result redesign) are excluded.
+
+- Expanded the free starting-plan invitation into a mint closing section with a visual plan summary and onboarding action; reduced directory badge footprint without dropping links.
+
+- The landing ends with grouped UntilFire, calculator and city-guide navigation plus legal links. Removed the long educational/FAQ appendage and its FAQ schema; detailed content remains on the existing destination pages.
+
+- Approved option 2: centered headline, one connected pastel product preview without page tabs, selectable example bill dates and categories, and a whole-dollar savings scenario powered by the existing projection helper. Initial estimate still opens the existing free onboarding.
+- A dedicated wrapping Listed on tray preserves all directory URLs, issued badge images and verification attributes. Failed third-party images retain readable links. Phone layouts stack the preview and keep the header action compact.
+
+
 ## 2026-10-29 — Starting budget (50/30/20)
 
 - Website only (D-116). With no budget yet, Money › Budget suggests 50% needs, 30% wants and 20% saving of take-home pay, built from what you usually spend. No limit is ever higher than your usual spending: only wants that aren't bills are trimmed, by one shared percentage; needs over 50% stay and wants give way. "Use this" saves it, "Set my own" opens guided setup. With no spending yet, the three totals show as a guide. Nothing is saved, and the freedom date doesn't move, until "Use this".
