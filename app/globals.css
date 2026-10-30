@@ -474,40 +474,6 @@ a {
   animation: slide-up 0.3s ease-out forwards;
 }
 
-/* First-session brand introduction: vector artwork, no media player. */
-#uf-splash {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  display: none;
-  place-items: center;
-  background: var(--uf-ground);
-  opacity: 1;
-  transition: opacity .2s ease;
-  animation: uf-splash-dismiss .25s ease 1.1s forwards;
-}
-html[data-splash="1"] #uf-splash { display: grid; }
-#uf-splash.is-leaving { opacity: 0; pointer-events: none; animation: none; }
-#uf-splash img {
-  width: min(160px, 32vw);
-  height: auto;
-  display: block;
-  pointer-events: none;
-  animation: uf-splash-rise .8s ease both;
-}
-@keyframes uf-splash-rise {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-/* This runs without React, including when scripts are slow or unavailable. */
-@keyframes uf-splash-dismiss {
-  to { opacity: 0; visibility: hidden; }
-}
-@media (prefers-reduced-motion: reduce) {
-  #uf-splash { display: none !important; animation: none; }
-  #uf-splash img { animation: none; }
-}
-
 /* ─────────────────────────────────────────────────────────────────────────
    Calculator layout and range control
 
@@ -712,7 +678,6 @@ html[data-splash="1"] #uf-splash { display: grid; }
 :root{--uf-yellow:#FFE58A;--uf-mint:#E3F7EF;--uf-lilac:#EEE9FA;--uf-blue:#E8F3FF;--uf-pink:#FBE7F2;--uf-on-accent:#151719;--uf-r-control:14px;--uf-r-card:24px;--uf-r-modal:28px;--uf-font-brand:'Inter',sans-serif}
 .dark{--uf-mint:#213F35;--uf-lilac:#363048;--uf-blue:#26384D;--uf-pink:#432C3D}
 button,input,select,textarea{font-family:inherit}h1,h2{font-weight:800;letter-spacing:-.04em}button:focus-visible,a:focus-visible{outline:3px solid #8E78C2;outline-offset:3px}
-#uf-splash{background:var(--uf-ground)}#uf-splash img{width:180px;height:auto}.dark #uf-splash img{filter:brightness(0) invert(1)}
 .uf-brand-wordmark{font-family:var(--uf-font-brand);font-weight:800;letter-spacing:-.055em}
 .uf-brand-mark-dark{display:none}.dark .uf-brand-mark-light{display:none}.dark .uf-brand-mark-dark{display:block}
 /* Role aliases are retained for feature compatibility, not as new palette names. */

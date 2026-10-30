@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { siteUrl } from "@/lib/site";
+import { siteUrl, DEFAULT_OG_IMAGE } from "@/lib/site";
 import { VS_PAGES } from "@/lib/vs/pages";
 import styles from "./Vs.module.css";
 
@@ -12,8 +12,8 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: url },
-  openGraph: { title, description, url, siteName: "UntilFire", type: "website" },
-  twitter: { card: "summary_large_image", title, description },
+  openGraph: { images: [DEFAULT_OG_IMAGE], title, description, url, siteName: "UntilFire", type: "website" },
+  twitter: { images: [DEFAULT_OG_IMAGE.url], card: "summary_large_image", title, description },
 };
 
 /** The comparison hub: a signpost to each /vs page, one card each. */

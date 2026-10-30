@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { SITE_URL, siteUrl } from '@/lib/site'
+import { SITE_URL, siteUrl, DEFAULT_OG_IMAGE } from '@/lib/site'
 
 const pageUrl = siteUrl('/fire-calculator')
 
@@ -12,6 +12,7 @@ export const metadata: Metadata = {
     'FIRE calculator, financial independence calculator, retire early calculator, FIRE number calculator, how much money do I need to retire, Coast FIRE calculator, savings rate calculator',
   alternates: { canonical: siteUrl('/fire-calculator') },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: 'FIRE Calculator - Find When Work Becomes Optional | UntilFire',
     description:
       'Estimate your FIRE number, retirement timeline, savings rate, Coast FIRE milestone, and the monthly moves that can make work optional sooner.',
@@ -20,6 +21,7 @@ export const metadata: Metadata = {
     type: 'website',
   },
   twitter: {
+    images: [DEFAULT_OG_IMAGE.url],
     card: 'summary_large_image',
     title: 'FIRE Calculator | UntilFire',
     description: 'Find your freedom date, your FIRE number, and the monthly moves that bring work-optional life closer.',

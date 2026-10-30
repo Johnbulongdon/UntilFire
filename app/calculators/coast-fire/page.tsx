@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { DEFAULT_RETURN_PCT } from '@/lib/fire-number'
 import Link from 'next/link'
 import CoastFireCalculator from './CoastFireCalculator'
+import { DEFAULT_OG_IMAGE } from '@/lib/site'
 
 // The rendered FAQ and structured answers share one source.
 const faqs = [
@@ -47,6 +48,7 @@ export const metadata: Metadata = {
     'coast FIRE calculator, coast FI calculator, coast fire number, coast FI number, barista FIRE calculator, semi-retirement calculator, how much to save to coast',
   alternates: { canonical: 'https://www.untilfire.com/calculators/coast-fire' },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: 'Coast FIRE Calculator | UntilFire',
     description: 'Estimate when you could stop retirement contributions and compare the assumptions behind your Coast FIRE plan.',
     url: 'https://www.untilfire.com/calculators/coast-fire',
@@ -54,6 +56,7 @@ export const metadata: Metadata = {
     type: 'website',
   },
   twitter: {
+    images: [DEFAULT_OG_IMAGE.url],
     card: 'summary_large_image',
     title: 'Coast FIRE Calculator | UntilFire',
     description: 'Estimate when you could stop retirement contributions and compare the assumptions behind your Coast FIRE plan.',

@@ -4,17 +4,18 @@ import {
   ANNUAL_PER_MONTH_LABEL, ANNUAL_SAVING_PCT, PRO_ANNUAL_LABEL, PRO_ANNUAL_USD,
   PRO_MONTHLY_LABEL, PRO_MONTHLY_USD, TRIAL_LABEL,
 } from "@/lib/pricing";
-import { siteUrl } from "@/lib/site";
+import { siteUrl, DEFAULT_OG_IMAGE } from "@/lib/site";
 import { Badge, Card } from "@/components/ui";
 
 const pricingUrl = siteUrl('/pricing');
 
 export const metadata: Metadata = {
   title: "UntilFire Pricing — Free Plan & Pro Unlimited Bank Connections",
-  description: `Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for ${PRO_MONTHLY_LABEL}/mo, or ${PRO_ANNUAL_LABEL}/yr, to unlock unlimited bank connections and priority access to the AI adviser.`,
+  description: `Free forever for the full FIRE calculator and dashboard. Upgrade to Pro for ${PRO_MONTHLY_LABEL}/mo, or ${PRO_ANNUAL_LABEL}/yr, to unlock unlimited bank connections and one-click needs and wants tagging.`,
   keywords: "untilfire pricing, fire planner cost, financial independence app price, fire calculator free",
   alternates: { canonical: pricingUrl },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: "UntilFire Pricing — Free Plan & Pro Unlimited Bank Connections",
     description: `Free forever for the full calculator and dashboard. Upgrade to Pro for ${PRO_MONTHLY_LABEL}/mo, or ${PRO_ANNUAL_LABEL}/yr.`,
     url: pricingUrl,
@@ -22,6 +23,7 @@ export const metadata: Metadata = {
     type: "website",
   },
   twitter: {
+    images: [DEFAULT_OG_IMAGE.url],
     card: "summary_large_image",
     title: "UntilFire Pricing — Free Plan & Pro Unlimited Bank Connections",
     description: `Free forever for the full calculator and dashboard. Upgrade to Pro for ${PRO_MONTHLY_LABEL}/mo, or ${PRO_ANNUAL_LABEL}/yr.`,
@@ -41,7 +43,7 @@ const FREE_FEATURES = [
 const PRO_FEATURES = [
   "Everything in Free",
   "Unlimited bank connections (Plaid)",
-  "AI FIRE adviser (priority access)",
+  "AI sorts your spending into needs and wants, in one click",
 ];
 
 export default function PricingPage() {
@@ -54,7 +56,7 @@ export default function PricingPage() {
             "@context": "https://schema.org",
             "@type": "Product",
             name: "UntilFire Pro",
-            description: "AI-powered FIRE planning with unlimited bank connections and personalized retirement advice.",
+            description: "FIRE planning with unlimited bank connections and one-click needs and wants tagging.",
             url: pricingUrl,
             brand: { "@type": "Brand", name: "UntilFire" },
             offers: [

@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     'Compare the 20 most expensive US cities: San Francisco, New York, LA, and more. See exact FIRE targets, tax rates, and realistic retirement costs for each city.',
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://www.untilfire.com/fire-number/most-expensive-cities' },
+  twitter: { card: "summary_large_image", images: ["/api/og/ranking/most-expensive-cities"] },
   openGraph: {
     images: [
       {

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { countryPages, getCountryPage } from '@/lib/country-pages'
 import Flag from '@/app/components/Flag'
+import { DEFAULT_OG_IMAGE } from '@/lib/site'
 
 type Props = { params: Promise<{ slug: string }> }
 
@@ -26,13 +27,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     robots: { index: true, follow: true },
     alternates: { canonical: page.canonicalUrl },
     openGraph: {
+      images: [DEFAULT_OG_IMAGE],
       title: page.title,
       description: page.description,
       url: page.canonicalUrl,
       siteName: 'UntilFire',
       type: 'article',
     },
-    twitter: { card: 'summary_large_image', title: page.title, description: page.description },
+    twitter: { images: [DEFAULT_OG_IMAGE.url], card: 'summary_large_image', title: page.title, description: page.description },
   }
 }
 

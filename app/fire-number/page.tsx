@@ -8,6 +8,7 @@ import { countriesByCost } from "@/lib/country-pages";
 import { cityPagePath } from "@/lib/city-pages";
 import { STATE_NAMES } from "@/lib/state-pages";
 import Flag from "@/app/components/Flag";
+import { DEFAULT_OG_IMAGE } from "@/lib/site"
 
 
 const US_CITIES = CITIES.filter((c) => isUS(c.state));
@@ -22,6 +23,7 @@ export const metadata: Metadata = {
   },
   alternates: { canonical: "https://www.untilfire.com/fire-number" },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: "FIRE Number by City | UntilFire",
     description: `Compare ${US_CITIES.length} US city FIRE baselines and see how local costs change your retirement target.`,
     type: "website",

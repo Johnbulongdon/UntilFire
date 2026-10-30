@@ -5,6 +5,7 @@ import { AGE_BANDS, AGE_BAND_SHORT, percentileToday, type AgeBand } from '@/lib/
 import { NET_WORTH_BENCHMARKS } from '@/lib/net-worth-benchmarks'
 import { NET_WORTH_INFLATION } from '@/lib/net-worth-inflation'
 import { formatMoney } from '@/lib/money'
+import { DEFAULT_OG_IMAGE } from '@/lib/site'
 
 const PAGE_URL = 'https://www.untilfire.com/calculators/net-worth-by-age'
 const YEAR = NET_WORTH_BENCHMARKS.year
@@ -52,6 +53,7 @@ export const metadata: Metadata = {
   description: `Compare your net worth with US households your age. Medians and percentiles by age from the Federal Reserve, in ${THROUGH} dollars. Free, no sign-up.`,
   alternates: { canonical: PAGE_URL },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: 'Net Worth by Age: How Do You Compare? | UntilFire',
     description: 'See where your net worth stands among US households your age, from Federal Reserve data adjusted to today’s dollars.',
     url: PAGE_URL,
@@ -59,6 +61,7 @@ export const metadata: Metadata = {
     type: 'website',
   },
   twitter: {
+    images: [DEFAULT_OG_IMAGE.url],
     card: 'summary_large_image',
     title: 'Net Worth by Age: How Do You Compare? | UntilFire',
     description: 'See where your net worth stands among US households your age, from Federal Reserve data adjusted to today’s dollars.',

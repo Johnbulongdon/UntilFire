@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import PurchaseImpactCalculator from './PurchaseImpactCalculator'
-import { SITE_URL } from '@/lib/site'
+import { SITE_URL, DEFAULT_OG_IMAGE } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Purchase Impact Calculator — What Does Buying This Really Cost You? | UntilFire',
@@ -11,6 +11,7 @@ export const metadata: Metadata = {
     'purchase opportunity cost calculator, spending impact FIRE, buying vs investing calculator, freedom cost calculator, FIRE delay calculator',
   alternates: { canonical: `${SITE_URL}/calculators/purchase-impact` },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: 'Purchase Impact Calculator | UntilFire',
     description: 'Enter a price to see how much it would grow by your freedom date — and how many days it delays your retirement.',
     url: `${SITE_URL}/calculators/purchase-impact`,
@@ -18,6 +19,7 @@ export const metadata: Metadata = {
     type: 'website',
   },
   twitter: {
+    images: [DEFAULT_OG_IMAGE.url],
     card: 'summary_large_image',
     title: 'Purchase Impact Calculator | UntilFire',
     description: 'Enter a price to see how much it would grow by your freedom date and how many days it delays your retirement.',

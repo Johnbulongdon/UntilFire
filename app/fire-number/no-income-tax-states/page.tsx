@@ -14,6 +14,7 @@ export const metadata: Metadata = {
     'Discover 9 US states with zero income tax: Texas, Florida, Nevada, Washington, and more. Compare FIRE numbers, cost of living, and tax savings for each state.',
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://www.untilfire.com/fire-number/no-income-tax-states' },
+  twitter: { card: "summary_large_image", images: ["/api/og/ranking/no-income-tax-states"] },
   openGraph: {
     images: [
       {

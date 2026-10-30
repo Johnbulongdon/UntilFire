@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     'Explore the 20 cheapest US cities for FIRE. See local cost of living, FIRE targets, state tax context, and retirement timelines for budget-conscious early retirees.',
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://www.untilfire.com/fire-number/cheapest-cities' },
+  twitter: { card: "summary_large_image", images: ["/api/og/ranking/cheapest-cities"] },
   openGraph: {
     images: [
       {
