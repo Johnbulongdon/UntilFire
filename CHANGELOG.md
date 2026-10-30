@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased — landing refinements and city globe
+
+- Add the approved draggable city globe with shared living-cost estimates, keyboard/city controls and lazy map loading.
+- Add restrained backdrop entrance, pointer response and parallax with reduced-motion support.
+- Preserve approved hero copy; tighten phone spacing and reassurance.
+- Clarify savings slider, animate its result, and enlarge small labels/controls.
+- Show Free/Pro connection allowances visually; quiet directory badges without changing backlinks.
+
 ## Unreleased — Connected landing page
 
 - Replaced the rejected single-story rotator with the approved compact, continuously scrolling multi-card review rail. Added swipe/drag, manual arrows, pause controls, seam wrapping, optional approved membership dates and reduced-motion handling. Generated fictional portraits/quotes are explicit local-preview content; no reviews are published while the approved list is empty.

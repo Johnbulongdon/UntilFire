@@ -1,0 +1,70 @@
+.root {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: clip;
+}
+.left,
+.right {
+  position: absolute;
+  top: 64px;
+  left: -24px;
+  width: calc(100% + 48px);
+  height: 1400px;
+  background: url("/landing/connected-horizon.webp") center top /
+    max(100%, 1440px) auto no-repeat;
+  transform-origin: center top;
+}
+.left {
+  clip-path: inset(0 50% 0 0);
+  transform: translate3d(
+    var(--mx, 0px),
+    calc(var(--my, 0px) + var(--sy, 0px)),
+    0
+  );
+}
+.right {
+  clip-path: inset(0 0 0 50%);
+  transform: translate3d(
+    calc(var(--mx, 0px) * -0.75),
+    calc(var(--my, 0px) * -0.65 + var(--sy, 0px) * -0.7),
+    0
+  );
+}
+@media (prefers-reduced-motion: no-preference) {
+  .left,
+  .right {
+    will-change: transform;
+    animation: arrive 1000ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .right {
+    animation-duration: 1200ms;
+  }
+}
+@keyframes arrive {
+  from {
+    opacity: 0;
+    scale: 1.035;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@media (max-width: 760px) {
+  .left,
+  .right {
+    background-size: 950px auto;
+    height: 1000px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .left,
+  .right {
+    transform: none;
+  }
+}
+:global(.dark) .root {
+  display: none;
+}
