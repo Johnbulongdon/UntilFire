@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — website audit follow-ups
+
+- Add a branded 404 page with "Find my freedom date" and "Explore cities", instead of the plain Next.js default.
+- "Try one improvement": tapping the savings bar now sets the amount there (it was the most rage-clicked spot), and the bar uses theme tokens so it reads in dark mode.
+
 ## Unreleased — landing refinements and city globe
 
 - Add the approved draggable city globe with shared living-cost estimates, keyboard/city controls and lazy map loading.
