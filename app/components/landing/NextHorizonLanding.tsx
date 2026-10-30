@@ -564,7 +564,7 @@ export default function NextHorizonLanding({
             <SpendingPicture />
             <div className={s.improvement}>
               <label htmlFor={controlId}>
-                Try saving a little more <strong>+{money(extra)}/month</strong>
+                Drag to try saving more <strong>+{money(extra)}/month</strong>
               </label>
               <input
                 id={controlId}
@@ -575,6 +575,7 @@ export default function NextHorizonLanding({
                 value={extra}
                 aria-label="Extra monthly income saved in the example"
                 aria-describedby={`${controlId}-description`}
+                aria-valuetext={`${money(extra)} extra saved per month, ${monthsEarlier} months earlier`}
                 onChange={(e) => setExtra(Number(e.target.value))}
               />
               <div className={s.rangeLabels}>
@@ -597,7 +598,7 @@ export default function NextHorizonLanding({
                 aria-atomic="true"
               >
                 <Sparkles size={21} aria-hidden="true" />
-                <div>
+                <div key={`pace-${extra}`}>
                   <strong>
                     {extra > 0
                       ? `${monthsEarlier} months earlier`
@@ -605,7 +606,7 @@ export default function NextHorizonLanding({
                   </strong>
                   <span>Estimated freedom date</span>
                 </div>
-                <strong>{changed.year ?? "—"}</strong>
+                <strong key={`year-${extra}`}>{changed.year ?? "—"}</strong>
               </div>
             </div>
           </div>
@@ -626,20 +627,10 @@ export default function NextHorizonLanding({
             <p className={s.startingIntro}>A clearer picture. A way forward.</p>
             <StartButton onStart={onStart} />
             <Reassurance />
-            <div className={s.proDetails}>
-              <p>
-                Pro keeps it connected. {PRO_MONTHLY_LABEL}/month or{" "}
-                {PRO_ANNUAL_LABEL}/year ·{" "}
-                {referred ? REFERRED_TRIAL_LABEL : TRIAL_LABEL}
-              </p>
-              <Link href="/pricing" className={s.inlineLink}>
-                See plans <ArrowRight size={15} aria-hidden="true" />
-              </Link>
-            </div>
           </div>
           <div
             className={s.startingPreview}
-            aria-label="Included in your free starting plan"
+            aria-label="Your starting plan and bank connection options"
           >
             <div className={s.startingPreviewHeader}>
               <div>
@@ -688,6 +679,44 @@ export default function NextHorizonLanding({
                 </li>
               ))}
             </ul>
+            <div
+              className={s.connectionPlans}
+              aria-label="Bank connections by plan"
+            >
+              <div className={s.connectionPlan}>
+                <span className={s.planName}>
+                  Free <strong>$0</strong>
+                </span>
+                <span className={s.bankIcons} aria-hidden="true">
+                  <Landmark size={22} />
+                </span>
+                <strong>1 bank connection</strong>
+              </div>
+              <div className={s.connectionPlan + " " + s.proPlan}>
+                <span className={s.planName}>
+                  Pro{" "}
+                  <strong>
+                    {PRO_MONTHLY_LABEL}
+                    <small>/mo</small>
+                  </strong>
+                </span>
+                <span className={s.bankIcons} aria-hidden="true">
+                  {[0, 1, 2].map((bank) => (
+                    <Landmark size={22} key={bank} />
+                  ))}
+                </span>
+                <strong>Unlimited connections</strong>
+              </div>
+            </div>
+            <div className={s.planTerms}>
+              <span>
+                Pro: {referred ? REFERRED_TRIAL_LABEL : TRIAL_LABEL} ·{" "}
+                {PRO_MONTHLY_LABEL}/month or {PRO_ANNUAL_LABEL}/year
+              </span>
+              <Link href="/pricing" className={s.inlineLink}>
+                Compare plans <ArrowRight size={15} aria-hidden="true" />
+              </Link>
+            </div>
           </div>
         </section>
       </main>

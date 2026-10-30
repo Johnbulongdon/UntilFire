@@ -1189,3 +1189,199 @@
   border-radius: 999px;
   background: var(--uf-card);
 }
+
+/* Approved landing polish; keep the opening copy and backlink destinations. */
+.root .days button {
+  min-height: 40px;
+}
+.root .days button,
+.root .weekdays,
+.root .rangeLabels,
+.root .rangeLabels button,
+.root .improvement > p,
+.root .improvementResult span,
+.root .includedList p,
+.root .startingPreviewHeader > div > span,
+.root .startingPreviewHeader > strong > span {
+  font-size: 12px;
+}
+.root .rangeLabels button {
+  min-height: 44px;
+  padding: 0 12px;
+}
+.root .improvement label,
+.root .improvement label strong,
+.root .improvementResult div strong {
+  font-size: 14px;
+}
+.root .improvementResult {
+  color: #151719;
+}
+.root .includedList h3 {
+  font-size: 15px;
+}
+.connectionPlans {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 20px;
+}
+.connectionPlan {
+  background: #f8f8fb;
+  border-radius: 16px;
+  padding: 16px 12px;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+.proPlan {
+  background: #eee9fa;
+}
+.planName {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.planName strong {
+  font-size: 22px;
+}
+.planName small {
+  font-size: 12px;
+  font-weight: 450;
+}
+.bankIcons {
+  display: flex;
+  gap: 8px;
+  color: #52615c;
+}
+.connectionPlan > strong {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.planTerms {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-top: 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #5c6170;
+}
+.planTerms .inlineLink {
+  min-height: 44px;
+  color: #151719;
+}
+.root :global(.nh-listed) {
+  padding-bottom: 20px;
+}
+.root :global(.nh-listed h2) {
+  font-size: 11px;
+  font-weight: 450;
+  color: var(--uf-ink-2);
+  margin-bottom: 6px;
+}
+.root :global(.nh-listed ul) {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 8px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.root :global(.nh-listed li) {
+  flex: 0 1 84px;
+}
+.root :global(.nh-listed a) {
+  filter: grayscale(1);
+  opacity: 0.65;
+  min-height: 44px;
+  transition: opacity 140ms ease;
+}
+.root :global(.nh-listed a:hover),
+.root :global(.nh-listed a:focus-visible) {
+  filter: none;
+  opacity: 1;
+}
+.root :global(.nh-listed img) {
+  max-width: 84px;
+  height: 20px;
+}
+.root :global(.nh-listed-text),
+.root :global(.nh-badge-fallback) {
+  font-size: 11px;
+  padding: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .improvementResult > div,
+  .improvementResult > strong {
+    animation: scenarioUpdate 220ms ease-out;
+  }
+}
+@keyframes scenarioUpdate {
+  from {
+    opacity: 0.65;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 760px) {
+  .root .hero {
+    padding: 28px 0 20px;
+  }
+  .root .tagline {
+    margin: 12px 0;
+  }
+  .root .hero .intro {
+    margin-bottom: 16px;
+  }
+  .root .trustRow {
+    margin-top: 12px;
+    gap: 6px 12px;
+    font-size: 12px;
+  }
+  .root .trustRow li {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    gap: 4px;
+  }
+  .root .previewToolbar {
+    padding-bottom: 14px;
+  }
+  .root .connectionPlan {
+    padding: 14px 10px;
+  }
+}
+
+.root .days button {
+  min-height: 40px;
+  font-size: 12px;
+}
+.root .monthControls button {
+  width: 40px;
+  min-height: 44px;
+}
+.root .textButton {
+  min-height: 44px;
+  font-size: 12px;
+}
+.root .bills > div,
+.root .projectionTotals span,
+.root .exploreHint,
+.root .previewToolbar,
+.root .exampleLabel {
+  font-size: 12px;
+}
+.root .categories button {
+  min-height: 44px;
+}
