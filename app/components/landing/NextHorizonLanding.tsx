@@ -34,6 +34,8 @@ import SiteHeader from "@/app/components/SiteHeader";
 import Logo from "@/app/components/Logo";
 import DirectoryBadges from "./DirectoryBadges";
 import LandingStories from "./LandingStories";
+import LandingWorld from "./LandingWorld";
+import LandingBackdrop from "./LandingBackdrop";
 import { quickFreedom, freedomPath } from "@/lib/quick-freedom";
 import {
   PRO_ANNUAL_LABEL,
@@ -469,6 +471,7 @@ export default function NextHorizonLanding({
   );
   return (
     <div className={`nh-landing ${s.root}`}>
+      <LandingBackdrop />
       <a href="#uf-landing-main" className="uf-skip">
         Skip to content
       </a>
@@ -612,6 +615,7 @@ export default function NextHorizonLanding({
             </div>
           </div>
         </section>
+        <LandingWorld />
         <LandingStories />
         <section
           id="pricing"

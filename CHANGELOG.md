@@ -1,7 +1,9 @@
 # Changelog
 
-## Unreleased — landing refinements
+## Unreleased — landing refinements and city globe
 
+- Add the approved draggable city globe with shared living-cost estimates, keyboard/city controls and lazy map loading.
+- Add restrained backdrop entrance, pointer response and parallax with reduced-motion support.
 - Preserve approved hero copy; tighten phone spacing and reassurance.
 - Clarify savings slider, animate its result, and enlarge small labels/controls.
 - Show Free/Pro connection allowances visually; quiet directory badges without changing backlinks.

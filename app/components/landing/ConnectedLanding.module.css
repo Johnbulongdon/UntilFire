@@ -1,4 +1,6 @@
 .root {
+  position: relative;
+  isolation: isolate;
   overflow: clip;
   background: var(--uf-ground);
   color: var(--uf-ink);
@@ -800,7 +802,7 @@
 
 /* Decorative artwork generated from the approved option 2; no content in the asset. */
 .root:global(.nh-landing) {
-  background-image: url(/landing/connected-horizon.webp);
+  background-image: none;
   background-repeat: no-repeat;
   background-position: center 64px;
   background-size: max(100%, 1440px) auto;
