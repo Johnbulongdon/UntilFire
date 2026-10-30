@@ -42,7 +42,7 @@ export default function SavingsPace({ prefill, value, onUse, onBack }: {
       .pace-range input{width:100%;height:44px;accent-color:var(--uf-green);cursor:ew-resize;margin:0;touch-action:pan-y}
       .pace-tick{position:absolute;top:34px;height:10px;width:2px;background:var(--uf-ink-2);pointer-events:none}
       .pace-labels{display:flex;justify-content:space-between;color:var(--uf-ink-2);font-size:12px;gap:8px}
-      .pace-live-split{height:16px;overflow:hidden;border-radius:999px;background:#B9D9F7;margin-top:24px}.pace-live-split span{display:block;height:100%;background:#151719;border-radius:999px;transition:width 180ms ease}@media(prefers-reduced-motion:reduce){.pace-live-split span{transition:none}}
+      .pace-live-split{height:16px;overflow:hidden;border-radius:999px;background:var(--uf-card);margin-top:24px;cursor:pointer;touch-action:pan-y}.pace-live-split span{display:block;height:100%;background:var(--uf-ink);pointer-events:none;border-radius:999px;transition:width 180ms ease}@media(prefers-reduced-motion:reduce){.pace-live-split span{transition:none}}
       .pace-summary{font-size:16px;color:var(--uf-ink-2);margin:28px 0 0;line-height:1.6}
       .pace-summary strong{color:var(--uf-teal);font-weight:700}
       .pace-result{border-left:1px solid var(--uf-border);padding-left:40px}
@@ -69,7 +69,8 @@ export default function SavingsPace({ prefill, value, onUse, onBack }: {
           <span className="pace-tick" style={{ left: `${income > 0 ? Math.min(100, Math.max(0, original / income * 100)) : 0}%` }} />
         </div>
         <div className="pace-labels"><span>{money(0)}</span><span>Original: {money(original)}</span><span>{money(income)}</span></div>
-        <div className="pace-live-split" role="img" aria-label={money(pace.spending)+' to spend, '+money(pace.amount)+' saved each month'}><span style={{width:Math.min(100,Math.max(0,pace.rate))+'%'}}/></div>
+        {/* People tap this bar expecting it to move. A tap sets the amount there; the slider stays the keyboard control. */}
+        <div className="pace-live-split" role="img" aria-label={money(pace.spending)+' to spend, '+money(pace.amount)+' saved each month'} onPointerDown={e=>{if(income<=0)return;const r=e.currentTarget.getBoundingClientRect();const f=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));setAmount(String(savingsSliderAmount(Math.round(f*income*displayRate),original*displayRate,income*displayRate)))}}><span style={{width:Math.min(100,Math.max(0,pace.rate))+'%'}}/></div>
         <p className="pace-summary" id={`${id}-summary`}><strong>{Math.round(pace.rate)}% of income</strong> · {money(pace.spending)} to spend</p>
       </div>
       <MotionScene className="pace-result" scene={paceDate(pace.result.years, now)} role="status" aria-live="polite" aria-atomic="true">
