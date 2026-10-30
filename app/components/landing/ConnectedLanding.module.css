@@ -1385,3 +1385,41 @@
 .root .categories button {
   min-height: 44px;
 }
+
+/* Align the example schedule and make unlimited visibly open-ended. */
+.root .bills > div {
+  display: grid;
+  grid-template-columns: 23px minmax(0, 1fr) 48px minmax(48px, max-content);
+  gap: 7px;
+}
+.root .bills > div > span:nth-child(2) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.root .billWhen {
+  margin-left: 0;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.root .bills strong {
+  margin-left: 0;
+  grid-column: 4;
+  text-align: right;
+  white-space: nowrap;
+}
+.root .bankIcons {
+  min-height: 54px;
+  align-content: start;
+}
+.root .proPlan .bankIcons {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 6px;
+  justify-items: center;
+}
+.root .proPlan .bankIcons svg {
+  width: 22px;
+  max-width: 100%;
+  height: 22px;
+}

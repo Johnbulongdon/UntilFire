@@ -13,3 +13,7 @@ Baseline: origin/main f2da67ce31850027a67077f9d4871bc30f793152 (PR #331). Work r
 - Local preview console reports missing PostHog token and local Vercel Analytics endpoint 404, plus CSS preload warnings. These are local environment/instrumentation limitations, not a production analytics verification. No landing runtime exception observed after the slider-key repair.
 
 Scope: public landing presentation only; financial calculations, native app, account data and production deployment unchanged. Ready for review; this follow-up has not been merged or deployed.
+
+Follow-up requested by John: fill Pro with seven bank icons plus a Plus icon (the text still says unlimited); align bill rows with dedicated name, date and amount grid columns. Globe directions discussed only, not implemented: compact global-planning chapter preferred, currency-led alternative, or city-exploration alternative. Existing WorldGlobe, supported currency list and city pages provide grounding; Plaid bank coverage is configured separately and defaults to US. Do not claim universal bank coverage. Follow-up build/visual checks recorded after completion.
+
+Follow-up verification: final build, changed-component ESLint, SEO/start-action guards and diff checks passed. Browser confirmed seven Pro icons plus Plus, and consistent right-aligned date/amount columns in the 1036px example preview; narrow 466px layout also inspected for the Pro tile. Motion remains a separate local-only study at port 4205. Production unchanged.

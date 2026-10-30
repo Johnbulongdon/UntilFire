@@ -22,6 +22,7 @@ import {
   ChevronRight,
   House,
   Landmark,
+  Plus,
   LockKeyhole,
   ShieldCheck,
   SlidersHorizontal,
@@ -701,9 +702,10 @@ export default function NextHorizonLanding({
                   </strong>
                 </span>
                 <span className={s.bankIcons} aria-hidden="true">
-                  {[0, 1, 2].map((bank) => (
+                  {Array.from({ length: 7 }, (_, bank) => (
                     <Landmark size={22} key={bank} />
                   ))}
+                  <Plus size={22} />
                 </span>
                 <strong>Unlimited connections</strong>
               </div>
