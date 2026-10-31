@@ -21,6 +21,6 @@ Limit: browser fixtures cannot prove native Plaid credentials/OAuth/SDK presenta
 
 ## Release
 
-Implementation/PR only; this feature is not merged or shipped by this request. Deploy the website endpoints before sending the phone preview. After a separately authorized merge, use the existing fingerprint-gated Phone updates workflow; do not publish EAS updates manually.
+Implementation/PR only; this feature is not merged or shipped by this request. An authorized merge deploys the website endpoints and sends a phone preview through existing workflows. Verify the website deployment before testing the preview or promoting production. Use the existing fingerprint-gated Phone updates workflow; do not publish EAS updates manually.
 
 API references checked 1 November: https://plaid.com/docs/link/update-mode/ and https://supabase.com/docs/reference/javascript/auth-getuser .

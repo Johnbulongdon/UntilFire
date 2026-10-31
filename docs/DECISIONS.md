@@ -3539,7 +3539,7 @@ adequate sample before claiming a winner. No conversion improvement is assumed.
 **Source:** John, "the current import bank transaction is too complicated"; mocks in project files `untilfire/import-simple-2026-10-31/`.
 
 ### D-128 — Phone entry protection and Activity continuity (31 October 2026)
-**Status:** Approved for implementation; review and release pending.
+**Status:** Merged in PR #349; authorized Android production update verified 1 November. Device acceptance limits remain in the verification record.
 **Decision:** John approved QOL items 1–3: protect unfinished transactions/bills on navigation, add accessible numeric-entry Next/Done with reachable Save, and remember Activity filters/position on return. Keep UI state visit-only and account-scoped; explicit category/month links win. Busy writes cannot be dismissed; failures keep edits, successful writes exit without discard confirmation. No offline write queue or draft persistence is introduced. See docs/design/mobile-entry-qol/README.md for verification and device limits.
 
 

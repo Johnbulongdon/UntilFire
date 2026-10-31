@@ -61,7 +61,7 @@ export function BankHealthSession({ children, token, ownerId, onImported }: { ch
       if (!current() || request !== generation.current) return
       setBanks(next); setError(null); setCheckedAt(Date.now()); lastCheck.current = Date.now()
     } catch {
-      if (current() && request === generation.current) setError("Couldn't check your banks. Your last sync times are shown below.")
+      if (current() && request === generation.current) setError("Couldn't check your banks. Try again.")
     } finally {
       clearTimeout(timeout)
       if (current() && request === generation.current) setLoading(false)

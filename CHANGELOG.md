@@ -12,7 +12,7 @@
 - "See payments" lists the dates and amounts; ✕ moves one payment to its own card. "From your history" is a small "↻ Usual" tag.
 - Yellow "N left" badge and a progress bar at the top. After approving, a mint "Done · N from shop" line with Undo (puts the old category and tags back) stays for 8 seconds. Approve all sits in a bar at the bottom. On phones the popup is a bottom sheet with full-width buttons.
 
-## Unreleased — phone entry QOL
+## 2026-11-01 — Phone entry QOL
 
 - Protect unfinished transaction/bill edits with Keep editing / Discard; keep the form on failed saves and exit once after success.
 - Add Next field and Done above the pinned Save action, with Android/iOS keyboard avoidance.

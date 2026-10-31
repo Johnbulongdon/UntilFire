@@ -34,7 +34,7 @@ export async function bankHealth(req: Request, { admin, plaid }: Dependencies): 
         const response = await plaid.itemGet({ access_token: item.plaid_access_token }, { timeout: 8000 });
         const code = response.data.item.error?.error_code;
         reconnect = plaidErrorOutcome(code) === 'reconnect';
-        status = code ? 'attention' : 'connected';
+        status = response.data.item.error ? (code ? 'attention' : 'unknown') : 'connected';
       } catch (err) {
         reconnect = plaidErrorOutcome(plaidErrorCode(err)) === 'reconnect';
         if (reconnect) status = 'attention';
@@ -52,7 +52,7 @@ export async function bankReconnect(req: Request, { admin, plaid, countries, ios
   if (!user) return json({ error: 'Unauthorized' }, 401);
   const body: unknown = await req.json().catch(() => null);
   if (!body || typeof body !== 'object' || !('item_id' in body) || typeof body.item_id !== 'string' || !body.item_id.trim()
-    || !('platform' in body) || !['ios', 'android'].includes(String(body.platform))) return json({ error: 'Invalid bank request' }, 400);
+    || !('platform' in body) || typeof body.platform !== 'string' || !['ios', 'android'].includes(body.platform)) return json({ error: 'Invalid bank request' }, 400);
   const { data: item, error } = await admin.from('plaid_items').select('plaid_access_token')
     .eq('user_id', user.id).eq('id', body.item_id).maybeSingle();
   if (error) return json({ error: "Couldn't load this bank. Try again." }, 503);

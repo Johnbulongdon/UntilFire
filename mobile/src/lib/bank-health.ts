@@ -7,7 +7,7 @@ export function syncTime(value: string | null, now = Date.now()): number | null 
 }
 export function syncLabel(value: string | null, now = Date.now()): string {
   const time = syncTime(value, now)
-  if (time === null) return 'No successful sync yet'
+  if (time === null) return value ? 'Sync time unavailable' : 'No sync recorded yet'
   const minutes = Math.floor((now - time) / 60000)
   if (minutes < 1) return 'Last synced just now'
   if (minutes < 60) return `Last synced ${minutes}m ago`
@@ -20,7 +20,7 @@ export function bankSummary(banks: BankHealth[], now = Date.now()): string | nul
   const attention = banks.filter(b => b.status === 'attention').length
   if (attention) return `${attention} ${attention === 1 ? 'bank needs' : 'banks need'} attention`
   if (banks.some(b => b.status === 'unknown')) return 'Bank status unavailable'
-  if (banks.some(b => syncTime(b.lastSyncedAt, now) === null)) return 'Bank sync pending'
+  if (banks.some(b => syncTime(b.lastSyncedAt, now) === null)) return 'Bank sync time unavailable'
   const oldest = Math.min(...banks.map(b => syncTime(b.lastSyncedAt, now)!))
   return banks.length === 1 ? syncLabel(new Date(oldest).toISOString(), now) : `Oldest bank sync · ${syncLabel(new Date(oldest).toISOString(), now).replace('Last synced ', '')}`
 }

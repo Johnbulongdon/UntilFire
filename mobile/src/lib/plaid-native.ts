@@ -92,6 +92,9 @@ export async function reconnectBankNative(accessToken: string, itemId: string, c
       token: body.link_token!, onEvent: () => {},
       onExit: exit => resolve(exit.error ? "Reconnect didn't finish. Please try again." : 'cancelled'),
       onSuccess: () => resolve(null),
-    }).then(session => session.open()).catch(() => resolve("Couldn't open your bank. Please try again."))
+    }).then(session => {
+      if (!canContinue()) { resolve('cancelled'); return }
+      return session.open()
+    }).catch(() => resolve("Couldn't open your bank. Please try again."))
   })
 }
