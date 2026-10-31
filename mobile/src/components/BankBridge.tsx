@@ -7,6 +7,7 @@ import { proForSale } from '@/lib/native-build'
 import { haptic } from '@/lib/haptics'
 import { connectBankNative, plaidNativeAvailable, type BankFound } from '@/lib/plaid-native'
 import { useAccount } from '@/state/account'
+import { useBankHealth } from '@/state/bank-health'
 import { useAuth } from '@/state/auth'
 import { colors } from '@/theme/colors'
 
@@ -30,6 +31,7 @@ const CONNECT_URL = 'https://www.untilfire.com/dashboard?tab=assets'
 export function BankBridge({ another, compact }: { another?: boolean; compact?: boolean }) {
   const { data, refresh } = useAccount()
   const { session } = useAuth()
+  const { refresh: refreshHealth } = useBankHealth()
   const [busy, setBusy] = useState(false)
   // Linking a bank, shown working: the bank's name while it imports, then what it found.
   const [working, setWorking] = useState<{ name: string; result: BankFound | null } | null>(null)
@@ -48,12 +50,13 @@ export function BankBridge({ another, compact }: { another?: boolean; compact?: 
       setBusy(true)
       const result = await connectBankNative(session.access_token, (name, found) => setWorking({ name, result: found }))
       setBusy(false)
-      if (result === null) refresh()
+      if (result === null) { refresh(); void refreshHealth() }
       else { setWorking(null); if (result !== 'cancelled') { haptic.warn(); Alert.alert(result) } }
       return
     }
     await WebBrowser.openBrowserAsync(CONNECT_URL, { controlsColor: colors.green }).catch(() => {})
     refresh()
+    void refreshHealth()
   }
   return (
     <View className="gap-2">

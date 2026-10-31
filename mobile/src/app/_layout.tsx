@@ -10,6 +10,7 @@ import { useEffect } from 'react'
 import { cancelMonthlyCheckIn } from '@/lib/reminders'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 
+import { BankHealthProvider } from '@/state/bank-health'
 import { AccountProvider } from '@/state/account'
 import { AuthProvider } from '@/state/auth'
 import { PlanProvider } from '@/state/plan'
@@ -70,6 +71,7 @@ function RootLayout() {
       <AuthProvider>
       <PlanProvider>
         <AccountProvider>
+        <BankHealthProvider>
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <ScreenViews />
         <NotificationTaps />
@@ -112,6 +114,7 @@ function RootLayout() {
         </Stack>
         <AppLock />
         <UpdateGate />
+        </BankHealthProvider>
         </AccountProvider>
       </PlanProvider>
       </AuthProvider>

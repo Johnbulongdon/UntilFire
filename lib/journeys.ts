@@ -104,7 +104,7 @@ const phoneScreens = (screens: [string, string][]): JourneyStep[] => screens.map
 const PHONE_MONEY = phoneScreens([
   ['Money', '(tabs)/money/index'], ['Transactions', '(tabs)/money/transactions'], ['Calendar', '(tabs)/money/calendar'],
   ['Budget', '(tabs)/money/budget'], ['Income', '(tabs)/money/income'], ['Net worth', '(tabs)/money/net-worth'],
-  ['Insights', '(tabs)/money/insights'],
+  ['Banks', '(tabs)/money/banks'], ['Insights', '(tabs)/money/insights'],
 ])
 const PHONE_PLAN = phoneScreens([
   ['Plan', '(tabs)/plan/index'], ['Freedom date', '(tabs)/plan/freedom'], ['What if', '(tabs)/plan/what-if'],

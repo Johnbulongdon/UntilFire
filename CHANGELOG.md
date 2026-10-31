@@ -1,12 +1,18 @@
 # Changelog
 
+## Unreleased — phone bank health
+
+- Money → Banks shows connection health and the last successful transaction import, with Retry sync and existing-bank Reconnect.
+- Home links quietly to bank freshness; unavailable checks never claim the bank is connected.
+- Bank checks and reconnect tokens are authenticated and owner-scoped; no new Item or product subscription is created.
+
 ## 2026-10-31 — Check categories, one card per shop
 
 - The Transactions "Review suggestions" popup is now "Check categories" in the Next Horizon style. One rounded card per shop instead of one row per payment: 17 McDonald's payments are one card with "Approve 17". Each card has the category icon, "N payments · total", a tap-to-change category chip, a Need | Want switch, Skip and a black Approve pill.
 - "See payments" lists the dates and amounts; ✕ moves one payment to its own card. "From your history" is a small "↻ Usual" tag.
 - Yellow "N left" badge and a progress bar at the top. After approving, a mint "Done · N from shop" line with Undo (puts the old category and tags back) stays for 8 seconds. Approve all sits in a bar at the bottom. On phones the popup is a bottom sheet with full-width buttons.
 
-## Unreleased — phone entry QOL
+## 2026-11-01 — Phone entry QOL
 
 - Protect unfinished transaction/bill edits with Keep editing / Discard; keep the form on failed saves and exit once after success.
 - Add Next field and Done above the pinned Save action, with Android/iOS keyboard avoidance.

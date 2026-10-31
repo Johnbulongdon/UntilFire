@@ -3539,5 +3539,10 @@ adequate sample before claiming a winner. No conversion improvement is assumed.
 **Source:** John, "the current import bank transaction is too complicated"; mocks in project files `untilfire/import-simple-2026-10-31/`.
 
 ### D-128 — Phone entry protection and Activity continuity (31 October 2026)
-**Status:** Approved for implementation; review and release pending.
+**Status:** Merged in PR #349; authorized Android production update verified 1 November. Device acceptance limits remain in the verification record.
 **Decision:** John approved QOL items 1–3: protect unfinished transactions/bills on navigation, add accessible numeric-entry Next/Done with reachable Save, and remember Activity filters/position on return. Keep UI state visit-only and account-scoped; explicit category/month links win. Busy writes cannot be dismissed; failures keep edits, successful writes exit without discard confirmation. No offline write queue or draft persistence is introduced. See docs/design/mobile-entry-qol/README.md for verification and device limits.
+
+
+### D-129 — Honest phone bank health (1 November 2026)
+**Status:** Implementation approved by John; review and release pending.
+**Decision:** Add Money → Banks with last successful transaction-import times, connection health and explicit Retry/Reconnect. Home shows one quiet freshness link. Read checks do not trigger imports or imply live balances. Unknown health stays unknown; repair existing Items in Link update mode without new-bank limits or duplicate connections. Keep account-scoped memory and the approved pastel palette. No native/configuration, database or financial calculation change. Verification and release order: docs/design/mobile-bank-health/README.md.

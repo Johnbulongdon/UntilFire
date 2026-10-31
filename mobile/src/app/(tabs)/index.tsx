@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { Appearance, Pressable, View } from 'react-native'
 import Svg, { Circle, Line, Path } from 'react-native-svg'
 
+import { BankFreshness } from '@/components/BankFreshness'
 import { UntilPaydayCard } from '@/components/UntilPaydayCard'
 import { Button } from '@/components/Button'
 import { FreedomLineChart } from '@/components/FreedomLineChart'
@@ -60,6 +61,7 @@ export default function Home() {
     <Screen tab="home" flat hideTitle title="Home" refreshing={loading && !!data} onRefresh={data ? refresh : undefined}>
       {data && session && <TodayCard data={data} userId={session.user.id} paydayDaily={payday ? paydayRemaining===null?null:Math.max(0,Math.floor(paydayRemaining/payday.days)):undefined} />}
       <Hero result={result} />
+      <BankFreshness />
       <DateMoved result={result} />
       {data && <SavingsGap data={data} />}
       {data && setupOpen === false && <NextMoveCard data={data} />}

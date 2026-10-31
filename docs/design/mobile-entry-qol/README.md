@@ -22,3 +22,6 @@
 Limits: browser checks do not simulate a real software keyboard or Android hardware Back/iOS swipe dismissal. These, large text, screen reader focus, real-account save failure and data-changing edits need device/test-account acceptance. No customer data was changed for QA. Drafts are protected from navigation, not persisted across an OS force quit. No merge or phone publication is claimed by this implementation task.
 
 Final review: reconciled latest pushed main 8766518 before PR publication, preserving the newer web import/duplicate work. Mobile TypeScript, changed-file lint, regression script and Android/iOS/web exports passed; final Android export is repeated after reconciliation. Temporary test routes and diagnostic strings are absent from the final web bundle. No merge or phone release performed.
+
+
+Release follow-up, 1 November: John authorized merge and ship. PR #349 merged as 311d714; preview 41219555449 and production 41220320599 succeeded. Production group 5d39f688-2118-4533-8bd9-94af9f4b323e copied the verified preview group 4222103c-a7fc-47bf-9132-d0eec77e2c7f. Android update 01a192d0-8bef-7e33-b0c0-2f177d7fe82a, runtime 0.2.1. This supersedes the earlier pending-publication notes; device acceptance limits remain.
