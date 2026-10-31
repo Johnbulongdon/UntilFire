@@ -1258,18 +1258,18 @@ function TransactionList({
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
                           {tx.refund_amount > 0 ? (
                             <>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: tx.refund_amount >= tx.amount ? "#94A3B8" : "var(--uf-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", textDecoration: tx.refund_amount >= tx.amount ? "line-through" : "none" }}>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: tx.refund_amount >= tx.amount ? "#94A3B8" : "var(--uf-neg-ink)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", textDecoration: tx.refund_amount >= tx.amount ? "line-through" : "none" }}>
                                 −{txMoney(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
                               </div>
                               {tx.refund_amount >= tx.amount ? (
-                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#17684B", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ fully refunded</span>
+                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--uf-pos-ink)", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ fully refunded</span>
                               ) : (
-                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#17684B", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ −{txMoney(tx.refund_amount, tx.currency).replace(/^−/, "")} net {txMoney(netAmt(tx), tx.currency).replace(/^−/, "")}</span>
+                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--uf-pos-ink)", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ −{txMoney(tx.refund_amount, tx.currency).replace(/^−/, "")} net {txMoney(netAmt(tx), tx.currency).replace(/^−/, "")}</span>
                               )}
                             </>
                           ) : (
-                            <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "#17684B" : "var(--uf-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
-                              {isIncome ? "+" : "−"}{txMoney(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
+                            <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "var(--uf-pos-ink)" : tx.transaction_type === "transfer" ? "var(--uf-move-ink)" : "var(--uf-neg-ink)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                              {isIncome ? "+" : tx.transaction_type === "transfer" ? <span aria-label="Transfer">⇄ </span> : "−"}{txMoney(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
                             </div>
                           )}
                         </div>

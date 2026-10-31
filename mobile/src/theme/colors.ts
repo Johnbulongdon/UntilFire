@@ -29,6 +29,8 @@ const light = {
   posInk: '#17684B',
   neg: '#B63D46',
   negInk: '#A52C35',
+  // transfers: money moved between your own accounts, neither in nor out
+  moveInk: '#2F5DA8',
   negBg: '#FCE8EB',
   warn: '#815A16',
   warnBg: '#FFF1D2',
@@ -60,6 +62,7 @@ const dark: Palette = {
   posInk: '#8FD8B9',
   neg: '#F4A5AC',
   negInk: '#F4A5AC',
+  moveInk: '#9FC3F2',
   negBg: '#48272E',
   warn: '#F2D18A',
   warnBg: '#41351D',
@@ -103,7 +106,7 @@ const toVars = (p: Palette) => vars({
   '--uf-green': rgb(p.green), '--uf-green-700': rgb(p.green700), '--uf-green-900': rgb(p.green900),
   '--uf-green-100': rgb(p.green100), '--uf-green-50': rgb(p.green50),
   '--uf-teal': rgb(p.teal), '--uf-teal-deep': rgb(p.tealDeep), '--uf-teal-soft': rgb(p.tealSoft), '--uf-teal-line': rgb(p.tealLine),
-  '--uf-pos': rgb(p.pos), '--uf-pos-ink': rgb(p.posInk), '--uf-neg': rgb(p.neg), '--uf-neg-ink': rgb(p.negInk),
+  '--uf-pos': rgb(p.pos), '--uf-pos-ink': rgb(p.posInk), '--uf-neg': rgb(p.neg), '--uf-neg-ink': rgb(p.negInk), '--uf-move-ink': rgb(p.moveInk),
   '--uf-neg-bg': rgb(p.negBg), '--uf-warn': rgb(p.warn), '--uf-warn-bg': rgb(p.warnBg),
 })
 

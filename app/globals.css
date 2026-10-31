@@ -77,6 +77,8 @@
   --uf-pos-ink:  #17684B;
   --uf-neg-ink:  #A52C35;
   --uf-warn-ink: #785010;
+  /* transfers: money moved between your own accounts, neither in nor out */
+  --uf-move-ink: #2F5DA8;
 
   /* elevation — warm shadows, never black */
   --uf-e1: 0 1px 2px rgba(21,23,25,0.06);
@@ -168,6 +170,7 @@
   --uf-pos-ink:  #8FD8B9;
   --uf-neg-ink:  #F4A5AC;
   --uf-warn-ink: #F2D18A;
+  --uf-move-ink: #9FC3F2;
 
   --uf-pos:     #8FD8B9;
   --uf-neg:     #F4A5AC;

@@ -56,8 +56,8 @@ export function TransactionRow({ t, first, selecting, selected, onToggle, onLong
           {transfer ? 'Transfer' : cat.label}{t.sub_category ? ` · ${t.sub_category}` : ''}{t.transaction_type === 'expense' ? (needOf(t) === 'need' ? ' · Need' : ' · Want') : ''}{refunded ? ' · refunded' : ''}
         </Text>
       </View>
-      <Text className={`font-mono text-[15px] ${income ? 'text-pos-ink' : transfer ? 'text-ink-3' : 'text-ink'}`}>
-        {income ? '+' : ''}{moneyExact(usd)}
+      <Text accessibilityLabel={transfer ? `Transfer ${moneyExact(usd)}` : undefined} className={`font-mono text-[15px] ${income ? 'text-pos-ink' : transfer ? 'text-move-ink' : 'text-neg-ink'}`}>
+        {income ? '+' : transfer ? '⇄ ' : '−'}{moneyExact(usd)}
       </Text>
     </Pressable>
   )
