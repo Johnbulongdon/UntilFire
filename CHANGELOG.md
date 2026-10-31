@@ -2,6 +2,8 @@
 
 ## 2026-10-31 — Until payday stops counting paid bills
 
+- Duplicates: the card's exchange rate is now learned from the tightest group of matches, not the median, so a few card rows among many similar meals still pair correctly (e.g. Alipay*ApplianceRental $4.54 = 蜂充 ¥30).
+
 - Home's Until payday (and Budget, Free to spend) no longer counts an overdue bill as owed when a payment with the bill's name and amount (within 15%) landed from a week before its due date to today. Google One paid on 25 Oct and 中国移动 paid on 31 Oct were still being taken off. The phone already did this (mobile lib/bills `unpaid`); the website now uses the same rule (`paidByName` in lib/spend-forecast).
 - Until payday's everyday spending now comes from the last 30 days, without bills, trips (Travel) or any one payment over 15% of the month, such as a vet bill (D-129). Before, it was the middle of six months, which was slow to notice spending less. Web and phone share the rule.
 
