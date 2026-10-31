@@ -956,12 +956,12 @@ function TransactionList({
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "expense" | "income" | "transfer">("all");
-  const [tagFilter, setTagFilter] = useState<"all" | "need" | "want" | "work">("all");
+  const [tagFilter, setTagFilter] = useState<"all" | "need" | "want">("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const clearFilters = () => { setFilter("all"); setTagFilter("all"); setSourceFilter("all"); };
   const TYPE_WORD = { expense: "Expenses", income: "Income", transfer: "Transfers" } as const;
-  const TAG_WORD = { need: "Need", want: "Want", work: "Work" } as const;
+  const TAG_WORD = { need: "Need", want: "Want" } as const;
   const active: [string, () => void][] = [
     ...(filter !== "all" ? [[TYPE_WORD[filter], () => setFilter("all")] as [string, () => void]] : []),
     ...(tagFilter !== "all" ? [[TAG_WORD[tagFilter], () => setTagFilter("all")] as [string, () => void]] : []),
@@ -995,7 +995,6 @@ function TransactionList({
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
       if (filter !== "all" && t.transaction_type !== filter) return false;
-      if (tagFilter === "work" && !(t.tags || []).includes("work")) return false;
       if (sourceFilter !== "all" && sourceLabel(t) !== sourceFilter) return false;
       // Need or want is what the row counts as, sorted for you or tagged (D-106).
       if ((tagFilter === "need" || tagFilter === "want") && (t.transaction_type !== "expense" || transactionNeed(t, categoryNeeds) !== tagFilter)) return false;
@@ -1076,7 +1075,7 @@ function TransactionList({
         <div style={{ display: "grid", gap: 14, padding: "14px 18px 16px", borderBottom: "1px solid var(--uf-border)", background: "var(--uf-surface)" }}>
           {([
             ["Show", [["all", "All"], ["expense", "Expenses"], ["income", "Income"], ["transfer", "Transfers"]], filter, (v: string) => setFilter(v as typeof filter)],
-            ["Tag", [["all", "Any"], ["need", "✓ Need"], ["want", "✦ Want"], ["work", "💼 Work"]], tagFilter, (v: string) => setTagFilter(v as typeof tagFilter)],
+            ["Tag", [["all", "Any"], ["need", "✓ Need"], ["want", "✦ Want"]], tagFilter, (v: string) => setTagFilter(v as typeof tagFilter)],
             ...(sources.length > 1 ? [["From", [["all", "Anywhere"], ...sources.map(([l, n]) => [l, `${l} ${n}`])], sourceFilter, setSourceFilter]] : []),
           ] as [string, [string, string][], string, (v: string) => void][]).map(([label, options, value, set]) => (
             <div key={label} role="group" aria-label={label} style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
@@ -1174,7 +1173,6 @@ function TransactionList({
                     const { color: chipColor, emoji: chipEmoji } = isTransfer ? { color: "var(--uf-blue)", emoji: "⇄" } : resolveDisplay(baseDisplay, catCustomizations, tx.category);
                     const txTags = tx.tags || [];
                     const needOrWant = transactionNeed(tx, categoryNeeds);
-                    const isWorkCost = txTags.includes("work");
                     const displayTags = txTags.filter((t) => t !== "need" && t !== "want" && t !== "work" && !isSystemTag(t)).slice(0, 2);
                     // Null for most rows — only Plaid, an import that carried
                     // one, or a hand-typed time produces a time to show.
@@ -1284,18 +1282,6 @@ function TransactionList({
                                 }}
                               >
                                 {needOrWant === "need" ? "Need" : "Want"}
-                              </span>
-                            )}
-                            {tx.transaction_type === "expense" && isWorkCost && (
-                              <span
-                                style={{
-                                  background: "var(--uf-lilac)",
-                                  color: "var(--uf-ink)",
-                                  border: "none", borderRadius: 999, padding: "1px 8px",
-                                  fontSize: 10, fontWeight: 700, flexShrink: 0,
-                                }}
-                              >
-                                💼 work
                               </span>
                             )}
                             {displayTags.map((t) => (
