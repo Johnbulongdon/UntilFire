@@ -1,6 +1,6 @@
 # Phone bank health
 
-Implementation authorized 1 November 2026. Based on GitHub main 311d714; reconciled with latest main before PR publication. Money → Banks owns connection management; Home has one quiet link. Approved Next Horizon pastels and existing primitives are retained.
+Implementation authorized 1 November 2026. Based on GitHub main 311d714; reconciled with main af157f1 before PR publication. Money → Banks owns connection management; Home has one quiet link. Approved Next Horizon pastels and existing primitives are retained.
 
 ## Contract
 

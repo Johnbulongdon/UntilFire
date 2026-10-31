@@ -36,7 +36,7 @@ import { useCustomCategories } from "@/lib/useCustomCategories";
 import { combineDateAndTime, formatTime, timeInputValue } from "@/lib/transaction-time";
 import { buildMerchantMemory, merchantKey, suggestFromHistory } from "@/lib/merchant-memory";
 import { transactionNeed, type NeedOverrides } from "@/lib/needs";
-import { SegmentedControl } from "@/components/ui";
+import { Button, SegmentedControl } from "@/components/ui";
 import { readMerchantRules } from "@/lib/merchant-rules";
 import { trackTxFlagResolved, trackTxRangeChanged, trackTxReviewOpened } from "@/lib/analytics";
 
@@ -1445,16 +1445,17 @@ type ReviewItem = {
 type Filing = { category: string; sub_category: string | null };
 
 /**
- * One list to work through. Fixed height, so it does not shrink under the
- * cursor as rows are approved; the category picker opens inside the row, so
- * it is never clipped by the scrolling list; and choosing a category offers
- * its sub-categories in the same place.
+ * One card per merchant, not one row per payment: approving a card files
+ * every payment in it. ✕ in its payment list moves one payment to its own
+ * card. The category picker opens inside the card, so the scrolling list
+ * never clips it. Mock: project files review-suggestions-2026-10-31.
  */
 function AiReviewModal({
   pending,
   onApprove,
   onApproveAll,
   onSkip,
+  onUndo,
   onClose,
   allExpenseCats,
   allSubCats,
@@ -1462,152 +1463,196 @@ function AiReviewModal({
   pending: ReviewItem[];
   onApprove: (items: { tx: Transaction; suggestion: "need" | "want"; filing?: Filing }[]) => void;
   onApproveAll: (resolved: { tx: Transaction; suggestion: "need" | "want"; filing?: Filing }[]) => void;
-  onSkip: (txId: string) => void;
+  onSkip: (txIds: string[]) => void;
+  onUndo: (items: ReviewItem[]) => void;
   onClose: () => void;
   allExpenseCats: CustomCategory[];
   allSubCats: Record<string, string[]>;
 }) {
   const [overrides, setOverrides] = useState<Record<string, "need" | "want">>({});
   const [filings, setFilings] = useState<Record<string, Filing>>({});
-  const [pickerTxId, setPickerTxId] = useState<string | null>(null);
+  const [pickerKey, setPickerKey] = useState<string | null>(null);
   const [pickerCat, setPickerCat] = useState<string | null>(null);
-  const [sameMerchant, setSameMerchant] = useState<Record<string, boolean>>({});
+  const [openPays, setOpenPays] = useState<Record<string, boolean>>({});
+  const [split, setSplit] = useState<Set<string>>(new Set());
+  const [done, setDone] = useState<{ name: string; items: ReviewItem[] } | null>(null);
+  const [total, setTotal] = useState(pending.length);
+  useEffect(() => { setTotal((t) => Math.max(t, pending.length)); }, [pending.length]);
+  useEffect(() => {
+    if (!done) return;
+    const t = setTimeout(() => setDone(null), 8000);
+    return () => clearTimeout(t);
+  }, [done]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
-  const byMerchant = useMemo(() => {
-    const m = new Map<string, string[]>();
-    for (const { tx } of pending) {
-      const k = merchantKey(tx.description) || tx.description.toLowerCase();
-      m.set(k, [...(m.get(k) ?? []), tx.id]);
+  const groups = useMemo(() => {
+    const m = new Map<string, ReviewItem[]>();
+    for (const item of pending) {
+      const k = split.has(item.tx.id) ? `tx:${item.tx.id}` : (merchantKey(item.tx.description) || item.tx.description.toLowerCase());
+      m.set(k, [...(m.get(k) ?? []), item]);
     }
-    return m;
-  }, [pending]);
-  if (!pending.length) return null;
+    return [...m.entries()].map(([key, items]) => ({ key, items, lead: items[0] }));
+  }, [pending, split]);
+  if (!pending.length && !done) return null;
 
-  const filingOf = (item: ReviewItem): Filing | undefined =>
-    filings[item.tx.id] ?? (item.category ? { category: item.category, sub_category: item.sub_category ?? null } : undefined);
-  const needOf = (item: ReviewItem) => overrides[item.tx.id] ?? item.suggestion;
-  const labelOf = (key: string) => [...allExpenseCats, ...INCOME_CATEGORIES].find((c) => c.key === key)?.label ?? key;
-  const resolve = (item: ReviewItem) => ({ tx: item.tx, suggestion: needOf(item), filing: filingOf(item) });
-
-  const approve = (item: ReviewItem) => {
-    const key = merchantKey(item.tx.description) || item.tx.description.toLowerCase();
-    const ids = byMerchant.get(key) ?? [item.tx.id];
-    const all = ids.length > 1 && (sameMerchant[item.tx.id] ?? true);
-    const base = resolve(item);
-    onApprove(all
-      ? pending.filter((p) => ids.includes(p.tx.id)).map((p) => ({ tx: p.tx, suggestion: base.suggestion, filing: base.filing }))
-      : [base]);
+  const filingOf = (key: string, lead: ReviewItem): Filing | undefined =>
+    filings[key] ?? (lead.category ? { category: lead.category, sub_category: lead.sub_category ?? null } : undefined);
+  const needOf = (key: string, lead: ReviewItem) => overrides[key] ?? lead.suggestion;
+  const catOf = (key: string) => [...allExpenseCats, ...INCOME_CATEGORIES].find((c) => c.key === key);
+  const resolveGroup = (g: { key: string; items: ReviewItem[]; lead: ReviewItem }) => {
+    const filing = filingOf(g.key, g.lead);
+    const suggestion = needOf(g.key, g.lead);
+    return g.items.map((p) => ({ tx: p.tx, suggestion, filing }));
   };
+  const approve = (g: { key: string; items: ReviewItem[]; lead: ReviewItem }) => {
+    onApprove(resolveGroup(g));
+    setDone({ name: g.lead.tx.description, items: g.items });
+  };
+  const sumOf = (items: ReviewItem[]) => {
+    const cur = items[0].tx.currency;
+    const same = items.every((p) => p.tx.currency === cur);
+    return same ? txMoney(items.reduce((s, p) => s + netAmt(p.tx), 0), cur) : `${items.length} currencies`;
+  };
+  const shortDate = (d: string) => new Date(`${d}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const left = pending.length;
+  const pct = total ? Math.round(((total - left) / total) * 100) : 0;
 
   return (
     <>
-      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(8,8,14,0.7)", zIndex: 50 }} />
-      <div role="dialog" aria-label="Review suggestions" style={{
-        position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-        background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 14,
-        zIndex: 51, width: "min(600px, 95vw)", height: "min(82vh, 720px)", display: "flex", flexDirection: "column",
-        boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "16px 20px", borderBottom: "1px solid var(--uf-border)", flexShrink: 0 }}>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)" }}>Review suggestions</div>
-            <div style={{ fontSize: 12, color: "var(--uf-text-3)", marginTop: 2 }}>
-              {pending.length} left · what you approve is remembered for that merchant next time
-            </div>
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "var(--uf-scrim)", zIndex: 50 }} />
+      <div role="dialog" aria-modal="true" aria-labelledby="uf-review-title" className="uf-review">
+        <div className="uf-review-handle" aria-hidden onClick={onClose} />
+        <div className="uf-review-head">
+          <div className="uf-review-top">
+            <h2 id="uf-review-title">Check categories</h2>
+            <span className="uf-review-left">{left} left</span>
+            <button type="button" className="uf-review-x" onClick={onClose} aria-label="Close">✕</button>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <button onClick={() => onApproveAll(pending.map(resolve))}
-              style={{ background: "var(--uf-green)", color: "var(--uf-card)", border: "none", borderRadius: 7, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-              Approve all
-            </button>
-            <button onClick={onClose} aria-label="Close" style={{ background: "none", border: "none", fontSize: 18, color: "var(--uf-text-3)", cursor: "pointer", padding: "4px 8px" }}>✕</button>
-          </div>
+          <div className="uf-review-bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Checked"><i style={{ width: `${pct}%` }} /></div>
+          <div className="uf-review-memo"><b aria-hidden>↻</b>We&apos;ll remember your pick next time</div>
         </div>
 
-        <div style={{ overflowY: "auto", flex: 1 }}>
-          {pending.map((item) => {
-            const { tx } = item;
-            const need = needOf(item);
-            const filing = filingOf(item);
-            const key = merchantKey(tx.description) || tx.description.toLowerCase();
-            const count = byMerchant.get(key)?.length ?? 1;
-            const open = pickerTxId === tx.id;
-            const cats = tx.transaction_type === "income" ? INCOME_CATEGORIES : allExpenseCats;
+        <div className="uf-review-list">
+          {done && (
+            <div className="uf-review-done" role="status">
+              <i aria-hidden>✓</i>
+              <span>Done · {done.items.length} from {done.name}</span>
+              <button type="button" onClick={() => { onUndo(done.items); setDone(null); }}>Undo</button>
+            </div>
+          )}
+          {groups.map((g) => {
+            const { key, items, lead } = g;
+            const tx = lead.tx;
+            const filing = filingOf(key, lead);
+            const need = needOf(key, lead);
             const shownCat = filing?.category ?? tx.category;
             const shownSub = filing ? filing.sub_category : tx.sub_category;
+            const cat = catOf(shownCat);
+            const { color, emoji } = resolveDisplay({ color: cat?.color ?? "#E9E6F0", emoji: (cat as { emoji?: string } | undefined)?.emoji || "📦" }, {}, shownCat);
+            const n = items.length;
+            const open = pickerKey === key;
+            const paysOpen = openPays[key] ?? false;
+            const cats = tx.transaction_type === "income" ? INCOME_CATEGORIES : allExpenseCats;
             return (
-              <div key={tx.id} style={{ padding: "12px 20px", borderTop: "1px solid var(--uf-border)" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "center" }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.description}</div>
-                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, marginTop: 4 }}>
-                      <span style={{ fontSize: 11, color: "var(--uf-text-3)" }}>{tx.date} · {tx.currency} {netAmt(tx).toFixed(2)}</span>
-                      <button onClick={() => { setPickerTxId(open ? null : tx.id); setPickerCat(shownCat || null); }} aria-expanded={open}
-                        style={{ fontSize: 11, fontWeight: 700, borderRadius: 6, padding: "2px 8px", cursor: "pointer",
-                          background: filings[tx.id] ? "var(--uf-green-50)" : "var(--uf-surface)", color: "var(--uf-text-2)",
-                          border: `1px solid ${filings[tx.id] ? "var(--uf-green)" : "var(--uf-border)"}` }}>
-                        {labelOf(shownCat)}{shownSub ? ` › ${shownSub}` : ""} ✏
-                      </button>
-                      <button onClick={() => setOverrides((o) => ({ ...o, [tx.id]: need === "need" ? "want" : "need" }))} title="Switch need / want"
-                        style={{ fontSize: 10, fontWeight: 700, borderRadius: 999, padding: "2px 8px", cursor: "pointer", border: "1px solid transparent",
-                          background: need === "need" ? "rgba(34,211,165,0.15)" : "rgba(249,115,22,0.15)", color: need === "need" ? "#0E9C86" : "#c2410c" }}>
-                        {need} ⇄
-                      </button>
-                      {item.source === "history" && (
-                        <span style={{ fontSize: 10, color: "var(--uf-text-3)" }}>from your history{item.seen && item.seen > 1 ? ` (${item.seen}×)` : ""}</span>
-                      )}
+              <div key={key} className="uf-review-card">
+                <div className="uf-review-row">
+                  <div className="uf-review-ic" style={{ background: color }} aria-hidden>{emoji}</div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div className="uf-review-nm">{tx.description}</div>
+                    <div className="uf-review-sub">
+                      {n} payment{n === 1 ? "" : "s"} · {sumOf(items)}{n === 1 ? ` · ${shortDate(tx.date)}` : ""}
                     </div>
-                    {tx.notes && <div style={{ fontSize: 11, color: "var(--uf-text-3)", marginTop: 3, fontStyle: "italic", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tx.notes}</div>}
-                    {count > 1 && (
-                      <label style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 11, color: "var(--uf-text-2)", cursor: "pointer" }}>
-                        <input type="checkbox" checked={sameMerchant[tx.id] ?? true} onChange={(e) => setSameMerchant((m) => ({ ...m, [tx.id]: e.target.checked }))} />
-                        Apply to all {count} from this merchant
-                      </label>
-                    )}
                   </div>
-                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                    <button onClick={() => approve(item)}
-                      style={{ background: "var(--uf-green)", color: "var(--uf-card)", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Approve</button>
-                    <button onClick={() => onSkip(tx.id)}
-                      style={{ background: "none", color: "var(--uf-text-3)", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "6px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Skip</button>
+                  {lead.source === "history" && <span className="uf-review-usual" title={lead.seen ? `You picked this ${lead.seen}×` : undefined}>↻ Usual</span>}
+                </div>
+
+                <div className="uf-review-picks">
+                  <button type="button" className="uf-review-chip" aria-expanded={open}
+                    onClick={() => { setPickerKey(open ? null : key); setPickerCat(shownCat || null); }}>
+                    <span className="d" style={{ background: color }} aria-hidden>{emoji}</span>
+                    {shownSub || cat?.label || shownCat}
+                    <span className="pen" aria-hidden>✎</span>
+                  </button>
+                  <div className="uf-review-seg" role="group" aria-label="Need or want">
+                    {(["need", "want"] as const).map((v) => (
+                      <button key={v} type="button" aria-pressed={need === v} data-v={v}
+                        onClick={() => setOverrides((o) => ({ ...o, [key]: v }))}>
+                        {v === "need" ? "Need" : "Want"}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
                 {open && (
-                  <div style={{ marginTop: 10, padding: 12, borderRadius: 12, background: "var(--uf-surface)", display: "grid", gap: 10 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(86px, 1fr))", gap: 6 }}>
+                  <div className="uf-review-picker">
+                    <div className="uf-review-cats">
                       {cats.map((c) => {
-                        const { color, emoji } = resolveDisplay({ color: c.color, emoji: (c as { emoji?: string }).emoji || "📦" }, {}, c.key);
+                        const d = resolveDisplay({ color: c.color, emoji: (c as { emoji?: string }).emoji || "📦" }, {}, c.key);
                         const active = (pickerCat ?? shownCat) === c.key;
                         return (
-                          <button key={c.key} onClick={() => {
+                          <button key={c.key} type="button" aria-pressed={active} onClick={() => {
                             setPickerCat(c.key);
-                            if (!(allSubCats[c.key]?.length)) { setFilings((f) => ({ ...f, [tx.id]: { category: c.key, sub_category: null } })); setPickerTxId(null); }
-                          }}
-                            style={{ background: active ? "var(--uf-green-50)" : "var(--uf-card)", border: `1px solid ${active ? "var(--uf-green)" : "var(--uf-border)"}`, borderRadius: 8, padding: "7px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer" }}>
-                            <span style={{ width: 24, height: 24, borderRadius: "50%", background: color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>{emoji}</span>
-                            <span style={{ fontSize: 10, fontWeight: 600, color: "var(--uf-text-2)" }}>{c.label}</span>
+                            if (!(allSubCats[c.key]?.length)) { setFilings((f) => ({ ...f, [key]: { category: c.key, sub_category: null } })); setPickerKey(null); }
+                          }}>
+                            <span style={{ background: d.color }} aria-hidden>{d.emoji}</span>
+                            {c.label}
                           </button>
                         );
                       })}
                     </div>
                     {pickerCat && (allSubCats[pickerCat]?.length ?? 0) > 0 && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      <div className="uf-review-subs">
                         {[null, ...allSubCats[pickerCat]].map((sc) => (
-                          <button key={sc ?? "-"} onClick={() => { setFilings((f) => ({ ...f, [tx.id]: { category: pickerCat, sub_category: sc } })); setPickerTxId(null); }}
-                            style={{ fontSize: 11, fontWeight: 600, borderRadius: 999, padding: "4px 10px", cursor: "pointer", background: "var(--uf-card)", color: "var(--uf-text-2)",
-                              border: `1px solid ${pickerCat === shownCat && (sc ?? null) === (shownSub ?? null) ? "var(--uf-green)" : "var(--uf-border)"}` }}>
-                            {sc ?? `${labelOf(pickerCat)} (no sub-category)`}
+                          <button key={sc ?? "-"} type="button"
+                            aria-pressed={pickerCat === shownCat && (sc ?? null) === (shownSub ?? null)}
+                            onClick={() => { setFilings((f) => ({ ...f, [key]: { category: pickerCat, sub_category: sc } })); setPickerKey(null); }}>
+                            {sc ?? `All ${catOf(pickerCat)?.label ?? pickerCat}`}
                           </button>
                         ))}
                       </div>
                     )}
                   </div>
                 )}
+
+                {paysOpen && (
+                  <div className="uf-review-pays">
+                    {items.map((p) => (
+                      <div key={p.tx.id} className="uf-review-pay">
+                        <span className="dt">{shortDate(p.tx.date)}</span>
+                        <span className="note">{p.tx.notes || p.tx.description}</span>
+                        <span className="amt">{txMoney(netAmt(p.tx), p.tx.currency)}</span>
+                        {n > 1 && (
+                          <button type="button" aria-label="Sort this one on its own"
+                            onClick={() => setSplit((s) => new Set(s).add(p.tx.id))}>✕</button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="uf-review-acts">
+                  <button type="button" className="uf-review-more" aria-expanded={paysOpen}
+                    onClick={() => setOpenPays((o) => ({ ...o, [key]: !paysOpen }))}>
+                    {paysOpen ? "Hide payments ⌃" : n === 1 ? "Details ⌄" : "See payments ⌄"}
+                  </button>
+                  <Button variant="secondary" onClick={() => onSkip(items.map((p) => p.tx.id))}>Skip</Button>
+                  <Button variant="primary" onClick={() => approve(g)}>✓ Approve{n > 1 ? ` ${n}` : ""}</Button>
+                </div>
               </div>
             );
           })}
         </div>
+
+        {left > 0 && (
+          <div className="uf-review-foot">
+            <span>Looks right? Do them all at once.</span>
+            <Button variant="primary" onClick={() => onApproveAll(groups.flatMap(resolveGroup))}>✓ Approve all {left}</Button>
+          </div>
+        )}
       </div>
     </>
   );
@@ -2297,7 +2342,18 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
             showToast(`${resolved.length} expense${resolved.length !== 1 ? "s" : ""} filed`);
             setPendingClassifications([]);
           }}
-          onSkip={(txId) => setPendingClassifications((prev) => prev.filter((p) => p.tx.id !== txId))}
+          onSkip={(txIds) => setPendingClassifications((prev) => prev.filter((p) => !txIds.includes(p.tx.id)))}
+          onUndo={async (items) => {
+            // Put back what each payment had before it was approved.
+            await Promise.all(items.map(({ tx }) =>
+              supabase.from("expenses").update({ tags: tx.tags ?? [], category: tx.category, sub_category: tx.sub_category ?? null }).eq("id", tx.id)));
+            const before = new Map(items.map(({ tx }) => [tx.id, tx]));
+            setTransactions((prev) => prev.map((t) => {
+              const b = before.get(t.id);
+              return b ? { ...t, tags: b.tags, category: b.category, sub_category: b.sub_category } : t;
+            }));
+            setPendingClassifications((prev) => [...items, ...prev.filter((p) => !before.has(p.tx.id))]);
+          }}
           onClose={() => setPendingClassifications([])}
           allExpenseCats={allExpenseCats}
           allSubCats={allSubCats}
