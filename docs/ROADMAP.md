@@ -22,7 +22,7 @@ to start unrelated work. Status here describes evidence, not live verification.
 
 29 October: John asked for the city pages to match Next Horizon (mock approved in thread, "go"). Handled within N1 on branch `claude/project-thread-yhurmt`: single city pages, the city share image (previously 404) and geo-arbitrage pages. Ranking and state share images had the same non-route file problem; fixed with the website audit (branch `claude/project-thread-jpmkcz`, PR #330).
 
-31 October: John asked for a simpler bank-file import (D-125; mock approved, "build it"). Website only, In review on branch `claude/project-thread-arorlm`; outside Now/Next as a John-requested feature, no Now item displaced.
+31 October: John asked for a simpler bank-file import (D-127; mock approved, "build it"). Website only, In review on branch `claude/project-thread-arorlm`; outside Now/Next as a John-requested feature, no Now item displaced.
 
 29 October: John asked for the 50/30/20 starting budget (D-106 follow-up; mock approved, "build"). Website only, In review on branch `claude/project-thread-v7mf9g`; outside Now/Next as a John-requested feature, no Now item displaced.
 
@@ -622,3 +622,16 @@ N1 web style follow-up: [draft PR #335](https://github.com/Johnbulongdon/UntilFi
 N1 payday polish is In review: [PR #336](https://github.com/Johnbulongdon/UntilFire/pull/336), implementation 4346376. Build/type/lint and chart/cash guards passed; browser before/after and edge-state checks recorded. Awaiting design review; not merged or deployed.
 
 31 October N1/N2 payday refinement — Codex, PR #336: John approved the simplified ledger mock and authorized build/ship. D-124 supersedes the chart polish. Shared everyday-cost estimate, optional visit-only zero cushion, Home Today synchronization and matching phone card implemented. In review until checked and merged; deployment and phone channel promotion tracked separately.
+
+31 October N1/N2 mobile pastel surfaces — Codex, codex/mobile-pastel-hubs, baseline origin/main 28817af. Money/Plan tiles, Profile wells and summary chips adopt approved lighter pastels; dark Plan icon/step contrast repaired. Type/lint/native exports and light/dark component checks pass. Physical-device and signed-in acceptance remain pending; no merge or release yet. See docs/design/mobile-pastels/README.md.
+
+Mobile pastel surfaces in review: [PR #342](https://github.com/Johnbulongdon/UntilFire/pull/342), implementation 944c32d. Final mobile type/lint and Android/iOS/web exports passed. Light/dark actual-component previews recorded; installed-device acceptance and release pending. Author retains ownership.
+
+31 October N1/N2 mobile welcome — Codex, codex/mobile-welcome-product-preview,
+baseline origin/main cd78930. Original option 3 selected; implementation and local
+verification in progress. Preserve auth/onboarding paths; A/B experiment deferred.
+No merge, OTA promotion or store submission requested in this change.
+
+Mobile welcome is in review: PR #340 (https://github.com/Johnbulongdon/UntilFire/pull/340), implementation 66c9e2a. Mobile type/lint and final Android/iOS/web exports passed; welcome actions verified in the rendered preview. Physical-device, light-theme and accessibility-device checks remain pending before phone release. No experiment or release published.
+
+31 October release authorized by John: integrate original welcome #340 and published Android 0.2.1 runtime/configuration #326 through #342. Finish category badge, Plan chart and Today button refinements. Combined checks pass; merge and phone compatibility/promotion verification in progress. No SDK58 or account-safety migration included.

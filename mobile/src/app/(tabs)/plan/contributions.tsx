@@ -1,14 +1,14 @@
 import { router } from 'expo-router'
 import { Button } from '@/components/Button'
 import { useMemo, useState } from 'react'
-import { Pressable, View } from 'react-native'
+import { View } from 'react-native'
 
 import { LoadingState } from '@/components/LoadingState'
 import { DetailScreen } from '@/components/DetailScreen'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { Card, Label, ProgressTrack } from '@/components/Screen'
 import { Text } from '@/components/Text'
-import { colors, TAB_COLOR } from '@/theme/colors'
+import { brand, colors } from '@/theme/colors'
 import { MoneyRow } from '@/components/MoneyRow'
 import { monthlySaving } from '@/lib/saving'
 import { countdownLabel, ladderViewFromPlan, planContribution } from '@/engine'
@@ -37,7 +37,7 @@ export default function Contributions() {
     return (
       <DetailScreen back="Plan" title="Contributions">
         <Card soft>
-          <Text className="text-[15px] leading-6 text-ink-2">Sign in to see where each month's saving should go, worked out from your accounts and bills.</Text>
+          <Text className="text-[15px] leading-6 text-ink-2">Sign in to see where each month&apos;s saving should go, worked out from your accounts and bills.</Text>
           <View className="mt-4"><PrimaryButton label="Sign in" onPress={() => router.push('/sign-in')} /></View>
         </Card>
       </DetailScreen>
@@ -88,7 +88,7 @@ export default function Contributions() {
             <Line label="Cash outside your emergency fund" value={money(a.cash)} />
             {a.income > 0 && <Line label="Income before then" value={`+${money(a.income)}`} tone="pos" />}
             {a.committed > 0 && <Line label="Bills and day-to-day before then" value={`−${money(a.committed)}`} />}
-            {!a.hasExpectedData && <Text className="mt-1 text-[12px] text-ink-3">Add bills and paydays in Money → Calendar so this counts what's already spoken for.</Text>}
+            {!a.hasExpectedData && <Text className="mt-1 text-[12px] text-ink-3">Add bills and paydays in Money → Calendar so this counts what&apos;s already spoken for.</Text>}
           </View>
         )}
         <View className="mt-4 flex-row items-center justify-between border-t border-border pt-3">
@@ -149,17 +149,17 @@ function Ladder({ fills, next, met = [] }: { fills: Fill[]; next?: string; met?:
   const funded = fills.filter(f => f.enabled && f.amount > 0)
   const later = fills.filter(f => f.enabled && f.amount <= 0)
   const total = funded.reduce((t, f) => t + f.amount, 0)
-  // Plan's colour, lighter for each later rung's bar; badges stay solid so their numbers stay readable.
-  const shade = (i: number) => ({ backgroundColor: `${TAB_COLOR.plan}${Math.round(Math.max(0.4, 1 - i * 0.2) * 255).toString(16).padStart(2, '0')}` })
+  // Labels and numbers preserve order independently of the decorative colours.
+  const shade = (i: number) => ({ backgroundColor: [brand.lilac, brand.blue, brand.mint, brand.yellow, brand.pink][i % 5] })
   // With nothing free yet, still show the order money will go in, saving first (Oct 2026 QA: "invest" includes saving).
   if (funded.length === 0) {
     return (
       <View className="mt-2 gap-2.5">
-        <Text className="text-[13px] leading-5 text-ink-3">When money's free, it fills these in order:</Text>
+        <Text className="text-[13px] leading-5 text-ink-3">When money&apos;s free, it fills these in order:</Text>
         {later.slice(0, 4).map((f, i) => (
           <View key={f.kind} className="flex-row items-center gap-2.5">
-            <View className="h-6 w-6 items-center justify-center rounded-full border-[1.5px]" style={{ borderColor: TAB_COLOR.plan }}>
-              <Text className="text-[12px] font-bold" style={{ color: TAB_COLOR.plan }}>{i + 1}</Text>
+            <View className="h-6 w-6 items-center justify-center rounded-full border-[1.5px]" style={{ borderColor: colors.border2 }}>
+              <Text className="text-[12px] font-bold" style={{ color: colors.ink }}>{i + 1}</Text>
             </View>
             <Text className="flex-1 text-[15px] font-semibold text-ink">{f.label}</Text>
           </View>
@@ -175,8 +175,8 @@ function Ladder({ fills, next, met = [] }: { fills: Fill[]; next?: string; met?:
       {funded.map((f, i) => (
         <View key={f.kind} className="gap-1.5">
           <View className="flex-row items-center gap-2.5">
-            <View className="h-6 w-6 items-center justify-center rounded-full" style={{ backgroundColor: TAB_COLOR.plan }}>
-              <Text className="text-[12px] font-bold text-white">{i + 1}</Text>
+            <View className="h-6 w-6 items-center justify-center rounded-full" style={{ backgroundColor: brand.lilac }}>
+              <Text style={{ color: brand.deep }} className="text-[12px] font-bold">{i + 1}</Text>
             </View>
             <Text className={`flex-1 text-[15px] ${f.kind === next ? 'font-bold' : 'font-semibold'} text-ink`}>{f.label}</Text>
             <Text className="font-mono text-[15px] text-ink">{money(f.amount)}</Text>
@@ -189,8 +189,8 @@ function Ladder({ fills, next, met = [] }: { fills: Fill[]; next?: string; met?:
       {/* The rest of the ladder as more numbered steps, one per line, not a run-on list (audit round 3). */}
       {later.map((f, i) => (
         <View key={f.kind} className="flex-row items-center gap-2.5">
-          <View className="h-6 w-6 items-center justify-center rounded-full border-[1.5px]" style={{ borderColor: TAB_COLOR.plan }}>
-            <Text className="text-[12px] font-bold" style={{ color: TAB_COLOR.plan }}>{met.includes(f.kind) ? '✓' : funded.length + i + 1}</Text>
+          <View className="h-6 w-6 items-center justify-center rounded-full border-[1.5px]" style={{ borderColor: colors.border2 }}>
+            <Text className="text-[12px] font-bold" style={{ color: colors.ink }}>{met.includes(f.kind) ? '✓' : funded.length + i + 1}</Text>
           </View>
           <Text className={`flex-1 text-[14px] ${met.includes(f.kind) ? 'text-ink-3 line-through' : 'text-ink-2'}`}>{f.label}</Text>
           {met.includes(f.kind) && <Text className="text-[13px] font-semibold text-ink-3">Done</Text>}

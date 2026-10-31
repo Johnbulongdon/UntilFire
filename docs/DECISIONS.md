@@ -3514,7 +3514,26 @@ John requested a better-looking Until payday screen and explicitly chose the act
 **UI:** One amount, compact breakdown, three upcoming payments and a separate Money destination. No chart or purchase calculator. Everyday estimate can be adjusted; optional cushion starts at zero and stays collapsed. Adjustments are explicitly visit-only, reset on account/day/payday changes and never overwrite budgets. Today on Home uses the same adjusted remainder per day. Phone uses the same shared forecast helper and layout meaning. Money's existing budget-limit views are separate and unchanged.
 **Trade-offs:** Forecasts are estimates, not purchase guarantees; no invented city/category values or automatic savings target. Detailed category estimate chips from the mock are omitted until a trustworthy per-category forecast exists. No financial database writes or migration required. Physical-device checks and phone release eligibility are separate release evidence.
 
-### D-125 — Simpler bank-file import (31 October 2026)
+### D-125 — Product-led mobile welcome, experiment deferred (31 October 2026)
+**Status:** Approved for implementation; release pending.
+**Decision:** John chose the original third welcome mock: Make room for more life,
+with yellow freedom-date and mint Until payday example panels, the approved logo,
+and equally wide Get started / I already have an account actions. Replace the large
+logo tile without changing first-use questions, sign-in recovery, or account data.
+Keep example figures visibly illustrative and accessible, retain short copy, and
+respect reduced motion and larger text. See docs/design/mobile-welcome/README.md.
+**Deferred:** A/B testing this design against the later pastel landscape. Low volume
+and uncertainty about meaningful welcome-screen impact mean no experiment or flags
+are installed now. Revisit activation to first reveal, sign-in reliability and an
+adequate sample before claiming a winner. No conversion improvement is assumed.
+
+### D-126 — More colour on native Money, Plan and Profile (31 October 2026)
+**Status:** Approved for implementation; release pending.
+**Decision:** John agreed that the phone app should carry more of the approved lighter Next Horizon colours. Use multiple pastel tool tiles and settings icon wells with fixed dark ink, keep black primary actions and financial status meanings. Remove the changed tiles' heavy edges and repair hard-coded black icons/step labels on dark Plan screens. Keep existing navigation, inputs and money logic. Verification and scope: docs/design/mobile-pastels/README.md. Original-third welcome and Android runtime release work remain separate.
+
+31 October follow-up to D-125/D-126: John authorized the remaining category/chart/Today refinements and shipping the mobile update. Reconcile the already-published 0.2.1 native configuration, preserving the production fingerprint gate and runtime checks; no SDK58 upgrade or account-safety migration is part of this release.
+
+### D-127 — Simpler bank-file import (31 October 2026)
 **Status:** Approved by John (mock in "Simplify bank transaction import" thread, "build it"); website only, in review.
 **Decision:** The website import is one idea per screen: pick a file, a "Looks good?" check (count, date range, three sample rows, one Yes / No, swap sign question, duplicate note, one Add button), then progress and a Done screen with expenses and income. Currency is an optional flag button (John: most people never need to change it); column mapping is an optional "Fix them" screen. Duplicates are shown as pairs, file versus already saved, with differences marked so people can judge, and a Keep both switch per pair. The old "month if accepted" projection is dropped; Done shows the totals instead. Parsing, currency inference, duplicate matching and saved fields are unchanged. The phone app (CSV only, already shorter) can follow the same screens later.
 **Source:** John, "the current import bank transaction is too complicated"; mocks in project files `untilfire/import-simple-2026-10-31/`.

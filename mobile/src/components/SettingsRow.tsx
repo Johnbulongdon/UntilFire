@@ -1,18 +1,24 @@
 import { ActivityIndicator, Pressable, View } from 'react-native'
 
 import { haptic } from '@/lib/haptics'
-import { colors, TAB_COLOR } from '@/theme/colors'
+import { brand, colors } from '@/theme/colors'
 
 import { Icon } from './Icon'
 import { Text } from './Text'
 
 type SymbolName = Parameters<typeof Icon>[0]['name']
 
-/** A settings row's icon: white on Profile's colour, in a small rounded square, as iOS Settings does. */
+const SETTINGS_TONE: Record<string, string> = {
+  'envelope.fill': brand.blue, 'star.fill': brand.yellow, 'person.fill': brand.lilac,
+  'house.fill': brand.mint, 'gift.fill': brand.pink, 'dollarsign.circle.fill': brand.mint,
+  'bell.fill': brand.yellow, calendar: brand.blue, faceid: brand.lilac,
+}
+
+/** Pastel icon wells keep the same dark ink in both themes. */
 export function RowIcon({ name, fallback }: { name: SymbolName; fallback: string }) {
   return (
-    <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: TAB_COLOR.profile, alignItems: 'center', justifyContent: 'center' }}>
-      <Icon name={name} fallback={fallback} size={17} color="#FFFFFF" />
+    <View style={{ width: 32, height: 32, borderRadius: 9, backgroundColor: SETTINGS_TONE[String(name)] ?? brand.mint, alignItems: 'center', justifyContent: 'center' }}>
+      <Icon name={name} fallback={fallback} size={17} color={brand.deep} />
     </View>
   )
 }

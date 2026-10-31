@@ -20,7 +20,7 @@ import { saveCustomCategories, saveFireProfile } from '@/lib/mutations'
 import { defaultNeed } from '@/lib/review'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
-import { colors } from '@/theme/colors'
+import { brand, colors } from '@/theme/colors'
 
 const monthName = (ym: string) => new Date(`${ym}-01T00:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
 // What has to come out of checking every month, outside the emergency fund (John, Oct 2026: "how much on food and transport").
@@ -121,7 +121,7 @@ export default function Budget() {
       ) : (
         <Card soft>
           <Text className="text-[15px] font-semibold text-ink">No budget yet</Text>
-          <Text className="mt-1 text-[14px] leading-5 text-ink-2">Give each day-to-day category a monthly amount and see what's left as you spend. Bills come from Calendar.</Text>
+          <Text className="mt-1 text-[14px] leading-5 text-ink-2">Give each day-to-day category a monthly amount and see what&apos;s left as you spend. Bills come from Calendar.</Text>
           <View className="mt-3"><Button small kind="quiet" label="Set a budget" onPress={() => router.push('/budget-edit')} /></View>
         </Card>
       )}
@@ -140,7 +140,7 @@ export default function Budget() {
               <Pressable key={b.key} accessibilityRole="button" accessibilityLabel={`${cat.label} bills, ${b.due > 0 ? `${money(b.due)} still due` : 'paid'}. Show transactions`}
                 onPress={() => { haptic.tick(); router.push({ pathname: '/money/transactions', params: { category: b.key, month } }) }}
                 className="flex-row items-center gap-3 border-t border-border py-3 active:opacity-70">
-                <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: `${cat.color}22` }}><CategoryGlyph cat={cat} size={20} /></View>
+                <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: cat.color }}><CategoryGlyph cat={cat} size={20} color={brand.deep} /></View>
                 <View className="flex-1">
                   <Text className="text-[15px] font-semibold text-ink">{cat.label}</Text>
                   <Text className="text-[12px] text-ink-3">{b.due > 0 ? `${money(b.due)} still due${b.next ? ` ${new Date(`${b.next}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}` : isCurrent ? 'Paid this month' : `${money(b.spent)} paid`}</Text>
@@ -166,7 +166,7 @@ export default function Budget() {
               <Pressable accessibilityRole="button" accessibilityLabel={`${cat.label}, ${money(now)} spent${limit ? ` of ${money(limit)}` : ''}. Show transactions`}
                 onPress={() => { haptic.tick(); router.push({ pathname: '/money/transactions', params: { category: key, month } }) }}
                 className="flex-1 flex-row items-center gap-3 active:opacity-70">
-                <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: `${cat.color}22` }}><CategoryGlyph cat={cat} size={20} /></View>
+                <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: cat.color }}><CategoryGlyph cat={cat} size={20} color={brand.deep} /></View>
                 <View className="flex-1">
                   <View className="flex-row items-baseline justify-between">
                     <Text className="text-[15px] font-semibold text-ink">{cat.label}</Text>
@@ -206,7 +206,7 @@ export default function Budget() {
             return (
               <Pressable key={c.key} accessibilityRole="button" accessibilityLabel={`${cat.label}: ${money(c.yearSpent)} of ${money(c.yearBudget)} over 12 months. Options`}
                 onPress={() => options(c.key, cat.label)} className="flex-row items-center gap-3 border-t border-border py-3 active:opacity-70">
-                <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: `${cat.color}22` }}><CategoryGlyph cat={cat} size={20} /></View>
+                <View className="h-9 w-9 items-center justify-center rounded-control" style={{ backgroundColor: cat.color }}><CategoryGlyph cat={cat} size={20} color={brand.deep} /></View>
                 <View className="flex-1">
                   <Text className="text-[15px] font-semibold text-ink">{cat.label}</Text>
                   <Text className={`text-[12px] ${over ? 'text-neg-ink' : 'text-ink-3'}`}>{over ? `${money(c.yearSpent - c.yearBudget)} over` : `${money(c.yearBudget - c.yearSpent)} left`} over 12 months</Text>

@@ -13,6 +13,7 @@ import {
   citizenshipBand, citizenshipScore, type CitizenshipScore,
 } from '@/engine'
 import { haptic } from '@/lib/haptics'
+import { brand } from '@/theme/colors'
 
 const MINE_KEY = 'untilfire.citizenship'
 type SortKey = 'score' | 'tax' | 'retirement' | 'investment' | 'az'
@@ -21,9 +22,9 @@ const SORTS: { key: SortKey; label: string }[] = [
 ]
 // The website's three parts of the score, out of 100 together.
 const PARTS = [
-  { key: 'tax', name: 'Tax', max: 40, color: '#2a78d6' },
-  { key: 'retirement', name: 'Retirement accounts', max: 30, color: '#1baf7a' },
-  { key: 'investment', name: 'Investing', max: 30, color: '#6b5bd2' },
+  { key: 'tax', name: 'Tax', max: 40, color: brand.blue },
+  { key: 'retirement', name: 'Retirement accounts', max: 30, color: brand.mint },
+  { key: 'investment', name: 'Investing', max: 30, color: brand.lilac },
 ] as const
 const BAND_TONE = { strong: 'text-pos-ink', workable: 'text-warn', friction: 'text-neg-ink' } as const
 
