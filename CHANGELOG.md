@@ -3,6 +3,7 @@
 ## 2026-10-31 — Duplicate buttons answer at once
 
 - Tapping "Delete card copy", "Keep both" or "Delete all card copies" fades the row straight away and the button reads "Deleting…", before the save finishes. The toast with Undo follows. A row that could not be deleted comes back after five seconds.
+- After a delete, the pair stays in place for six seconds as a green "✓ Deleted" line (struck-through card copy, "kept" wallet row), so it is clear it worked.
 
 ## 2026-10-31 — Card copies of Alipay and WeChat purchases
 
