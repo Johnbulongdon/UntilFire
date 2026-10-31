@@ -25,3 +25,5 @@
 .home-grid>*{min-width:0}.move-card p{overflow-wrap:anywhere;max-width:100%}
 
 .cash-number,.goal-strip strong,.small-callout strong,.plan-peek strong{font-variant-numeric:tabular-nums}
+
+.referral-disclosure{font-size:12px;line-height:1.5;color:var(--muted);margin-top:-8px;text-align:center}

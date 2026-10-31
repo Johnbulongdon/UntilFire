@@ -52,3 +52,7 @@ Provider feature descriptions checked against official pages on 1 November 2026:
 - Robinhood: https://robinhood.com/us/en/support/articles/investments-you-can-make-on-robinhood/
 
 These sources establish broad product descriptions, not approval of commercial referral placement.
+
+## Referral-copy refinement — 1 November
+
+Removed the prominent referral-label block. One readable “Paid referral link · [beneficiary]” label remains immediately below the outbound button. FTC staff guidance explicitly identifies paid link beside an affiliate link as an adequate disclosure of its nature. No tracking-only claim or exclusive-user-reward claim is introduced without verified provider terms. Confirmed user offers can lead the content once available. FTC guidance checked: https://www.ftc.gov/business-guidance/resources/ftcs-endorsement-guides-what-people-are-asking .

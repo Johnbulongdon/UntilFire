@@ -39,3 +39,5 @@ The prototype build and all four template packaging tests pass. Reduced-motion C
 Production API/attribution/persistence, native bank handoff, provider programme eligibility and real financial tracking are not implemented by this mock. Comparison is intentionally sparse until approved fee/eligibility metadata exists. Source the official IBKR asset before production polish if its programme is approved. Preserve the actual Home dashboard around the proposed next-move card when integrating; the mock's surrounding Home data is illustrative.
 
 Final status correction: retained whether an account was existing or newly opened after setup completion, so an existing account is never relabelled as newly opened. Rechecked the completed Plan state after the fix.
+
+Referral-copy follow-up: replaced the large label/card with one 12px compensation disclosure immediately under the CTA. No unsupported unique-reward or tracking-only copy. Rechecked the UntilFire and inviter examples at phone width; required disclosure remains visible beside the action.
