@@ -49,6 +49,7 @@ export const MONEY_FEATURES: Feature[] = [
   { label: 'Calendar', icon: 'calendar', fallback: '▦', to: '/money/calendar', tone: 'yellow' },
   { label: 'Net worth', icon: 'building.columns.fill', fallback: '▥', to: '/money/net-worth', tone: 'pink' },
   { label: 'Income', icon: 'arrow.down.circle.fill', fallback: '↓', to: '/money/income', tone: 'mint' },
+  { label: 'Banks', icon: 'building.columns.fill', fallback: '▥', to: '/money/banks', tone: 'blue' },
   { label: 'Insights', icon: 'lightbulb.fill', fallback: '!', to: '/money/insights', tone: 'lilac' },
 ]
 export const PLAN_FEATURES: Feature[] = [

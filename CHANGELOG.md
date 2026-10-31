@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — phone bank health
+
+- Money → Banks shows connection health and the last successful transaction import, with Retry sync and existing-bank Reconnect.
+- Home links quietly to bank freshness; unavailable checks never claim the bank is connected.
+- Bank checks and reconnect tokens are authenticated and owner-scoped; no new Item or product subscription is created.
+
 ## Unreleased — phone entry QOL
 
 - Protect unfinished transaction/bill edits with Keep editing / Discard; keep the form on failed saves and exit once after success.

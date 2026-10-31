@@ -27,7 +27,6 @@ export interface BankFound { name: string; added: number; accounts: number; foun
  * `onWorking` hears the bank's name as the import starts, then what it found.
  */
 export async function connectBankNative(accessToken: string, onWorking?: (name: string, result: BankFound | null) => void): Promise<string | 'cancelled' | null> {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { createPlaidLinkSession } = require('react-native-plaid-link-sdk') as typeof import('react-native-plaid-link-sdk')
   const headers = { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
 
@@ -68,5 +67,31 @@ export async function connectBankNative(accessToken: string, onWorking?: (name: 
     })
       .then(session => session.open())
       .catch(() => resolve("Couldn't open the bank connection. Please try again."))
+  })
+}
+
+/** Repair an existing Item with Link update mode. Never exchange or save a new token. */
+export async function reconnectBankNative(accessToken: string, itemId: string, canContinue: () => boolean = () => true): Promise<string | 'cancelled' | null> {
+  if (!plaidNativeAvailable()) return 'Reconnect is available in the installed UntilFire app.'
+  const { createPlaidLinkSession } = require('react-native-plaid-link-sdk') as typeof import('react-native-plaid-link-sdk')
+  const abort = new AbortController()
+  const timeout = setTimeout(() => abort.abort(), 15000)
+  let body: { link_token?: string; error?: string } = {}
+  try {
+    const response = await fetch(SITE + '/api/plaid/reconnect', {
+      method: 'POST', headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item_id: itemId, platform: Platform.OS }), signal: abort.signal,
+    })
+    body = await response.json().catch(() => ({}))
+    if (!response.ok || !body.link_token) return body.error ?? "Couldn't start reconnecting. Try again."
+  } catch { return "Couldn't reach your bank. Try again." }
+  finally { clearTimeout(timeout) }
+  if (!canContinue()) return 'cancelled'
+  return new Promise(resolve => {
+    createPlaidLinkSession({
+      token: body.link_token!, onEvent: () => {},
+      onExit: exit => resolve(exit.error ? "Reconnect didn't finish. Please try again." : 'cancelled'),
+      onSuccess: () => resolve(null),
+    }).then(session => session.open()).catch(() => resolve("Couldn't open your bank. Please try again."))
   })
 }
