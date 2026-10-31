@@ -1713,3 +1713,8 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - Keep Log in visible beside Get started in desktop and phone public headers.
 
 - Refine the web Until payday card with mint/white panels, clearer balance/payday hierarchy and aligned bill rows while preserving all forecast calculations and selection controls.
+
+## Android 0.2.1 — store build preparation
+- Package the approved new icon, splash, fonts and app styling in a native Android release.
+- Fix SDK57 splash configuration and the audio module's missing asset peer; keep signing/app identity unchanged.
+- Submit through the existing alpha/draft Google Play profile after the cloud build succeeds.

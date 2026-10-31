@@ -4,15 +4,10 @@
     "slug": "untilfire",
     "owner": "ngjohn101",
     "scheme": "untilfire",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.untilfire.app",
@@ -175,7 +170,8 @@
         }
       ],
       "expo-secure-store",
-      "expo-updates"
+      "expo-updates",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
