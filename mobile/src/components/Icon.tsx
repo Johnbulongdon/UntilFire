@@ -59,8 +59,8 @@ export const symbolFor = (key: string) => CATEGORY_SYMBOL[key] ?? null
  * A category's drawn icon in its own colour, or the emoji for one of your own
  * categories (you picked that emoji, so it stays).
  */
-export function CategoryGlyph({ cat, size = 18 }: { cat: { key?: string; emoji?: string; color?: string }; size?: number }) {
+export function CategoryGlyph({ cat, size = 18, color = colors.ink }: { cat: { key?: string; emoji?: string; color?: string }; size?: number; color?: string }) {
   const sym = cat.key ? symbolFor(cat.key) : null
-  if (sym) return <Icon name={sym.name} fallback={sym.fallback} size={size} color={colors.ink} />
+  if (sym) return <Icon name={sym.name} fallback={sym.fallback} size={size} color={color} />
   return <Text style={{ fontSize: size * 0.9, lineHeight: size * 1.15 }}>{cat.emoji ?? '🏷️'}</Text>
 }

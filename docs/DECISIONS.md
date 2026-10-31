@@ -3530,3 +3530,5 @@ adequate sample before claiming a winner. No conversion improvement is assumed.
 ### D-126 — More colour on native Money, Plan and Profile (31 October 2026)
 **Status:** Approved for implementation; release pending.
 **Decision:** John agreed that the phone app should carry more of the approved lighter Next Horizon colours. Use multiple pastel tool tiles and settings icon wells with fixed dark ink, keep black primary actions and financial status meanings. Remove the changed tiles' heavy edges and repair hard-coded black icons/step labels on dark Plan screens. Keep existing navigation, inputs and money logic. Verification and scope: docs/design/mobile-pastels/README.md. Original-third welcome and Android runtime release work remain separate.
+
+31 October follow-up to D-125/D-126: John authorized the remaining category/chart/Today refinements and shipping the mobile update. Reconcile the already-published 0.2.1 native configuration, preserving the production fingerprint gate and runtime checks; no SDK58 upgrade or account-safety migration is part of this release.

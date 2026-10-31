@@ -631,3 +631,5 @@ verification in progress. Preserve auth/onboarding paths; A/B experiment deferre
 No merge, OTA promotion or store submission requested in this change.
 
 Mobile welcome is in review: PR #340 (https://github.com/Johnbulongdon/UntilFire/pull/340), implementation 66c9e2a. Mobile type/lint and final Android/iOS/web exports passed; welcome actions verified in the rendered preview. Physical-device, light-theme and accessibility-device checks remain pending before phone release. No experiment or release published.
+
+31 October release authorized by John: integrate original welcome #340 and published Android 0.2.1 runtime/configuration #326 through #342. Finish category badge, Plan chart and Today button refinements. Combined checks pass; merge and phone compatibility/promotion verification in progress. No SDK58 or account-safety migration included.

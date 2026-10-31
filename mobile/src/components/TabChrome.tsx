@@ -87,7 +87,7 @@ export function TodayBar() {
           <Text style={{ color: 'rgba(255,255,255,0.8)' }} className="font-mono text-[11px]">{count.done} of {count.of} days this month</Text>
         </View>
         {left > 0 && (
-          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 14, borderBottomWidth: 4, borderBottomColor: 'rgba(0,0,0,0.2)', paddingHorizontal: 16, paddingVertical: 8 }}>
+          <View style={{ backgroundColor: '#FFFFFF', borderRadius: 999, paddingHorizontal: 16, paddingVertical: 8 }}>
             <Text style={{ color: TAB_COLOR.home }} className="text-[15px] font-extrabold">Start</Text>
           </View>
         )}
