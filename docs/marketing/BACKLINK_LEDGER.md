@@ -222,7 +222,7 @@ Peerlist and Shipstry were confirmed among the legitimate Ahrefs entries. Most h
 | Dofollow.Tools | `not-submitted` | Codex backlink acquisition | 2026-07-23 | DR 73 by Ahrefs public domain-rating-free endpoint. `https://dofollow.tools/pricing` advertises a free submission with 1 free submission per day, a required dofollow footer backlink/badge, 7-day review, and manual approval. Official dark badge was added to the UntilFire footer in the 2026-07-22 session, but the listing form still shows sign-in controls and requires logo/screenshot uploads before the free submission can be completed. |
 | Verified Tools | `not-submitted` | Codex backlink acquisition | 2026-07-22 | DR 50 by Ahrefs public domain-rating-free endpoint. `https://www.verifiedtools.info/submit` advertises a free dofollow backlink path, but the public submit form requires a Turnstile/security check plus logo and screenshot uploads. No CAPTCHA/security challenge was bypassed and no submission was made. |
 | Directory-Free.com | `not-submitted` | Codex backlink acquisition | 2026-07-22 | DR 31 by Ahrefs public domain-rating-free endpoint. `https://www.directory-free.com/submit/submit.php` has a free regular listing flow and Finance category, but after category selection the detail step requires an image verification code; dofollow language was clearly visible for the paid featured listing, not confirmed for the free regular listing. No CAPTCHA/verification bypass or submission. |
-| Low-DR easy dofollow batch 2026-07-22 | `not-submitted` | Codex backlink acquisition | 2026-07-22 | Screened no-account/easy candidates from fresh search but skipped below the user's DR >= 10 rule: Directory Index `directory-index.com` DR 1.7 and Postioo `postioo.com` DR 8.0. No submission or badge work. |
+| Low-DR easy dofollow batch 2026-07-22 (historical; Directory Index superseded below) | `historical-screening` | Codex backlink acquisition | 2026-07-22 | Screened no-account/easy candidates from fresh search but skipped below the user's DR >= 10 rule: Directory Index `directory-index.com` DR 1.7 and Postioo `postioo.com` DR 8.0. No submission or badge work. |
 | DRBoost | `not-submitted` | Codex backlink acquisition | 2026-07-19 | `https://drboost.io/submit` advertises free and paid listings, but the page title/copy positions dofollow as the paid route while free is not the dofollow target. No paid submission. |
 | NewTool | `not-submitted` | Codex backlink acquisition | 2026-07-19 | `https://newtool.site/submit` redirects to `/auth/login?callbackUrl=%2Fsubmit`. No account flow used. |
 | Turbo0 | `not-submitted` | Codex backlink acquisition | 2026-07-19 | `https://turbo0.com/submit` redirects to `/auth/login?callbackUrl=%2Fsubmit`. No account flow used. |
@@ -469,8 +469,8 @@ Copy the appropriate table row above, then fill every known field. At minimum re
 | --- | --- | --- | --- |
 | DevElif | `live-follow` | https://develif.com/s/untilfire-financial-freedom-planner | Submitted free; response ok=true, status=PUBLISHED. Public page returned HTTP 200; direct UntilFire anchors have rel="noopener noreferrer" only, robots index/follow. Do not resubmit. |
 | Postmake | `submitted` | https://postmake.io/submit-badge-listing | Official badge submission accepted on 2026-10-24, HTTP 200 and {"ok":true}; existing homepage badge verified present. Await editorial review, then verify public listing and link attributes. Do not resubmit. |
-| Discoverly | `not-submitted` | https://discoverly.tech/submit | Official badge prepared on /directory-partners; requires deployment before truthful submission. Free submission uses Finance / Freemium / Web. Badge required while listed. No publication or link claim. |
-| LaunchesHQ | `not-submitted` | https://launcheshq.com/submit | Official badge prepared on /directory-partners; requires deployment and sign-in. Free plan gives nofollow until badge verification. Verify using https://www.untilfire.com/directory-partners; select $0 review queue. No publication or link claim. |
+| Discoverly | `pending` | https://discoverly.tech/submit/thanks | Free Finance / Freemium / Web submission accepted 2026-10-24. HTTP 200 confirmation: “You’re in the queue”; “Badge found. Your product is waiting for review.” Submitted badge page https://www.untilfire.com/directory-partners. No public listing or incoming dofollow link verified yet. Do not resubmit while pending. |
+| LaunchesHQ | `not-submitted` | https://launcheshq.com/submit | Official badge verified live at https://www.untilfire.com/directory-partners on 2026-10-24. Free submission requires sign-in, $0 review queue and badge verification. Browser access is unavailable; no account, listing or submission created. |
 
 Badge assets returned HTTP 200 on 2026-10-24. The separate public page avoids overlapping open PR #161's homepage footer work. No existing production route was reskinned. A month-end audit in the requesting chat checks all published directory badges and actual outbound rel attributes; pending review is not a verified dofollow backlink. Confirmed failures can lead to a removal PR; network errors are inconclusive. John authorized sequential merges on 2026-10-24; PR #161 merged as 350ac4eef565c898d48f6fb34f2571148337f5fe with current links preserved. PR #296 follows after checks. No directory submission is implied by a merged badge.
 
@@ -479,7 +479,562 @@ Badge assets returned HTTP 200 on 2026-10-24. The separate public page avoids ov
 | Platform | Status | Submission / evidence URL | Verified conditions and next step |
 | --- | --- | --- | --- |
 | Launch Streak | `not-submitted` | https://launchstreak.dev/onboarding | Official homepage advertises free dofollow; sample https://launchstreak.dev/finance/tapetide has direct links with rel="noopener". Profile setup required. Browser control repeatedly timed out, and a later HTTP onboarding fetch failed. No profile or account created, no submission sent. |
-| IndieLineup | `not-submitted` | https://indielineup.com/submit/?tier=free | Official free plan offers one dofollow link, requires reciprocal badge, no account. Verifier sends website_url only, not a separate badge page URL, so do not assume /directory-partners works. Official asset https://indielineup.com/badge/untilfire.svg returned 200. Existing sample https://indielineup.com/product/coheronix/ links out with rel="noopener". Homepage badge added in PR #296 after footer PR #161 was merged. Submission awaits production badge verification. |
-| Wayfindio | `not-submitted` | https://wayfindio.com/submit | Official free plan requires a footer backlink, logo and account; review quoted within two days. Official asset https://wayfindio.com/badge/badge_light.svg returned 200. Sample https://wayfindio.com/product/finconv links directly to finconv.app with empty rel. Do not imply a separate badge page meets the footer condition. Homepage footer badge added in PR #296 after PR #161 was merged. Submission awaits production deployment and sign-in. |
+| IndieLineup | `live-follow` | https://indielineup.com/product/untilfire/ | Free submission accepted 2026-10-24. Receipt: “Submission Received”; “Your badge has been verified and your listing is now live.” Public listing returned HTTP 200; website, screenshot and text anchors point directly to https://www.untilfire.com/?utm_source=indielineup.com&utm_medium=referral with rel="noopener" only. No nofollow, ugc, sponsored or redirect intermediary observed. Badge remains on the live UntilFire homepage. Do not resubmit. |
+| Wayfindio | `not-submitted` | https://wayfindio.com/submit | Homepage footer badge verified live on 2026-10-24. Free plan requires account/sign-in and logo. Browser access timed out during this session; no account or listing created and no submission claimed. Existing sample finance listing has a direct dofollow website link, but this is not evidence of an UntilFire backlink. |
 
 Prepared product facts for the three forms: UntilFire; https://www.untilfire.com/; financial freedom planning app; free no-login estimate, scenario comparisons and saved progress; Freemium / Web. No paid upgrades or invented company/account information. No new backlinks claimed from this candidate batch.
+
+### Free-directory continuation 2026-10-24
+
+Owner/session: Codex backlink acquisition. Continued from pushed main `bbecec0b12962be5d89e7d0ef5fdf7e6f4866f22` and the existing unmerged receipt branch for PR #300. No website changes or new badges.
+
+| Platform | Status | Submission / evidence URL | Verified conditions and next step |
+| --- | --- | --- | --- |
+| Web Apps Directory | `pending` | https://webapps.directory/submit | Free standard submission accepted 2026-10-24: HTTP 200, `ok:true`, `receipt_status:queued`, submission ID `srv_mvmhzt32_xewhwl`. Finance & Business; contact ash@untilfire.com approved by John. Review stated up to four weeks. Sample https://webapps.directory/directory/tta1 links directly to its product with rel="noopener noreferrer" only. UntilFire public route returned 404 immediately after submission; no incoming dofollow confirmed yet. Do not resubmit. |
+| PWA Directory | `pending` | https://pwa.directory/submit | Free standard submission accepted 2026-10-24: HTTP 200, `ok:true`, `receipt_status:accepted`, submission ID `88f26222-4de0-42ef-ad73-b1a66da52d68`. Finance & Business; review stated up to four weeks. UntilFire's live manifest and /sw.js returned 200; pinned main layout registers the worker. Sample https://pwa.directory/directory/tta1 has direct rel="noopener noreferrer" product links. UntilFire public route returned 404 immediately after submission; no incoming dofollow confirmed yet. Do not resubmit. |
+| purshoLOGY | `not-submitted` | https://www.purshology.com/submit-your-tool/ | Official form advertises a free reviewed dofollow listing. Search returned zero UntilFire results before attempt. Normal form submission returned "Invalid request!"; its normal page-load token-refresh action returned 0. No success receipt or public listing. Treat as failed, not queued; no alternate bypass attempted. |
+| Qevra | `not-submitted` | https://qevra.app/ | Current homepage and API docs require $2 for a listing, despite older free-listing references. Skipped: zero budget. |
+| PromoteIndex | `not-submitted` | https://promoteindex.com/p/tta1 | Current sample website anchor uses rel="nofollow ugc noopener". Skipped under dofollow-only instruction, despite third-party dofollow claims. |
+| Canopy Launch Directory | `not-submitted` | https://canopystack.dev/launches | Current public directory anchors use rel="nofollow noopener". Skipped; no submission sent. |
+| LeanVibe | `not-submitted` | https://submitmap.com/platform/leanvibe/ | Eligibility excludes freemium products; UntilFire offers optional paid features. Skipped as wrong fit; no submission sent. |
+| Ignlab Launch | `not-submitted` | https://launch.ignlab.net/submit.html | Public form requires a math human-verification answer. No challenge solved and no submission sent. |
+| PRKatalog | `not-submitted` | https://prkatalog.info/submit-site | Public form and sample requests returned HTTP 429. No submission sent; respect rate limiting. |
+
+No new live dofollow backlink was confirmed in this continuation. Two new free review receipts were obtained. Existing monthly badge audit remains unchanged.
+
+### Additional verified backlink 2026-10-24
+
+Owner/session: Codex backlink acquisition. Baseline remains pushed main `bbecec0b12962be5d89e7d0ef5fdf7e6f4866f22`; receipt updates continue on PR #300 without changing website code.
+
+| Platform | Status | Submission / evidence URL | Verified conditions and next step |
+| --- | --- | --- | --- |
+| ToolIndex | `live-follow` | https://strategic-flow-audit.replit.app/directory/untilfire-10780 | Free public submission accepted 2026-10-24: HTTP 200, success=true, id=10780. Public page returned HTTP 200, title "UntilFire — Finance Tool", self-canonical URL and direct https://www.untilfire.com/ website anchor with rel="noopener" only. No nofollow, ugc, sponsored, redirect intermediary, page robots noindex/nofollow, or X-Robots-Tag observed. Public directory API confirms UntilFire, category Finance and the submitted factual description. No account, payment or reciprocal badge required. Contact ash@untilfire.com used with John's prior approval. Do not resubmit. Provider is hosted on a Replit subdomain; its advertised DR 86 is not treated as a verified rating of this listing or a promise of SEO impact. |
+| The Tool Directory | `not-submitted` | https://thetooldirectory.com/submit-a-tool/ | Free reviewed form supports Business & Finance, but current sample https://thetooldirectory.com/tools/research-match/ uses rel="noopener external sponsored" on its website links. Skipped under the dofollow-only instruction; no submission sent. |
+| FreeBacklink.org | `not-submitted` | https://freebacklink.org/submit/ | Public free form requires a numeric CAPTCHA answer. No challenge solved, form submitted or link claimed. |
+| Webdesign-Inspiration | `not-submitted` | https://www.webdesign-inspiration.com/submit | Current official form explicitly reserves the dofollow backlink for the $50 express option; free listings are nofollow. Skipped under zero-budget/dofollow-only instructions. |
+| SaaSpo | `not-submitted` | https://saaspo.com/submit | Current submit page returned HTTP 403. No bypass or submission attempted. |
+
+This pass obtained one new confirmed live followable link. Earlier pending review entries remain pending and were not resubmitted.
+
+
+## 2026-10-24 follow-up: one free submission and public status audit
+
+| Directory | Status after this check | Evidence |
+| --- | --- | --- |
+| IndieHustles | `pending` - new free submission | Submitted through the public form's normal server function with `submission_tier: free`, UntilFire's public website/product details, and approved contact `ash@untilfire.com`. HTTP 200 returned receipt ID `e54a56c9-9670-46ae-bc88-0e30b35b2c52`. Public `https://indiehustles.com/product/e54a56c9-9670-46ae-bc88-0e30b35b2c52` currently says Product Not Found / not published yet; do not count a backlink. Sample ordinary listing `https://indiehustles.com/product/8c7f16ae-4c4d-4f90-8af1-1ad33f3119e0` links directly to hausjam.com with `rel="noopener noreferrer"`. Free form says 8-10 weeks; generic confirmation says 5-7 days. Approval time is uncertain. No payment, badge, account, or duplicate submission. |
+| IndieLineup | `live-follow` reverified | `https://indielineup.com/product/untilfire/` HTTP 200; three direct UntilFire anchors with `rel="noopener"` only. |
+| DevElif | `live-follow` reverified | `https://develif.com/s/untilfire-financial-freedom-planner` HTTP 200; two direct UntilFire anchors with `rel="noopener noreferrer"` only. |
+| ToolIndex | `live-follow` reverified | `https://strategic-flow-audit.replit.app/directory/untilfire-10780` HTTP 200; direct website anchor with `rel="noopener"` only. |
+| Discoverly | `pending` unchanged | Checked expected public URL `https://discoverly.tech/apps/untilfire`: HTTP 404. No new receipt or duplicate submission. |
+| Web Apps Directory | `pending` unchanged | Checked `https://webapps.directory/directory/untilfire`: HTTP 404. Existing queued receipt remains the evidence of submission. |
+| PWA Directory | `pending` unchanged | Checked `https://pwa.directory/directory/untilfire`: HTTP 404. Existing accepted receipt remains the evidence of submission. |
+| ToolPromote / SaaSGrow / Startup Alternatives | Not publicly verified | Checked previously expected UntilFire URLs: HTTP 404. This is not proof of rejection. No resubmission. |
+| SaaSBison | Not publicly verified | `https://saasbison.com/item/untilfire` returns HTTP 200 but a generic fallback, with no UntilFire listing content or outbound anchor. Do not count the HTTP 200 as a backlink. |
+| Postmake / AppDirectory.org | Not publicly verified | Postmake homepage/search checks did not reveal the listing; this is inconclusive. AppDirectory's checked expected product route returned HTTP 404. Preserve existing pending/unconfirmed state. |
+
+Additional screening: Linkrena's sample ordinary listing links directly with `rel="noopener"`, but its normal `/api/submit` returned auth error "Sign in to submit a tool."; no receipt and no listing created. AI SaaS Radar ordinary links use `rel="ugc nofollow noopener noreferrer"`, so skipped. LinkWith explicitly uses nofollow, so skipped. PublishYourSaaS now points submissions to an account dashboard. CodeHype requires a verified badge for free dofollow. We Are Founders requires a reciprocal link before review and excludes investment tools, so not submitted. Global Site Directory currently offers local-service categories with no accurate UntilFire software category; not retried.
+
+Baseline: latest pushed main `bbecec0b12962be5d89e7d0ef5fdf7e6f4866f22`. Local unrelated changes preserved. Raw receipts and public markup checks saved under `outputs/directory-partners/`; only this ledger is included in the existing receipt PR. This check confirms link markup, not search indexing or ranking impact.
+
+
+## 2026-10-25: Dynamite AI free submission
+
+| Directory | Status | Evidence |
+| --- | --- | --- |
+| Dynamite AI | `pending` | Submitted through the public form's normal multipart POST to `https://dynamiteai-backend.onrender.com/tools`. HTTP 200 receipt: ID `4627`, slug `untilfire`, `posted:false`, `posted_at:null`. Used approved contact `ash@untilfire.com`, public UntilFire icon, finance category and freemium pricing, with a factual FIRE planning description. Free route selected by declining Pro; public form offers "Continue for free" and review within three weeks. Expected public URL `https://www.dynamite-ai.com/tools/untilfire` returns HTTP 404. No backlink counted yet. Sample `https://www.dynamite-ai.com/tools/submitmatic-directory` has three direct website anchors with `rel="noopener noreferrer"`, without nofollow/ugc/sponsored. No account, payment or badge added. Raw receipt saved locally as `outputs/directory-partners/dynamite-receipt-2026-10-25.json`. |
+
+Screening: SaaSLineup already live in ledger, so not duplicated. Phyco free submissions require logo and screenshot, and followed links require ownership badge verification; not submitted. Startup Collections has a public submission path but link type was not verified, so not submitted. Today's new accepted submission is pending, not live. Baseline reverified through GitHub connector: latest main `bbecec0b12962be5d89e7d0ef5fdf7e6f4866f22`; local Git transport failed, local unrelated drift preserved.
+
+
+## 2026-10-25: MoreFunz free submission and dofollow-only screening
+
+| Directory | Status | Evidence |
+| --- | --- | --- |
+| MoreFunz | `pending` | Free public form at `https://morefunz.com/submit-url` accepted one UntilFire submission: HTTP 200, "Thank You. The submission is sent!" Submitted to `/home/personal-finance/software/` with accurate public product description, contact name John and approved email `ash@untilfire.com`. Optional public contact fields left blank; paid listing unchecked. Sample detail page `https://morefunz.com/business/financial-services/mortgages/home-mortgage-loans` links directly to the business website with no rel restriction; sample new-pages links likewise lack nofollow/ugc/sponsored. UntilFire is not yet present on the checked finance software category page, so no live backlink is counted. Directory says it reviews submissions but does not report results. Local receipt: `outputs/directory-partners/morefunz-receipt-2026-10-25.html`. No duplicate, account, payment or badge. |
+
+Rejected/deferred in this pass: SubmitStartup.io explicitly gives free listings nofollow and reserves dofollow for Featured; not submitted. Amplibee sample `/launches/tta1` has a direct `rel="noopener"` website link and index/follow meta, but its current submit handler requires authentication plus Turnstile; not submitted. PRKatalog remains blocked by a Vercel security checkpoint (HTTP 429), so no submission. ProductCool now redirects submission to sign-in; DirVibe also requires login. ToolPassed, Cockpit Index and Stackdrop are specialized AI/developer/aviation directories without a strong demonstrated UntilFire fit. Previously listed Canopy and Zearches were not duplicated. BidoutX link type was not verified; no listing sent.
+
+Baseline: latest pushed main `bbecec0b12962be5d89e7d0ef5fdf7e6f4866f22` reverified. Local unrelated changes preserved. Only this ledger updated in the receipt PR; no website, badge or deployment changes.
+
+
+## 2026-10-25: SEO Listing free submission
+
+| Directory | Status | Evidence |
+| --- | --- | --- |
+| SEO Listing | `pending` | Free form `https://seolisting.io/add-listing`, normal public POST `/api/listings`. Before submission the public listing API had zero UntilFire matches. HTTP 201 receipt: `{"ok":true,"id":"lst_0mvmmegk921b1110439ed","slug":"untilfire","status":"pending"}`. Used Technology & IT (`technology`, explicitly includes software/SaaS), factual product description, John and approved contact `ash@untilfire.com`. Optional address/phone/hours blank. Public `https://seolisting.io/listings/untilfire` is HTTP 404, so no live backlink counted. Sample `https://seolisting.io/listings/homegpt` has three direct website anchors with `rel="noopener"` only and `robots=index, follow`. Publisher states free dofollow listings and human review within 24 hours; approval is not guaranteed. No payment, badge, account or duplicate. Local receipt `outputs/directory-partners/seolisting-receipt-2026-10-25.json`. |
+
+Screening: Freeboard explicitly says it does not pass ranking credit and routes through click tracking; skipped under dofollow-only scope. HereIsMySaaS requires sign-in. AI-only/design directories were not used without demonstrated product fit. aifindr now requires GitHub sign-in despite its no-account text; no submission. WebRankDirectory returned HTTP 403; no bypass.
+
+Baseline: latest fetched `origin/main` remains `bbecec0b12962be5d89e7d0ef5fdf7e6f4866f22`. Fetch succeeded but Git background maintenance reported a pre-existing bad-tree/repack error; unrelated local changes preserved. This PR changes only the backlink ledger.
+
+
+## 2026-10-25: ShowMeYourSaaS submission
+
+| Directory | Status | Evidence |
+| --- | --- | --- |
+| ShowMeYourSaaS | `pending` - followed link advertised, not verified | User requested help completing the open form. Normal public `POST https://showmeyoursaas.com/api/submissions`, free `plan:none`, returned HTTP 201: `{"id":"e5c8aab6-a04c-4d41-b177-55ac4643203b","status":"pending"}`. Used approved `ash@untilfire.com`, John, public product facts, free-plan pricing, Analytics category (no finance category), existing public Reddit handle. Optional media URLs blank. Submit page advertises a permanent profile, followed link and no launch-period listing charge. No published product profile found to inspect, so link type remains unverified and no backlink is counted. No payment, badge or account. Receipt saved locally at `outputs/directory-partners/showmeyoursaas-receipt-2026-10-25.json`. Do not resubmit from the partially filled browser form. |
+
+Baseline correction: GitHub main advanced during this check to `8d3ebde6d26a3b2b55498020b72c576b3924cba4`; this supersedes the initially cached baseline for this entry. Local Git transport failed; unrelated local changes preserved. The existing receipt branch retains its earlier receipts and adds only this documentation.
+
+
+## 2026-10-25: Directory Index live dofollow listing
+
+| Directory | Status | Evidence |
+| --- | --- | --- |
+| Directory Index | `live-follow` | Free homepage form `https://directory-index.com/` submitted once through its normal multipart `add.php` endpoint with its session CSRF token. Used UntilFire's public product details, approved `ash@untilfire.com`, business/finance category and public Open Graph image. HTTP 200 confirmation said "Your Website Is Live" and "UntilFire passed our checks and is now published". Public `https://directory-index.com/business/untilfire/` independently returns HTTP 200, correct self-canonical, `robots=index, follow`, no X-Robots-Tag restriction, and a direct `https://www.untilfire.com/` anchor with `rel="noopener noreferrer"` only. No nofollow/ugc/sponsored or redirect intermediary. No payment, badge or account. Local evidence: `outputs/directory-partners/directoryindex-receipt-2026-10-25.html` and `directoryindex-untilfire-live.html`. |
+
+Authority caveat: the older July skip recorded DR 1.7. The newer AZN8 public catalog reports DR 26 for Directory Index, which prompted this reassessment. This number is third-party, not independently confirmed: Ahrefs' official free DR endpoint returned HTTP 403, and current official documentation requires a free API key. Do not advertise DR 26 as verified. Actual link markup and page indexability were verified directly; search indexing and ranking gains are not claimed.
+
+Other screening: Deep Blue Directory submit endpoint returns HTTP 500. Being Guru's current form is reported to require a phone number and offers no assured publication; not submitted. 600.tools remains blocked/sign-in gated. No duplicates or paid placements.
+
+Baseline: latest fetched and connector-verified main `8d3ebde6d26a3b2b55498020b72c576b3924cba4`. Local unrelated drift preserved; background Git repack reports a pre-existing bad-tree error. Only this ledger updated on the existing receipt branch; no website changes.
+
+
+## 2026-10-25: finance-specific directory submissions
+
+| Directory | Status | Evidence |
+| --- | --- | --- |
+| NxtGenFin | `pending` | Free `https://www.nxtgenfin.tech/submit` form, normal public JSON `POST /api/submit`, returned HTTP 200 `{"ok":true}`. Submitted UntilFire once in `budgeting` (Budgeting & personal finance) with accurate public description and approved `ash@untilfire.com`; regions left blank, maker/representative true, paid Featured declined. Published sample `https://www.nxtgenfin.tech/tools/empower` has two direct Empower anchors with `rel="noopener"` only. Existing catalog/homepage did not contain UntilFire. Publisher says approved tools usually go live within a week. UntilFire publication and its own anchor still unverified; do not count yet. Local receipt `outputs/directory-partners/nxtgenfin-receipt-2026-10-25.json`. |
+| WallStreetStack | `pending` | Official `https://wallstreetstack.com/submit` links to `https://forms.gle/GH6u4tHW934cBjuX9`. Submitted once to that form's normal formResponse action. HTTP 200 confirmation: "您的回复已记录。" (Your response has been recorded). Name UntilFire, homepage, factual description, approved `ash@untilfire.com`, suggested Personal Finance category, free editorial consideration only. Existing site's published client renderer creates direct website anchors with `rel="noopener noreferrer"` only; this is renderer evidence, not verification of UntilFire's future listing. No UntilFire match in the inspected public bundle. Human review 5-7 business days, approval not guaranteed. No paid sponsorship, account or badge. Local receipt `outputs/directory-partners/wallstreetstack-receipt-2026-10-25.html`. |
+
+Both are finance-relevant candidates. Actual UntilFire backlinks remain pending; no new live link is claimed. DR was not independently verified for either. FreeStartupDirectories was screened but not submitted because its free-link type and exact eligibility were not yet verified.
+
+Baseline: latest pushed main `8d3ebde6d26a3b2b55498020b72c576b3924cba4` reverified via GitHub connector. Local Git transport failed; local drift preserved. Only ledger updated in the existing receipt PR, with no website or deployment changes.
+
+
+## 2026-10-25: next-batch qualification and SaaSList sign-in blocker
+
+| Directory | Status | Evidence |
+| --- | --- | --- |
+| SaaSList | `not-submitted` - sign-in required | Official free multi-step form `https://www.saaslist.io/products/new` is public. Sample FanDesk listing `https://www.saaslist.io/products/ada4d9e8-6f29-4dd4-9195-a5d915224558` returns public HTML with a direct vendor website anchor using `rel="noopener"` and `robots=index, follow`. Form fields prepared: UntilFire, official homepage/icon, factual FIRE-planning description, freemium, web platform. The form's normal public `POST /api/products` returned HTTP 401 `{"data":null,"success":false,"error":"Unauthorized"}`. No record created; do not count as submitted or a backlink. Needs legitimate account sign-in before finishing. Public form opened as a user handoff. |
+| IndieNeed | `not-submitted` | Official submit page explicitly states free listings get nofollow and paid launches from $15 get dofollow. Skipped: zero budget/dofollow only. |
+| Ramen.Tools | `not-submitted` | Maker/tech-stack profile platform; sign-in required, no clean anonymous UntilFire product-submission path established. |
+| FreeSaaSDirectory / SaaSRadar | `not-submitted` | Canonical host attempts fail TLS validation; no bypass and no submission. |
+| WebToolsDirectory | `not-submitted` | Checked host returned HTTP 522; no usable free form. |
+| Share Fast | `not-submitted` | Official homepage requires login and $2.99 paid listing or free backlink verification. No account, payment, badge or submission created. |
+| SEOVentra | `not-submitted` | Official directory emphasizes SEO, AI writing and technical tools. Guide mentions Finance Tools but actual UntilFire fit/free followed-link behavior was not established. No submission. |
+| Trust My Tool | `not-submitted` | Homepage exposes login/register and zero loaded tools/categories in checked state; no verifiable sample listing link. |
+
+No new submission or live backlink in this batch. Continue with SaaSList after sign-in; avoid repeating rejected free-nofollow paths. Baseline main `8d3ebde6d26a3b2b55498020b72c576b3924cba4` verified through GitHub; local Git transport failed and unrelated local drift preserved. Only ledger changed.
+
+
+## 2026-10-25: signed-in browser retry and duplicate prevention
+
+User reported signing in to SaaSList. In-app browser access timed out before the form could be observed; no authenticated submission or record is confirmed. SaaSList remains not submitted, now blocked by browser connectivity rather than a request for sign-in. No duplicate POST was sent.
+
+Corrected candidate screening: SaaSLineup and TheSaaSDir were already recorded as live-follow on 2026-08-27. Fresh public checks on 2026-10-25 returned HTTP 200 at https://saaslineup.com/product/untilfire/ and https://thesaasdir.com/product/untilfire/. Each has three direct https://www.untilfire.com/ anchors with rel="noopener" only, without nofollow, ugc or sponsored. These are reverified existing backlinks, not new acquisitions. Neither was resubmitted and no extra badge was added. Launching Next already has a submission receipt from June and was not resubmitted. PromoteIndex's official /seo page requires five distinct votes before removing nofollow/ugc; excluded from immediate dofollow acquisition.
+
+Latest pushed main remains 8d3ebde6d26a3b2b55498020b72c576b3924cba4, verified through GitHub. Fetch attempted but network connection failed; local unrelated drift preserved. No new submission or backlink in this retry.
+
+
+## 2026-10-25: SaaSList live confirmation and further qualification
+
+| Platform | Current status | Evidence |
+| --- | --- | --- |
+| SaaSList | live-follow | Supersedes earlier sign-in/browser blocker. User browser reached the success page, and independent public HTTP 200 check at https://www.saaslist.io/products/b4adde69-c30c-4b30-8188-a8cfb7831c1b confirmed title UntilFire - Personal Freedom via Finance and two direct https://www.untilfire.com/?ref=saaslist anchors with rel=noopener only. No nofollow/ugc/sponsored token. This was completed by the user; no duplicate submission by Codex. |
+| BSDirectory | not-submitted | Free normal form and Finance category available, zero UntilFire search matches. Sample https://directory.project-bs.com/products/bartok website button uses rel=nofollow and /api/products/click?slug=bartok redirect. Excluded under dofollow-only instruction. No submission sent. |
+| List Maro | not-submitted | https://listmaro.com/submit public five-step form; sample https://listmaro.com/tools/tta1 has direct rel=noopener noreferrer links. Current free final step requires sign-in and verified reciprocal badge. No account, badge or submission created in this batch. |
+| StackLedge | not-submitted | https://www.stackledge.com/submit redirects to login?next=/submit. No authenticated submission attempted. |
+
+No new submission accepted in this screening batch. SaaSList is an existing completed submission newly recorded as live-follow. All earlier SaaSList not-submitted notes are historical and superseded by this entry.
+
+
+## 2026-10-25: TechTools free submission accepted
+
+| Platform | Status | Evidence and limits |
+| --- | --- | --- |
+| TechTools Launchpad | live-unverified (published API record; followed renderer verified) | Official documented no-account/no-CAPTCHA free POST https://techtools.cz/launchpad-api/tools accepted UntilFire with HTTP 201, success=true, id=5388, message "It is now live." Share URL https://techtools.cz/tools/launchpad/?tool=5388. Submitted factual public product name, homepage, FIRE-planning description, Business & Finance category, John, public icon, and submitted_by="Codex for UntilFire". No email, payment, account or badge. Independent GET /launchpad-api/tools/5388 confirms UntilFire and https://www.untilfire.com. Public share page returns HTTP 200 and robots=index, follow. Current official script.js?v=20261020 renders direct tool.url anchors with rel=noopener only, including Visit button. Links are client rendered: own hydrated DOM not independently observed, so do not overstate this as fully verified live-follow or search-indexed. Receipt outputs/directory-partners/techtools-receipt-2026-10-25.json. Do not resubmit. Domain rating not independently verified; no DR claim. |
+| WorthToTry | not-submitted | Official /submit says account/magic-link required and agent can create only a draft for user final review; no submission attempted. |
+
+Baseline fetch origin main attempted before tracker write; unrelated local drift preserved. No application or badge code changed. This batch produced one accepted free submission, with publication independently confirmed through public API; own rendered-anchor verification remains outstanding.
+
+
+## 2026-10-25: one-more request qualification, no new accepted submission
+
+Checked additional candidates without claiming success: Bidrise.live sample https://bidrise.live/p/tta1 uses rel=ugc nofollow noopener noreferrer and official submit FAQ disclaims ranking credit. Shipboard sample https://shipboard.live/s/azn8.com uses rel=ugc noopener. DealMyApp sample https://dealmyapp.com/listings/azn8 uses rel=nofollow noopener. All excluded. SaaS Dealer's sample /tools/dcs4 exposes a nofollow vendor pricing link; main followed-link eligibility was not established, so not submitted. AlterBase's free lane requires a badge. Unloc's free form requires a human check. isthereanytool.app requires account and mentions payment; SaaSHammer and Saaspa.ge require sign-in. Saasuji returned HTTP 402. webinhalt.de requires German-language website content, so UntilFire was not submitted as a mismatch. No CAPTCHA, account, payment, badge, or duplicate submission created. One more qualifying submission has not yet been achieved.
+
+Local baseline fetch hit FETCH_HEAD permission denied; GitHub main checked independently before this tracker-only update. Extensive unrelated local workspace drift preserved.
+
+
+## 2026-10-25: two additional followed-link candidates qualified
+
+| Platform | Status | Evidence and next step |
+| --- | --- | --- |
+| BuildShipper | not-submitted, sample-follow verified | https://buildshipper.com/submit explicitly offers a free listing with followed backlink; paid boosts optional. Published sample https://buildshipper.com/p/azn8 has direct https://azn8.com anchor rel=noopener. Finance category exists. Current normal submission workflow is URL, Details, Account; final publish requires Google or email/password authentication. No account, credential, listing, badge, or payment created. Next step: legitimate sign-in, then complete free UntilFire listing and verify own public anchor. |
+| NextRankHQ | not-submitted, sample-follow verified | https://nextrankhq.com/app-directory offers free audit/launch and permanent dofollow product profile. Published sample https://nextrankhq.com/apps/article-to-audio contains direct https://www.tta1.com?ref=nextrankhq.com anchor rel=noopener noreferrer. Actual UntilFire launch not created; account/final workflow still needs checking. No claim of UntilFire backlink, traffic or domain authority. |
+| Endors | not-submitted, excluded | Fresh sample https://endors.me/product/azn8 website anchor uses rel=noopener noreferrer nofollow ugc; excluded despite older third-party followed-link catalog evidence. |
+
+No new accepted submission in this pass. Two qualified next candidates recorded; no repeat of already live SaaSLineup/TheSaaSDir or existing pending forms. Local baseline fetch attempted before tracker change; unrelated drift preserved.
+
+
+## 2026-10-25: requested BuildShipper and NextRankHQ submissions attempted
+
+User explicitly requested submitting both. BuildShipper Chrome form opened and showed URL/Details/Account steps; cookie Reject completed, but browser calls timed out before any product details or authenticated publish could be confirmed. Recovery refreshed browser inventory (Chrome ID changed from 3 to 2); new DOM confirmed website field still empty, then URL-fill/read action timed out again. No accepted submission, account, receipt or live UntilFire link. Do not claim draft saved.
+
+NextRankHQ's official Launch Your Product Free link leads to https://nextrankhq.com/internal-ai-launch-audit. Public normal form has URL input and required Cloudflare Turnstile, submit button disabled while Verifying Security. No challenge solved/bypassed and no POST or listing created. Needs user/browser security verification, followed by actual launch workflow; audit alone would not prove listing submission.
+
+Both official pages opened in Codex as user handoffs (queued). No payments, duplicated listings or success claims. Both remain not submitted with sample-follow evidence only. Baseline fetch attempted before tracker write; unrelated local workspace preserved.
+
+
+## 2026-10-25: user completion report and two newly screened directories
+
+John said "submitted" after the BuildShipper/NextRankHQ handoff; ambient browser showed dashboard.tulimoa.com. Record user-reported completion without inferring which exact platform(s) or claiming independently verified public listings. Do not resubmit BuildShipper, NextRankHQ or Tulimoa before checking their status.
+
+ProjectRadar: new not-submitted candidate. https://getprojectradar.com/submit offers free consideration for public independent projects, no guaranteed publication. Sample https://getprojectradar.com/projects/founderomni has a direct vendor anchor with rel=noopener noreferrer only. Current form requires Cloudflare Turnstile. No challenge solved/bypassed, no form submitted, no backlink claimed. Opened official submit page as user handoff. Draft content can use UntilFire name, official homepage, approved ash@untilfire.com and factual FIRE-calculator description; optional logo not uploaded.
+
+Digivated: new not-submitted candidate. https://digivated.com/submit-project offers free directory review without account via normal /api/submissions; public form fields and permission-to-display notice inspected. Do not submit yet: published own/sample followed-link markup has not been established. Paid promotion and membership ignored. ProjectRadar and Digivated are new qualification work, not accepted submissions.
+
+Baseline fetch attempted before tracker-only update; unrelated local changes preserved.
+
+
+## 2026-10-25: ProjectRadar submission accepted
+
+Supersedes prior not-submitted/security blocker. User completed verification; Codex filled the existing verified form without reloading. UntilFire, https://www.untilfire.com/, factual FIRE calculator/planning description, category Utilities & Calculators, stage Launched, approved ash@untilfire.com, accuracy/editorial-consideration checkbox. Optional file and local draft saving omitted. Verification expired during connection recovery but later the visible status was Verification complete and submit button enabled. Submitted once through the normal free form.
+
+Visible receipt: "Submission received", "Your free submission is saved", "UntilFire is saved for free Project Note consideration." Saved reference PR-96A91C8B37. A receipt email was accepted for delivery, not confirmed delivered to inbox. Status pending editorial consideration; no publication or live UntilFire backlink claimed. No payment or optional upsell. Do not resubmit. Screenshot outputs/directory-partners/projectradar-receipt-2026-10-25.png; browser receipt tab retained. Private one-time optional detail links not copied into this ledger.
+
+Normal baseline fetch attempted before tracker-only write; unrelated local changes preserved.
+
+
+## 2026-10-25: AwesomeFinTech free submission accepted
+
+Supersedes earlier AwesomeFinTech not-submitted/connectivity note. Official https://www.awesomefintech.com/add/ company link resolves to Google Form 1FAIpQLSfJiom8a0sLguZ26omGCAsIBBN5p4HJKs5Tx_01yvHKc0jLBw. Free normal form POST returned HTTP 200 and "您的回复已记录。" (Your response has been recorded). Receipt outputs/directory-partners/awesomefintech-receipt-2026-10-25.html. Status submitted / pending editorial review, no public UntilFire listing or own backlink verified. Do not resubmit.
+
+John supplied 2026, Palo Alto, John / John NG, no funding. Submitted company UntilFire; founding year 2026; Palo Alto, United States; founder John Ng; funding None; website https://www.untilfire.com/; contact ash@untilfire.com (previously approved); categories Financial Wellness, Wealth Tech, Personal Finance; factual calculator/planner description, no guarantee or investment-advice claim; optional Twitter/LinkedIn omitted. Allowed listing-related follow-up questions. Sample https://www.awesomefintech.com/company/brightplan-mjpjm/ independently has direct https://brightplan.com anchor with rel=noreferrer only. Sample followed link is evidence of directory behavior, not UntilFire publication.
+
+Other screening: PeplioHUB's current FAQ restricts fit to SEO/marketing/AI/content despite Other tools category; UntilFire was not submitted without demonstrated fit. StakDock public renderer uses nofollow for ordinary non-premium/non-featured vendor links; no free dofollow submission made. No payment, account, badge, newsletter signup or duplicate submission.
+
+Baseline fetch updated origin/main before ledger-only change, while unrelated local changes were preserved. Background repository garbage collection still reports pre-existing bad-tree/repack error; no repair attempted.
+
+
+## 2026-10-25: Clapstorm and Lifto qualification
+
+| Platform | Status | Evidence / next step |
+| --- | --- | --- |
+| Clapstorm | not-submitted; free route and sample-follow verified | Official https://www.clapstorm.com states free launches and no paid board placement. Sample https://www.clapstorm.com/p/submitmystartup returned HTTP 200 and a direct vendor anchor with rel=noopener only. Submit navigation resolves to https://www.clapstorm.com/sign-in?intent=submit (Google/GitHub or email/password). No account, form submission or UntilFire public listing created. Official sign-in page opened in Codex as user handoff. After sign-in, check existing UntilFire status then submit free and verify own anchor. |
+| Lifto | not-submitted; badge condition | Sample https://liftoapp.com/product/submitmystartup returned HTTP 200 and direct website anchor rel=noopener. However current official homepage explicitly says do-follow once badge added. Requires a demo video or carousel and sign-in; no badge, media upload or listing created. Existing UntilFire launch video may be relevant if pursued later. Do not assume sample behavior means unconditional free dofollow. |
+| LaunchBert | not-submitted; excluded free-nofollow | Official homepage/pricing now explicitly states free Starter public pages are nofollow; Pro EUR9 and Max EUR29 give dofollow. Skipped zero-budget instruction despite older third-party sample reports. |
+
+StackLedge recheck still redirects /submit to login despite homepage no-account-start copy. No duplicate submission. Baseline fetch main attempted before tracker-only change; unrelated local drift preserved. No newly accepted submission in this batch.
+
+
+## 2026-10-25: Clapstorm live-follow submission completed
+
+Supersedes prior Clapstorm not-submitted/sign-in blocker. At John's explicit request, used normal Google sign-in with existing John account, reached public launch form, filled UntilFire, https://www.untilfire.com/, Finance category, tagline See when work could become optional., and factual FIRE-calculator/planner description. Optional logo omitted. Current round selected, no payment or optional badge required. Clicked Launch it once. Visible success: "You're live on the board" and navigation to https://www.clapstorm.com/p/untilfire. No claps, reviews, social shares or badge code posted.
+
+Independent anonymous public HTTP 200 check at https://www.clapstorm.com/p/untilfire confirms direct https://www.untilfire.com/ website anchor with rel=noopener only; no nofollow, ugc, sponsored or redirect intermediary. Status live-follow. Search-engine indexing not claimed. Screenshot outputs/directory-partners/clapstorm-live-2026-10-25.png. Do not resubmit; existing listing should be edited if needed. Retained published page as deliverable. Normal main fetch attempted before tracker-only update; unrelated local changes preserved.
+
+
+## 2026-10-25: SaaSolution free editorial submission accepted
+
+| Platform | Status | Evidence |
+| --- | --- | --- |
+| SaaSolution | submitted / pending editorial review | https://saasolution.io/submit/ free no-account form. Existing tracker had no SaaSolution record and current public homepage had no UntilFire match. Sample https://saasolution.io/tool/submitmystartup/ returned direct vendor website anchors with rel=noopener only (no nofollow/ugc/sponsored). Normal form handler POST /api/submit/ with official homepage, approved ash@untilfire.com, factual <=280-character calculator/planner description, empty honeypot, real form-read timestamp returned HTTP 200 {"success":true,"message":"Submission received","id":502}. Receipt outputs/directory-partners/saasolution-receipt-2026-10-25.json. No account, payment, badge or newsletter. Review timing unknown; publication not guaranteed. UntilFire's own published link is not yet verified and must not count as live-follow. Do not resubmit. |
+
+User's dofollow-only requirement applies: sample markup qualified this editorial submission, but no live UntilFire backlink claimed until public listing and own anchor are checked. Latest main fetch attempted before ledger-only update; local unrelated drift preserved. Existing background git repack error not repaired.
+
+
+## 2026-10-25: MadeLaunch and IndieLogs qualification
+
+| Platform | Status | Evidence |
+| --- | --- | --- |
+| MadeLaunch | not-submitted; sample-follow verified | Official https://madelaunch.com offers Get Started Free; signup route https://madelaunch.com/register supports Google/email and displays account Terms notice. Public sample https://madelaunch.com/products/submitmystartup has direct vendor href with rel=noopener only, no nofollow/ugc/sponsored. No UntilFire record in tracker. Requires legitimate sign-in/account setup before free submission; current review not completed. Login page opened for user handoff, no account/terms acceptance/submission/payment created. |
+| IndieLogs | not-submitted; sample-follow verified | Public maker profile https://www.indielogs.com/prommoo has direct https://tta1.com/ and https://azn8.com/ anchors rel=noopener only. Founder portfolio with project shelf rather than standalone directory. Free project profile reported by current public submission log, no payment planned; authentication at https://www.indielogs.com/auth needed before adding UntilFire. Opened auth page for user. No UntilFire project or public link created. |
+
+Startup Europe checked but no usable direct sample website anchor established in current fetch; signup shows required account/terms fields. Not submitted. New qualified candidates are not live UntilFire backlinks. No success claimed this batch. Main fetch attempted before tracker-only update; unrelated local drift preserved.
+
+
+## 2026-10-25: MadeLaunch submitted and IndieLogs live-follow
+
+Supersedes both prior sign-in / not-submitted entries. User completed both logins and requested continuation.
+
+| Platform | Status | Evidence |
+| --- | --- | --- |
+| MadeLaunch | pending | Normal free submit form accepted UntilFire, official homepage, factual calculator/planner description, SaaS category and official icon. Submitted once via Submit for Review. Receipt https://madelaunch.com/products/untilfire explicitly says "This product is pending review" and "only visible to you". Visit Website points to https://www.untilfire.com/?ref=madelaunch, but this private preview is not a live public backlink. Recheck after approval; do not resubmit. Screenshot outputs/directory-partners/madelaunch-pending-2026-10-25.png. No payment or badge. |
+| IndieLogs | live-follow | Existing signed-in Ash account had zero projects. Saved public username untilfire, factual builder bio and official website; created one UntilFire project, status Launched, Finance category, official icon URL and <=80-character description. Public profile https://www.indielogs.com/untilfire has two direct https://www.untilfire.com/ anchors with rel=noopener only. Independently fetched anonymously: HTTP 200 and both anchors confirmed, no nofollow/ugc/sponsored or redirect intermediary. One referring domain, two anchors; no search-indexing claim. Screenshot outputs/directory-partners/indielogs-live-2026-10-25.png. Free founder portfolio/project shelf, no payment or badge. Do not resubmit. |
+
+Main fetch attempted before tracker update but local network failed; latest pushed GitHub main independently checked at c8f9e2027eb47969f27326ef297265980a49a971. Compared local drift and preserved unrelated files. Tracker-only change on existing receipts branch; no application or badge changes.
+
+
+## 2026-10-25: IndexFlow live-follow submission completed
+
+| Platform | Status | Evidence |
+| --- | --- | --- |
+| IndexFlow | live-follow | https://indexflow.tech/submit offers 100% free public listings with no account, payment or badge. Prior ledger and anonymous public directory had no UntilFire match. Existing sample vendor links used rel=noopener noreferrer only. Submitted once via normal browser form: UntilFire, https://www.untilfire.com/, See when work could become optional., Finance & Analytics, Freemium, approved ash@untilfire.com (form says private), factual calculator/planner description. Visible receipt: "Submission Published for UntilFire!" Public https://indexflow.tech/directory immediately shows UntilFire, added 2026-10-25. Independent anonymous HTTP 200 fetch confirms direct https://www.untilfire.com/ anchor rel=noopener noreferrer only, with no nofollow, ugc, sponsored or redirect. One new referring domain; indexing/authority not claimed. Screenshots outputs/directory-partners/indexflow-receipt-2026-10-25.png and indexflow-live-2026-10-25.png. Do not resubmit. |
+| Indiehacker.tools | not-submitted | Free maker tools directory, https://www.indiehacker.tools/list-tool embeds official Tally w7qWoA. Homepage sample beedone.web.app and beseek.app anchors have no rel restriction. Form requires maker name/contact/country, personal profile photo, product name/link/tagline/status/category/logo. Personal photo not supplied or selected; no form data sent, upload or submission created. Resume only with a suitable user-provided profile picture. |
+
+Latest origin/main fetched at 3122e9a47b8a20ebffb56398cea34177936a6e1a before tracker change; local drift compared and preserved. Existing bad-tree background gc/repack issue remains untouched. Tracker-only update on receipts branch; no application or badge changes.
+
+
+## 2026-10-25: Toolcurio badge deployed and free submission accepted
+
+| Platform | Status | Evidence |
+| --- | --- | --- |
+| Toolcurio | pending | https://toolcurio.com/submit Standard (Free), $0, one dofollow backlink after approval. No prior UntilFire record in ledger or public catalog. Sample https://toolcurio.com/products/cardjar has direct vendor anchors rel=noopener noreferrer only. User authorized adding required badges. Added official https://toolcurio.com/badge-light.png, 200x54, linked to https://toolcurio.com with rel=noopener (followable), in existing homepage Directory partners section. Main commit 91ae0ddb3785d2f43f13479afb495e57602fb3f9. Anonymous homepage fetch confirmed deployed badge; Toolcurio Verify backlink returned "Backlink verified. You're good to publish." Submitted factual UntilFire homepage/tagline/overview, Fintech and Productivity categories, Freemium tag, reviewed pros/cons, website-derived official media, ash@untilfire.com. User explicitly approved accepting Terms/Privacy Policy and newsletter wording at final action. Clicked Submit for review, then free Submit & Wait; no payment. Receipt https://toolcurio.com/payment/success/bff05ae8-c126-4480-ba2a-507341a7baa4 says "Submission Received", "Your listing is in the review queue", review ~3-5 business days, published up to 14 days. No own public backlink verified; do not count as live-follow or resubmit. Screenshot outputs/directory-partners/toolcurio-receipt-2026-10-25.png. |
+
+Badge condition: Toolcurio says badge must stay or listing is automatically delisted. Preserve user's month-end audit preference: check own public anchor at month end; if no followed backlink is detected, remove badge per user's standing instruction, understanding that this may delist the submission. A pending receipt or verified outbound badge is not proof of an inbound backlink.
+
+Baseline origin/main fetched before badge change at 0dc7237; existing local drift preserved, live Directory partners section matches this placement. Only the official badge block was changed in LandingPage.tsx; no reskin. Main rechecked through GitHub at 91ae0ddb3785d2f43f13479afb495e57602fb3f9 before ledger update; local fetch attempted again. Existing bad-tree background repack issue untouched.
+
+
+## 2026-10-26: SaaS Cubes free submission accepted with verified homepage badge
+
+| Platform | Status | Evidence |
+| --- | --- | --- |
+| SaaS Cubes | pending | https://saascubes.com/submit?plan=free, $0 plan, no account required. No prior ledger record; checked public directory before submitting. Official pricing includes a followed link on free plan after a homepage link is verified. Sample https://saascubes.com/saas/toolroots anonymously returned direct vendor hrefs rel=noopener only (separate Good for Bots link is nofollow). Added official badge https://saascubes.com/images/badges/badge-dark.png, 175x54, linked https://saascubes.com with rel=noopener in existing homepage Directory partners section. Latest pushed main baseline 91ae0ddb3785d2f43f13479afb495e57602fb3f9, badge commit 16e07b649cddbceb95b20feac24a6ec420d39bf2. Public homepage confirms deployment. Normal browser form: UntilFire, official homepage, Finance, Freemium/SaaS/Personal Finance tags, reviewed factual descriptions, approved ash@untilfire.com for private listing updates. Public optional contact blank; removed unverified auto-extracted X and LinkedIn. Clicked Save & Check My Homepage once. Visible receipt "Link verified — your listing is in review" and "Homepage link verified"; review 3–5 business days, publication and email after approval. No payment or account created. No own live backlink claimed. Screenshot outputs/directory-partners/saascubes-receipt-2026-10-26.png. Do not resubmit. |
+
+Keep badge for review; apply user's standing month-end own-dofollow audit/removal preference. Removing the badge can hide the free listing. No authority/ranking/indexing claim.
+
+Additional screening: purshoLOGY normal page now loads a 10-step form with 30+ required fields; no new form submitted, prior failed submission remains not-submitted. Profit Hunt requires actual MRR, not supplied, so not submitted or fabricated. SaaS Surf currently routes to paid sponsorships or a free-product email pitch; no form submission made. StartupDirectory.net still auth-gated. Existing submitted directories not repeated.
+
+Fetched main and compared local drift before badge change; live existing badge section matched placement. Preserved unrelated local app/docs changes. No reskin; only one official badge block. Baseline fetch attempted again before this ledger-only update; pre-existing background bad-tree/repack issue untouched.
+
+## 2026-10-26: Toolcurio promoted to live-follow; Sites-Plus ready for approval
+
+Toolcurio supersedes pending receipt: https://toolcurio.com/products/untilfire anonymously returns HTTP 200 with correct reviewed UntilFire copy. Visit Website and screenshot anchors both point directly to https://www.untilfire.com/?via=toolcurio with rel=noopener noreferrer only; no nofollow/ugc/sponsored/redirect intermediary. Status live-follow, one referring domain and two anchors. Existing required badge retained. Screenshot outputs/directory-partners/toolcurio-live-2026-10-26.png. No resubmission, payment or indexing claim.
+
+Sites-Plus new candidate https://www.sites-plus.com/submit: no prior ledger entry. Published homepage samples seoagent.bot and inboxfamily.com use direct vendor hrefs without rel restriction. Free Regular plan selected; category Business and Economy. Filled UntilFire, official homepage, factual calculator description, approved ash@untilfire.com; optional newsletter explicitly disabled. No badge required. Required Submission Rules Agreement remains unchecked and no final submission made pending user confirmation. Rules: family-friendly, quality content, no made-for-ads sites, paid entries priority. User question asks permission to accept those rules and submit; do not mark accepted until receipt. Screenshot outputs/directory-partners/sites-plus-ready-2026-10-26.png. Form retained for approval; do not recreate.
+
+SaaS Cubes expected /saas/untilfire still HTTP 404, preserve pending review. Main fetch attempted and local unrelated drift preserved; latest pushed main independently checked through GitHub at 16e07b649cddbceb95b20feac24a6ec420d39bf2. Tracker-only update; no application/badge change this pass.
+
+## 2026-10-26: Sites-Plus free submission accepted
+
+Supersedes prior ready-for-approval state. User explicitly approved accepting the submission-rules agreement and submitting. Reused filled form https://www.sites-plus.com/submit?c=2&LINK_TYPE=9 without reload or recreation. Confirmed UntilFire title, official homepage, factual description, Business and Economy category, approved contact email and newsletter unchecked before submission. Checked AGREERULES, clicked Continue once. Visible success: "Link submitted and awaiting approval". Status pending editorial approval; no public UntilFire listing or own followed anchor confirmed. Existing sample direct-link evidence qualifies directory behavior only. No payment or badge required. Screenshot outputs/directory-partners/sites-plus-receipt-2026-10-26.png. The form reset after success (including default newsletter checkbox); do not resubmit or confuse reset fields with submitted values. Approval timing not stated. Do not resubmit.
+
+Baseline main fetch attempted before tracker-only update, local drift compared and unrelated files preserved. No application or badge changes.
+
+## 2026-10-26: QuickLinks free submission accepted
+
+| Platform | Status | Evidence |
+| --- | --- | --- |
+| QuickLinks.Net | pending | New destination with no previous ledger entry. Official https://quicklinks.net/submit normal category/plan/details flow, category Business and Economy, Regular free plan. Latest listing samples painamaa.com and biomaxxskinlab.com have direct vendor hrefs with no rel restriction. Submitted UntilFire, https://www.untilfire.com/, factual FIRE-calculator/planner description and approved ash@untilfire.com. Optional newsletter explicitly unchecked before submission; reset form's default checkbox after success is not submitted value. User explicitly approved required English-language/family-friendly/legal-content submission rules at action time. Checked agreement and clicked Continue once. Visible receipt "Link submitted and awaiting approval". No payment, account or badge. Approval timing unknown; own public backlink not verified, do not count as live-follow. Screenshot outputs/directory-partners/quicklinks-receipt-2026-10-26.png. Do not resubmit. |
+
+CodeHype: official /submit requires sign-in before upload/launch; free dofollow conditional on verified badge. User explicitly chose Skip CodeHype; closed handoff tab, no account, form, badge or submission created. Siiimple excluded: current published sample https://siiimple.com/london-gallery-weekend/ website button rel=nofollow. 500.tools paid-only and sold out, not submitted. TagsHub identified but not pursued or submitted.
+
+Main fetch attempted before tracker update; compared local drift and preserved unrelated app/docs changes. Tracker only, no application or badge edits.
+
+## 2026-10-26: TagsHub free listing prepared, awaiting rules approval
+
+TagsHub https://tagshub.com/submit is a new not-submitted candidate, no earlier UntilFire submission in ledger. Current public latest samples capvant.com and prdfamilylaw.com.au have direct hrefs without rel restrictions. Normal browser form prepared: Business and Economy category, Regular free plan, UntilFire, official homepage, factual FIRE-calculator/planner description and approved ash@untilfire.com. Newsletter explicitly disabled. No badge, payment or account required. Final submission-rules agreement remains unchecked and Continue not clicked. Asked user for action-time approval: rules require quality content, exclude made-for-ads sites, and paid entries get priority review. Preserve current form and await answer; do not recreate or claim receipt/backlink. Screenshot outputs/directory-partners/tagshub-ready-2026-10-26.png, browser tab retained.
+
+Main fetched before tracker update; unrelated app/docs drift compared and preserved. Tracker only, no application/badge changes.
+
+## 2026-10-26: TagsHub free submission accepted
+
+Supersedes ready/awaiting-rules-approval entry. User explicitly approved the required submission rules and free submission. Reused prepared https://tagshub.com/submit form without reload/recreation: UntilFire, official homepage, Business and Economy, Regular free, reviewed factual description, approved ash@untilfire.com. Confirmed newsletter unchecked before checking rules and clicking Continue once. Visible receipt "Link submitted and awaiting approval". Status pending editorial review, approval timing unknown. No own public listing or inbound followed link verified; sample-follow evidence only until publication. No account, payment or badge. Screenshot outputs/directory-partners/tagshub-receipt-2026-10-26.png. The post-success form reset including newsletter default does not reflect submitted checkbox value. Do not resubmit.
+
+Fetched origin/main before tracker-only update and compared local drift; unrelated changes preserved. Existing background repack bad-tree issue untouched. No application or badge edits.
+
+## 2026-10-26: three pending submissions now confirmed live-follow
+
+These are newly verified publications of existing submissions, not duplicate submissions.
+
+| Platform | Status | Live evidence |
+| --- | --- | --- |
+| MadeLaunch | live-follow | https://madelaunch.com/products/untilfire anonymous HTTP 200; UntilFire title and no prior private/pending-preview notice. Direct https://www.untilfire.com/?ref=madelaunch anchor rel=noopener only. No nofollow/ugc/sponsored or redirect intermediary observed. Supersedes pending review. |
+| SaaSolution | live-follow | https://saasolution.io/tool/untilfire/ anonymous HTTP 200, title UntilFire: FIRE calculator for your early retirement date. Two responsive direct homepage anchors and one /pricing anchor all rel=noopener only. No nofollow/ugc/sponsored or redirect intermediary. Supersedes submission id 502 pending review. |
+| ProjectRadar | live-follow | https://getprojectradar.com/projects/untilfire anonymous HTTP 200; direct https://www.untilfire.com/ Visit project anchor rel=noopener noreferrer only. Correct UntilFire identity, visible published date Oct 25, 2026; /notes/untilfire editorial note linked. Supersedes reference PR-96A91C8B37 pending. Screenshot outputs/directory-partners/projectradar-live-2026-10-26.png. Editorial copy/platform/pricing statements are directory-generated and not independently audited in this backlink check. |
+
+Three newly confirmed referring domains, five outgoing UntilFire anchors across these three product pages. No search-indexing, traffic or domain-authority claim. No payment or new badge required in this pass. AwesomeFinTech expected route returned 403; preserve pending/unverified state without bypass.
+
+Screening: FalcoScan and Stackdrop target AI/builder tools without demonstrated UntilFire fit, not submitted. WebRankDirectory and YStartUps unavailable via web fetch; not submitted. BidoutX sample static fetch had no observed vendor anchor, so not submitted without follow evidence. No duplicate listing sent.
+
+Latest origin/main fetched and local drift compared before tracker-only update. Unrelated app/docs edits preserved; existing background git repack error untouched.
+
+## 2026-10-26: JunkStartups qualified, account handoff
+
+JunkStartups https://junkstartups.com/submit is new not-submitted candidate. Public example https://junkstartups.com/startups/quiet-sleep has direct Play Store href with rel=noopener noreferrer only. Free listing flow shows Essentials, Enrich, Create Account; no guarantee of UntilFire dofollow until its own page exists. Expected https://junkstartups.com/startups/untilfire anonymously returns HTTP 404, no earlier ledger record. Opened actual form, then visible Sign In route for user; user asked to complete account sign-in/setup. No product details transmitted, account created, listing submitted, badge added or payment. Resume only after sign-in; check duplicate status again before publish. Keep as not-submitted, not pending review.
+
+Tiny Startups remains previously account-gated, no repeat. Talmyn Startup 100 is a free editorial campaign but no cohort/sample followed link established; no submission sent. Main fetched before tracker-only update, local unrelated drift compared/preserved, existing background bad-tree/repack issue untouched.
+
+## 2026-10-26: JunkStartups live-follow submission completed
+
+Supersedes prior account handoff/not-submitted entry. User explicitly approved Google sign-in and JunkStartups Terms/Privacy, then selected Ash ashinhk101@gmail.com after automatic review rejected an unspecified John-account choice. Used only the selected Ash account; standard Google identity/profile/email consent completed. No password or verification-code entry. Existing account dashboard showed zero startups. Completed required profile basics (name Ash, username untilfire, website official homepage), preserved other profile settings.
+
+Normal free form: UntilFire, https://www.untilfire.com/, FIRE calculator and financial freedom planner, Fintech, Freemium, reviewed description distinguishing free calculators from optional Pro and illustrative estimates, status Launched. Optional logo/screenshots/tech/social fields omitted. Clicked Submit for Review once. Receipt "Your startup is live!" and "passed our automatic checks and is now published." No payment, badge, upvote, social share or review.
+
+Live URL https://junkstartups.com/startups/untilfire independently returns anonymous HTTP 200 with title UntilFire: FIRE calculator and financial freedom planner — JunkStartups. Two responsive direct https://www.untilfire.com/ anchors rel=noopener noreferrer only; no nofollow/ugc/sponsored or redirect intermediary observed. Status live-follow, one newly acquired referring domain, two anchors. No search-indexing or authority claim. Screenshot outputs/directory-partners/junkstartups-live-2026-10-26.png. Do not resubmit.
+
+Fetched main before tracker-only update and compared/preserved unrelated local drift. No application or badge changes.
+
+## 2026-10-26: Ramen.Tools live-follow profile backlink
+
+Supersedes prior Ramen.Tools sign-in blocker. User explicitly approved Ash Google account for free maker profile and UntilFire link. Standard Google identity consent shared name/profile picture/email only. Normal new-profile screen accepted username untilfire; profile name Ash retained. No password, payment, badge, votes, shares or fabricated tool-stack entries. At /my-links, free "Your website (dofollow link)" set to https://www.untilfire.com/ and Submit changes returned "Your profile was successfully updated!"
+
+Live URL https://ramen.tools/@untilfire independently returns anonymous HTTP 200 with direct anchor https://www.untilfire.com/?ref=RamenTools and no rel restriction. No nofollow/ugc/sponsored or redirect intermediary. Status live-follow, one new referring domain. This is the free public maker-profile website link, not a claimed paid tool page or a standalone UntilFire product listing. Dashboard product/stack groups remain empty, optional profile completion tasks not required for observed public link. No indexing or authority claim. Screenshot outputs/directory-partners/ramen-live-2026-10-26.png. Do not recreate profile or resubmit; edit existing if needed.
+
+Main fetched before ledger-only update; unrelated local drift compared/preserved. Existing background bad-tree/repack issue untouched. No application or badge changes.
+
+## 2026-10-26: no-phone preference; StartupDope skipped; Startup Europe qualified
+
+Standing user instruction for future submissions: skip directories requiring a phone number. Do not ask for or invent one.
+
+StartupDope: supersedes old stale-path screening only; remains not-submitted. Current /submit/new free no-account flow exists, official free review 7–14 business days and sample /tools/azn8 direct rel=noopener noreferrer. Normal browser URL verification passed HTTPS/safety/uniqueness for UntilFire, filled official name/homepage/tagline, Fintech & Web3 category, Financial Services industry, Productivity & SaaS format. Founder Contact stage requires phone number. User explicitly selected skip directories requiring a phone. No contact/phone data entered and no submission sent.
+
+Startup Europe: still not-submitted, fresh sample-follow verified through rendered DOM. Public https://startupeurope.net/startup?id=21856 (ChambaNOW, United States) has direct https://chambanow.com/?utm_source=startupeurope.net with empty rel. Directory homepage also shows other US startups. Official /users/join.php offers Google or password/reCAPTCHA signup. Opened signup handoff; requested user's approval for Ash Google account and free UntilFire submission. No sign-in, account, password, CAPTCHA action, badge, payment or listing created this pass. Resume after answer, check own duplicates before publish; no own backlink yet.
+
+BuildHop skipped: UntilFire currently sends X-Frame-Options DENY and CSP frame-ancestors none, incompatible with BuildHop's iframe requirement. No security settings weakened. Huzzler free plan requires badge, waits 72 days and noindexes free pages; not pursued. StartupBase existing /products/untilfire-2 anonymously HTTP 200 now exposes rel=nofollow noopener noreferrer on Visit link, so not dofollow (supersedes earlier unverified note). Microlaunch static fetch still no observed own anchor. SaaS Cubes /saas/untilfire and AppRater /a/untilfire still 404; remain pending.
+
+Main fetch attempted before tracker-only update; local drift compared and preserved. No application/badge changes.
+
+## 2026-10-26: Startup Europe Google sign-in failed; no submission
+
+User explicitly approved Ash Google account and free UntilFire submission. Used normal /users/join.php Google link, selected Ash account, standard name/profile/email consent. Google returned to the official oauth_success.php callback, which rendered an empty page. Did not replay callback or store its sensitive query. Navigating to the site's existing /dashboard route redirected to /users/login.php and showed sign-in controls; no working authenticated session confirmed.
+
+Status remains not-submitted, no listing receipt or own backlink. No product form, password, CAPTCHA, payment, badge or phone entered. Account existence uncertain: do not claim created. Normal email/password signup with CAPTCHA is the remaining visible route and requires user entry; handoff tab retained at sign-in. Screenshot outputs/directory-partners/startupeurope-login-blocked-2026-10-26.png. No alternate authentication bypass attempted.
+
+Main fetch attempted before ledger-only update, compared/preserved unrelated local changes. No application or badge change.
+
+## 2026-10-26: Arcapush free product route qualified, awaiting account approval
+
+Startup Europe remains signed out at /users/login.php?dest=dashboard.php; user has not completed password signup. No retry/bypass.
+
+Arcapush new not-submitted candidate. Official https://arcapush.com/submit supports products/startups, free, human review about 48 hours. Required product fields: name, tagline, description/problem statement, category, homepage, builder display name. Media/social/pitch deck optional; no phone or badge requirement observed. Public sample https://arcapush.com/startup/ai-ml/azn8 has both a tracking /go/product/azn8 button and a separate direct https://azn8.com/ anchor rel=noopener noreferrer. Sample direct-link qualification only; UntilFire own link not created. Official sign-in screen says continuing accepts Terms/Privacy. Opened screen, asked user to approve Ash Google account plus terms and free UntilFire submission. No login, account or submission created yet. Screenshot outputs/directory-partners/arcapush-signin-2026-10-26.png. Handoff retained.
+
+Additional screening: Ignlab sample /t/us-pay-check-guide Visit anchor rel=noopener nofollow ugc, excluded despite older potential fit. Crunchbase homepage accessible but normal Create Profile /add-new reaches session security verification; no challenge solved or bypassed, no submission. Prior no-phone instruction preserved. Main fetch attempted before tracker-only update; local drift compared/preserved. No application or badge changes.
+
+
+### 2026-10-27 continuation — Arcapush blocked; Joinly prepared
+
+- Arcapush: user approved Ash Google sign-in, Terms/Privacy and age 18+ declaration. Account/profile created as Ash. Fresh session sign-in retried after session-expired notice. Dashboard shows 0 live / 0 in review. Saved UntilFire Product draft `9a807739-2434-4336-b6cb-36ecaef634be` retains basics but Save & continue from Description repeatedly returns to Basics; no accepted product submission or new backlink. Do not count or resubmit duplicate. Status `not-submitted` (draft saved/form reset blocker).
+- Joinly (`https://joinly.xyz/submit-startup`): new candidate absent from ledger; no phone/account/payment observed. Anonymous homepage samples Urban Protocol, BetaPick and Wenodo have direct external href with no restrictive rel (click-tracking data attribute present). Prepared UntilFire, official homepage, ash@untilfire.com, factual FIRE planner description, USA, official 34KB logo uploaded and retained. Required Terms/Privacy checkbox remains unchecked, final Submit not clicked. User approval requested for content license/responsibility and operator marketing emails. Status `prepared-awaiting-terms-approval`, not pending review and not a live backlink. Proof: `outputs/directory-partners/joinly-ready-2026-10-27.png`.
+- Baseline: local origin/main fetch failed network; GitHub connector confirmed latest pushed main `65e4f492304061b9fdf80d550fe73224db64c290`. Local unrelated modified app/dashboard/page.tsx, app/page.tsx, docs/CONTEXT.md and docs/DECISIONS.md preserved. Tracker-only update, no production code or badge changes.
+
+
+### 2026-10-27 — Joinly final submission attempt redirected to checkout
+
+User explicitly approved required Terms/Privacy and submission. Verified prepared UntilFire text and USA selection, official logo retained from prior step. Checked required agreement and clicked Submit once. Subsequent browser observation was denied because the resulting origin was `https://store.payproglobal.com`; automatic review rejected authority to observe this unrelated payment store. Did not access checkout through another tool, pay, or bypass review. No accepted-submission receipt or own public listing verified. Public web search for site:joinly.xyz/startups UntilFire returned no results (not proof of absence). Supersedes prepared-awaiting-approval: status `attempted-payment-redirect/unconfirmed`, not pending review or live-follow. Exclude from completed free submissions unless Joinly itself confirms a free accepted listing. No new backlink counted. Baseline fetch attempted and failed network; GitHub connector confirmed current pushed main `eb5b5eb1de06fd8752d6bd4f00da299b5605ee07`; unrelated local changes preserved. Tracker-only update.
+
+
+### 2026-10-27 — TechTools public DOM verified; BuildVoyage prepared; AZN8 approval requested
+
+- TechTools Launchpad: promoted existing record 5388 from live-unverified to `live-follow`. Normal browser loaded https://techtools.cz/tools/launchpad/?tool=5388 and rendered UntilFire with two direct https://www.untilfire.com/ anchors (UntilFire title and Visit), both rel=noopener, no nofollow/ugc/sponsored. Existing Oct25 submission, not a new submission today. Screenshot outputs/directory-partners/techtools-live-2026-10-27.png. No duplicate POST.
+- BuildVoyage: new `prepared-maker-handoff`, not submitted. Official free form says 48h manual review and email confirmation; sample https://buildvoyage.com/products/donivo has direct https://donivo.app/ rel=noopener. Prepared UntilFire, factual description, official homepage, ash@untilfire.com, Finance & Payments, Freemium; official logo uploaded; Next.js and React selected based on main package.json. Weekly roundup unchecked; Terms checkbox unchecked, Submit not clicked. Final Terms prohibit automated agents submitting for others and require maker/team direct submission, so human owner must complete final agreement, submit, and confirm emailed link within 48h. Form tab retained; screenshot outputs/directory-partners/buildvoyage-ready-2026-10-27.png.
+- AZN8: new `not-submitted-awaiting-auth-terms-approval`. Official free no-badge/no-phone path supports Google sign-up; explicit agent-assisted listings permitted by Terms. Sample https://azn8.com/listing/puzzle-fern has two direct https://puzzlefern.com anchors without restrictive rel. Finance and freemium supported. Opened sign-up, requested user approval for Ash Google account ashinhk101@gmail.com plus Terms/Privacy and free UntilFire listing; no account/credential/listing created. Screenshot outputs/directory-partners/azn8-signup-2026-10-27.png. Do not invent or claim site's DR19 self-report as independently verified.
+- Screened Qevra remains paid ($2 listing). Unloc requires human check; not submitted. ToolSeekr sign-up/password gated. Fstlaunch login gated. No phone, paid, duplicate, false AI classification or fabricated product data submitted.
+- Baseline fetch attempted; GitHub connector confirmed pushed main cc3e66aa8d6f4be68f73d190b7a066fd8b62f534. Unrelated local drift preserved. Tracker-only changes; no production badge/code edits.
+
+
+### 2026-10-27 — FreeBacklink prepared for CAPTCHA approval; further candidates screened
+
+- FreeBacklink.org supersedes earlier unprepared CAPTCHA blocker: `prepared-awaiting-captcha-approval`, not submitted. Official normal https://freebacklink.org/submit/ form says free during beta, dofollow, review within 48h. Public directory search for untilfire returned 0/no sites. Published finance sample https://freebacklink.org/site/496/coinboss/ has two direct https://www.coinboss.com/ anchors rel=external noopener (no nofollow/ugc/sponsored). Filled UntilFire, official homepage, Business & Finance, ash@untilfire.com and factual description. Math CAPTCHA and required verification checkbox remain untouched; final Submit not clicked. User approval requested to complete visible challenge and submit. Screenshot outputs/directory-partners/freebacklink-ready-2026-10-27.png; handoff tab retained. No new backlink claimed.
+- GreenRocket: new `not-submitted-account-handoff`. Current free launch supports Fintech. Public sample https://greenrocket.app/launch/radarmakers has direct https://radarmakers.com/?ref=greenrocket&utm_source=greenrocket&utm_medium=launch with rel=noopener noreferrer. Registration requires name, username, email, new password and Terms/Privacy. No Google option observed. No account/password/terms/submission created; user would need to enter new credential.
+- Attop.lol now explicitly says free listing quota ended; new listings start $1. Excluded zero budget. LaunchFree already pending from July; not duplicated. ToolVerified catalog itself says standard free nofollow; not submitted. SaaSWall UI cards open external websites, but no qualifying external anchor observed in the inspected homepage DOM; not submitted or counted.
+- Existing BuildVoyage maker-only final submission handoff and AZN8 Ash Google/Terms approval request remain pending; neither submitted. Kept their tabs, did not invent approval.
+- Baseline: fetch attempted; latest pushed main verified through GitHub connector as 6affc4fe97ec4f6bb67fc038315b86325a9dc618. Local tracker differs from origin/main, preserved. Tracker-only update; no production edits.
+
+
+### 2026-10-27 — FreeBacklink accepted and email verified
+
+FreeBacklink.org supersedes prepared CAPTCHA blocker: status `pending` (email verified, in moderation). User explicitly approved completing visible math CAPTCHA and required verification checkbox, then submitting. Initial saved form rejected expired form token / anti-spam answer; refreshed normal form retained details and second approved verification submission succeeded. Receipt confirmed email sent to ash@untilfire.com. Found exact UntilFire verification email from noreply@freebacklink.org in connected Gmail (thread 1a17be3a0a924c77), followed official same-origin verification link. Final UI says Email verified and submission now in review queue, approval within 48h. One accepted submission, no duplicate retry after acceptance. Own public backlink not yet verified; do not count live-follow until approved and own anchor checked. Existing sample finance listing CoinBoss has direct rel=external noopener links. Contact ash@untilfire.com; UntilFire homepage and factual FIRE description in Business & Finance; free, no phone/account/badge/payment. Cropped receipt excludes private edit token: outputs/directory-partners/freebacklink-verified-2026-10-27.png. Private verification/edit URLs intentionally omitted from shared ledger; owner can recover edit link from verification email. Baseline main verified via connector 6affc4fe97ec4f6bb67fc038315b86325a9dc618; local fetch attempted, tracker drift preserved. Tracker-only update.
+
+
+### 2026-10-27 — Directory-Free regular Finance listing prepared
+
+Directory-Free.com supersedes July unprepared/unknown-link blocker: `prepared-awaiting-captcha-approval`, not submitted. Current official https://www.directory-free.com/submit/submit.php explicitly offers Regular listing free, separate from $4.95 Featured. Anonymous Finance/General page https://www.directory-free.com/finance-general.php contains multiple ordinary direct external anchors with no rel restriction, e.g. getquilt.com/learn, citywideinsuranceaz.com and wais.com.au; source saved outputs/directory-partners/directory-free-finance-2026-10-27.html. Entered via normal browser Regular Site button, Finance/General category; filled UntilFire title, official https://www.untilfire.com/, accurate FIRE planner description and ash@untilfire.com. Only image CAPTCHA remains blank; Add URL not clicked. Requested explicit user approval for CAPTCHA and free submission. Screenshot outputs/directory-partners/directory-free-ready-2026-10-27.png. Browser automation session untilfire-backlinks remains on filled form. No public UntilFire link or receipt yet; do not count live or pending.
+
+Local fetch origin/main succeeded to 6affc4fe97ec4f6bb67fc038315b86325a9dc618; preexisting background gc/repack bad-tree error persisted, no repair attempted. Local unrelated changes and tracker drift preserved; tracker-only GitHub branch update, no production edits. EllysDirectory submit page had no usable form in fetched content; not submitted. No paid plans or new credentials used.
+
+
+### 2026-10-27 — Directory-Free regular listing accepted for editorial review
+
+Directory-Free.com supersedes prepared CAPTCHA status: `pending` (accepted submission; editorial validation required). User explicitly approved image CAPTCHA and regular free submission. Filled current visible challenge through normal UI and clicked Add URL once. Result says Thank you for taking the time to suggest your site; your site has been added to Directory-Free; editors will validate request and include it if guidelines met. No paid plan, phone, badge, account or duplicate submission. Submitted UntilFire - FIRE calculator and financial freedom planner, https://www.untilfire.com/, accurate description, ash@untilfire.com, Finance/General. Public own listing/backlink not yet verified; do not count live-follow. Free ordinary Finance sample anchors previously verified direct with no restrictive rel. Receipt screenshot outputs/directory-partners/directory-free-receipt-2026-10-27.png. Agent-browser session untilfire-backlinks closed after receipt capture; do not resubmit. Local origin/main fetch retried, transport failed; local main ref remains 6affc4fe97ec4f6bb67fc038315b86325a9dc618, unrelated drift preserved and tracker compared. GitHub connector main checked before tracker update. Tracker-only change.
+
+
+## 2026-10-27 — Toolomio accepted; email confirmation pending
+
+- Directory: https://toolomio.de/ ; submission: https://toolomio.de/submit.php . Free, no account, phone, badge or payment requested.
+- Submitted https://www.untilfire.com/ using approved ash@untilfire.com. Site analyzed homepage plus seven subpages, recognized UntilFire, generated screenshot/favicon, and displayed `UntilFire wurde erfolgreich eingereicht` and `E-Mail-Bestätigung erforderlich`.
+- Status: **pending-email-confirmation**. Two connected Gmail searches found no Toolomio confirmation yet. No own public listing or backlink verified; do not count as live or resubmit.
+- Current sample https://toolomio.de/software/eorls has a direct https://icybiz.com/ Website besuchen anchor with rel="noopener" (no nofollow/ugc/sponsored), inspected in ordinary browser.
+- Receipt: outputs/directory-partners/toolomio-receipt-2026-10-27.png.
+- Screening exclusions: Thank John /tool/quotelyo has /go/ redirect rel=nofollow despite advertised dofollow; The Startup Starter Kit /tool/ghostfolio likewise nofollow redirect. No badges added or submissions made to those sites. Webfolio free tier explicitly nofollow; ToolHunt submission limited to self-hosted or free Mac apps; Share Your Startup FAQ says nofollow ugc; OpenResources limited to open-source software. Skip these routes.
+
+
+## 2026-10-27 — Startups of the World accepted; LaunchScaler scan failed
+
+- Startups of the World: new `pending` submission via https://startupsoftheworld.com/add-startup . Normal UI free route accepted with heading `Submitted. It's in the review queue.` Manual review before publication; no publication date promised. Do not resubmit or count live-follow yet.
+- Submitted UntilFire, https://www.untilfire.com/, ash@untilfire.com, accurate FIRE calculator/financial freedom tagline and description, FinTech, Pre-seed (no funding), Palo Alto / United States, official https://www.untilfire.com/icon.png logo URL. No account, password, CAPTCHA, badge or payment required; declined $49 Featured route.
+- Sample: directory search selected MOV Compressor, whose profile Visit website directly links to https://movcompressor.com/?utm_source=startupsoftheworld-com&utm_medium=directory&utm_campaign=backlinks with rel=noopener noreferrer only. Sample verified through rendered DOM. UntilFire own public profile/anchor not yet verified.
+- Receipt outputs/directory-partners/startups-world-receipt-2026-10-27.png; receipt tab retained.
+- LaunchScaler: new `not-submitted` blocker. Official free route https://www.launchscaler.com/scan requires readiness scan first. Entered UntilFire homepage, chose Run the free scan (no paid audit); site returned `We couldn't finish the check. Try again in a moment.` No accepted product listing, account or payment. Sample IndexMachine showed direct website links but rel read did not return, so dofollow attributes not verified this pass. Browser observation approval timeout resolved on one permitted retry; no bypass. No new backlink counted.
+- All Business Directory https://www.allbusinessdirectory.biz/link_submit.php: free standard form has checked follow option, approximately four-month review queue, and required new editing password. No form values, credentials or submission entered. User must enter a new credential if pursuing; sample external anchors not yet independently verified, so candidate only.
+- Software Como Servicio /enviar: free curated product route requires homepage badge. No form sent or badge added this pass; sample link not yet checked.
+- Toolomio remains pending email confirmation. Connected inbox searches found no confirmation; latest retry had Gmail transport failure, not proof no mail exists. Do not resubmit.
+- Latest origin/main fetched and main confirmed 6affc4fe97ec4f6bb67fc038315b86325a9dc618; preexisting bad-tree background repack failure left untouched. Local tracker drift and unrelated modified app/dashboard/page.tsx, app/page.tsx, docs/CONTEXT.md, docs/DECISIONS.md preserved. Tracker-only update, no production edits.
+
+
+## 2026-10-27 — SaaS Cubes live-follow; backlinks.fyi OAuth blocked
+
+- SaaS Cubes: supersedes pending/404. **live-follow** at https://saascubes.com/saas/untilfire . Anonymous HTTP retrieval and ordinary browser show public UntilFire finance listing. Visible Visit Product anchor directly targets https://www.untilfire.com/?utm_source=saascubes.com&utm_medium=referral&utm_campaign=listing&utm_content=visit_button with rel=noopener only, no nofollow/ugc/sponsored or redirect. A second decorative cube link also follows; count one referring domain, not two wins. Added Oct25 / updated Oct26 per page. Earlier submission now confirmed live; no resubmission. Screenshot outputs/directory-partners/saascubes-live-2026-10-27.png. Existing badge remains; no new code. No indexing/authority claim.
+- backlinks.fyi: new saved draft, **not-submitted-login-blocked**. Public https://backlinks.fyi/showcase sample TrackAIMentions direct homepage anchor rel=noopener noreferrer, no restrictive tokens; no UntilFire anchor found before form attempt. Filled UntilFire, official homepage, factual <=100-character FIRE tagline, Consumer Web, ash@untilfire.com, official icon URL at /submit-startup/form. Feature My Startup (Free) saved details but explicitly required free Google account to complete/publication. User explicitly approved Ash ashinhk101@gmail.com. Normal Google sign-in failed with Access blocked / Error401 deleted_client / OAuth client was deleted. No accepted listing/publication or own backlink; do not count as review-pending or resubmit duplicate. No auth bypass. Proof outputs/directory-partners/backlinks-fyi-oauth-error-2026-10-27.png; initial sign-in handoff screenshot backlinks-fyi-signin-2026-10-27.png.
+- Listed Startups: not submitted; public sample https://listedstartups.com/products/apipk external anchors rel=noopener nofollow. Official anonymous API search q=untilfire returned zero, but no write performed due dofollow-only scope.
+- WebRankDirectory: not submitted; current /submit-website/ explicitly says free links nofollow and paid sponsored. CircleSaaS: not submitted; homepage free DevToolsHub rel=noopener noreferrer nofollow, CoinBoss additionally sponsored. No account or badge.
+- BusinessHunt /businesses/add sign-in required, no form entered/auth performed. LarkLaunch current /submit requires four upvotes and one comment before free launch, not pursued. Software Como Servicio InvoiceQuick sample points to enlac.ee affiliate intermediary; no badge or submission performed. NewTool /submit requires login; no account created. Launch Cab currently taking a break. ProductBaker sign-in/security gated; no submission.
+- Toolomio confirmation email still not found by focused connected inbox search; remains pending confirmation, no duplicate.
+- Main fetch attempted and failed network; GitHub connector confirmed latest main 5b5d3e32f194d21b42843645c2dbfafdcf7d30af. Local tracker drift and unrelated modified app/dashboard/page.tsx, app/page.tsx, docs/CONTEXT.md, docs/DECISIONS.md preserved. Tracker-only branch update, no production edits.
+
+
+## 2026-10-27 — FreeBacklink.org and SEO Listing promoted to live-follow
+
+- FreeBacklink.org supersedes pending: **live-follow**, https://freebacklink.org/site/541/untilfire/ . Approval email `Your listing is live — UntilFire` from noreply@freebacklink.org, thread 1a17c23fccc8fb30. Anonymous public HTML and ordinary browser confirmed UntilFire's accurate Business & Finance page with two direct https://www.untilfire.com/ anchors rel=external noopener (no nofollow/ugc/sponsored or redirect). Public page added Oct27. One newly confirmed referring domain from prior submission, not a new submission today. Screenshot outputs/directory-partners/freebacklink-live-2026-10-27.png.
+- SEO Listing supersedes pending: **live-follow**, https://seolisting.io/listings/untilfire . Approval email `UntilFire is now live on SEO Listing` from hello@seolisting.io, thread 1a176ac630a377ba. Anonymous public HTML and ordinary browser confirm direct https://www.untilfire.com/?utm_source=seolisting.io&utm_medium=referral&utm_campaign=listing anchors rel=noopener only (three anchors, count one domain). Public listed date Oct26. One newly confirmed referring domain from previous submission, no duplicate form. Screenshot outputs/directory-partners/seolisting-live-2026-10-27.png. Metadata follow-up: public location currently Hong Kong, whereas latest provided company city is Palo Alto/US; correction not sent this pass. Social X/LinkedIn fields shown by directory were not newly supplied or independently verified this pass. Optional badge not added; no paid upgrades.
+- Both own homepage backlinks verified technically; search indexing/SEO effect not claimed. No new sites submitted during this verification pass. Zero spend.
+- More screening: AlphaShot free dofollow requires DNS domain verification (per current public /pricing), sign-in/new-account Terms gate; /products/submit redirects /login. No account/DNS edit/submission. Ftools /submit normal browser net::ERR_CONNECTION_CLOSED. SaaS Dealer is explicitly business/team software and unsuitable personal-finance fit; no form entered. Appa List explicitly AI apps-only; no invented AI claim. Vibed Market and CtrlAlt remain unqualified JS candidates; LaunchitX web fetch403, no bypass.
+- Baseline origin/main fetched to d8ad674a71fddf284a96718ea8be7c3b30c57a2b, confirmed through GitHub connector. Existing background bad-tree/repack failure left untouched. Local tracker drift and unrelated app/dashboard/page.tsx, app/page.tsx, docs/CONTEXT.md, docs/DECISIONS.md changes preserved. Tracker-only branch update, no production change.
+
+
+## 2026-10-27 — Two new free submissions: Powerful Websites and TXTLinks
+
+- Powerful Websites: **pending**. Submitted once via https://powerfulwebsites.io/submit using UntilFire, official https://www.untilfire.com/, Utility, accurate two-sentence FIRE planner description distinguishing free calculators and optional Pro, ownership yes, approved ash@untilfire.com. No account, phone, CAPTCHA, payment or required badge. Result: `Your submission is in review`, UntilFire preview, manual review usually a few days. Optional badge and paid demo-video speedups not used. Sample https://powerfulwebsites.io/site/fast.com has two direct https://fast.com anchors rel=noopener noreferrer, no nofollow/ugc/sponsored. Own expected /site/untilfire.com returned404 before submission, no duplicate found in ledger. Own public backlink not yet verified; do not count live-follow. Receipt outputs/directory-partners/powerfulwebsites-receipt-2026-10-27.png. Keep existing submission; do not resubmit.
+- TXTLinks: **pending**. Submitted once at https://www.txtlinks.com/sug_url.php?cat_id=24 with $0 Free Link selected, Finance and Investment category, official homepage, title UntilFire - FIRE Calculator and Financial Freedom Planner, factual <=200-character description, relevant keywords, ash@untilfire.com. Optional reciprocal field left blank. No account, password, CAPTCHA, phone, paid review or badge used. Result: `URL added successfully!` and editor review required before adding to index. PHP deprecation warnings present but explicit acceptance returned. Sample regular category https://www.txtlinks.com/24/Finance_and_Investment/ has direct myperch.io calculator and retirable.com anchors with no rel restriction; no UntilFire anchor found in inspected category before submission. No own public backlink yet; do not count live-follow. Receipt outputs/directory-partners/txtlinks-receipt-2026-10-27.png. No publication date promised. Do not resubmit.
+- Submit.biz: **not-submitted**, exclude nofollow. Prepared first-step Personal Finance form and reached final free/paid/CAPTCHA choice; final Submit not clicked, CAPTCHA untouched. Current regular category https://www.submit.biz/95/Personal_Finance/ links to Wealth & Tax, Trust Deed Scotland, NatWest etc all rel=noopener noreferrer nofollow. Thus no submission despite free plan available.
+- SiteToolsBox /submit.php explicitly prohibits Finance/Crypto/Medical/Health tools, despite showing Finance option; skipped, no form values submitted. Intelligency /submit/company explicitly AI company only; skipped, no invented AI positioning. SaaSList HQ /pricing explicitly free nofollow / $45 dofollow, excluded. ReadySaaSGo sample Whisbi displays plain text website heading rather than verified external anchor, not qualified. FindToolz AI-only, not submitted. ToolListed login-gated and current pricing says 6+ month no-badge queue; not submitted. LaunchVibe free-account route unqualified; pricing advertises dofollow for $29 sponsor, no free sample verified. Toolglade returned429; not retried/bypassed.
+- Two accepted free submissions this pass, zero spend; both pending, no newly live backlink claimed. No new badge or production changes. Main fetch attempted and failed network; GitHub connector confirms latest main d8ad674a71fddf284a96718ea8be7c3b30c57a2b. Local tracker drift and four unrelated modified files preserved. Tracker-only branch update.
+
+
+## 2026-10-27 — Three-site batch qualified, final approvals pending
+
+User requests three new free submissions this round. No submissions completed yet in this batch. One combined approval question requested permission for AZN8 Ash Google/Terms/Privacy, SoMuch required guidelines/CAPTCHA/email confirmation, and High Rank Directory required rules/image CAPTCHA; answer not yet received at time of this entry. Do not infer approval from generic go/continue or third-party instructions.
+
+- High Rank Directory: new **prepared-awaiting-rules-captcha-approval**, https://www.highrankdirectory.com/submit.php. Filled Regular free, UntilFire title/homepage, accurate FIRE description, John Ng, ash@untilfire.com, Investment and Finance category. Optional META fields left blank. Final CAPTCHA blank, rules unchecked, Continue not clicked. Rules require accurate quality family-friendly content, no popups/software installs; no phone/account/badge/payment required. Free review says2–3 months. Current regular sample https://www.highrankdirectory.com/business_and_economy/investmentandfinance/ has direct thv.vc, tradesilvania.com, wecomparebrokers.com, acuite.in, redvisiontech.com links without restrictive rel. Screenshot outputs/directory-partners/highrank-ready-2026-10-27.png, tab23 retained. No own link or acceptance.
+- SoMuch.com: supersedes stale July no-CAPTCHA blocker with **qualified-awaiting-guidelines-captcha-approval**. Normal https://www.somuch.com/submit-links/ currently at unchecked Submission Guidelines / Continue gate; no new public fields entered. Official free route weeks-to-months, requires email verification within3days. Guidelines require genuine live homepage, no duplicate domains/ad-only/illegal/explicit content, permit directory edits; no guaranteed approval. Sample ordinary finance page https://www.somuch.com/link-list.asp?categoryID=843&topic=financial&topicID=102 direct strabo.app, myperch.io, ustariffcalculator.com anchors have no restrictive rel. Public web search no UntilFire result; not proof of absence, check form duplicate response if any. No agreement/CAPTCHA/submission completed. Tab24 retained. After approval use approved business email and factual planner description, Business/Financial, confirm email legitimately. Avoid paid upgrade options.
+- AZN8: still **qualified-awaiting-auth-terms-approval**, not submitted. Reopened https://azn8.com/sign-up?next=/submit, no sign-in click. Sample puzzle-fern direct homepage anchors still without restrictive rel. Public /api/v1/listings?q=untilfire returns total0. Current Terms allow authorized agent submissions; license display/distribution/promotion of listing; account holder responsible for agent actions and third-party claims. Free listings stay free, paid subscriptions optional not selected. Combined question explicitly requests Ash ashinhk101@gmail.com, Terms/Privacy and free submission. Screenshot outputs/directory-partners/azn8-ready-three-2026-10-27.png. Tab25 retained before browser kernel reset; rebind and verify next turn.
+- Excluded latest: Startup.sx free explicitly nofollow, promoted $9.99 dofollow. FindASaaS free explicitly nofollow, $9 featured dofollow. Indie Makers Hub recent BirthdaySongGen actual website anchors rel=ugc nofollow noopener noreferrer. LargeMI AI-only, no false AI claim. Merit Directory auth-gated; GetMagicTools inaccessible; no submissions there.
+- Main fetched/connector-confirmed d8ad674a71fddf284a96718ea8be7c3b30c57a2b. Existing background repack bad-tree error untouched; local tracker drift and unrelated four modified files preserved. Tracker-only change, no production edits or spend.
+
+
+## 2026-10-28 — Approved three-site batch: AZN8 live; verification blockers on two
+
+Supersedes the approval-pending entry above. User explicitly answered "Approve all three" to AZN8 Ash Google sign-in/Terms/Privacy, SoMuch guidelines/CAPTCHA/email verification, and High Rank rules/image CAPTCHA. No further approval required for these same actions.
+
+- AZN8: **live-follow**. Published once via the free UI after approved Google sign-in as Ash (ashinhk101@gmail.com). Own public listing https://azn8.com/listing/untilfire displays "Listing saved. Status: live", UntilFire, accurate FIRE planner description, Finance and Freemium. Site normalized root URL to https://untilfire.com. Independently fetched public unauthenticated HTML: Visit website and untilfire.com anchors both directly target https://untilfire.com and have no rel restriction (no nofollow/ugc/sponsored). Two follow anchors, ONE new referring domain. No payment, phone, required badge or upgrade; optional badge not added. Screenshot outputs/directory-partners/azn8-live-2026-10-28.png. Do not resubmit.
+- High Rank Directory: **not-submitted-verification-blocked**. Approved rules checked and Regular free retained; tried displayed 5952 code, server returned Invalid code. Focused current field and read refreshed 2977 image, retried normally; server again returned Invalid code. No success receipt, no pending review claimed, no own backlink. Prepared title/homepage/description/John Ng/ash@untilfire.com/Investment and Finance retained in tab23. Need fresh functioning verification before retry; do not bypass challenge. Sample qualification remains as recorded above.
+- SoMuch.com: **not-submitted-verification-blocked**. Approved guidelines accepted; form filled homepage, UntilFire, ash@untilfire.com, Business / Financial, factual 196-character description. Normal reCAPTCHA opened image challenges despite site quota warning. Browser actions consistently took about21–55seconds and challenges expired before completion; last two car selections succeeded, next expired. Submit Link not clicked; no acceptance/email confirmation pending. Form retained tab24. Screenshot outputs/directory-partners/somuch-verification-blocked-2026-10-28.png. User can complete challenge in retained form; otherwise retry only after browser responsiveness recovers. Do not count pending or live-follow.
+- Batch result: ONE published, publicly verified dofollow domain; two verification-blocked attempts. Zero spend. No production edits/badges. Main fetch attempted but network port443 failed; GitHub connector confirms latest main d8ad674a71fddf284a96718ea8be7c3b30c57a2b. Compared local workspace with origin/main; substantial pre-existing drift preserved, tracker-only remote branch update.
+
+
+## 2026-10-28 — Five-more request: one accepted, two final approvals pending; browser blockers
+
+User requests five MORE free dofollow websites/backlinks. Objective remains incomplete: only one new submission acceptance confirmed in this pass, no new own live dofollow backlink yet. Do not report five backlinks or five accepted submissions.
+
+- LinkDirectoryListings.org: **pending**. Submitted once after explicit user approval to solve math CAPTCHA and submit. URL https://linkdirectorylistings.org/submit-site/; success https://linkdirectorylistings.org/thank-you/ with heading "Success! Your website link has been submitted and is now in the que for review." Both Regular Link (Free) and subsequent free long-queue radio selected, Financial category requested, official UntilFire homepage and factual FIRE description, John Ng, ash@untilfire.com. Math14+8 solved22. Free queue weeks or months, no account/badge/payment. Ordinary /latest-listings/ sample parsmarketcolumbia.com has direct anchors without restrictive rel. Own link not yet public/verified. Receipt outputs/directory-partners/linkdirectorylistings-receipt-2026-10-28.png; prepared screenshot linkdirectorylistings-ready-2026-10-28.png. No resubmission.
+- 9Sites.net: **prepared-awaiting-final-captcha-rules-approval** (supersedes July preparation; no accepted submission then). Tab32 https://www.9sites.net/addurl.php, final review reached, Regular Links free, Business & Economy / Finance and Investment, official homepage/title, <=250-character factual description, John Ng, ash@untilfire.com. Current /new.php ordinary usemirage.io, rightnowplumbingtucson.com, btw.media, encomax.com etc anchors have no rel restrictions. Screenshot outputs/directory-partners/9sites-ready-2026-10-28.png. Image code not entered; final Submit not clicked. Async question in conversation asks explicit CAPTCHA/rules submission approval; no user answer received as of this record. Do not infer approval from earlier sites' approvals.
+- Site Promotion Directory: **prepared-awaiting-rules-captcha-approval**, https://www.sitepromotiondirectory.com/submit.php, tab34. Regular free (4–6month review) selected, official homepage/title, factual description, John Ng, ash@untilfire.com, CATEGORY_ID39 Business & Economy/Finance and Investment. Optional META and reciprocal fields blank. Rules unchecked, CAPTCHA blank, Continue unclicked. Rules accurate grammar/content, completed site, no software installs/popups, family-friendly legal content. Current /business_and_economy/ ordinary foxbusiness.com, sba.gov, money.cnn.com, ishine-trade.com direct anchors have no restrictive rel. Screenshot outputs/directory-partners/sitepromotion-ready-2026-10-28.png. Async question asks accept required rules/solve image CAPTCHA/submit; awaiting answer. No pending-review/live claim yet.
+- Bahiacar.com: **prepared-submission-unconfirmed-browser-blocked**, tab30. Explicit user approved image CAPTCHA and free submission. Smart submit suggested Personal Finance category669, then retained UntilFire title/homepage/description/ash email. Free radio checked; screenshot outputs/directory-partners/bahiacar-ready-2026-10-28.png. Displayed code read ad802 and filled. Submit click timed out; subsequent click and Enter also timed out on browser Input dispatch; DOM remained form with stale "must select link type" text despite Free checked. No acceptance or code-validation receipt. Do not count pending or live and do not blindly resubmit. Initial finance category /582/Financial_Services/ has calculator.me and several other entries with nofollow title but secondary direct "Get more information" anchors with no restrictive rel; own link must be checked if ultimately accepted. No fee, account or badge used. Recheck current page/confirmation before any retry.
+- Amplibee.com: **not-submitted-auth-control-blocked**. Explicit user approved Ash ashinhk101@gmail.com Google/Terms/Privacy and free listing. Sample https://amplibee.com/launches/tta1 Visit link directly https://www.tta1.com/ rel=noopener. Current /launch-your-product now requires account. Both modal and standalone /sign-in Google iframe buttons intercepted or "not on checked iframe path"; normal coordinate fallback rejected fractional iframe safety, no forced click/bypass. Google account chooser never reached; no credentials/new password entered, no account/listing acceptance. Form fields not filled. Can resume approved sign-in when functional. Terms/Privacy read, no paid/trial selected.
+- Htrd.org: **prepared-submission-unconfirmed**, tab35 https://htrd.org/#submit. New replacement candidate relevant to free no-account calculators; sample /tools/calculator-net has two direct https://www.calculator.net anchors rel=noopener. Filled UntilFire homepage, Business & Finance, ash@untilfire.com, factual explanation of no-account free calculators with optional Pro separate. Click Submit tool then normal Enter on button; form stayed populated, status empty, no receipt or visible validation error. Console returned no errors. Do not count submitted/pending/live without receipt. Screenshot outputs/directory-partners/htrd-unconfirmed-2026-10-28.png, form retained. No account/badge/CAPTCHA/fee.
+- Exclusions this pass: ProductCool /product/dcs4 has rel=noopener noreferrer ugc, free SubmitStartup.io explicitly nofollow, MeWebLink explicitly ugc/nofollow, Freeboard explicitly nofollow, Unloc /tools/tta1 Visit link redirects /go/t/tta1, Attop free quota exhausted starts$1. ToolPassed/Cockpit Index AI-specific wrong fit; no invented AI claims. LaunchFree remains old pending, not duplicated. DeepBlue submit returnedHTTP500. Free-WebLink reCAPTCHA quota warning and one-year no-removal terms, no values/terms/CAPTCHA submitted. BidoutX free modal prepared URL/category but actual sample dofollow unverified, final free submit not completed. LarkLaunch requires4upvotes/1comment plus sign-in; no artificial engagement performed. Phyco requires images and badge; no duplicate attempt.
+- Zero spend, no production/badge edits. Git fetch main attempted but network443 failed; current GitHub main independently fetched d8ad674a71fddf284a96718ea8be7c3b30c57a2b. Local tracker drift0insertions/484deletions preserved. Tracker-only remote branch update.
+
+
+## 2026-10-28 — Approved 9Sites and Site Promotion submissions accepted
+
+Supersedes approval-pending statuses immediately above. User explicitly answered Yes to both final verification/rules/submission questions. Both completed using the free routes; no payment or reciprocal badge.
+
+- 9Sites.net: **pending**. First saved code rejected as invalid; followed the normal retry link and rebuilt fresh form (no duplicate acceptance). Regular Links free, Business & Economy / Finance and Investment, official UntilFire title/homepage, <=250-character accurate description, John Ng, ash@untilfire.com. Fresh image code accepted; final result heading "Submission received." Editor review required, free approval timing not guaranteed. Receipt screenshot outputs/directory-partners/9sites-receipt-2026-10-28.png. Submission page https://www.9sites.net/addurl.php. Own public listing/anchor not yet verified, do not count live-follow. No resubmission while pending.
+- Site Promotion Directory: **pending**. Accepted required rules with explicit approval, completed displayed image CAPTCHA, submitted Regular free under CATEGORY_ID39 Finance and Investment with factual UntilFire fields and ash@untilfire.com. Result explicitly "Link submitted and awaiting approval." Product fields cleared after acceptance while owner fields retained; no second submission. Free review estimate4–6months, no guaranteed publication. Receipt screenshot outputs/directory-partners/sitepromotion-receipt-2026-10-28.png; https://www.sitepromotiondirectory.com/submit.php. Own public backlink not yet verified, do not count live-follow. Optional reciprocal and META fields remained blank.
+- Bahiacar: **not-submitted/unconfirmed** remains. Reloaded normal GET to recover stalled form; retained product details, reselected Free with stable radio locator, read fresh image2abc6 and filled under existing approval. Submit again timed out on Input.dispatchMouseEvent; no acceptance receipt. Browser alert checks on Bahiacar and Htrd returned undefined, no alert to dismiss. Later tab30 no longer found, so do not claim form still available. Recheck own listing/receipt before any future fresh attempt.
+- ShipDesk: new **qualified-not-submitted**, https://shipdesk.dev/. Sample https://shipdesk.dev/p/tta1 has two direct https://www.tta1.com/ anchors rel=noopener. Current free plan explicitly includes dofollow but requires account, three upvotes to other launches and manual review; screenshots requested in launch flow. No sign-in/account, voting, listing submission or payment performed. Do not count this as pending or live.
+- Five-more objective remains incomplete: THREE accepted new free submissions total in this batch (LinkDirectoryListings, 9Sites, Site Promotion), no newly verified own live backlink in this batch. Amplibee auth control and Bahiacar submission remain blocked; Htrd has no receipt. Zero spend, no production changes/badges.
+- Before tracker update, main fetch attempted again but port443 network failed; GitHub connector independently fetched latest main d8ad674a71fddf284a96718ea8be7c3b30c57a2b. Local tracker0insertions/484deletions drift preserved. Remote tracker branch only, no merge.
