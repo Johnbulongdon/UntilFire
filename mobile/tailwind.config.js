@@ -29,6 +29,7 @@ module.exports = {
         'pos-ink': 'rgb(var(--uf-pos-ink) / <alpha-value>)',
         neg: 'rgb(var(--uf-neg) / <alpha-value>)',
         'neg-ink': 'rgb(var(--uf-neg-ink) / <alpha-value>)',
+        'move-ink': 'rgb(var(--uf-move-ink) / <alpha-value>)',
         'neg-bg': 'rgb(var(--uf-neg-bg) / <alpha-value>)',
         warn: 'rgb(var(--uf-warn) / <alpha-value>)',
         'warn-bg': 'rgb(var(--uf-warn-bg) / <alpha-value>)',
