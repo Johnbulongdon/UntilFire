@@ -113,22 +113,22 @@ export default function BudgetSetupModal({
       <div
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
         style={{
-          background: "#111118", border: "1px solid #23232d", borderRadius: 20,
+          background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-modal)",
           padding: 32, width: "100%", maxWidth: 440,
           fontFamily: "Inter, sans-serif",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <div style={{ fontSize: 12, color: "#64748B", fontWeight: 700 }}>
+          <div style={{ fontSize: 12, color: "var(--uf-ink-3)", fontWeight: 700 }}>
             Category {stepIndex + 1} of {steps.length}
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "#64748B", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--uf-ink-3)", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
         </div>
 
-        <div style={{ fontSize: 20, fontWeight: 800, color: "#f1f5f9", marginBottom: 6 }}>
+        <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-ink)", marginBottom: 6 }}>
           {cat.emoji ? `${cat.emoji} ` : ""}{cat.label}
         </div>
-        <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 18 }}>
+        <div style={{ fontSize: 13, color: "var(--uf-ink-2)", marginBottom: 18 }}>
           {reference != null
             ? `Averaged ${formatAmount(reference)}/mo over your last ${monthCount} month${monthCount === 1 ? "" : "s"}`
             : "No spending history yet in this category"}
@@ -141,7 +141,7 @@ export default function BudgetSetupModal({
           placeholder={reference != null ? String(reference) : "0"}
           style={{
             width: "100%", padding: "12px 14px", borderRadius: 10,
-            border: "1px solid #23232d", background: "#1a1a24", color: "#e2e8f0",
+            border: "1px solid var(--uf-border)", background: "var(--uf-surface)", color: "var(--uf-ink)",
             fontSize: 18, fontWeight: 700, fontFamily: "Inter, sans-serif", marginBottom: 24,
           }}
         />
@@ -150,7 +150,7 @@ export default function BudgetSetupModal({
           {stepIndex > 0 && (
             <button
               onClick={() => setStepIndex((i) => i - 1)}
-              style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #23232d", background: "transparent", color: "#94a3b8", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+              style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--uf-border)", background: "transparent", color: "var(--uf-ink-2)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
             >
               Back
             </button>
@@ -161,7 +161,7 @@ export default function BudgetSetupModal({
               delete next[cat.key];
               advance(next);
             }}
-            style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid #23232d", background: "transparent", color: "#64748B", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+            style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--uf-border)", background: "transparent", color: "var(--uf-ink-3)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
           >
             Skip
           </button>

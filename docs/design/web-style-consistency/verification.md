@@ -1,0 +1,11 @@
+# Web style consistency — 31 October 2026
+
+Baseline: origin/main 4ec5eea3e5156863892b46b006186beb03f8b447. Working folder F:/Claude-Untilfire; branch codex/web-style-consistency. No changes to money rules, import parsing, account mutations or native release.
+
+Implemented: theme-aware budget/import dialogs; readable transaction tags; mint Explore cards and yellow amount pills; light medal ink; lilac/mint referral bands; shared portfolio logo and theme; pastel allocation fills with separate semantic grade colors; fixed light export/report palettes; theme-aware admin panels/canvas controls and pill navigation; rounded Learn/calculator cards; theme-aware unsubscribe; visible Log in next to Get started including phone.
+
+Validation: full npm run validate passed. Subsequent production builds including latest header/contrast changes passed type/lint checks. Existing repository warnings remain. test:seo, test:csv-import (7), test:journey-canvas, test:journeys (22), test:start-ctas (7 public actions) passed. Two portfolio export endpoints returned HTTP 200 and example report was visually inspected.
+
+Browser verification: production build at port 4207. Portfolio example input and result navigation worked; its rules-based result remained A. Price-history service was unavailable locally and displayed the existing performance-unavailable state. Explore mint cards, yellow amounts and real geographic outlines inspected. Referral pitch/embedded calculator loaded; an earlier stale-chunk error caused by rebuilding while the preview was running was rejected and cleared by restarting and reloading the final build. Learn cards inspected. Phone header at 390px shows both Log in and Get started, no horizontal document overflow (document 375px including browser scrollbar handling); Log in navigates to the existing Google/Apple sign-in card. Screenshots beside this report are public examples, not user financial data.
+
+Limits: preview remains signed out. Authenticated Home/Money/Plan/Profile, admin states, budget and import dialog interactions require signed-in visual review; no claim that every account state or dark-mode route has been visually verified. Those screens use shared or newly corrected theme tokens. No customer data was edited. Do not treat public example screenshots as authenticated QA. Merge/deployment pending review.

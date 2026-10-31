@@ -63,7 +63,7 @@ export default function UsersTab({ token }: { token: string }) {
   if (!users) return <p style={{ color: "var(--uf-ink-2)" }}>Loading&hellip;</p>;
 
   return (
-    <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, overflow: "auto" }}>
+    <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-card)", overflow: "auto" }}>
       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
         <thead>
           <tr style={{ background: "var(--uf-ground)", textAlign: "left" }}>

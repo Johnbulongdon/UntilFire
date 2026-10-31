@@ -402,10 +402,10 @@ function QuickAddForm({
             onClick={() => setShowDescription((v) => !v)}
             style={{
               display: "inline-flex", alignItems: "center", gap: 4,
-              background: (showDescription || !!draft.description) ? "rgba(99,102,241,0.1)" : "var(--uf-surface-2)",
-              border: `1px solid ${(showDescription || !!draft.description) ? "#6366f1" : "var(--uf-border)"}`,
+              background: (showDescription || !!draft.description) ? "#EEE9FA" : "var(--uf-surface-2)",
+              border: `1px solid ${(showDescription || !!draft.description) ? "#D9CEF3" : "var(--uf-border)"}`,
               borderRadius: 999, padding: "5px 10px",
-              fontSize: 11, fontWeight: 700, color: (showDescription || !!draft.description) ? "#6366f1" : "var(--uf-text-2)",
+              fontSize: 11, fontWeight: 700, color: (showDescription || !!draft.description) ? "#151719" : "var(--uf-text-2)",
               cursor: "pointer", fontFamily: "inherit",
             }}
           >
@@ -416,10 +416,10 @@ function QuickAddForm({
             onClick={() => setShowNotes((v) => !v)}
             style={{
               display: "inline-flex", alignItems: "center", gap: 4,
-              background: (showNotes || !!draft.notes) ? "rgba(99,102,241,0.1)" : "var(--uf-surface-2)",
-              border: `1px solid ${(showNotes || !!draft.notes) ? "#6366f1" : "var(--uf-border)"}`,
+              background: (showNotes || !!draft.notes) ? "#EEE9FA" : "var(--uf-surface-2)",
+              border: `1px solid ${(showNotes || !!draft.notes) ? "#D9CEF3" : "var(--uf-border)"}`,
               borderRadius: 999, padding: "5px 10px",
-              fontSize: 11, fontWeight: 700, color: (showNotes || !!draft.notes) ? "#6366f1" : "var(--uf-text-2)",
+              fontSize: 11, fontWeight: 700, color: (showNotes || !!draft.notes) ? "#151719" : "var(--uf-text-2)",
               cursor: "pointer", fontFamily: "inherit",
             }}
           >
@@ -432,7 +432,7 @@ function QuickAddForm({
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
               Description
-              {categorizing && <span style={{ color: "#f97316", marginLeft: 8, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>categorizing…</span>}
+              {categorizing && <span style={{ color: "var(--uf-warn)", marginLeft: 8, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>categorizing…</span>}
             </label>
             <input
               type="text"
@@ -530,7 +530,7 @@ function QuickAddForm({
                     }}
                   >
                     {isCustom && (
-                      <span style={{ position: "absolute", top: 4, right: 4, width: 6, height: 6, borderRadius: "50%", background: "#f97316", flexShrink: 0 }} title="Custom category" />
+                      <span style={{ position: "absolute", top: 4, right: 4, width: 6, height: 6, borderRadius: "50%", background: "#FFD4B8", flexShrink: 0 }} title="Custom category" />
                     )}
                     <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.emoji}</div>
                     <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#151719" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2 }}>{c.label}</span>
@@ -723,11 +723,11 @@ function QuickAddForm({
               onClick={() => setShowProject((v) => !v)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
-                background: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "rgba(99,102,241,0.1)" : "var(--uf-surface-2)",
-                border: `1px solid ${(showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#6366f1" : "var(--uf-border)"}`,
+                background: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#EEE9FA" : "var(--uf-surface-2)",
+                border: `1px solid ${(showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#D9CEF3" : "var(--uf-border)"}`,
                 borderRadius: 999, padding: "5px 10px",
                 fontSize: 11, fontWeight: 700,
-                color: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#6366f1" : "var(--uf-text-2)",
+                color: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#151719" : "var(--uf-text-2)",
                 cursor: "pointer", fontFamily: "inherit",
               }}
             >
@@ -791,7 +791,7 @@ function QuickAddForm({
                     <button
                       type="button"
                       onClick={() => setField("tags", draft.tags.filter((t) => t !== tag))}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#6EE7B7", fontSize: 16, lineHeight: 1, padding: "0 0 0 2px", display: "flex", alignItems: "center" }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#E3F7EF", fontSize: 16, lineHeight: 1, padding: "0 0 0 2px", display: "flex", alignItems: "center" }}
                     >×</button>
                   </span>
                 ))}
@@ -1021,7 +1021,7 @@ function TransactionList({
               onClick={() => setFilter(f)}
               style={{
                 background: filter === f ? "#ECFDF5" : "var(--uf-surface-2)",
-                border: `1px solid ${filter === f ? "#6EE7B7" : "transparent"}`,
+                border: `1px solid ${filter === f ? "#E3F7EF" : "transparent"}`,
                 borderRadius: 999, padding: "6px 14px",
                 fontSize: 12, fontWeight: 600,
                 color: filter === f ? "#151719" : "var(--uf-text-2)",
@@ -1042,15 +1042,15 @@ function TransactionList({
             onClick={() => setTagFilter(tag)}
             style={{
               background: tagFilter === tag
-                ? tag === "need" ? "rgba(34,211,165,0.15)" : tag === "want" ? "rgba(249,115,22,0.15)" : tag === "work" ? "rgba(99,102,241,0.15)" : "#ECFDF5"
+                ? tag === "need" ? "#BCE9DA" : tag === "want" ? "#FFD4B8" : tag === "work" ? "#D9CEF3" : "#FFE58A"
                 : "var(--uf-surface-2)",
               border: `1px solid ${tagFilter === tag
-                ? tag === "need" ? "#22d3a5" : tag === "want" ? "#f97316" : tag === "work" ? "#6366f1" : "#6EE7B7"
+                ? tag === "need" ? "#BCE9DA" : tag === "want" ? "#FFD4B8" : tag === "work" ? "#D9CEF3" : "#E3F7EF"
                 : "transparent"}`,
               borderRadius: 999, padding: "4px 12px",
               fontSize: 11, fontWeight: 600,
               color: tagFilter === tag
-                ? tag === "need" ? "#22d3a5" : tag === "want" ? "#f97316" : tag === "work" ? "#6366f1" : "#151719"
+                ? "#151719"
                 : "var(--uf-text-2)",
               cursor: "pointer", fontFamily: "inherit",
             }}
@@ -1231,8 +1231,8 @@ function TransactionList({
                             {tx.transaction_type === "expense" && isWorkCost && (
                               <span
                                 style={{
-                                  background: "rgba(99,102,241,0.12)",
-                                  color: "#6366f1",
+                                  background: "#EEE9FA",
+                                  color: "#151719",
                                   border: "none", borderRadius: 999, padding: "1px 8px",
                                   fontSize: 10, fontWeight: 700, flexShrink: 0,
                                 }}

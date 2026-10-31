@@ -44,8 +44,11 @@
   .links a:last-child { border-bottom: none; }
 }
 
-.signIn { color: var(--uf-ink); font-size: 13px; font-weight: 600; text-decoration: none; padding: 12px; }
-@media(max-width:760px){.signIn{display:none}}
+.signIn { color: var(--uf-ink); font-size: 13px; font-weight: 700; text-decoration: none; padding: 10px 14px; min-height:44px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--uf-border-2); border-radius:var(--uf-r-pill); white-space:nowrap; }
 
 .mobileLabel{display:none}
 @media(max-width:760px){.desktopLabel{display:none}.mobileLabel{display:inline}}
+
+.cta { min-height:44px; display:inline-flex; align-items:center; justify-content:center; }
+.signIn:focus-visible { outline:3px solid #9278BF; outline-offset:3px; }
+@media(max-width:760px) { .bar { gap:8px; padding:12px; } .logo img { max-width:108px; height:auto; } .signIn { padding:10px; } .cta { padding:9px 12px; } .menu { min-height:44px; width:38px; } }

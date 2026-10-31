@@ -486,7 +486,7 @@ export default function EmailsTab({ token }: { token: string }) {
           sandbox=""
           style={{
             width: "100%", height: 900, border: "1px solid var(--uf-border)",
-            borderRadius: 12, background: "var(--uf-card)", display: "block",
+            borderRadius: "var(--uf-r-card)", background: "var(--uf-card)", display: "block",
           }}
         />
       </div>
@@ -560,7 +560,7 @@ function SendStats({ token }: { token: string | null }) {
   const on = tracking?.openTracking && tracking?.clickTracking;
 
   return (
-    <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: 16 }}>
+    <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-card)", padding: 16 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
         <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-ink-3)", textTransform: "uppercase" }}>Results</div>
         {tracking && (
@@ -679,7 +679,7 @@ function StageStrip({ stages }: { stages: Stage[] }) {
 }
 
 const STAGE_LABEL: Record<string, { text: string; fg: string; bg: string }> = {
-  sent: { text: "Sent", fg: "var(--uf-ink-2)", bg: "#F1F5F9" },
+  sent: { text: "Sent", fg: "var(--uf-ink-2)", bg: "var(--uf-surface)" },
   delivered: { text: "Delivered", fg: "#0369A1", bg: "#E0F2FE" },
   opened: { text: "Opened", fg: "#92400E", bg: "#FEF3C7" },
   clicked: { text: "Clicked", fg: "#151719", bg: "#ECFDF5" },

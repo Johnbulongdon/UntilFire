@@ -21,7 +21,7 @@ interface AdminOffer {
 
 const BLANK: AdminOffer = { slug: "", kind: "savings", name: "", blurb: "", rateBps: "", bonusText: "", bonusEndsOn: "", url: "", allowedDomain: "", sort: 0 };
 
-const card: React.CSSProperties = { background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: 16 };
+const card: React.CSSProperties = { background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-card)", padding: 16 };
 const small: React.CSSProperties = { fontSize: 12, color: "var(--uf-ink-3)" };
 const button: React.CSSProperties = { padding: "6px 12px", borderRadius: 8, border: "1px solid var(--uf-border-2)", background: "var(--uf-card)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", color: "var(--uf-ink)" };
 const input: React.CSSProperties = { padding: "8px 10px", borderRadius: 8, border: "1px solid var(--uf-border-2)", fontSize: 13, fontFamily: "inherit", width: "100%", boxSizing: "border-box" };

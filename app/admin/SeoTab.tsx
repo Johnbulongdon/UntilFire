@@ -36,9 +36,9 @@ interface Report {
 }
 
 const card: React.CSSProperties = {
-  background: '#fff',
+  background: "var(--uf-card)",
   border: '1px solid var(--uf-border)',
-  borderRadius: 12,
+  borderRadius: "var(--uf-r-card)",
   padding: '18px 16px',
 }
 const muted: React.CSSProperties = { color: 'var(--uf-ink-2)', fontSize: 12 }
