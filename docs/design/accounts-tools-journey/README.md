@@ -1,7 +1,7 @@
 # Accounts & tools — connected journey mock
 
 **Status:** interactive mock for review, 1 November 2026. Concept approved; production integration is not implemented here.
-**Baseline:** GitHub main af157f1. Kept separate from bank-health PR #352.
+**Baseline:** started from GitHub main af157f1; reconciled latest main 3d97d33 before publication. Kept separate from bank-health PR #352.
 **Style:** John explicitly selected the current app's yellow and pastel style over the older local Mint default. Use Inter, supplied logo assets, black pill actions and Next Horizon colours.
 
 ## Open locally
