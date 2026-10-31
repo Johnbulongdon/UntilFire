@@ -625,3 +625,5 @@ N1 payday polish is In review: [PR #336](https://github.com/Johnbulongdon/UntilF
 baseline origin/main cd78930. Original option 3 selected; implementation and local
 verification in progress. Preserve auth/onboarding paths; A/B experiment deferred.
 No merge, OTA promotion or store submission requested in this change.
+
+Mobile welcome is in review: PR #340 (https://github.com/Johnbulongdon/UntilFire/pull/340), implementation 66c9e2a. Mobile type/lint and final Android/iOS/web exports passed; welcome actions verified in the rendered preview. Physical-device, light-theme and accessibility-device checks remain pending before phone release. No experiment or release published.
