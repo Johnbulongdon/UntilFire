@@ -84,7 +84,7 @@ export default function ExploreCard({ city, rank, mode, money, freedom, badges =
   const fact = TAX_ESTIMATES_AVAILABLE ? taxFact(city) : null;
   // Compact (D-58): name and badge on one line, the facts on the next, so a column shows six or seven places.
   return <div className="uf-explore-card" data-city={city.key} style={{ position: "relative", borderRadius: "var(--uf-r-card)", overflow: "hidden", color: "var(--uf-on-accent)",
-    background: "var(--uf-mint)", boxShadow: selected ? "0 0 0 3px var(--uf-teal)" : "var(--uf-e1)" }}>
+    background: "#E3F7EF", boxShadow: selected ? "0 0 0 3px var(--uf-teal)" : "var(--uf-e1)" }}>
     <div style={{ position: "relative", height: H }}>
       <Place c={city} />
       <button type="button" onClick={onSelect} aria-label={`${city.name}, ${city.place}: ${badge}`} aria-pressed={selected}

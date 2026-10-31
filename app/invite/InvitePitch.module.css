@@ -4,7 +4,7 @@
 /* ── Hero ── */
 .heroBand {
   position: relative; overflow: hidden; padding: var(--uf-s7) 0 calc(var(--uf-s7) + 8px); color: var(--uf-on-accent);
-  background: var(--uf-lilac);
+  background: #EEE9FA;
 }
 .glowA, .glowB { display: none; }
 .dots { display: none; }
@@ -73,7 +73,7 @@
 .qa[open] summary::after { content: "−"; }
 
 /* ── Close ── */
-.closeBand { background: var(--uf-mint); color: var(--uf-on-accent); padding: var(--uf-s7) 0; }
+.closeBand { background: #E3F7EF; color: var(--uf-on-accent); padding: var(--uf-s7) 0; }
 .close { display: flex; align-items: center; justify-content: space-between; gap: var(--uf-s5); flex-wrap: wrap; }
 .close h2 { color: var(--uf-on-accent); max-width: 560px; }
 

@@ -612,3 +612,5 @@ Landing review-rail follow-up: approved compact mock implemented as continuous l
 31 October — N1 web style consistency, Codex, codex/web-style-consistency. Baseline latest pushed origin/main 4ec5eea. Remaining legacy public, portfolio/export, admin, budget/import and utility surfaces updated; validation and visual review in progress. No overlap with open product/security/native PRs; no merge or publication yet.
 
 N1 web style follow-up: [draft PR #335](https://github.com/Johnbulongdon/UntilFire/pull/335), implementation bf27c01. Build/type/lint and focused guards passed; public browser screenshots verified. Awaiting signed-in visual review, then merge authorization.
+
+31 October N1 PR #335: signed-in Home/Money/Plan/Profile light/dark and phone Home inspected; import/guided budget screens inspected without saving. Corrected Explore/referral dark pastel contrast and pill dialog buttons. Final build passed. Admin visual review blocked by access denial; no auth changes.

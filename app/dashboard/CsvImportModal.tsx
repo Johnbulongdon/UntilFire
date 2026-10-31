@@ -882,7 +882,7 @@ export default function CsvImportModal({
             {step === "map" && <div style={{ fontSize: 13, color: "var(--uf-ink-3)", marginTop: 4 }}>Map the columns and check the live import preview below</div>}
             {step === "review" && <div style={{ fontSize: 13, color: "var(--uf-ink-3)", marginTop: 4 }}>Review possible duplicates before importing</div>}
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--uf-ink-3)", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
+          <button onClick={onClose} style={{ minHeight: 44, minWidth: 44, background: "none", border: "none", color: "var(--uf-ink-3)", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
         </div>
 
         {step === "upload" && (
@@ -1061,8 +1061,8 @@ export default function CsvImportModal({
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <button
                 onClick={() => setStep("upload")}
-                style={{
-                  width: "100%", padding: "12px 0", borderRadius: 10, border: "1px solid var(--uf-border-2)",
+                style={{ minHeight: 44, minWidth: 44,
+                  width: "100%", padding: "12px 0", borderRadius: "var(--uf-r-pill)", border: "1px solid var(--uf-border-2)",
                   background: "transparent", color: "var(--uf-ink-2)", fontSize: 14, fontWeight: 700, cursor: "pointer",
                   fontFamily: "Inter, sans-serif",
                 }}
@@ -1072,8 +1072,8 @@ export default function CsvImportModal({
               <button
                 onClick={handleCheckDuplicates}
                 disabled={!colDate || !colDesc || !colAmount || parsedTransactions.length === 0}
-                style={{
-                  width: "100%", padding: "12px 0", borderRadius: 10, border: "none",
+                style={{ minHeight: 44, minWidth: 44,
+                  width: "100%", padding: "12px 0", borderRadius: "var(--uf-r-pill)", border: "none",
                   background: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "var(--uf-surface)" : "#151719",
                   color: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "var(--uf-ink-3)" : "#fff",
                   fontSize: 14, fontWeight: 700, cursor: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "not-allowed" : "pointer",
@@ -1142,8 +1142,8 @@ export default function CsvImportModal({
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <button
                 onClick={() => handleImport(new Set())}
-                style={{
-                  width: "100%", padding: "12px 0", borderRadius: 10,
+                style={{ minHeight: 44, minWidth: 44,
+                  width: "100%", padding: "12px 0", borderRadius: "var(--uf-r-pill)",
                   border: "1px solid var(--uf-border-2)", background: "transparent",
                   color: "var(--uf-ink-2)", fontSize: 13, fontWeight: 700, cursor: "pointer",
                   fontFamily: "Inter, sans-serif",
@@ -1153,8 +1153,8 @@ export default function CsvImportModal({
               </button>
               <button
                 onClick={() => handleImport(skipIndices)}
-                style={{
-                  width: "100%", padding: "12px 0", borderRadius: 10, border: "none",
+                style={{ minHeight: 44, minWidth: 44,
+                  width: "100%", padding: "12px 0", borderRadius: "var(--uf-r-pill)", border: "none",
                   background: "#151719", color: "#fff",
                   fontSize: 13, fontWeight: 700, cursor: "pointer",
                   fontFamily: "Inter, sans-serif",
@@ -1193,8 +1193,8 @@ export default function CsvImportModal({
             </div>
             <button
               onClick={onClose}
-              style={{
-                padding: "10px 28px", borderRadius: 10, border: "none",
+              style={{ minHeight: 44, minWidth: 44,
+                padding: "10px 28px", borderRadius: "var(--uf-r-pill)", border: "none",
                 background: "#151719", color: "#fff", fontSize: 14, fontWeight: 700,
                 cursor: "pointer", fontFamily: "Inter, sans-serif",
               }}

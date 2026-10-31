@@ -122,7 +122,7 @@ export default function BudgetSetupModal({
           <div style={{ fontSize: 12, color: "var(--uf-ink-3)", fontWeight: 700 }}>
             Category {stepIndex + 1} of {steps.length}
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--uf-ink-3)", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
+          <button onClick={onClose} style={{ minHeight: 44, minWidth: 44, background: "none", border: "none", color: "var(--uf-ink-3)", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
         </div>
 
         <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-ink)", marginBottom: 6 }}>
@@ -150,7 +150,7 @@ export default function BudgetSetupModal({
           {stepIndex > 0 && (
             <button
               onClick={() => setStepIndex((i) => i - 1)}
-              style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--uf-border)", background: "transparent", color: "var(--uf-ink-2)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+              style={{ minHeight: 44, minWidth: 44, padding: "10px 16px", borderRadius: "var(--uf-r-pill)", border: "1px solid var(--uf-border)", background: "transparent", color: "var(--uf-ink-2)", fontSize: 13, fontWeight: 700, cursor: "pointer" }}
             >
               Back
             </button>
@@ -161,14 +161,14 @@ export default function BudgetSetupModal({
               delete next[cat.key];
               advance(next);
             }}
-            style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid var(--uf-border)", background: "transparent", color: "var(--uf-ink-3)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+            style={{ minHeight: 44, minWidth: 44, padding: "10px 16px", borderRadius: "var(--uf-r-pill)", border: "1px solid var(--uf-border)", background: "transparent", color: "var(--uf-ink-3)", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
           >
             Skip
           </button>
           <button
             onClick={() => advance(drafts)}
             disabled={saving}
-            style={{ flex: 1, padding: "10px 16px", borderRadius: 10, border: "none", background: "#151719", color: "#fff", fontSize: 13, fontWeight: 700, cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1 }}
+            style={{ minHeight: 44, minWidth: 44, flex: 1, padding: "10px 16px", borderRadius: "var(--uf-r-pill)", border: "none", background: "#151719", color: "#fff", fontSize: 13, fontWeight: 700, cursor: saving ? "default" : "pointer", opacity: saving ? 0.7 : 1 }}
           >
             {saving ? "Saving…" : isLast ? "Save budget" : "Next"}
           </button>
