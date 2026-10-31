@@ -1,4 +1,5 @@
 "use client";
+import { paydaySpending, paydayRemainder } from '@/lib/payday-spending';
 
 import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
 
@@ -1234,6 +1235,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   }, [nwSnapshots]);
   // Home's "Until payday" (D-90): cash less bills before payday, the phone's rule; the budget card stands in without one.
   const paydayView = untilPayday(freeResult, bills.map((b) => b.description));
+  const paydayEstimate = paydayView ? paydaySpending({ today: now, days: paydayView.days, rows: spendRows, bills, budget: expenses as Record<string, number>, monthlyBudget: monthlyExpenses > 0 ? monthlyExpenses : null }) : null;
+  const [paydayAdjustment, setPaydayAdjustment] = useState<{ window: string; everyday: number | null; cushion: number } | null>(null);
+  const paydayWindow = userId + ':' + paydayView?.payday.iso + ':' + todayIso;
+  const activePaydayAdjustment = paydayAdjustment?.window === paydayWindow ? paydayAdjustment : null;
+  const paydayRemaining = paydayView ? paydayRemainder(paydayView.free, activePaydayAdjustment?.everyday ?? paydayEstimate?.amount ?? null, activePaydayAdjustment?.cushion ?? 0) : null;
   // Get set up (lib/setup-steps): read from what the account already has.
   const setupFacts = useMemo<SetupFacts>(() => ({
     income, bankLinked: plaidAccounts.length > 0, typedInvestments: k401 + rothIRA + taxable,
@@ -1641,7 +1647,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         <TodayStrip
           userId={userId}
           bills={bills}
-          perDay={paydayView ? paydayView.perDay : monthLeft.everydayBudget > 0 ? Math.max(0, monthLeft.left / (monthDays - now.getDate() + 1)) : null}
+          perDay={paydayView ? paydayRemaining === null ? null : Math.max(0, Math.floor(paydayRemaining / paydayView.days)) : monthLeft.everydayBudget > 0 ? Math.max(0, monthLeft.left / (monthDays - now.getDate() + 1)) : null}
           fmt={(n) => fmtMoney(n)}
           toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}
           onOpen={() => onTabChange?.("cashflow")}
@@ -1654,6 +1660,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       <HomeSlot id="month">
         {paydayView && paydayLineView ? (
           <UntilPaydayCard
+            key={paydayWindow}
+            onAdjustmentChange={adjustment => setPaydayAdjustment({ window: paydayWindow, ...adjustment })}
+            everyday={paydayEstimate?.amount ?? null}
+            estimateSource={paydayEstimate?.source}
+            displayRate={displayRates[displayCurrency] ?? 1}
             line={paydayLineView}
             paydayIso={paydayView.payday.iso}
             billCount={paydayView.bills.length}

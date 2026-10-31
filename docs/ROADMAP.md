@@ -618,3 +618,5 @@ N1 web style follow-up: [draft PR #335](https://github.com/Johnbulongdon/UntilFi
 31 October N1 payday card polish, Codex, codex/payday-card-polish, baseline main 7b63c78. Actual component updated and Before/After fixture preview available at port 4208. Focused lint, payday and free-to-spend guards passed; final build/review in progress. No merge or deployment yet.
 
 N1 payday polish is In review: [PR #336](https://github.com/Johnbulongdon/UntilFire/pull/336), implementation 4346376. Build/type/lint and chart/cash guards passed; browser before/after and edge-state checks recorded. Awaiting design review; not merged or deployed.
+
+31 October N1/N2 payday refinement — Codex, PR #336: John approved the simplified ledger mock and authorized build/ship. D-124 supersedes the chart polish. Shared everyday-cost estimate, optional visit-only zero cushion, Home Today synchronization and matching phone card implemented. In review until checked and merged; deployment and phone channel promotion tracked separately.

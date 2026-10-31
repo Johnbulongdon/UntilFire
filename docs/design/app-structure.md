@@ -220,3 +220,5 @@ This is historical problem context, not a fresh audit or permission to add Home
 financial inputs. A guided setup flow remains a separate proposal: reconcile it
 with current onboarding and input ownership before implementing it. This document
 preserves current navigation; it does not authorize a redesign.
+
+31 October D-124 Home exception: Until payday supports temporary, visit-only everyday-cost and cushion adjustments. Persistent financial inputs remain in Money; this card does not edit budgets or move savings.

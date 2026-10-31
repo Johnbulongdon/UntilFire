@@ -1,3 +1,4 @@
+import { paydayRemainder } from '@engine/payday-spending.ts'
 import { addMonths, asksShop, buildMerchantMemory, findFlags, isoDay, isRent, isRentOrMortgage, ladderViewFromPlan, leaseAsk, noticeDeadline, monthOf, netAmount, suggestFromHistory, type FlagKind } from '@/engine'
 import { freeUntilPayday, unpaid, upcoming } from '@/lib/bills'
 import { contributionFacts, EMPTY_PLAN } from '@/lib/contribution-facts'
@@ -71,7 +72,7 @@ export function listDay(done: string[], now = new Date()): string {
  */
 export function safeToSpendToday(data: AccountData, now = new Date()): number | null {
   const f = freeUntilPayday(data, now)
-  if (f) return Math.max(0, Math.floor(f.free / f.days))
+  if (f) { const left = paydayRemainder(f.free, f.everyday?.amount ?? null); return left === null ? null : Math.max(0, Math.floor(left / f.days)) }
   const { everydayBudget, left } = splitBudget(data)
   if (everydayBudget <= 0) return null
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
