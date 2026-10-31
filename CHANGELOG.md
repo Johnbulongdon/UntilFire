@@ -2,6 +2,7 @@
 
 ## 2026-10-31 — Until payday stops counting paid bills
 
+- Possible duplicates at the same shop (two 美团 ¥22.90 on one day) now show both payments as a Delete / Keep pair with their times and files, like card copies, instead of one lone row.
 - Duplicates: the card's exchange rate is now learned from the tightest group of matches, not the median, so a few card rows among many similar meals still pair correctly (e.g. Alipay*ApplianceRental $4.54 = 蜂充 ¥30).
 
 - Home's Until payday (and Budget, Free to spend) no longer counts an overdue bill as owed when a payment with the bill's name and amount (within 15%) landed from a week before its due date to today. Google One paid on 25 Oct and 中国移动 paid on 31 Oct were still being taken off. The phone already did this (mobile lib/bills `unpaid`); the website now uses the same rule (`paidByName` in lib/spend-forecast).
