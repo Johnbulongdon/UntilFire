@@ -86,6 +86,20 @@ type Transaction = {
   occurred_at?: string | null;
 };
 
+// Where a row came from, in words: the wallet or bank behind an imported
+// file ("支付宝交易明细(2026…).csv" → Alipay), a linked bank, or typed in.
+function sourceLabel(t: { source?: string | null; source_file?: string | null }): string {
+  if (t.source === "plaid") return "Linked bank";
+  const f = t.source_file ?? "";
+  if (!f) return t.source === "csv" ? "Imported file" : "Typed in";
+  if (/支付宝|alipay/i.test(f)) return "Alipay";
+  if (/微信|wechat|weixin/i.test(f)) return "WeChat Pay";
+  if (/ether\.?fi/i.test(f)) return "ether.fi";
+  // Otherwise the file's name without dates, numbers or extension.
+  const name = f.replace(/\.[a-z0-9]+$/i, "").replace(/[_\-\s(（]*\d[\d\-_)）]*.*$/, "").trim();
+  return name || "Imported file";
+}
+
 type ClassificationRule = {
   id: string;
   category: string;
@@ -925,6 +939,12 @@ function TransactionList({
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "expense" | "income" | "transfer">("all");
   const [tagFilter, setTagFilter] = useState<"all" | "need" | "want" | "work">("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const sources = useMemo(() => {
+    const n = new Map<string, number>();
+    for (const t of transactions) n.set(sourceLabel(t), (n.get(sourceLabel(t)) ?? 0) + 1);
+    return [...n].sort((a, b) => b[1] - a[1]);
+  }, [transactions]);
   const [catPickerTxId, setCatPickerTxId] = useState<string | null>(null);
   const [pickerPos, setPickerPos] = useState<{ left: number; top?: number; bottom?: number }>({ left: 0 });
   const [swipedId, setSwipedId] = useState<string | null>(null);
@@ -948,6 +968,7 @@ function TransactionList({
     return transactions.filter((t) => {
       if (filter !== "all" && t.transaction_type !== filter) return false;
       if (tagFilter === "work" && !(t.tags || []).includes("work")) return false;
+      if (sourceFilter !== "all" && sourceLabel(t) !== sourceFilter) return false;
       // Need or want is what the row counts as, sorted for you or tagged (D-106).
       if ((tagFilter === "need" || tagFilter === "want") && (t.transaction_type !== "expense" || transactionNeed(t, categoryNeeds) !== tagFilter)) return false;
       if (search) {
@@ -961,7 +982,7 @@ function TransactionList({
       }
       return true;
     });
-  }, [transactions, search, filter, tagFilter, allCategories, categoryNeeds]);
+  }, [transactions, search, filter, tagFilter, sourceFilter, allCategories, categoryNeeds]);
 
   // What the rows on screen add up to, so a filter (a tag, a search, the
   // work chip) answers "how much was that" without leaving the list. The
@@ -1058,6 +1079,22 @@ function TransactionList({
             {tag === "all" ? "All tags" : tag === "need" ? "✓ Need" : tag === "want" ? "✦ Want" : "💼 Work"}
           </button>
         ))}
+        {/* Source: which wallet, bank or file the rows came from, as pills like the tags. */}
+        {sources.length > 1 && (
+          <div role="group" aria-label="Source" style={{ display: "flex", gap: 6, flexWrap: "wrap", width: "100%" }}>
+            {[["all", 0] as [string, number], ...sources].map(([label, n]) => (
+              <button key={label} type="button" aria-pressed={sourceFilter === label} onClick={() => setSourceFilter(label)}
+                style={{
+                  background: sourceFilter === label ? "#FFE58A" : "var(--uf-surface-2)",
+                  border: `1px solid ${sourceFilter === label ? "#FFE58A" : "transparent"}`,
+                  borderRadius: 999, padding: "4px 12px", fontSize: 11, fontWeight: 600,
+                  color: sourceFilter === label ? "#151719" : "var(--uf-text-2)", cursor: "pointer", fontFamily: "inherit",
+                }}>
+                {label === "all" ? "All sources" : <>{label} <span style={{ opacity: 0.6, fontVariantNumeric: "tabular-nums" }}>{n}</span></>}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Scrollable list */}
@@ -1069,11 +1106,11 @@ function TransactionList({
                 <path d="M5 17 9 13l3 3 7-7" /><path d="M14 6h5v5" />
               </svg>
             </div>
-            {search || tagFilter !== "all" ? (
+            {search || tagFilter !== "all" || sourceFilter !== "all" ? (
               <>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "var(--uf-text)" }}>No matches</div>
                 <div style={{ fontSize: 13, color: "var(--uf-text-2)", maxWidth: 260 }}>Try clearing the search or tag filter.</div>
-                <button onClick={() => { setSearch(""); setTagFilter("all"); }} style={{ background: "#151719", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Clear filters</button>
+                <button onClick={() => { setSearch(""); setTagFilter("all"); setSourceFilter("all"); }} style={{ background: "#151719", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Clear filters</button>
               </>
             ) : (
               <>
