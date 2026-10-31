@@ -1078,7 +1078,7 @@ function TransactionList({
             ) : (
               <>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "var(--uf-text)" }}>No transactions in this range</div>
-                <div style={{ fontSize: 13, color: "var(--uf-text-2)", maxWidth: 260 }}>Add them manually or import from your bank&apos;s CSV export.</div>
+                <div style={{ fontSize: 13, color: "var(--uf-text-2)", maxWidth: 260 }}>Add them by hand or import a file from your bank.</div>
               </>
             )}
           </div>
@@ -1351,10 +1351,10 @@ function MobileBar({ onOpen, onImport }: { onOpen: () => void; onImport: () => v
       <div style={{ width: 1, background: "rgba(255,255,255,0.2)", flexShrink: 0 }} />
       <button
         onClick={onImport}
-        aria-label="Import CSV"
+        aria-label="Import bank file"
         style={{ background: "#151719", color: "#fff", border: "none", borderRadius: "0 999px 999px 0", padding: "12px 16px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
       >
-        ↑ CSV
+        ↑ Import
       </button>
     </div>
   );
@@ -1615,7 +1615,6 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     try { localStorage.setItem("uf.tx.range", String(preset)); } catch { /* storage unavailable */ }
   }, []);
   const range = useMemo(() => rangeFor(rangePreset, rangeEnd), [rangePreset, rangeEnd]);
-  const viewMonth = rangeEnd;
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const toggleCategory = useCallback((k: string) => setSelectedCategories((prev) => prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]), []);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -2144,7 +2143,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           onChange={(p, end) => { setRange(p, end); setSelectedDay(null); trackTxRangeChanged({ preset: p, months: rangeFor(p, end).months.length }); }} />
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
           <button onClick={() => setShowImport(true)} className="uf-t-small" style={{ padding: "6px 12px", borderRadius: 999, border: "1px solid var(--uf-border)", background: "var(--uf-card)", color: "var(--uf-ink-2)", fontWeight: 600, cursor: "pointer" }}>
-            ↑ Import CSV
+            ↑ Import
           </button>
         </div>
       </div>
@@ -2235,14 +2234,10 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       {showImport && (
         <CsvImportModal
           onClose={() => setShowImport(false)}
-          onImported={(count) => {
-            setShowImport(false);
-            setRefreshKey((k) => k + 1);
-          }}
+          // Refresh behind the modal; it stays open on its Done screen.
+          onImported={() => setRefreshKey((k) => k + 1)}
           defaultCurrency={defaultCurrency}
           preferredCurrencies={preferredCurrencies}
-          transactions={transactions}
-          viewMonth={viewMonth}
           rates={rates}
           formatAmount={fmtDisplay}
           displayCurrency={displayCurrency}
