@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-31 — October update email pictures
+
+- Add the October monthly update email's banner and four feature previews (new look, Until payday, Today, Where could you retire?) under public/email/october/, so the admin draft "Monthly update — October 2026" can load them. No app behaviour change.
+
 ## 31 October 2026 — Until payday after everyday costs
 
 - Home now estimates cash left after bills, card payments and normal everyday costs, using spending history or the saved category budget without counting repeating bills twice.
