@@ -5,7 +5,7 @@
 .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--uf-s2); margin-bottom: var(--uf-s5); }
 .tab {
   display: flex; align-items: center; gap: var(--uf-s2);
-  padding: var(--uf-s3) var(--uf-s4); border-radius: 12px; cursor: pointer; text-align: left;
+  padding: var(--uf-s3) var(--uf-s4); border-radius: var(--uf-r-pill); cursor: pointer; text-align: left;
   font: inherit; font-size: 14px; font-weight: 700;
   background: var(--uf-card); color: var(--uf-ink-2); border: 1px solid var(--uf-border);
 }
@@ -17,7 +17,7 @@
 .reads { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--uf-s2); }
 .read {
   display: flex; justify-content: space-between; align-items: center; gap: var(--uf-s4);
-  padding: var(--uf-s4); border-radius: 14px; text-decoration: none; color: var(--uf-ink);
+  padding: var(--uf-s4); border-radius: var(--uf-r-card); text-decoration: none; color: var(--uf-ink);
   background: var(--uf-card); border: 1px solid var(--uf-border);
   transition: border-color 0.15s ease;
 }

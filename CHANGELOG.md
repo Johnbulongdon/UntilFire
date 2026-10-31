@@ -1683,3 +1683,7 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - Keep past and completed bills on their original scheduled dates instead of moving them onto today. Cash forecasting still accounts for overdue unpaid bills independently.
 
 - Landing globe follow-up: slow automatic rotation, pause/resume control, interaction hold, reduced-motion and off-screen/hidden-tab suspension.
+
+### Web style consistency
+- Carry Next Horizon into Explore cards, referrals, portfolio and report exports, Learn/calculator cards, admin surfaces and navigation, budget/import dialogs and unsubscribe. Keep semantic states and financial behavior.
+- Keep Log in visible beside Get started in desktop and phone public headers.

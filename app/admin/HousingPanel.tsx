@@ -96,7 +96,7 @@ export default function HousingPanel({ token }: { token: string }) {
   const spread = rents.length ? Math.max(...rents) / Math.min(...rents) : null;
 
   return (
-    <div style={{ background: "var(--uf-card)", border: `1px solid ${LINE}`, borderRadius: 12, padding: 18, marginBottom: 20 }}>
+    <div style={{ background: "var(--uf-card)", border: `1px solid ${LINE}`, borderRadius: "var(--uf-r-card)", padding: 18, marginBottom: 20 }}>
       <h2 style={{ fontSize: 15, fontWeight: 800, color: INK, margin: "0 0 2px" }}>Housing — HUD Fair Market Rents</h2>
       <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 14px", lineHeight: 1.6 }}>
         Rent by county, at the 40th percentile paid by recent movers &mdash; what someone planning a

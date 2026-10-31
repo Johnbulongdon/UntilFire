@@ -3498,3 +3498,8 @@ John authorized the website deployment of PR #323 and its accumulated approved f
 
 ### D-121 — Landing globe rotates automatically (30 October 2026)
 John requested automatic rotation after reviewing the shipped globe. Use a gentle five degrees per second, hold selected cities for five seconds, pause during canvas focus/drag, and respect reduced motion. Provide pause/resume; stop frames off-screen and in hidden tabs. Website presentation only.
+
+### D-122 — Finish web style consistency (31 October 2026)
+John requested all web pages match the approved Next Horizon style. Extend the existing shared palette, logo and card/control system to remaining legacy Explore, referral, portfolio, export/report, admin and utility screens. Printed/social exports retain a fixed light palette; interactive pages use theme tokens. Preserve income/loss/warning meanings, all projections, data, imports, routes and authorization checks. This task is web presentation; native release is separate.
+
+Header clarification: Log in is a visible secondary pill beside Get started on public pages, including narrow layouts. Signed-in visitors retain Dashboard.

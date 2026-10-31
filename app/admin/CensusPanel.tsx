@@ -129,7 +129,7 @@ export default function CensusPanel({ token }: { token: string }) {
   const shown = onlyChanged ? changed : rows;
 
   return (
-    <div style={{ background: "var(--uf-card)", border: `1px solid ${LINE}`, borderRadius: 12, padding: 18, marginBottom: 20 }}>
+    <div style={{ background: "var(--uf-card)", border: `1px solid ${LINE}`, borderRadius: "var(--uf-r-card)", padding: 18, marginBottom: 20 }}>
       <h2 style={{ fontSize: 15, fontWeight: 800, color: INK, margin: "0 0 2px" }}>Cost of living — Census ACS</h2>
       <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 10px", lineHeight: 1.6 }}>
         Median gross rent per city, from the American Community Survey. Rent is the only line that

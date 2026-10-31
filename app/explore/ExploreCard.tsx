@@ -4,7 +4,7 @@
  * One city in Explore (D-58), Nomad List style: four corners and your value
  * as the badge. The backdrop is the place itself, its state or country outline
  * with the city pinned, so every card is specific without a photo to source.
- * The card is a picture surface, like a photo: deep green with white text in
+ * The card is a picture surface, like a photo: pastel mint with dark text in
  * both themes, so the theme tokens (which flip in dark mode) are not used here.
  */
 import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
@@ -57,8 +57,8 @@ function Place({ c }: { c: ExploreCity }) {
   if (!o) return null;
   const p = [o.x, o.y];
   return <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} aria-hidden>
-    <path d={o.d} fill="#ffffff1f" stroke="#ffffff66" strokeWidth={1} />
-    <circle cx={p[0]} cy={p[1]} r={13} fill="#ffffff26" /><circle cx={p[0]} cy={p[1]} r={4} fill="#fff" />
+    <path d={o.d} fill="#BCE9DA" stroke="#6E9D8D" strokeWidth={1} />
+    <circle cx={p[0]} cy={p[1]} r={13} fill="#FFE58A" /><circle cx={p[0]} cy={p[1]} r={4} fill="#151719" />
   </svg>;
 }
 
@@ -83,21 +83,21 @@ export default function ExploreCard({ city, rank, mode, money, freedom, badges =
   const other = mode === "monthly" ? (freedom ? `🏁 ${Math.floor(freedom.at)}` : null) : `${money(city.monthlyUSD)}/mo`;
   const fact = TAX_ESTIMATES_AVAILABLE ? taxFact(city) : null;
   // Compact (D-58): name and badge on one line, the facts on the next, so a column shows six or seven places.
-  return <div className="uf-explore-card" data-city={city.key} style={{ position: "relative", borderRadius: 14, overflow: "hidden", color: "#fff",
-    background: "linear-gradient(150deg, #2B5A41, #15291F)", boxShadow: selected ? "0 0 0 3px var(--uf-teal)" : "0 1px 4px #203e3022" }}>
+  return <div className="uf-explore-card" data-city={city.key} style={{ position: "relative", borderRadius: "var(--uf-r-card)", overflow: "hidden", color: "var(--uf-on-accent)",
+    background: "#E3F7EF", boxShadow: selected ? "0 0 0 3px var(--uf-teal)" : "var(--uf-e1)" }}>
     <div style={{ position: "relative", height: H }}>
       <Place c={city} />
       <button type="button" onClick={onSelect} aria-label={`${city.name}, ${city.place}: ${badge}`} aria-pressed={selected}
         style={{ position: "absolute", inset: 0, border: 0, background: "transparent", cursor: "pointer" }} />
-      <div style={{ position: "absolute", left: 12, right: 12, top: 10, display: "flex", alignItems: "center", gap: 8, pointerEvents: "none", textShadow: "0 1px 4px #0009" }}>
+      <div style={{ position: "absolute", left: 12, right: 12, top: 10, display: "flex", alignItems: "center", gap: 8, pointerEvents: "none", textShadow: "none" }}>
         <button type="button" onClick={onStar} aria-label={star ? `Unstar ${city.name}` : `Star ${city.name}`} aria-pressed={star}
-          style={{ pointerEvents: "auto", border: 0, background: "transparent", padding: 0, cursor: "pointer", fontSize: 18, lineHeight: 1, color: star ? "var(--uf-sun)" : "#fff" }}>{star ? "★" : "☆"}</button>
-        <span style={{ font: "600 20px var(--uf-font-display, Inter), Georgia, serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{city.name}</span>
+          style={{ pointerEvents: "auto", border: 0, background: "transparent", padding: 0, cursor: "pointer", fontSize: 18, lineHeight: 1, color: star ? "#715600" : "#151719" }}>{star ? "★" : "☆"}</button>
+        <span style={{ font: "600 20px var(--uf-font-display, Inter), sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{city.name}</span>
         {mode === "badge" && badges
-          ? <span style={{ marginLeft: "auto", pointerEvents: "auto", textShadow: "none" }}><MedalRow badges={badges} size={22} retireAge={retireAge} /></span>
-          : <span style={{ marginLeft: "auto", ...mono, fontSize: 15, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: "#087D69", color: "#fff", whiteSpace: "nowrap", textShadow: "none" }}>{badge}{mode === "monthly" && <span style={{ fontSize: 11, opacity: 0.85 }}>/mo</span>}</span>}
+          ? <span style={{ marginLeft: "auto", pointerEvents: "auto", textShadow: "none" }}><MedalRow light badges={badges} size={22} retireAge={retireAge} /></span>
+          : <span style={{ marginLeft: "auto", ...mono, fontSize: 15, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: "var(--uf-yellow)", color: "var(--uf-on-accent)", whiteSpace: "nowrap", textShadow: "none" }}>{badge}{mode === "monthly" && <span style={{ fontSize: 11, opacity: 0.85 }}>/mo</span>}</span>}
       </div>
-      <div style={{ position: "absolute", left: 12, right: 12, bottom: 12, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", fontSize: 12, pointerEvents: "none", textShadow: "0 1px 3px #0008" }}>
+      <div style={{ position: "absolute", left: 12, right: 12, bottom: 12, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", fontSize: 12, pointerEvents: "none", textShadow: "none" }}>
         <span style={{ opacity: 0.8, ...mono }}>#{rank}</span>
         <span><Flag emoji={city.flag} size={11} /> {city.place}</span>
         {other && <span style={mono}>{other}</span>}
@@ -107,7 +107,7 @@ export default function ExploreCard({ city, rank, mode, money, freedom, badges =
     {/* Opened in badge mode: the medals in words (D-67). */}
     {selected && mode === "badge" && badges && <div style={{ display: "grid", gap: 6, padding: "0 12px 10px", fontSize: 12.5 }}>
       {(["bronze", "silver", "gold"] as Metal[]).map((m) => <div key={m} style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-        <b style={{ minWidth: 92, color: `var(--uf-${m})` }}>{METAL_NAME[m]} {"★".repeat(badges[m]) || "—"}</b>
+        <b style={{ minWidth: 92, color: `var(--uf-${m}-deep)` }}>{METAL_NAME[m]} {"★".repeat(badges[m]) || "—"}</b>
         <span style={{ opacity: 0.92 }}>{METAL_MEANS[m]}: {m === "gold" && !badges.goldJudged ? "add your take-home to see it" : badges[m] ? `${STAR_LIFE[badges[m]].toLowerCase()} by ${retireAge}` : `not by ${retireAge}`}</span>
       </div>)}
       <span style={{ opacity: 0.75, fontSize: 11.5 }}>★ frugal 75% · ★★ medium · ★★★ wealthy 150% of the typical cost. Taxes, healthcare, visas and currency there are not counted.</span>

@@ -65,7 +65,7 @@ const WARN = "#B45309";
 const card: React.CSSProperties = {
   background: "var(--uf-card)",
   border: `1px solid ${LINE}`,
-  borderRadius: 12,
+  borderRadius: "var(--uf-r-card)",
   padding: 18,
   marginBottom: 20,
 };
@@ -198,7 +198,7 @@ export default function RetentionTab({ token }: { token: string }) {
                 )}
               </span>
             </div>
-            <div style={{ height: 8, background: "#F1F5F9", borderRadius: 99, overflow: "hidden" }}>
+            <div style={{ height: 8, background: "var(--uf-surface)", borderRadius: 99, overflow: "hidden" }}>
               <div style={{
                 width: `${s.fromTop}%`, height: "100%",
                 background: s.drop && s.fromPrevious < 25 ? BAD : GOOD,

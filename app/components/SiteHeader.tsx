@@ -25,7 +25,7 @@ export default function SiteHeader({
   onStart,
   signedIn,
   startLabel = "Get started",
-  showSignIn = false,
+  showSignIn = true,
 }: {
   /** Float over the page (the landing hero) instead of taking up space. */
   fixed?: boolean;
@@ -68,7 +68,7 @@ export default function SiteHeader({
         ))}
       </nav>
       <div className={styles.actions}>
-        {showSignIn && !isSignedIn && <Link href="/login" className={styles.signIn}>Sign in</Link>}
+        {showSignIn && !isSignedIn && <Link href="/login" className={styles.signIn}>Log in</Link>}
         {isSignedIn ? (
           <Link className={styles.cta} href="/dashboard">Dashboard</Link>
         ) : onStart ? (

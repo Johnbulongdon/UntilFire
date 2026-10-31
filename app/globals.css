@@ -9,15 +9,15 @@
    UntilFire design system — the single source of truth.
    Rules and rationale: docs/design/design-system.md
 
-   Green ACTS   (buttons, links, anything interactive)
-   Teal is FREEDOM (progress toward the freedom date — never a button)
-   Warm ground, warm ink, warm shadows. Inter carries display type.
+   Next Horizon: black actions, light ground and pastel content groups.
+   Semantic positive, warning and negative colors retain their meanings.
+   Legacy green/teal names are compatibility aliases. Inter carries all type.
 
    These tokens used to live in a <style> block inside the dashboard page,
    which is why dark mode only worked on one route. They belong here.
    ══════════════════════════════════════════════════════════════════════ */
 
-/* ── WARM · light (default) ─────────────────────────────────────────── */
+/* ── Next Horizon · light (default) ─────────────────────────────────────────── */
 :root {
   /* ground + surfaces — warm all the way down, never cool grey.
      ground = page · card = panels · surface = inset · surface-2 = deeper inset */
@@ -137,7 +137,7 @@
   --font-secondary: var(--uf-font);
 }
 
-/* ── WARM · dark. Warm near-black, not blue-black — the personality
+/* ── Next Horizon · dark. Charcoal surfaces — the personality
       has to survive the toggle. ──────────────────────────────────────── */
 .dark {
   --uf-ground:    #151719;

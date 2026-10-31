@@ -831,7 +831,7 @@ export default function CsvImportModal({
 
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "8px 10px", borderRadius: 8,
-    border: "1px solid #23232d", background: "#1a1a24", color: "#e2e8f0",
+    border: "1px solid var(--uf-border)", background: "var(--uf-surface)", color: "var(--uf-ink)",
     fontSize: 13, fontFamily: "Inter, sans-serif",
   };
 
@@ -841,18 +841,18 @@ export default function CsvImportModal({
   };
 
   const selectOptionStyle: React.CSSProperties = {
-    backgroundColor: "#1a1a24",
-    color: "#e2e8f0",
+    backgroundColor: "var(--uf-surface)",
+    color: "var(--uf-ink)",
     fontFamily: "Inter, sans-serif",
   };
 
   const placeholderOptionStyle: React.CSSProperties = {
     ...selectOptionStyle,
-    color: "#64748b",
+    color: "var(--uf-ink-3)",
   };
 
   const labelStyle: React.CSSProperties = {
-    display: "block", fontSize: 12, fontWeight: 600, color: "#94a3b8", marginBottom: 6,
+    display: "block", fontSize: 12, fontWeight: 600, color: "var(--uf-ink-2)", marginBottom: 6,
   };
 
   return (
@@ -867,7 +867,7 @@ export default function CsvImportModal({
       <div
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
         style={{
-          background: "#111118", border: "1px solid #23232d", borderRadius: 20,
+          background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-modal)",
           padding: 32, width: "100%", maxWidth: 520,
           maxHeight: "90dvh", overflowY: "auto",
           fontFamily: "Inter, sans-serif",
@@ -875,14 +875,14 @@ export default function CsvImportModal({
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#f1f5f9", fontFamily: "Inter, sans-serif" }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-ink)", fontFamily: "Inter, sans-serif" }}>
               Import bank transactions
             </div>
-            {step === "upload" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Upload a CSV, Excel, or PDF statement from your bank</div>}
-            {step === "map" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Map the columns and check the live import preview below</div>}
-            {step === "review" && <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Review possible duplicates before importing</div>}
+            {step === "upload" && <div style={{ fontSize: 13, color: "var(--uf-ink-3)", marginTop: 4 }}>Upload a CSV, Excel, or PDF statement from your bank</div>}
+            {step === "map" && <div style={{ fontSize: 13, color: "var(--uf-ink-3)", marginTop: 4 }}>Map the columns and check the live import preview below</div>}
+            {step === "review" && <div style={{ fontSize: 13, color: "var(--uf-ink-3)", marginTop: 4 }}>Review possible duplicates before importing</div>}
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
+          <button onClick={onClose} style={{ minHeight: 44, minWidth: 44, background: "none", border: "none", color: "var(--uf-ink-3)", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
         </div>
 
         {step === "upload" && (
@@ -892,17 +892,17 @@ export default function CsvImportModal({
             onDragLeave={() => setDragging(false)}
             onClick={() => fileRef.current?.click()}
             style={{
-              border: `2px dashed ${dragging ? "#17684B" : "#23232d"}`,
+              border: `2px dashed ${dragging ? "#17684B" : "var(--uf-border)"}`,
               borderRadius: 14, padding: "48px 32px", textAlign: "center",
               cursor: "pointer", transition: "border-color 0.15s",
               background: dragging ? "rgba(5,150,105,0.05)" : "transparent",
             }}
           >
             <div style={{ fontSize: 36, marginBottom: 12 }}>📂</div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "#e2e8f0", marginBottom: 6 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--uf-ink)", marginBottom: 6 }}>
               Drop your CSV, Excel, or PDF statement here or click to browse
             </div>
-            <div style={{ fontSize: 13, color: "#64748b" }}>
+            <div style={{ fontSize: 13, color: "var(--uf-ink-3)" }}>
               Export from your bank as CSV, Excel (.xlsx), or a PDF statement, then upload it here
             </div>
             <input
@@ -943,14 +943,14 @@ export default function CsvImportModal({
                   <option key={currency} value={currency} style={selectOptionStyle}>{currency} — {CURRENCY_NAMES[currency] ?? currency}</option>
                 ))}
               </select>
-              <div style={{ fontSize: 12, color: "#64748b", marginTop: 8 }}>
+              <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 8 }}>
                 {colCurrency
                   ? "Rows use the mapped currency column when present. This selection is the fallback if a row is blank or unclear."
                   : "Used when there is no separate currency column. We auto-detect when the file makes it obvious, and you can override it here."}
               </div>
             </div>
 
-            <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "#94a3b8", marginBottom: 20, cursor: "pointer" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--uf-ink-2)", marginBottom: 20, cursor: "pointer" }}>
               <input
                 type="checkbox"
                 checked={flipSigns}
@@ -962,23 +962,23 @@ export default function CsvImportModal({
 
             {previewRows.length > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "#64748b", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Raw file sample ({previewRows.length} rows)</div>
-                <div style={{ border: "1px solid #23232d", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--uf-ink-3)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Raw file sample ({previewRows.length} rows)</div>
+                <div style={{ border: "1px solid var(--uf-border)", borderRadius: 10, overflow: "hidden" }}>
                   <div style={{ maxHeight: 260, overflowY: "auto" }}>
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                       <thead>
-                        <tr style={{ background: "#1a1a24" }}>
+                        <tr style={{ background: "var(--uf-surface)" }}>
                           {["Date", "Description", "Amount"].map((h) => (
-                            <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "#64748b", fontWeight: 600, borderBottom: "1px solid #23232d", position: "sticky", top: 0, background: "#1a1a24" }}>{h}</th>
+                            <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "var(--uf-ink-3)", fontWeight: 600, borderBottom: "1px solid var(--uf-border)", position: "sticky", top: 0, background: "var(--uf-surface)" }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {previewRows.map((r: { date: string; desc: string; amount: string }, i: number) => (
-                          <tr key={i} style={{ borderBottom: i < previewRows.length - 1 ? "1px solid #1a1a24" : undefined }}>
-                            <td style={{ padding: "8px 12px", color: "#94a3b8" }}>{r.date}</td>
-                            <td style={{ padding: "8px 12px", color: "#e2e8f0", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.desc}</td>
-                            <td style={{ padding: "8px 12px", color: "#e2e8f0", whiteSpace: "nowrap" }}>{r.amount}</td>
+                          <tr key={i} style={{ borderBottom: i < previewRows.length - 1 ? "1px solid var(--uf-surface)" : undefined }}>
+                            <td style={{ padding: "8px 12px", color: "var(--uf-ink-2)" }}>{r.date}</td>
+                            <td style={{ padding: "8px 12px", color: "var(--uf-ink)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.desc}</td>
+                            <td style={{ padding: "8px 12px", color: "var(--uf-ink)", whiteSpace: "nowrap" }}>{r.amount}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -989,68 +989,68 @@ export default function CsvImportModal({
             )}
 
             <div style={{ display: "grid", gap: 16, marginBottom: 20 }}>
-              <div style={{ background: "#161621", border: "1px solid #23232d", borderRadius: 14, padding: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Import summary</div>
+              <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-ink-3)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Import summary</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10 }}>
                   <div>
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Transactions</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: "#f8fafc" }}>{parsedTransactions.length}</div>
+                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)", marginBottom: 4 }}>Transactions</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-ink)" }}>{parsedTransactions.length}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Months touched</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: "#f8fafc" }}>{touchedMonths}</div>
+                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)", marginBottom: 4 }}>Months touched</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-ink)" }}>{touchedMonths}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Sign mode</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: flipSigns ? "#FBBF24" : "#86EFAC" }}>{flipSigns ? "Flipped" : "Original"}</div>
+                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)", marginBottom: 4 }}>Sign mode</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: flipSigns ? "var(--uf-warn)" : "var(--uf-pos)" }}>{flipSigns ? "Flipped" : "Original"}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Currency</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#cbd5e1" }}>{colCurrency ? `${importCurrency} fallback` : importCurrency}</div>
+                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)", marginBottom: 4 }}>Currency</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-ink-2)" }}>{colCurrency ? `${importCurrency} fallback` : importCurrency}</div>
                   </div>
                 </div>
               </div>
 
-              <div style={{ background: "#161621", border: "1px solid #23232d", borderRadius: 14, padding: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Example transaction</div>
+              <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-ink-3)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Example transaction</div>
                 {sampleTransaction ? (
                   <div style={{ display: "grid", gap: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Date</span><span style={{ color: "#f8fafc", fontSize: 13, fontWeight: 600 }}>{sampleTransaction.date}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Description</span><span style={{ color: "#f8fafc", fontSize: 13, fontWeight: 600, textAlign: "right" }}>{sampleTransaction.description}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Type</span><span style={{ color: sampleTransaction.transaction_type === "income" ? "#86EFAC" : "#FCA5A5", fontSize: 13, fontWeight: 700, textTransform: "capitalize" }}>{sampleTransaction.transaction_type}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Currency</span><span style={{ color: "#cbd5e1", fontSize: 13 }}>{sampleTransaction.currency}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Amount stored</span><span style={{ color: "#f8fafc", fontSize: 13, fontWeight: 700 }}>{formatMoney(sampleTransaction.amount, { currency: sampleTransaction.currency, decimals: 2 })}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "#94a3b8", fontSize: 12 }}>Category guess</span><span style={{ color: "#cbd5e1", fontSize: 13 }}>{sampleTransaction.category}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--uf-ink-2)", fontSize: 12 }}>Date</span><span style={{ color: "var(--uf-ink)", fontSize: 13, fontWeight: 600 }}>{sampleTransaction.date}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--uf-ink-2)", fontSize: 12 }}>Description</span><span style={{ color: "var(--uf-ink)", fontSize: 13, fontWeight: 600, textAlign: "right" }}>{sampleTransaction.description}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--uf-ink-2)", fontSize: 12 }}>Type</span><span style={{ color: sampleTransaction.transaction_type === "income" ? "var(--uf-pos)" : "var(--uf-neg)", fontSize: 13, fontWeight: 700, textTransform: "capitalize" }}>{sampleTransaction.transaction_type}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--uf-ink-2)", fontSize: 12 }}>Currency</span><span style={{ color: "var(--uf-ink-2)", fontSize: 13 }}>{sampleTransaction.currency}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--uf-ink-2)", fontSize: 12 }}>Amount stored</span><span style={{ color: "var(--uf-ink)", fontSize: 13, fontWeight: 700 }}>{formatMoney(sampleTransaction.amount, { currency: sampleTransaction.currency, decimals: 2 })}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--uf-ink-2)", fontSize: 12 }}>Category guess</span><span style={{ color: "var(--uf-ink-2)", fontSize: 13 }}>{sampleTransaction.category}</span></div>
                   </div>
                 ) : (
-                  <div style={{ color: "#94a3b8", fontSize: 13 }}>No valid example row found.</div>
+                  <div style={{ color: "var(--uf-ink-2)", fontSize: 13 }}>No valid example row found.</div>
                 )}
               </div>
 
-              <div style={{ background: "#161621", border: "1px solid #23232d", borderRadius: 14, padding: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>{monthLabel} if accepted</div>
+              <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-ink-3)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>{monthLabel} if accepted</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginBottom: 12 }}>
-                  <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 12, padding: 12 }}>
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Income</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "#86EFAC" }}>{previewAmount(projectedIncome)}</div>
-                    <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Now {previewAmount(currentIncome)} · adding {previewAmount(importedIncome)}</div>
+                  <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: 12 }}>
+                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)", marginBottom: 4 }}>Income</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-pos)" }}>{previewAmount(projectedIncome)}</div>
+                    <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 4 }}>Now {previewAmount(currentIncome)} · adding {previewAmount(importedIncome)}</div>
                   </div>
-                  <div style={{ background: "#111118", border: "1px solid #23232d", borderRadius: 12, padding: 12 }}>
-                    <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Expenses</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "#f8fafc" }}>{previewAmount(projectedExpenses)}</div>
-                    <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>Now {previewAmount(currentExpenses)} · adding {previewAmount(importedExpenses)}</div>
+                  <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: 12 }}>
+                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)", marginBottom: 4 }}>Expenses</div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-ink)" }}>{previewAmount(projectedExpenses)}</div>
+                    <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 4 }}>Now {previewAmount(currentExpenses)} · adding {previewAmount(importedExpenses)}</div>
                   </div>
                 </div>
                 <div style={{ background: projectedNet >= 0 ? "rgba(5,150,105,0.12)" : "rgba(239,68,68,0.12)", border: `1px solid ${projectedNet >= 0 ? "rgba(5,150,105,0.3)" : "rgba(239,68,68,0.3)"}`, borderRadius: 12, padding: 12 }}>
-                  <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 4 }}>Projected net after import</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: projectedNet >= 0 ? "#86EFAC" : "#FCA5A5" }}>{projectedNet >= 0 ? "+" : ""}{previewAmount(projectedNet)}</div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
+                  <div style={{ fontSize: 11, color: "var(--uf-ink-2)", marginBottom: 4 }}>Projected net after import</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: projectedNet >= 0 ? "var(--uf-pos)" : "var(--uf-neg)" }}>{projectedNet >= 0 ? "+" : ""}{previewAmount(projectedNet)}</div>
+                  <div style={{ fontSize: 12, color: "var(--uf-ink-2)", marginTop: 4 }}>
                     {importedMonthTxns.length > 0
                       ? `${importedMonthTxns.length} imported transaction${importedMonthTxns.length === 1 ? "" : "s"} land in ${monthLabel}.`
                       : `None of these imported transactions land in ${monthLabel}.`}
                   </div>
                   {touchedMonths > 1 && importedMonthTxns.length > 0 && (
-                    <div style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>
+                    <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 6 }}>
                       Showing {monthLabel} because this preview example lands there. This file touches {touchedMonths} months in total.
                     </div>
                   )}
@@ -1061,9 +1061,9 @@ export default function CsvImportModal({
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <button
                 onClick={() => setStep("upload")}
-                style={{
-                  width: "100%", padding: "12px 0", borderRadius: 10, border: "1px solid #334155",
-                  background: "transparent", color: "#cbd5e1", fontSize: 14, fontWeight: 700, cursor: "pointer",
+                style={{ minHeight: 44, minWidth: 44,
+                  width: "100%", padding: "12px 0", borderRadius: "var(--uf-r-pill)", border: "1px solid var(--uf-border-2)",
+                  background: "transparent", color: "var(--uf-ink-2)", fontSize: 14, fontWeight: 700, cursor: "pointer",
                   fontFamily: "Inter, sans-serif",
                 }}
               >
@@ -1072,10 +1072,10 @@ export default function CsvImportModal({
               <button
                 onClick={handleCheckDuplicates}
                 disabled={!colDate || !colDesc || !colAmount || parsedTransactions.length === 0}
-                style={{
-                  width: "100%", padding: "12px 0", borderRadius: 10, border: "none",
-                  background: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "#1a1a24" : "#151719",
-                  color: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "#475569" : "#fff",
+                style={{ minHeight: 44, minWidth: 44,
+                  width: "100%", padding: "12px 0", borderRadius: "var(--uf-r-pill)", border: "none",
+                  background: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "var(--uf-surface)" : "#151719",
+                  color: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "var(--uf-ink-3)" : "#fff",
                   fontSize: 14, fontWeight: 700, cursor: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "not-allowed" : "pointer",
                   fontFamily: "Inter, sans-serif",
                 }}
@@ -1089,20 +1089,20 @@ export default function CsvImportModal({
         {step === "review" && (
           <>
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#FBBF24", marginBottom: 6 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-warn)", marginBottom: 6 }}>
                 {duplicateFlags.length} possible duplicate{duplicateFlags.length !== 1 ? "s" : ""} found
               </div>
-              <div style={{ fontSize: 13, color: "#94a3b8" }}>
+              <div style={{ fontSize: 13, color: "var(--uf-ink-2)" }}>
                 These rows may already exist. Uncheck any you still want to import.
               </div>
             </div>
 
-            <div style={{ border: "1px solid #23232d", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
+            <div style={{ border: "1px solid var(--uf-border)", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                 <thead>
-                  <tr style={{ background: "#1a1a24" }}>
+                  <tr style={{ background: "var(--uf-surface)" }}>
                     {["Skip", "Date", "Description", "Amount", "Category"].map((h) => (
-                      <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: "#64748b", fontWeight: 600, borderBottom: "1px solid #23232d", whiteSpace: "nowrap" }}>{h}</th>
+                      <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: "var(--uf-ink-3)", fontWeight: 600, borderBottom: "1px solid var(--uf-border)", whiteSpace: "nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -1110,7 +1110,7 @@ export default function CsvImportModal({
                   {duplicateFlags.map(({ rowIndex, row }) => {
                     const checked = skipIndices.has(rowIndex);
                     return (
-                      <tr key={rowIndex} style={{ borderBottom: "1px solid #1a1a24", background: checked ? "rgba(251,191,36,0.04)" : undefined }}>
+                      <tr key={rowIndex} style={{ borderBottom: "1px solid var(--uf-surface)", background: checked ? "rgba(251,191,36,0.04)" : undefined }}>
                         <td style={{ padding: "8px 10px" }}>
                           <input
                             type="checkbox"
@@ -1123,15 +1123,15 @@ export default function CsvImportModal({
                                 return next;
                               })
                             }
-                            style={{ accentColor: "#FBBF24", width: 14, height: 14 }}
+                            style={{ accentColor: "var(--uf-warn)", width: 14, height: 14 }}
                           />
                         </td>
-                        <td style={{ padding: "8px 10px", color: "#94a3b8", whiteSpace: "nowrap" }}>{row.date}</td>
-                        <td style={{ padding: "8px 10px", color: "#e2e8f0", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.description}</td>
-                        <td style={{ padding: "8px 10px", color: "#f8fafc", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                        <td style={{ padding: "8px 10px", color: "var(--uf-ink-2)", whiteSpace: "nowrap" }}>{row.date}</td>
+                        <td style={{ padding: "8px 10px", color: "var(--uf-ink)", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.description}</td>
+                        <td style={{ padding: "8px 10px", color: "var(--uf-ink)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
                           {formatMoney(row.amount, { currency: row.currency, decimals: 2 })}
                         </td>
-                        <td style={{ padding: "8px 10px", color: "#94a3b8" }}>{row.category}</td>
+                        <td style={{ padding: "8px 10px", color: "var(--uf-ink-2)" }}>{row.category}</td>
                       </tr>
                     );
                   })}
@@ -1142,10 +1142,10 @@ export default function CsvImportModal({
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <button
                 onClick={() => handleImport(new Set())}
-                style={{
-                  width: "100%", padding: "12px 0", borderRadius: 10,
-                  border: "1px solid #334155", background: "transparent",
-                  color: "#cbd5e1", fontSize: 13, fontWeight: 700, cursor: "pointer",
+                style={{ minHeight: 44, minWidth: 44,
+                  width: "100%", padding: "12px 0", borderRadius: "var(--uf-r-pill)",
+                  border: "1px solid var(--uf-border-2)", background: "transparent",
+                  color: "var(--uf-ink-2)", fontSize: 13, fontWeight: 700, cursor: "pointer",
                   fontFamily: "Inter, sans-serif",
                 }}
               >
@@ -1153,8 +1153,8 @@ export default function CsvImportModal({
               </button>
               <button
                 onClick={() => handleImport(skipIndices)}
-                style={{
-                  width: "100%", padding: "12px 0", borderRadius: 10, border: "none",
+                style={{ minHeight: 44, minWidth: 44,
+                  width: "100%", padding: "12px 0", borderRadius: "var(--uf-r-pill)", border: "none",
                   background: "#151719", color: "#fff",
                   fontSize: 13, fontWeight: 700, cursor: "pointer",
                   fontFamily: "Inter, sans-serif",
@@ -1169,13 +1169,13 @@ export default function CsvImportModal({
         {step === "importing" && (
           <div style={{ textAlign: "center", padding: "32px 0" }}>
             <div style={{ fontSize: 32, marginBottom: 16 }}>⏳</div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "#e2e8f0", marginBottom: 8 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--uf-ink)", marginBottom: 8 }}>
               Importing transactions…
             </div>
-            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 20 }}>
+            <div style={{ fontSize: 13, color: "var(--uf-ink-3)", marginBottom: 20 }}>
               {progress} / {total}
             </div>
-            <div style={{ height: 6, background: "#23232d", borderRadius: 99, overflow: "hidden" }}>
+            <div style={{ height: 6, background: "var(--uf-border)", borderRadius: 99, overflow: "hidden" }}>
               <div style={{ height: "100%", background: "#151719", borderRadius: 99, width: `${total > 0 ? (progress / total) * 100 : 0}%`, transition: "width 0.2s" }} />
             </div>
           </div>
@@ -1184,17 +1184,17 @@ export default function CsvImportModal({
         {step === "done" && (
           <div style={{ textAlign: "center", padding: "24px 0" }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>✅</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#f1f5f9", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "var(--uf-ink)", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>
               {importedCount} transaction{importedCount !== 1 ? "s" : ""} imported
               {skippedCount > 0 ? `, ${skippedCount} duplicate${skippedCount !== 1 ? "s" : ""} skipped` : ""}
             </div>
-            <div style={{ fontSize: 13, color: "#64748b", marginBottom: 28 }}>
+            <div style={{ fontSize: 13, color: "var(--uf-ink-3)", marginBottom: 28 }}>
               Categories were auto-detected. Tap any transaction to adjust.
             </div>
             <button
               onClick={onClose}
-              style={{
-                padding: "10px 28px", borderRadius: 10, border: "none",
+              style={{ minHeight: 44, minWidth: 44,
+                padding: "10px 28px", borderRadius: "var(--uf-r-pill)", border: "none",
                 background: "#151719", color: "#fff", fontSize: 14, fontWeight: 700,
                 cursor: "pointer", fontFamily: "Inter, sans-serif",
               }}
@@ -1205,7 +1205,7 @@ export default function CsvImportModal({
         )}
 
         {error && (
-          <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, fontSize: 13, color: "#fca5a5" }}>
+          <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, fontSize: 13, color: "var(--uf-neg)" }}>
             {error}
           </div>
         )}

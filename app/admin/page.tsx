@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import styles from "./Admin.module.css";
 import Logo from "@/app/components/Logo";
 import OverviewTab from "./OverviewTab";
 import UsersTab from "./UsersTab";
@@ -47,7 +48,7 @@ export default function AdminPage() {
   if (status === "denied") return <Centered>You don&apos;t have access to this page.</Centered>;
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--uf-ground)", fontFamily: "Inter, system-ui, -apple-system, sans-serif" }}>
+    <div className={styles.root} style={{ minHeight: "100vh", background: "var(--uf-ground)", fontFamily: "Inter, system-ui, -apple-system, sans-serif" }}>
       <div style={{ maxWidth: tab === "journeys" ? 1600 : 1100, margin: "0 auto", padding: "32px 24px 80px" }}>
         <div style={{ marginBottom: 24 }}><Logo variant="auto" size={30}/></div>
         <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-ink)", margin: "0 0 4px" }}>UntilFire Admin</h1>
@@ -68,13 +69,15 @@ export default function AdminPage() {
           ]).map((t) => (
             <button
               key={t.key}
+              aria-current={tab === t.key ? "page" : undefined}
               onClick={() => setTab(t.key)}
               style={{
                 padding: "10px 16px",
-                background: "none",
+                background: tab === t.key ? "var(--uf-green)" : "var(--uf-card)",
                 border: "none",
-                borderBottom: tab === t.key ? "2px solid var(--uf-pos)" : "2px solid transparent",
-                color: tab === t.key ? "var(--uf-pos)" : "var(--uf-ink-2)",
+                borderRadius: "var(--uf-r-pill)",
+                minHeight: 44,
+                color: tab === t.key ? "var(--uf-card)" : "var(--uf-ink-2)",
                 fontWeight: 700,
                 fontSize: 14,
                 cursor: "pointer",

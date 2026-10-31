@@ -1,0 +1,5 @@
+.root { color:var(--uf-ink); }
+.root button { border-radius:var(--uf-r-pill)!important; min-height:44px; font-family:var(--uf-font); }
+.root input:not([type=checkbox]):not([type=radio]),.root select,.root textarea { background:var(--uf-card); color:var(--uf-ink); border-radius:var(--uf-r-control); border:1px solid var(--uf-border-2); font:inherit; }
+.root input:not([type=checkbox]):not([type=radio]),.root select { min-height:44px; }
+.root button:focus-visible,.root input:focus-visible,.root select:focus-visible,.root textarea:focus-visible { outline:3px solid #9278BF; outline-offset:3px; }
