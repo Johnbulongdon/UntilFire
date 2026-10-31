@@ -1,11 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router'
 import { Button } from '@/components/Button'
-import { useState } from 'react'
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, TextInput, View } from 'react-native'
+import { useRef, useState } from 'react'
+import { Alert, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { Bouncy } from '@/components/Bouncy'
-import { PrimaryButton } from '@/components/PrimaryButton'
+import { EntryActions } from '@/components/EntryActions'
+import { entryChanged } from '@/lib/entry-state'
+import { useEntryGuard } from '@/lib/useEntryGuard'
 import { CategoryGlyph } from '@/components/Icon'
 import { LeaseCard } from '@/components/LeaseCard'
 import { Text } from '@/components/Text'
@@ -44,6 +46,12 @@ export default function TransactionSheet() {
   const [showMore, setShowMore] = useState(!!(existing?.notes || existing?.refund_amount))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const initialFields = useRef({ type, amount, description, category, date, subCategory, need, always, notes, refund })
+  const { finish, dialog } = useEntryGuard(entryChanged(initialFields.current, { type, amount, description, category, date, subCategory, need, always, notes, refund }), busy)
+  const amountRef = useRef<TextInput>(null)
+  const descriptionRef = useRef<TextInput>(null)
+  const [focused, setFocused] = useState<string | null>(null)
+  const done = () => { Keyboard.dismiss(); amountRef.current?.blur(); descriptionRef.current?.blur(); setFocused(null) }
 
   // A transaction keeps its own currency; a new one starts in yours, as on the website.
   const currency = existing?.currency ?? displayCurrency()
@@ -71,7 +79,7 @@ export default function TransactionSheet() {
     if (problem || ruleProblem) { setBusy(false); haptic.warn(); setError(problem ?? ruleProblem!); return }
     haptic.success()
     await refresh()
-    router.back()
+    finish()
   }
 
   const remove = () => {
@@ -84,23 +92,23 @@ export default function TransactionSheet() {
         const problem = await deleteTransaction(existing.id)
         if (problem) { setBusy(false); setError(problem); return }
         await refresh()
-        router.back()
+        finish()
       } },
     ])
   }
 
   return (
     <SafeAreaView className="flex-1 bg-ground">
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View className="flex-row items-center justify-between px-5 pt-2">
-          <Pressable accessibilityRole="button" hitSlop={12} onPress={() => { haptic.tick(); router.back() }}>
+          <Pressable accessibilityRole="button" hitSlop={12} disabled={busy} onPress={() => { haptic.tick(); router.back() }}>
             <Text className="text-[16px] font-semibold text-ink-2">Cancel</Text>
           </Pressable>
           <Text className="text-[16px] font-bold text-ink">{editing ? 'Edit transaction' : 'New transaction'}</Text>
           <View style={{ width: 52 }} />
         </View>
 
-        <ScrollView contentContainerClassName="px-5 pb-6 pt-5" keyboardShouldPersistTaps="handled">
+        <ScrollView pointerEvents={busy ? 'none' : 'auto'} contentContainerClassName="px-5 pb-6 pt-5" keyboardShouldPersistTaps="handled">
           {!transfer && (
             <View className="flex-row rounded-control bg-surface p-1">
               {(['expense', 'income'] as const).map(t => (
@@ -120,7 +128,12 @@ export default function TransactionSheet() {
           <View className="mt-6 flex-row items-baseline justify-center">
             <Text className={`font-mono text-[44px] ${type === 'income' ? 'text-pos-ink' : 'text-ink'}`}>{currencySymbol(currency).trim()}</Text>
             <TextInput
+              editable={!busy}
+              ref={amountRef}
               accessibilityLabel="Amount"
+              onFocus={() => setFocused('amount')}
+              returnKeyType="next"
+              onSubmitEditing={() => descriptionRef.current?.focus()}
               className={`min-w-[120px] text-[44px] ${type === 'income' ? 'text-pos-ink' : 'text-ink'}`}
               style={{ fontFamily: 'DMMono_500Medium' }}
               keyboardType="decimal-pad"
@@ -133,7 +146,12 @@ export default function TransactionSheet() {
           </View>
 
           <TextInput
+              editable={!busy}
+            ref={descriptionRef}
             accessibilityLabel="What was it?"
+            onFocus={() => setFocused('description')}
+            returnKeyType="done"
+            onSubmitEditing={done}
             className="mt-4 rounded-control border-2 border-border-2 bg-card px-4 py-3.5 text-[16px] text-ink"
             style={{ fontFamily: 'Manrope_500Medium' }}
             placeholder={type === 'income' ? 'Where it came from' : 'Where or what (e.g. Trader Joe\'s)'}
@@ -184,7 +202,7 @@ export default function TransactionSheet() {
                 <View className="mt-4 gap-1">
                   <View className="flex-row items-center justify-between">
                     <Text className="text-[15px] text-ink">Always for {existing!.description}</Text>
-                    <Switch accessibilityLabel={`Always for ${existing!.description}`} value={always} onValueChange={v => { haptic.select(); setAlways(v) }} trackColor={{ true: colors.green }} />
+                    <Switch accessibilityLabel={`Always for ${existing!.description}`} value={always} disabled={busy} onValueChange={v => { haptic.select(); setAlways(v) }} trackColor={{ true: colors.green }} />
                   </View>
                   <Text className="text-[13px] text-ink-3">{always ? 'Later buys here are sorted the same way.' : 'Just this one. Other buys here stay as they are.'}</Text>
                 </View>
@@ -217,7 +235,9 @@ export default function TransactionSheet() {
           ) : (
             <View className="mt-5 gap-3">
               <TextInput
+              editable={!busy}
                 accessibilityLabel="Note"
+                onFocus={() => setFocused('notes')}
                 className="rounded-control border border-border bg-card px-4 py-3 text-[15px] text-ink"
                 style={{ fontFamily: 'Manrope_500Medium', minHeight: 64 }}
                 placeholder="Note"
@@ -232,7 +252,11 @@ export default function TransactionSheet() {
                   <View className="flex-row items-center">
                     <Text className="font-mono text-[15px] text-ink-3">{currencySymbol(currency).trim()}</Text>
                     <TextInput
+              editable={!busy}
                       accessibilityLabel="Refunded amount"
+                      onFocus={() => setFocused('refund')}
+                      returnKeyType="done"
+                      onSubmitEditing={done}
                       className="w-24 text-right text-[15px] text-ink"
                       style={{ fontFamily: 'DMMono_500Medium' }}
                       keyboardType="decimal-pad"
@@ -244,26 +268,23 @@ export default function TransactionSheet() {
                   </View>
                 </View>
               )}
-              {Number(refund) > value && value > 0 ? <Text className="text-[13px] text-ink-3">A refund can't be more than the amount, so it will be saved as {moneyIn(value, currency)}.</Text> : null}
+              {Number(refund) > value && value > 0 ? <Text className="text-[13px] text-ink-3">A refund can&apos;t be more than the amount, so it will be saved as {moneyIn(value, currency)}.</Text> : null}
             </View>
           )}
 
           {error ? <Text className="mt-4 text-[14px] text-neg-ink">{error}</Text> : null}
           {editing && (
-            <Pressable accessibilityRole="button" onPress={remove} className="mt-8 items-center py-2">
+            <Pressable accessibilityRole="button" disabled={busy} onPress={remove} className="mt-8 items-center py-2">
               <Text className="text-[15px] font-semibold text-neg-ink">Delete transaction</Text>
             </Pressable>
           )}
         </ScrollView>
 
-        <View className="px-5 pb-4">
-          {busy ? (
-            <View className="h-14 items-center justify-center"><ActivityIndicator color={colors.green} /></View>
-          ) : (
-            <PrimaryButton label={editing ? 'Save changes' : 'Add transaction'} onPress={save} disabled={!canSave} />
-          )}
-        </View>
+        <EntryActions label={editing ? 'Save changes' : 'Add transaction'} busy={busy} canSave={canSave} keyboardActive={focused !== null}
+          onNext={focused === 'amount' ? () => descriptionRef.current?.focus() : undefined}
+          onDone={done} onSave={save} />
       </KeyboardAvoidingView>
+      {dialog}
     </SafeAreaView>
   )
 }
