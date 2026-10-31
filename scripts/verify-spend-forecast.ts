@@ -4,7 +4,7 @@
  * Run: npm run test:spend-forecast
  */
 import assert from "node:assert/strict";
-import { type Bill, billsByCategory, typicalForRange, typicalMonth, billsOverBudget, dueByCategory, rateSoFar, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, markPaid, mergeBills, occurrences, presumePaid, settleBill, unlinkedBillPayments } from "../lib/spend-forecast.ts";
+import { type Bill, billsByCategory, typicalForRange, typicalMonth, billsOverBudget, dueByCategory, rateSoFar, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, markPaid, mergeBills, occurrences, paidByName, presumePaid, settleBill, unlinkedBillPayments } from "../lib/spend-forecast.ts";
 import { detectRecurring } from "../lib/recurring-detect.ts";
 
 let n = 0;
@@ -192,6 +192,25 @@ ok("an unconfirmed rent payment counts as paying the bill, without writing anyth
 ok("a presumed-paid one-off leaves the list", () => {
   const once: Bill = { id: "o", description: "Deposit", category: "housing", usd: 500, due: "2026-10-03", recurrence: "none" };
   assert.equal(presumePaid([once], new Map([["t", once]])).length, 0);
+});
+
+ok("an overdue bill paid under its own name counts as paid, as on the phone", () => {
+  // The founder's 31 October: Google One and 中国移动 were paid, but Home still owed them.
+  const google: Bill = { id: "g", description: "Google One", category: "subscriptions", usd: 2.17, due: "2026-10-23", recurrence: "monthly" };
+  const mobile: Bill = { id: "m", description: "中国移动", category: "utilities", usd: 6.88, due: "2026-10-28", recurrence: "monthly" };
+  const shopify: Bill = { id: "s", description: "Shopify", category: "subscriptions", usd: 39, due: "2026-10-27", recurrence: "monthly" };
+  const txs = [
+    { id: "t1", date: "2026-10-25", usd: 2.17, description: "Google One", category: "entertainment" },
+    { id: "t2", date: "2026-10-31", usd: 7.04, description: "中国移动", category: "other" },
+    { id: "t3", date: "2026-09-25", usd: 2.17, description: "Google", category: "subscriptions" },
+  ];
+  const hits = paidByName(txs, [google, mobile, shopify], "2026-10-31");
+  assert.equal(hits.size, 2, "one payment each for Google One and 中国移动; September's is behind the due date");
+  const counted = presumePaid([google, mobile, shopify], hits);
+  assert.equal(counted.find((b) => b.id === "g")?.due, "2026-11-23");
+  assert.equal(counted.find((b) => b.id === "m")?.due, "2026-11-28");
+  assert.equal(counted.find((b) => b.id === "s")?.due, "2026-10-27", "Shopify has no payment, so it is still owed");
+  assert.equal(paidByName(txs, [{ ...google, due: "2026-11-23" }], "2026-10-31").size, 0, "a bill not yet due is not rolled on");
 });
 
 console.log(`Spend forecast ok: ${n} checks.`);

@@ -39,7 +39,7 @@ import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
 import { freeToSpend, untilPayday, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
 import { paydayLine } from "@/lib/payday-line";
-import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, occurrences, presumePaid, rateSoFar, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
+import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, occurrences, paidByName, presumePaid, rateSoFar, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
 import FreeToSpendRunway from "./FreeToSpendRunway";
 import FreeToSpendHome from "./FreeToSpendHome";
 import SetupChecklist, { type AddedExpected } from "./SetupChecklist";
@@ -5471,11 +5471,16 @@ export default function Dashboard() {
   // A payment that looks like a listed bill counts as paying it until the
   // person answers "Upcoming bill?" on Transactions (D-49), so Home, Budget
   // and Free to spend do not count paid rent as still owed.
-  const homeBills: Bill[] = useMemo(() => presumePaid(listedHomeBills, unlinkedBillPayments(
-    recentTransactions.filter((t) => t.transaction_type === "expense")
-      .map((t, i) => ({ id: String(i), date: t.date.slice(0, 10), usd: toUSD(netAmt(t), t.currency, rates), description: t.description ?? "", category: t.category ?? null })),
-    listedHomeBills, (t) => !!recentTransactions[Number(t.id)]?.tags?.includes("ok:bill"))),
-  [listedHomeBills, recentTransactions, rates]);
+  // An overdue bill already paid under its own name counts as paid too (the phone's rule).
+  const homeBills: Bill[] = useMemo(() => {
+    const txs = recentTransactions.filter((t) => t.transaction_type === "expense")
+      .map((t, i) => ({ id: String(i), date: t.date.slice(0, 10), usd: toUSD(netAmt(t), t.currency, rates), description: t.description ?? "", category: t.category ?? null }));
+    const asks = unlinkedBillPayments(txs, listedHomeBills, (t) => !!recentTransactions[Number(t.id)]?.tags?.includes("ok:bill"));
+    const asked = new Set([...asks.values()].map((b) => b.id));
+    const d = new Date(), todayIso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    for (const [id, b] of paidByName(txs.filter((t) => !asks.has(t.id)), listedHomeBills.filter((b) => !asked.has(b.id)), todayIso)) asks.set(id, b);
+    return presumePaid(listedHomeBills, asks);
+  }, [listedHomeBills, recentTransactions, rates]);
   // Each listed bill's due date once payments already made are counted, for the
   // Calendar: null when a one-off is presumed paid. A bill missing from this map
   // was added after load, so its own date stands.

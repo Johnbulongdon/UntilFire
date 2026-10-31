@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { paydaySpending, paydayRemainder } from '../lib/payday-spending.ts';
+import { paydaySpending, paydayRemainder, recentRate } from '../lib/payday-spending.ts';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<.000001,`${a} != ${b}`);
 const bill={description:'Rent',category:'housing',usd:1500,due:'2026-11-03',recurrence:'monthly'};
 const base={today:new Date(2026,10,1),days:14,rows:[],bills:[bill],monthlyBudget:2150,budget:{housing:1500,food:650}};
@@ -18,4 +18,14 @@ const rows=[8,9,10].flatMap(m=>[{date:`2026-${String(m).padStart(2,'0')}-03`,usd
 const history=paydaySpending({...base,rows});
 assert.equal(history.source,'history');close(history.amount,280); // rent excluded from the historical rate
 const cross=paydaySpending({...base,today:new Date(2026,9,31),days:2});close(cross.amount,650/31+650/30);
-console.log('13 payday estimate guards passed');
+// D-129: the last 30 days, without the trip, the vet bill or the rent.
+const day=(d)=>`2026-10-${String(d).padStart(2,'0')}`;
+const recent=[{date:'2026-08-01',usd:40,description:'Old',category:'food'},
+  ...Array.from({length:30},(_,i)=>({date:day(i+2),usd:12,description:'Lunch',category:'food'})),
+  {date:day(5),usd:900,description:'Flights',category:'travel'},{date:day(9),usd:155,description:'Vet',category:'pets'},
+  {date:day(11),usd:1500,description:'Rent',category:'housing'}];
+close(recentRate(recent,[bill],new Date(2026,10,1)),12);
+close(paydaySpending({...base,rows:recent}).amount,12*14);
+assert.equal(recentRate(recent.slice(1),[bill],new Date(2026,10,1)),null); // under 30 days of history
+assert.equal(recentRate(recent.slice(0,6),[bill],new Date(2026,10,1)),null); // too few payments
+console.log('17 payday estimate guards passed');
