@@ -6,7 +6,7 @@ import { colors } from '@/theme/colors'
 import { Icon } from './Icon'
 import { Text } from './Text'
 
-export type ButtonKind = 'primary' | 'onAccent' | 'quiet' | 'onDark' | 'onDarkQuiet' | 'danger'
+export type ButtonKind = 'primary' | 'soft' | 'onAccent' | 'quiet' | 'onDark' | 'onDarkQuiet' | 'danger'
 
 /** Shared flat pill action; pressed, disabled, busy and done states keep their existing behaviour. */
 export function Button({ label, onPress, kind = 'primary', small, disabled, done, busy, style, accessibilityLabel }: {
@@ -22,14 +22,15 @@ export function Button({ label, onPress, kind = 'primary', small, disabled, done
 }) {
   const face = {
     primary: colors.green,
+    soft: colors.ink === '#151719' ? colors.lilac : colors.surface,
     onAccent: '#151719',
     quiet: colors.card,
     onDark: '#FFFDFA',
     onDarkQuiet: 'rgba(255,255,255,0.14)',
     danger: colors.card,
   }[kind]
-  const ink = { onAccent:'#FFFFFF', primary: colors.card, quiet: colors.ink, onDark: colors.deep, onDarkQuiet: '#FFFFFF', danger: colors.negInk }[kind]
-  const lip = { onAccent:'transparent', primary: 'rgba(0,0,0,0.28)', quiet: colors.border2, onDark: 'rgba(0,0,0,0.22)', onDarkQuiet: 'rgba(0,0,0,0.25)', danger: colors.border2 }[kind]
+  const ink = { soft: colors.ink, onAccent:'#FFFFFF', primary: colors.card, quiet: colors.ink, onDark: colors.deep, onDarkQuiet: '#FFFFFF', danger: colors.negInk }[kind]
+  const lip = { soft: 'transparent', onAccent:'transparent', primary: 'rgba(0,0,0,0.28)', quiet: colors.border2, onDark: 'rgba(0,0,0,0.22)', onDarkQuiet: 'rgba(0,0,0,0.25)', danger: colors.border2 }[kind]
   const outlined = kind === 'quiet' || kind === 'danger'
   return (
     <Pressable

@@ -624,3 +624,10 @@ N1 payday polish is In review: [PR #336](https://github.com/Johnbulongdon/UntilF
 31 October N1/N2 mobile pastel surfaces — Codex, codex/mobile-pastel-hubs, baseline origin/main 28817af. Money/Plan tiles, Profile wells and summary chips adopt approved lighter pastels; dark Plan icon/step contrast repaired. Type/lint/native exports and light/dark component checks pass. Physical-device and signed-in acceptance remain pending; no merge or release yet. See docs/design/mobile-pastels/README.md.
 
 Mobile pastel surfaces in review: [PR #342](https://github.com/Johnbulongdon/UntilFire/pull/342), implementation 944c32d. Final mobile type/lint and Android/iOS/web exports passed. Light/dark actual-component previews recorded; installed-device acceptance and release pending. Author retains ownership.
+
+31 October N1/N2 mobile welcome — Codex, codex/mobile-welcome-product-preview,
+baseline origin/main cd78930. Original option 3 selected; implementation and local
+verification in progress. Preserve auth/onboarding paths; A/B experiment deferred.
+No merge, OTA promotion or store submission requested in this change.
+
+Mobile welcome is in review: PR #340 (https://github.com/Johnbulongdon/UntilFire/pull/340), implementation 66c9e2a. Mobile type/lint and final Android/iOS/web exports passed; welcome actions verified in the rendered preview. Physical-device, light-theme and accessibility-device checks remain pending before phone release. No experiment or release published.

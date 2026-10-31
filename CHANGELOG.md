@@ -12,6 +12,14 @@
 - Handles "Sept" and dates whose year wraps onto the next line, keeps location/crypto detail lines out of the merchant name, and stops before "Pending transactions" so charges aren't counted twice.
 - PDF row rules moved to lib/pdf-statement.ts with made-up test rows (`npm run test:pdf-statement`); older card and savings layouts read the same.
 
+
+## Unreleased — mobile welcome product preview
+
+- Replace the large welcome logo tile with the selected example-plan artwork, clearer headline and equally wide start/sign-in actions.
+- Keep the existing journey and sign-in recovery; short coordinated entrance respects reduced motion and small screens can scroll.
+- Defer the welcome A/B test; no feature flags, new events or native runtime changes.
+
+
 ## 2026-10-31 — October update email pictures
 
 - Add the October monthly update email's banner and four feature previews (new look, Until payday, Today, Where could you retire?) under public/email/october/, so the admin draft "Monthly update — October 2026" can load them. No app behaviour change.

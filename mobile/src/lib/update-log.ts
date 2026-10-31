@@ -7,6 +7,7 @@ import * as Updates from 'expo-updates'
  * each line short and in plain words (the founder reads it to check a build).
  */
 export const UPDATE_LOG: { version: string; date: string; changes: string[] }[] = [
+  { version: '0.2.1', date: '2026-10-31', changes: ['A clearer welcome screen previews your money today and freedom ahead'] },
   { version: '0.2.1', date: '2026-10-31', changes: ['Lighter colourful tiles across Money, Plan and Profile, with clearer icons in dark mode'] },
   { version: '0.2.1', date: '2026-10-31', changes: ['Until payday now includes estimated everyday costs, with a simpler bill list and an optional cushion'] },
   { version: '0.2.1', date: '2026-10-29', changes: ['Browse every upcoming bill directly on the payday chart, with details above your finger', 'Categories now use lighter colors that match Home', 'A new yellow horizon logo, clearer type and colourful cards across the app', 'See your plan before signing up, with monthly amounts and one question at a time'] },
