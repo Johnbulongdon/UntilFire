@@ -32,7 +32,7 @@ export function Screen({ title, subtitle, children, refreshing, onRefresh, flat,
   tab?: TabKey
 }) {
   return (
-    <FlatContext.Provider value={!!flat}>
+    <FlatContext.Provider value={false}>
     <SafeAreaView edges={['top']} className="flex-1 bg-ground">
       {tab && <TopBar tab={tab} />}
       <ScrollView
@@ -46,9 +46,10 @@ export function Screen({ title, subtitle, children, refreshing, onRefresh, flat,
           {subtitle ? <Text className="mt-1 text-[15px] text-ink-2">{subtitle}</Text> : null}
         </View>
         {onRefresh ? <AccountNotice /> : null}
-        <View className={flat ? 'gap-9' : 'gap-4'}>{children}</View>
+        <View className={'gap-4'}>{children}</View>
       </ScrollView>
-      {tab && <TodayBar />}
+      {/* Home has Today as its first card (D-108), so the pinned bar shows on the other tabs. */}
+      {tab && tab !== 'home' && <TodayBar />}
     </SafeAreaView>
     </FlatContext.Provider>
   )
@@ -64,7 +65,7 @@ export function Card({ children, soft }: { children: ReactNode; soft?: boolean }
   return (
     <View
       className={`rounded-card p-5 ${soft ? 'bg-surface' : 'border border-border bg-card'}`}
-      style={soft ? undefined : { shadowColor: '#78501E', shadowOpacity: 0.06, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } }}
+      style={soft ? undefined : { shadowColor: '#151719', shadowOpacity: 0.025, shadowRadius: 2, shadowOffset: { width: 0, height: 1 } }}
     >
       {children}
     </View>

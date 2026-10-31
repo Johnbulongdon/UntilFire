@@ -2,6 +2,8 @@ import { SymbolView, type SymbolViewProps } from 'expo-symbols'
 import { Platform, View } from 'react-native'
 import Svg from 'react-native-svg'
 
+import { colors } from '@/theme/colors'
+
 import { ICONS } from './icon-set'
 import { Text } from './Text'
 
@@ -59,6 +61,6 @@ export const symbolFor = (key: string) => CATEGORY_SYMBOL[key] ?? null
  */
 export function CategoryGlyph({ cat, size = 18 }: { cat: { key?: string; emoji?: string; color?: string }; size?: number }) {
   const sym = cat.key ? symbolFor(cat.key) : null
-  if (sym) return <Icon name={sym.name} fallback={sym.fallback} size={size} color={cat.color ?? '#8a7c68'} />
+  if (sym) return <Icon name={sym.name} fallback={sym.fallback} size={size} color={colors.ink} />
   return <Text style={{ fontSize: size * 0.9, lineHeight: size * 1.15 }}>{cat.emoji ?? '🏷️'}</Text>
 }

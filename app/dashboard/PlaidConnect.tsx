@@ -6,6 +6,7 @@ import { trackHysaEmptyStateCtaClicked } from "@/lib/analytics";
 import { isPro, supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui";
 import { BankLogo, MoneyList, MoneyRow } from "./MoneyCards";
+import BankWorking, { type BankFound } from "./BankWorking";
 
 export type PlaidItem = {
   id: string;
@@ -57,6 +58,8 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
   const [loadingLink, setLoadingLink] = useState(false);
   const [importing, setImporting] = useState(false);
   const [connectResult, setConnectResult] = useState<{ name: string; added: number } | null>(null);
+  // Linking a bank, shown working (BankWorking): the bank's name while it imports, then what it found.
+  const [working, setWorking] = useState<{ name: string; result: BankFound | null } | null>(null);
   const [syncingId, setSyncingId] = useState<string | null>(null);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [syncResults, setSyncResults] = useState<Record<string, SyncResult>>({});
@@ -131,6 +134,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
         return;
       }
       const institution = metadata.institution;
+      setWorking({ name: institution?.name ?? "your bank", result: null });
       const res = await fetch("/api/plaid/exchange-token", {
         method: "POST",
         headers: {
@@ -147,6 +151,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
       setImporting(false);
       setLinkToken(null);
       if (!res.ok) {
+        setWorking(null);
         setError(data.error ?? "Failed to import transactions");
         return;
       }
@@ -165,9 +170,10 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
         ...prev,
         [data.item_id]: { added: data.added_count, modified: 0, removed: 0 },
       }));
-      const result = { name: data.institution_name, added: data.added_count };
-      setConnectResult(result);
-      setTimeout(() => setConnectResult(null), 4000);
+      setWorking({ name: data.institution_name, result: {
+        name: data.institution_name, added: data.added_count, accounts: data.accounts_count ?? 0,
+        found: data.found ?? { payday: false, bills: 0 },
+      } });
       onTransactionsImported?.();
     },
     [onTransactionsImported],
@@ -252,7 +258,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
     padding: variant === "primary" ? "9px 18px" : "7px 12px",
     borderRadius: 8,
     border: variant === "primary" ? "none" : "1px solid var(--uf-border)",
-    background: variant === "primary" ? "#047857" : "var(--uf-card)",
+    background: variant === "primary" ? "#151719" : "var(--uf-card)",
     color: variant === "primary" ? "#ffffff" : "var(--uf-text-2)",
     fontSize: 13,
     fontWeight: 700,
@@ -271,6 +277,8 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
         @keyframes plaid-slide-in { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
       `}</style>
 
+      {working && <BankWorking name={working.name} result={working.result} onClose={() => setWorking(null)} />}
+
       {connectResult && (
         <div
           style={{
@@ -281,7 +289,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
             maxWidth: 360,
             padding: "14px 18px",
             borderRadius: 12,
-            background: connectResult.added > 0 ? "#064E3B" : "#78350F",
+            background: connectResult.added > 0 ? "#151719" : "#78350F",
             color: "#ffffff",
             boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
             display: "flex",
@@ -367,15 +375,12 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontSize: 12, fontWeight: 800, color: "#047857", letterSpacing: "0.08em" }}>
-              BANK
-            </span>
             <div>
               <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)" }}>
                 {!itemsLoaded ? "Checking connected accounts" : "Connect your bank account"}
               </div>
               {showEmptyStateCard && (
-                <div style={{ fontSize: 12, color: "#64748B", marginTop: 1 }}>
+                <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 1 }}>
                   Auto-import transactions via Plaid. Read-only access; export or delete your data anytime.
                 </div>
               )}
@@ -388,7 +393,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                color: "#047857",
+                color: "#151719",
                 fontSize: 13,
                 fontWeight: 600,
               }}
@@ -399,7 +404,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                   width: 14,
                   height: 14,
                   border: "2px solid #D1FAE5",
-                  borderTopColor: "#047857",
+                  borderTopColor: "#151719",
                   borderRadius: "50%",
                   animation: "plaid-spin 0.8s linear infinite",
                 }}
@@ -415,69 +420,17 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
       )}
 
       {showEmptyStateCard && (
-        <div
-          style={{
-            marginTop: 12,
-            padding: "18px 18px 16px",
-            borderRadius: 12,
-            border: "1px solid rgba(20,184,166,0.25)",
-            background: "var(--uf-card)",
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-            <div
-              aria-hidden="true"
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background: "#CCFBF1",
-                color: "#0F766E",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 18,
-                flexShrink: 0,
-              }}
-            >
-              💧
+        <div style={{ marginTop: 12, padding: "16px 18px", borderRadius: 20, border: "1px solid var(--uf-border)", background: "var(--uf-card)", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
+          <span aria-hidden="true" style={{ width: 36, height: 36, borderRadius: 12, background: "var(--uf-mint)", display: "grid", placeItems: "center", fontSize: 18, flexShrink: 0 }}>💧</span>
+          <div style={{ flex: "1 1 260px", minWidth: 0 }}>
+            <div className="uf-t-body" style={{ fontWeight: 700, color: "var(--uf-ink)" }}>
+              Park your emergency fund where it can quietly earn more.
             </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>
-                Park your emergency fund where it can quietly earn more.
-              </div>
-              <p style={{ fontSize: 13, lineHeight: 1.6, color: "#475569", margin: "6px 0 0" }}>
-                A high-yield savings account can help idle cash earn interest while staying easy to reach for true emergencies.
-                At about 4%, every $10,000 earns roughly $400 a year. Offers lists accounts we picked, and says who earns from each link.
-              </p>
-            </div>
+            <p className="uf-t-small" style={{ color: "var(--uf-ink-2)", margin: "2px 0 0" }}>
+              At about 4%, every $10,000 earns roughly $400 a year. Offers lists accounts we picked, and says who earns from each link.
+            </p>
           </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 10,
-            }}
-          >
-            <div style={{ background: "var(--uf-surface)", border: "1px solid rgba(20,184,166,0.18)", borderRadius: 10, padding: "12px 14px" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#0F766E", marginBottom: 4 }}>Why it matters</div>
-              <div style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.55 }}>
-                If your emergency fund is sitting in low-yield cash, even a modest APY can add a little progress without changing your risk.
-              </div>
-            </div>
-            <div style={{ background: "var(--uf-surface)", border: "1px solid rgba(20,184,166,0.18)", borderRadius: 10, padding: "12px 14px" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: "#0F766E", marginBottom: 4 }}>What to check</div>
-              <div style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.55 }}>
-                Compare APY, any minimum balance rules, transfer speed, and whether the account still feels simple enough for emergencies.
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {/* A full load: the dashboard reads ?tab= when it mounts. */}
             <a
               href="/dashboard?tab=offers"
@@ -487,30 +440,14 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                   destination: 'offers',
                 })
               }
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "10px 14px",
-                borderRadius: 8,
-                border: "1px solid rgba(20,184,166,0.3)",
-                background: "var(--uf-card)",
-                color: "#0F766E",
-                fontSize: 13,
-                fontWeight: 700,
-                textDecoration: "none",
-                minWidth: 0,
-              }}
+              className="uf-t-small"
+              style={{ display: "inline-flex", alignItems: "center", minHeight: 36, padding: "8px 16px", borderRadius: 999, border: "1px solid var(--uf-border-2)", background: "var(--uf-card)", color: "var(--uf-ink)", fontWeight: 700, textDecoration: "none" }}
             >
               See savings accounts
             </a>
-            <button
-              onClick={handleConnectClick}
-              disabled={loadingLink}
-              style={btnStyle("primary")}
-            >
+            <Button variant="primary" size="sm" onClick={handleConnectClick} disabled={loadingLink}>
               {loadingLink ? "Opening..." : "Connect account"}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -546,11 +483,11 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
       {items.length > 0 && !collapsed && layout === "tiles" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {importing && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#047857", fontSize: 13, fontWeight: 600 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#151719", fontSize: 13, fontWeight: 600 }}>
               <span
                 style={{
                   display: "inline-block", width: 14, height: 14,
-                  border: "2px solid #D1FAE5", borderTopColor: "#047857",
+                  border: "2px solid #D1FAE5", borderTopColor: "#151719",
                   borderRadius: "50%", animation: "plaid-spin 0.8s linear infinite",
                 }}
               />
@@ -558,7 +495,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
             </div>
           )}
 
-          <div style={{ fontSize: 11, fontWeight: 800, color: "#047857", letterSpacing: "0.08em" }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "#151719", letterSpacing: "0.08em" }}>
             CONNECTED BANKS
           </div>
 
@@ -576,7 +513,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                   : result
                     ? "up to date"
                     : fmtSynced(item.last_synced_at);
-              const metaColor = isSyncing ? "#047857" : result && result.added > 0 ? "#059669" : "#94A3B8";
+              const metaColor = isSyncing ? "#151719" : result && result.added > 0 ? "#17684B" : "#94A3B8";
 
               const tileBody = (
                 <>
@@ -588,7 +525,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                       aria-label="Sync now"
                       style={{
                         width: 36, height: 36, borderRadius: 9, border: "none",
-                        background: "#047857", color: "#fff",
+                        background: "#151719", color: "#fff",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 16, cursor: isSyncing || isDisconnecting ? "default" : "pointer",
                         animation: isSyncing ? "plaid-spin 0.8s linear infinite" : "none",
@@ -608,9 +545,9 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                     <div
                       style={{
                         width: 36, height: 36, borderRadius: 9,
-                        background: item.institution_color || "#047857",
+                        background: item.institution_color || "#151719",
                         color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
-                        fontWeight: 700, fontSize: 15, fontFamily: "Manrope, sans-serif",
+                        fontWeight: 700, fontSize: 15, fontFamily: "Inter, sans-serif",
                       }}
                     >
                       {item.institution_name.charAt(0).toUpperCase()}
@@ -654,7 +591,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                   style={{
                     width: 92, position: "relative",
                     display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                    background: "var(--uf-surface)", border: "1.5px solid #047857", borderRadius: 12,
+                    background: "var(--uf-surface)", border: "1.5px solid #151719", borderRadius: 12,
                     padding: "10px 8px", cursor: "pointer", textAlign: "center",
                   }}
                 >
@@ -684,12 +621,12 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                 width: 92,
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
                 background: "var(--uf-card)", border: "1.5px dashed var(--uf-border)", borderRadius: 12,
-                padding: "10px 8px", cursor: "pointer", fontFamily: "inherit", color: "#047857",
+                padding: "10px 8px", cursor: "pointer", fontFamily: "inherit", color: "#151719",
               }}
             >
               <div
                 style={{
-                  width: 36, height: 36, borderRadius: 9, border: "1.5px dashed #047857",
+                  width: 36, height: 36, borderRadius: 9, border: "1.5px dashed #151719",
                   display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 300,
                 }}
               >

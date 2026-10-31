@@ -1,4 +1,5 @@
 "use client";
+import { paydaySpending, paydayRemainder } from '@/lib/payday-spending';
 
 import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
 
@@ -16,6 +17,7 @@ import TourModal from "./TourModal";
 import CitizenshipTab from "./CitizenshipTab";
 import OnboardingModal from "./OnboardingModal";
 import SavedPlanLoading from "./SavedPlanLoading";
+import MotionScene from "@/app/components/motion/MotionScene";
 import { CITIES, STATE_TAX, TAX_US_STATES } from "@/lib/fire-data";
 import LearnTab from "./LearnTab";
 import ContributionsTab from "./ContributionsTab";
@@ -41,16 +43,21 @@ import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessB
 import FreeToSpendRunway from "./FreeToSpendRunway";
 import FreeToSpendHome from "./FreeToSpendHome";
 import SetupChecklist, { type AddedExpected } from "./SetupChecklist";
-import type { SetupFacts, SetupStepId } from "@/lib/setup-steps";
+import { freedomProgress, progressPercent } from "@/lib/freedom-progress";
+import { SETUP_BUTTON, SETUP_FINISHED_KEY, SETUP_LABEL, SETUP_WHY, setupSteps, type SetupFacts, type SetupStepId } from "@/lib/setup-steps";
+import type { IconName } from "@/components/ui";
+import type { NextMove } from "@/lib/next-move";
 import type { RawTx } from "@/lib/recurring-detect";
 import { FreedomCard, MonthCard, GlanceRow, NextMoveCard, UntilPaydayCard, type MonthCategory } from "./HomeCards";
 import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, MoneyTrack, Fig, StackBar, PaceBar, MonthCalendar, BankLogo } from "./MoneyCards";
 import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
-import { accountInUSD, daysSinceSync, STALE_AFTER_DAYS, type ConvertedFields } from "@/lib/account-currency";
+import { connectedDebt, connectedBalance, accountInUSD, daysSinceSync, STALE_AFTER_DAYS, type ConvertedFields } from "@/lib/account-currency";
 import { fetchAllPages } from "@/lib/supabase-pages";
 import CategoriesTab from "./CategoriesTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
 import BudgetSetupModal from "./BudgetSetupModal";
+import StarterBudgetCard from "./StarterBudgetCard";
+import { starterBudget, usualByCategory } from "@/lib/starter-budget";
 import ReportsTab from "./ReportsTab";
 import OffersTab from "./OffersTab";
 import ProfileTab from "./ProfileTab";
@@ -79,7 +86,7 @@ import { isRent } from "@/lib/lease";
 import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
-import { Alert, Button, ICON_PATHS, Input } from "@/components/ui";
+import { Alert, Button, ICON_PATHS, Input, SegmentedControl } from "@/components/ui";
 import Flag, { flagUri } from "@/app/components/Flag";
 import { stampActive } from "@/lib/last-active";
 import { knownWithdrawalLimit, parseWithdrawalLimit, withdrawalsLeftLabel } from "@/lib/savings-limits";
@@ -280,7 +287,7 @@ function EmergencyFundProgressBar({ progressPct, state, height = 8 }: { progress
             lineHeight: 1,
             color: "var(--uf-ink-2)",
             fontWeight: 700,
-            fontFamily: "Manrope, sans-serif",
+            fontFamily: "Inter, sans-serif",
             whiteSpace: "nowrap",
           }}
         >
@@ -348,15 +355,14 @@ function effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts 
   k401: number; rothIRA: number; taxable: number; cashSavings: number;
   plaidAccounts: Pick<PlaidAccount, "type" | "subtype" | "balance_current">[];
 }) {
-  const sum = (keep: (a: Pick<PlaidAccount, "type" | "subtype">) => boolean) =>
-    plaidAccounts.filter(keep).reduce((s, a) => s + (a.balance_current ?? 0), 0);
-  const retirement = sum(isRetirementInvestmentAccount), brokerage = sum(isBrokerageInvestmentAccount);
-  const cash = sum((a) => a.type === "depository");
+  const retirement = connectedBalance(plaidAccounts, isRetirementInvestmentAccount);
+  const brokerage = connectedBalance(plaidAccounts, isBrokerageInvestmentAccount);
+  const cash = connectedBalance(plaidAccounts, a => a.type === "depository");
   return {
-    k401: retirement > 0 ? retirement : k401,
-    rothIRA: retirement > 0 ? 0 : rothIRA,
-    taxable: brokerage > 0 ? brokerage : taxable,
-    cashSavings: cash > 0 ? cash : cashSavings,
+    k401: retirement ?? k401,
+    rothIRA: retirement !== undefined ? 0 : rothIRA,
+    taxable: brokerage ?? taxable,
+    cashSavings: cash ?? cashSavings,
   };
 }
 
@@ -371,13 +377,10 @@ function effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts }: {
   plaidAccounts: Pick<PlaidAccount, "type" | "subtype" | "balance_current">[];
 }) {
   const isMortgage = (a: Pick<PlaidAccount, "type" | "subtype">) => a.type === "loan" && normalizePlaidSubtype(a.subtype).includes("mortgage");
-  const sum = (keep: (a: Pick<PlaidAccount, "type" | "subtype">) => boolean) =>
-    plaidAccounts.filter(keep).reduce((s, a) => s + Math.max(0, a.balance_current ?? 0), 0);
-  const mortgages = sum(isMortgage), loans = sum((a) => a.type === "loan" && !isMortgage(a));
   return {
-    otherDebt: loans > 0 ? loans : totalDebt,
-    mortgage: mortgages > 0 ? mortgages : mortgageBalance,
-    cards: sum((a) => a.type === "credit"),
+    otherDebt: connectedDebt(plaidAccounts, a => a.type === "loan" && !isMortgage(a), totalDebt),
+    mortgage: connectedDebt(plaidAccounts, isMortgage, mortgageBalance),
+    cards: connectedDebt(plaidAccounts, a => a.type === "credit", 0),
   };
 }
 
@@ -476,26 +479,18 @@ function calcProjection({
   for (let y = 0; y <= years; y++) {
     const investable = cur401k + curRoth + curTaxable + curCash;
     const netWorth   = investable - curDebt - curMort;
-    // fireTarget > 0 guards against the moment right after a page refresh,
-    // before real data has loaded from Supabase and every input (including
-    // monthlyExpenses, so fireTarget itself) is still its zero default —
-    // without this, "$0 invested >= $0 target" is trivially true on the
-    // very first loop year, and the freedom date briefly shows as today.
-    if (fireYear === null && fireTarget > 0 && investable >= fireTarget && y > 0) {
+    const early = currentAge > 0 && accessAge > 0 ? Math.max(0, accessAge - (currentAge + y)) : 0;
+    const reachable = curTaxable + curCash + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth);
+    // Before freedom, remember whether each annual point can fund its bridge.
+    // Date interpolation must not jump ahead of this eligibility boundary.
+    const needed = early > 0 && fireYear === null ? bridgeRequired(targetAnnualExpenses, early, curCash,
+      curTaxable + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth), cashGrowthRate, growthRate) : 0;
+    const bridgeShort = reachable < needed;
+    // A positive target guards unloaded zero inputs; year zero needs the full bridge too.
+    if (fireYear === null && fireTarget > 0 && investable >= fireTarget) {
       totalYear ??= y;
-      const early = currentAge > 0 && accessAge > 0 ? Math.max(0, accessAge - (currentAge + y)) : 0;
-      if (early > 0) {
-        // Spending until the pension opens, from money that keeps growing meanwhile. Each year's
-        // spending comes out at its start (D-65): a year is lived before it earns its growth.
-        const needed = bridgeRequired(targetAnnualExpenses, early, curCash,
-          curTaxable + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth), cashGrowthRate, growthRate);
-        const reachable = curTaxable + curCash + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth);
-        bridge = { needed, reachable, locked: investable - reachable, years: early };
-        if (reachable >= needed) fireYear = y;
-      } else {
-        bridge = null;
-        fireYear = y;
-      }
+      bridge = early > 0 ? { needed, reachable, locked: investable - reachable, years: early } : null;
+      if (!bridgeShort) fireYear = y;
     }
     const contributed = Math.min(totalContributed, investable);
     data.push({
@@ -511,7 +506,8 @@ function calcProjection({
       "Contributions": Math.round(contributed),
       "Market Growth": Math.round(Math.max(investable - contributed, 0)),
       // What can be drawn before the pension opens (D-59): taxable, cash, and the tax-free account (paid-in only where gains wait).
-      "Reachable":     Math.round(curTaxable + curCash + (taxFreeGainsLocked ? Math.min(rothBasis, curRoth) : curRoth)),
+      "Reachable":     Math.round(reachable),
+      "Bridge Short":  bridgeShort ? 1 : 0,
     });
     // Debt is paid out of savings first (up to 30% of them), and only what
     // is left is invested. Paying it from savings that were also invested in
@@ -642,6 +638,7 @@ function projectionInputs({
     // Loans, plus cards carried at a rate, at their own rates (lib/freedom-debt).
     ...(({ otherDebt, mortgage }) => {
       const debt = freedomDebt({ otherDebt, ladderDebts,
+        loans: plaidAccounts.filter(a => a.type === "loan" && !normalizePlaidSubtype(a.subtype).includes("mortgage")).map(a => ({ name: a.name || a.official_name || "Loan", balance: a.balance_current ?? 0 })),
         cards: plaidAccounts.filter((a) => a.type === "credit").map((a) => ({ name: a.name || a.official_name || "Credit card", balance: a.balance_current ?? 0 })) });
       return { totalDebt: debt.balance, debtRate: debt.rate, mortgageBalance: mortgage };
     })(effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts })),
@@ -657,18 +654,16 @@ function projectionInputs({
  * projection, not a day-by-day simulation.
  */
 function exactFreedomDateFrom(data: Record<string, number>[], fireYear: number | null, fireTarget: number): Date | null {
-  if (fireYear === null || fireYear <= 0) return null;
+  if (fireYear === null || fireYear < 0) return null;
+  if (fireYear === 0) return new Date();
   const prevPoint = data[fireYear - 1];
   const curPoint = data[fireYear];
   if (!prevPoint || !curPoint) return null;
   const prevVal = prevPoint["Investable"] ?? 0;
   const curVal = curPoint["Investable"] ?? 0;
   const msPerYearExact = 365.25 * 24 * 60 * 60 * 1000;
-  // Past the target today: work is already optional, as the first result said. Year 0 is never the
-  // freedom year (it guards the zero-input moment), so without this it read as a year from now.
-  if (fireYear === 1 && prevVal >= fireTarget) return new Date();
   // Already past the target the year before: freedom waited for the bridge (D-59), so it is this year exactly.
-  if (prevVal >= fireTarget) return new Date(Date.now() + fireYear * msPerYearExact);
+  if (prevVal >= fireTarget || prevPoint["Bridge Short"] === 1) return new Date(Date.now() + fireYear * msPerYearExact);
   const span = curVal - prevVal;
   const fraction = span > 0 ? Math.min(1, Math.max(0, (fireTarget - prevVal) / span)) : 0;
   const msPerYear = 365.25 * 24 * 60 * 60 * 1000;
@@ -676,9 +671,9 @@ function exactFreedomDateFrom(data: Record<string, number>[], fireYear: number |
 }
 
 // ─── Shared UI ────────────────────────────────────────────────────────────────
-function NumberInput({ value, onChange, placeholder = "0", prefix = "$", currency, rates }: {
+function NumberInput({ value, onChange, placeholder = "0", prefix = "$", currency, rates, ariaLabel }: {
   value: number; onChange: (v: number) => void;
-  placeholder?: string; prefix?: string;
+  placeholder?: string; prefix?: string; ariaLabel?: string;
   currency?: string; rates?: Record<string, number>;
 }) {
   const [focused, setFocused] = useState(false);
@@ -691,13 +686,13 @@ function NumberInput({ value, onChange, placeholder = "0", prefix = "$", currenc
     <div style={{
       display: "flex", alignItems: "center", gap: 6,
       background: "var(--uf-surface, #F1F5F9)", borderRadius: 8, padding: "9px 12px",
-      border: `1.5px solid ${focused ? "#047857" : "var(--uf-border, #E2E8F0)"}`,
+      border: `1.5px solid ${focused ? "#151719" : "var(--uf-border, #E2E8F0)"}`,
       boxShadow: focused ? "0 0 0 3px rgba(6,78,59,0.10)" : "none",
       transition: "border-color 0.2s, box-shadow 0.2s",
     }}>
-      <span style={{ color: "var(--uf-text-3, #94A3B8)", fontSize: 13, fontFamily: "Manrope, sans-serif" }}>{prefix}</span>
+      <span style={{ color: "var(--uf-text-3, #94A3B8)", fontSize: 13, fontFamily: "Inter, sans-serif" }}>{prefix}</span>
       <input
-        type="number" value={displayValue || ""} placeholder={placeholder}
+        type="number" value={displayValue || ""} placeholder={placeholder} aria-label={ariaLabel}
         onChange={e => {
           const nextValue = Number(e.target.value);
           if (currency && rates && currency !== "USD") {
@@ -708,7 +703,7 @@ function NumberInput({ value, onChange, placeholder = "0", prefix = "$", currenc
           onChange(nextValue);
         }}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-        style={{ background: "none", border: "none", outline: "none", color: "var(--uf-text, #19181E)", fontSize: 14, width: "100%", fontFamily: "Manrope, sans-serif" }}
+        style={{ background: "none", border: "none", outline: "none", color: "var(--uf-text, #19181E)", fontSize: 14, width: "100%", fontFamily: "Inter, sans-serif" }}
       />
     </div>
   );
@@ -719,13 +714,15 @@ function SectionLabel({ icon, text, color = "var(--uf-ink)" }: { icon: string; t
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
       <span style={{ fontSize: 14 }}>{icon}</span>
-      <span style={{ fontFamily: "Manrope, sans-serif", fontWeight: 700, fontSize: 11, color, letterSpacing: "1px", textTransform: "uppercase" }}>{text}</span>
+      <span style={{ fontFamily: "Inter, sans-serif", fontWeight: 700, fontSize: 11, color, letterSpacing: "1px", textTransform: "uppercase" }}>{text}</span>
     </div>
   );
 }
 
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60, budget = {}, expectedRows = [], onExpectedAdded, onSetupStep }: {
+const SETUP_ICON: Record<SetupStepId, IconName> = { income: "money", bank: "bank", payday: "calendar", bills: "card", budget: "target" };
+
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, onOpenNeeds, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60, budget = {}, expectedRows = [], onExpectedAdded, onSetupStep }: {
   spreadCategories?: string[];
   /** Typed on the phone; in net worth only (audit round 2). */
   homeValue?: number;
@@ -761,6 +758,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   /** Free to spend until payday (D-29); read-only here, explained in Money. */
   freeResult?: FreeToSpend | null;
   onOpenFreeToSpend?: () => void;
+  /** Money › Categories › Needs & wants, from Today's "We sorted" card (D-106). */
+  onOpenNeeds?: () => void;
   onTabChange?: (tab: TabKey) => void;
   /** Plan → Compare, for "Move" on a lease in Today. */
   onOpenCompare?: () => void;
@@ -1106,6 +1105,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     return Array.from(byYear.values()).map((b) => ({ ...b, label: String(b.year) }));
   }, [chartData, thisYear, freeYear]);
   const todayPoint = yearBars.find((b) => b.year === thisYear) ?? yearBars[0];
+  // How far you've come (lib/freedom-progress): today's point on the same curve against the FIRE target.
+  const howFar = useMemo(() => (todayPoint ? freedomProgress(todayPoint.value, fireTarget, yearBars) : null), [todayPoint, fireTarget, yearBars]);
 
   // Milestones drawn on the curve, so a far-off date still shows the steps
   // between here and there: the first year past a quarter and a half of the
@@ -1234,11 +1235,30 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   }, [nwSnapshots]);
   // Home's "Until payday" (D-90): cash less bills before payday, the phone's rule; the budget card stands in without one.
   const paydayView = untilPayday(freeResult, bills.map((b) => b.description));
+  const paydayEstimate = paydayView ? paydaySpending({ today: now, days: paydayView.days, rows: spendRows, bills, budget: expenses as Record<string, number>, monthlyBudget: monthlyExpenses > 0 ? monthlyExpenses : null }) : null;
+  const [paydayAdjustment, setPaydayAdjustment] = useState<{ window: string; everyday: number | null; cushion: number } | null>(null);
+  const paydayWindow = userId + ':' + paydayView?.payday.iso + ':' + todayIso;
+  const activePaydayAdjustment = paydayAdjustment?.window === paydayWindow ? paydayAdjustment : null;
+  const paydayRemaining = paydayView ? paydayRemainder(paydayView.free, activePaydayAdjustment?.everyday ?? paydayEstimate?.amount ?? null, activePaydayAdjustment?.cushion ?? 0) : null;
   // Get set up (lib/setup-steps): read from what the account already has.
   const setupFacts = useMemo<SetupFacts>(() => ({
     income, bankLinked: plaidAccounts.length > 0, typedInvestments: k401 + rothIRA + taxable,
     expected: expectedRows.map((r) => ({ type: r.transaction_type, recurrence: r.recurrence })), budget,
   }), [income, plaidAccounts.length, k401, rothIRA, taxable, expectedRows, budget]);
+  // While Get set up is open, its next step is Home's next move: one ask, not two.
+  const [setupFinished, setSetupFinished] = useState<boolean | null>(null);
+  useEffect(() => { try { setSetupFinished(localStorage.getItem(SETUP_FINISHED_KEY) === "1"); } catch { setSetupFinished(false); } }, []);
+  const setupMove = useMemo<{ step: SetupStepId; move: NextMove } | null>(() => {
+    if (setupFinished !== false) return null;
+    const steps = setupSteps(setupFacts);
+    const at = steps.findIndex((s) => !s.done);
+    if (at < 0) return null;
+    const step = steps[at].id;
+    return { step, move: {
+      key: `setup:${step}`, title: SETUP_LABEL[step], payoff: `Step ${at + 1} of ${steps.length}`,
+      door: "money", tab: "cashflow", button: SETUP_BUTTON[step],
+    } };
+  }, [setupFinished, setupFacts]);
   const setupTxns = useMemo<RawTx[]>(() => recentTransactions
     .filter((t) => t.transaction_type === "expense" || t.transaction_type === "income")
     .map((t, i) => ({ id: String(i), date: t.date.slice(0, 10), amount: t.transaction_type === "expense" ? netAmt(t) : t.amount,
@@ -1604,7 +1624,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 
       {/* ── Greeting header ─────────────────────────────────────────────── */}
       <HomeSlot id="greeting">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+      {/* Same width as Home's column below (globals .uf-home), so the edges line up. */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, width: "100%", maxWidth: 760, margin: "0 auto" }}>
         <div>
           <div className="uf-t-h2" style={{ margin: 0 }}>
             {timeOfDay ? `Good ${timeOfDay}` : "Hello"}{firstName ? `, ${firstName}` : ""}
@@ -1616,28 +1637,81 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       </div>
 
       </HomeSlot>
-      {/* ── Get set up: a box in the corner, not a slot (SetupChecklist). ── */}
-      <SetupChecklist
-        userId={userId}
-        facts={setupFacts}
-        freedomYear={exactFreedomDate ? exactFreedomDate.getFullYear() : null}
-        untilPaydayUSD={paydayView ? paydayView.free : null}
-        fmt={(n) => fmtMoney(n)}
-        transactions={setupTxns}
-        rates={displayRates}
-        onAdded={(rows) => onExpectedAdded?.(rows)}
-        onOpen={(step) => onSetupStep?.(step)}
-      />
-      {/* ── Hero: chart-led progress card. Fixed dark treatment regardless of
-          the dashboard's light/dark setting — a deliberate hero moment, same
-          idea as the free-calculator reveal — so it forces the `.dark` token
-          scope rather than following the ambient theme. ─────────────────── */}
+    </div>
+
+    {/* ── Home (D-108): Today first, one centred column; `order` on each card sets the sequence. ── */}
+    <div className="uf-home" style={{ marginTop: 20 }}>
+      <div className="uf-home-col">
+      <div className="uf-home-in" style={{ order: 1 }}>
+      <HomeSlot id="today">
+        <TodayStrip
+          userId={userId}
+          bills={bills}
+          perDay={paydayView ? paydayRemaining === null ? null : Math.max(0, Math.floor(paydayRemaining / paydayView.days)) : monthLeft.everydayBudget > 0 ? Math.max(0, monthLeft.left / (monthDays - now.getDate() + 1)) : null}
+          fmt={(n) => fmtMoney(n)}
+          toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}
+          onOpen={() => onTabChange?.("cashflow")}
+          onWhatIf={onOpenCompare}
+          onOpenNeeds={onOpenNeeds}
+        />
+      </HomeSlot>
+      </div>
+      <div className="uf-home-in" style={{ order: 5, animationDelay: "160ms" }}>
+      <HomeSlot id="month">
+        {paydayView && paydayLineView ? (
+          <UntilPaydayCard
+            key={paydayWindow}
+            onAdjustmentChange={adjustment => setPaydayAdjustment({ window: paydayWindow, ...adjustment })}
+            everyday={paydayEstimate?.amount ?? null}
+            estimateSource={paydayEstimate?.source}
+            displayRate={displayRates[displayCurrency] ?? 1}
+            line={paydayLineView}
+            paydayIso={paydayView.payday.iso}
+            billCount={paydayView.bills.length}
+            billTotal={paydayView.bills.reduce((t, b) => t + Math.abs(b.amount), 0)}
+            icon={categoryIcon}
+            fmt={(n) => fmtMoney(n)}
+            onOpen={() => onTabChange?.("cashflow")}
+          />
+        ) : <MonthCard
+          spent={monthLeft.everydaySpent}
+          budget={monthLeft.everydayBudget}
+          left={monthLeft.left}
+          paceSoFar={paceSoFar}
+          monthDays={monthDays}
+          nextBills={nextBills}
+          fmt={(n) => fmtMoney(n)}
+          onOpen={() => onTabChange?.("cashflow")}
+        />}
+      </HomeSlot>
+      </div>
+      <div className="uf-home-in" style={{ order: 6, animationDelay: "200ms" }}>
+      <HomeSlot id="glance">
+        <GlanceRow
+          netWorth={currentNetWorth}
+          invested={investedByMonth}
+          safety={efMonthlyBase > 0 ? { months: emergencyFundPlan.coverageMonths, target: EMERGENCY_FUND_TARGET_MONTHS } : null}
+          savingsRate={income > 0 ? (annualSavings / (income * 12)) * 100 : null}
+          fmt={(n) => fmtMoney(n)}
+          onNetWorth={() => onTabChange?.("assets")}
+          onSafety={() => onTabChange?.("assets")}
+          onSavings={() => onTabChange?.("contributions")}
+        />
+      </HomeSlot>
+      </div>
+      </div>
+      <div className="uf-home-col">
+      <div className="uf-home-in" style={{ order: 2, animationDelay: "60ms" }}>
       <HomeSlot id="hero">
       <FreedomCard
         dateLabel={exactFreedomDate ? exactFreedomDate.toLocaleDateString("en-US", { month: "long", year: "numeric" }) : retireYear ? String(retireYear) : null}
         yearsAway={exactFreedomDate ? Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5)) : fireYear}
         age={fireAge > 0 && exactFreedomDate ? Math.round(fireAge + Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5))) : null}
         onOpen={() => onTabChange?.("fire-calculator")}
+        progress={howFar ? {
+          pct: progressPercent(howFar.share), share: howFar.share,
+          next: howFar.next ? `Next: ${Math.round(howFar.next.mark * 100)}%${howFar.next.year != null ? ` in ${howFar.next.year}` : `, ${fmtMoney(howFar.next.toGo, true)} to go`}` : "Your freedom number is there",
+        } : undefined}
         route={retireCity ? {
           from: cityName ? cityName.split(",")[0] : "",
           fromFlag: cityName ? CITIES.find((c) => c.name === cityName)?.flag ?? "\u{1F3E0}" : "",
@@ -1682,29 +1756,68 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
             )}
             <Area type="monotone" dataKey="value" stroke="var(--uf-teal)" strokeWidth={3} fill="var(--uf-teal-soft)" fillOpacity={1} isAnimationActive={false}
               dot={false} activeDot={{ r: 5, fill: "var(--uf-teal)", stroke: "var(--uf-card)", strokeWidth: 2 }} />
-            {todayPoint && (
-              <ReferenceDot x={todayPoint.label} y={todayPoint.value} r={7} fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2}
-                label={{ value: `You · ${fmtMoney(todayPoint.value, true)}`, position: "top", offset: 12, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
-            )}
-            {milestones.map((m) => (
-              <ReferenceDot key={m.label} x={String(m.year)} y={m.value} r={6} fill="var(--uf-card)" stroke="var(--uf-teal)" strokeWidth={3}
-                label={{ value: m.label, position: "top", offset: 10, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
-            ))}
+            {/* The end dot first, so a milestone label near the end draws over it, not under it. */}
             {freeYear != null && yearBars.length > 1 && (
               <ReferenceDot x={yearBars[yearBars.length - 1].label} y={yearBars[yearBars.length - 1].value} r={8} fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2} />
             )}
+            {todayPoint && (
+              // To the right of the dot: centred above the first point it ran off the card's left edge.
+              <ReferenceDot x={todayPoint.label} y={todayPoint.value} r={7} fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2}
+                label={{ value: `You · ${fmtMoney(todayPoint.value, true)}`, position: "right", offset: 12, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
+            )}
+            {milestones.map((m) => {
+              // Near the end its label would run into the end dot, so it sits to the left instead.
+              const nearEnd = yearBars.length > 4 && m.year >= yearBars[Math.floor(yearBars.length * 0.8)].year;
+              return (
+                <ReferenceDot key={m.label} x={String(m.year)} y={m.value} r={6} fill="var(--uf-card)" stroke="var(--uf-teal)" strokeWidth={3}
+                  label={{ value: m.label, position: nearEnd ? "left" : "top", offset: 10, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
+              );
+            })}
           </AreaChart>
         </ResponsiveContainer>
+        {/* The assumption behind the cash figure stays one hover or tap away, not a footnote on Home (D-108). */}
         <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", display: "flex", flexWrap: "wrap", gap: "4px 16px", marginTop: 8 }}>
-          <span>Investments {fmtMoney(investable - balances.cash, true)}</span>
-          <span>Safety cash {fmtMoney(balances.cash, true)}</span>
-        </div>
-        <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 4 }}>
-          Cash uses saved APY (0% if unknown), less 3% inflation.
+          <span>Investments <span className="uf-t-data">{fmtMoney(investable - balances.cash, true)}</span></span>
+          <span title="Cash uses saved APY (0% if unknown), less 3% inflation.">Safety cash <span className="uf-t-data">{fmtMoney(balances.cash, true)}</span></span>
         </div>
       </FreedomCard>
 
       </HomeSlot>
+      </div>
+      <div className="uf-home-in" style={{ order: 3, animationDelay: "100ms" }}>
+      <HomeSlot id="contribution">
+      {setupMove && !isSnoozed(setupMove.move.key) ? (
+        <NextMoveCard move={setupMove.move} because={SETUP_WHY[setupMove.step]} icon={SETUP_ICON[setupMove.step]} fmt={(n) => fmtMoney(n)}
+          onOpen={() => onSetupStep?.(setupMove.step)}
+          onSnooze={() => { snooze(setupMove.move.key); setSnoozeTick((t) => t + 1); }} />
+      ) : nextMove ? (
+        <NextMoveCard move={nextMove} fmt={(n) => fmtMoney(n)}
+          onOpen={() => onTabChange?.(nextMove.tab)}
+          onSnooze={() => { snooze(nextMove.key); setSnoozeTick((t) => t + 1); }} />
+      ) : contributionFacts && (
+        <NextContributionCard facts={contributionFacts} onOpenPlan={() => onTabChange?.("contributions")} />
+      )}
+      </HomeSlot>
+      </div>
+      {/* ── Get set up, docked under the next move rather than floating over Home (D-108). ── */}
+      <div className="uf-home-in" style={{ order: 4, animationDelay: "120ms" }}>
+      <SetupChecklist
+        userId={userId}
+        facts={setupFacts}
+        freedomYear={exactFreedomDate ? exactFreedomDate.getFullYear() : null}
+        untilPaydayUSD={paydayView ? paydayView.free : null}
+        fmt={(n) => fmtMoney(n)}
+        transactions={setupTxns}
+        rates={displayRates}
+        onAdded={(rows) => onExpectedAdded?.(rows)}
+        onOpen={(step) => onSetupStep?.(step)}
+      />
+      </div>
+      </div>
+    </div>
+
+    {/* ── Cards that ship hidden (lib/dashboard-layout); they render nothing by default. ── */}
+    <div className="uf-dash-grid" style={{ marginTop: 20 }}>
       {/* ── On-track score: not how independent you are (the freedom date
           answers that) — how well you're keeping up the habits that get you
           there. ─────────────────────────────────────────────────────────── */}
@@ -1722,18 +1835,18 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
             );
           })()}
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ fontSize: 26, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", lineHeight: 1 }}>{onTrackScore}</div>
-            <div style={{ fontSize: 10, color: "var(--uf-text-muted)", fontFamily: "Manrope, sans-serif" }}>/ 100</div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Inter, sans-serif", lineHeight: 1 }}>{onTrackScore}</div>
+            <div style={{ fontSize: 10, color: "var(--uf-text-muted)", fontFamily: "Inter, sans-serif" }}>/ 100</div>
           </div>
         </div>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 4 }}>
             On-track score
           </div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: onTrackBand.color, fontFamily: "Manrope, sans-serif", marginBottom: 10 }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: onTrackBand.color, fontFamily: "Inter, sans-serif", marginBottom: 10 }}>
             {onTrackBand.label}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
               <span>Safety runway</span>
               <span style={{ fontWeight: 700, color: "var(--uf-text)" }}>{Math.round(scoreSafetyPts)}/40</span>
@@ -1758,27 +1871,27 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       {!checkinDismissed && topTasks.length > 0 && (
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
               Your month
             </div>
             <button
               onClick={dismissCheckin}
-              style={{ background: "none", border: "none", color: "var(--uf-text-3)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: 0 }}
+              style={{ background: "none", border: "none", color: "var(--uf-text-3)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}
             >
               Not now
             </button>
           </div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", lineHeight: 1.4 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Inter, sans-serif", lineHeight: 1.4 }}>
             {lastCompletedMonth
               ? `${checkinMonthLabel}: ${lastCompletedMonth.onTrack ? "on track" : "off plan"} — you ${lastCompletedMonth.savings >= 0 ? "saved" : "were short"} ${fmtMoney(Math.abs(lastCompletedMonth.savings), true)}.`
               : "New here — here's this month's best move."}
           </div>
-          <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>
+          <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>
             This month: {topTasks[0].label}
           </div>
           <button
             onClick={openThisMonthsMove}
-            style={{ alignSelf: "flex-start", border: "none", background: "var(--uf-green)", color: "var(--uf-card)", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
+            style={{ alignSelf: "flex-start", border: "none", background: "var(--uf-green)", color: "var(--uf-card)", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Inter, sans-serif" }}
           >
             See this month&apos;s move →
           </button>
@@ -1789,68 +1902,12 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       <HomeSlot id="free">
       {freeResult && <FreeToSpendHome result={freeResult} fmt={(n) => fmtMoney(n)} onOpen={onOpenFreeToSpend} />}
       </HomeSlot>
-      {/* ── Freedom date + best move ─────────────────────────────────────── */}
-      <HomeSlot id="contribution">
-      {nextMove ? (
-        <NextMoveCard move={nextMove} fmt={(n) => fmtMoney(n)}
-          onOpen={() => onTabChange?.(nextMove.tab)}
-          onSnooze={() => { snooze(nextMove.key); setSnoozeTick((t) => t + 1); }} />
-      ) : contributionFacts && (
-        <NextContributionCard facts={contributionFacts} onOpenPlan={() => onTabChange?.("contributions")} />
-      )}
-
-      </HomeSlot>
-      <HomeSlot id="month">
-        {paydayView && paydayLineView ? (
-          <UntilPaydayCard
-            line={paydayLineView}
-            paydayIso={paydayView.payday.iso}
-            billCount={paydayView.bills.length}
-            billTotal={paydayView.bills.reduce((t, b) => t + Math.abs(b.amount), 0)}
-            icon={categoryIcon}
-            fmt={(n) => fmtMoney(n)}
-            onOpen={() => onTabChange?.("cashflow")}
-          />
-        ) : <MonthCard
-          spent={monthLeft.everydaySpent}
-          budget={monthLeft.everydayBudget}
-          left={monthLeft.left}
-          paceSoFar={paceSoFar}
-          monthDays={monthDays}
-          nextBills={nextBills}
-          fmt={(n) => fmtMoney(n)}
-          onOpen={() => onTabChange?.("cashflow")}
-        />}
-      </HomeSlot>
-      <HomeSlot id="today">
-        <TodayStrip
-          userId={userId}
-          bills={bills}
-          perDay={paydayView ? paydayView.perDay : monthLeft.everydayBudget > 0 ? Math.max(0, monthLeft.left / (monthDays - now.getDate() + 1)) : null}
-          fmt={(n) => fmtMoney(n)}
-          toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}
-          onOpen={() => onTabChange?.("cashflow")}
-          onWhatIf={onOpenCompare}
-        />
-      </HomeSlot>
-      <HomeSlot id="glance">
-        <GlanceRow
-          netWorth={currentNetWorth}
-          invested={investedByMonth}
-          safety={efMonthlyBase > 0 ? { months: emergencyFundPlan.coverageMonths, target: EMERGENCY_FUND_TARGET_MONTHS } : null}
-          savingsRate={income > 0 ? (annualSavings / (income * 12)) * 100 : null}
-          fmt={(n) => fmtMoney(n)}
-          onNetWorth={() => onTabChange?.("assets")}
-          onSafety={() => onTabChange?.("assets")}
-          onSavings={() => onTabChange?.("contributions")}
-        />
-      </HomeSlot>
       <HomeSlot id="freedom">
       {efMonthlyBase > 0 && (
         <div className="uf-card" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 16, alignItems: "center" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 Safety runway
               </div>
               <span style={{
@@ -1860,15 +1917,15 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
                 borderRadius: 999,
                 background: emergencyFundPlan.state === "healthy" ? "var(--uf-green-50)" : emergencyFundPlan.state === "fragile" ? "var(--uf-warn-bg)" : emergencyFundPlan.state === "rebuilding" ? "var(--uf-surface-2)" : "var(--uf-neg-bg)",
                 color: emergencyFundPlan.state === "healthy" ? "var(--uf-pos-ink)" : emergencyFundPlan.state === "fragile" ? "var(--uf-warn-ink)" : emergencyFundPlan.state === "rebuilding" ? "var(--uf-ink-2)" : "var(--uf-neg-ink)",
-                fontFamily: "Manrope, sans-serif",
+                fontFamily: "Inter, sans-serif",
               }}>
                 {emergencyFundPlan.stateLabel}
               </span>
             </div>
-            <div style={{ fontSize: "clamp(30px, 5vw, 42px)", fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.04em", lineHeight: 1 }}>
+            <div style={{ fontSize: "clamp(30px, 5vw, 42px)", fontWeight: 800, color: "var(--uf-text)", fontFamily: "Inter, sans-serif", letterSpacing: "-0.04em", lineHeight: 1 }}>
               {emergencyFundPlan.coverageMonths.toFixed(1)} months
             </div>
-            <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 8, lineHeight: 1.55 }}>
+            <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", marginTop: 8, lineHeight: 1.55 }}>
               Months of essential expenses covered. Excludes wants and work costs.
             </div>
           </div>
@@ -1880,7 +1937,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
             <EmergencyFundProgressBar progressPct={emergencyFundPlan.progressToTargetPct} state={emergencyFundPlan.state} />
             <button
               onClick={() => onTabChange?.("assets")}
-              style={{ border: "1px solid var(--uf-border)", background: "var(--uf-surface)", color: "var(--uf-text)", borderRadius: 10, padding: "9px 12px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif", width: "100%" }}
+              style={{ border: "1px solid var(--uf-border)", background: "var(--uf-surface)", color: "var(--uf-text)", borderRadius: 10, padding: "9px 12px", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "Inter, sans-serif", width: "100%" }}
             >
               Review reserve
             </button>
@@ -1892,7 +1949,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 Your freedom date
               </div>
               {budgetMode === "history" && histMonthsCount > 0 && (
@@ -1904,23 +1961,23 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
             {retireYear ? (
               <>
                 <div style={{ fontSize: "clamp(32px, 6vw, 44px)", fontWeight: 800, color: "var(--uf-text)", fontFamily: "var(--uf-font-display)", letterSpacing: "-0.02em", lineHeight: 1 }}>{retireYear}</div>
-                <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 6 }}>
+                <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", marginTop: 6 }}>
                   {fireYear ? `${fireYear} years away` : "Projected from your current plan"}
                   {fireAge > 0 && fireYear ? ` · around age ${fireAge + fireYear}` : ""}
                 </div>
               </>
             ) : (
-              <div style={{ fontSize: 16, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>Finish your setup to unlock your freedom date.</div>
+              <div style={{ fontSize: 16, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif" }}>Finish your setup to unlock your freedom date.</div>
             )}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
             <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "12px 14px" }}>
-              <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Progress</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: progress >= 50 ? "var(--uf-pos)" : "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{progress.toFixed(0)}%</div>
+              <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Inter, sans-serif", marginBottom: 6 }}>Progress</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: progress >= 50 ? "var(--uf-pos)" : "var(--uf-text)", fontFamily: "Inter, sans-serif" }}>{progress.toFixed(0)}%</div>
             </div>
             <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "12px 14px" }}>
-              <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Target</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(fireTarget, true)}</div>
+              <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Inter, sans-serif", marginBottom: 6 }}>Target</div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Inter, sans-serif" }}>{fmtMoney(fireTarget, true)}</div>
             </div>
           </div>
         </div>
@@ -1928,7 +1985,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         <div id="uf-top-tasks-card" className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14, scrollMarginTop: 24 }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
                 Best way to move your date
               </div>
               {efMonthlyBase > 0 && (
@@ -1939,16 +1996,16 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
                   borderRadius: 999,
                   background: emergencyFundPlan.state === "healthy" ? "var(--uf-green-50)" : emergencyFundPlan.state === "fragile" ? "var(--uf-warn-bg)" : emergencyFundPlan.state === "rebuilding" ? "var(--uf-surface-2)" : "var(--uf-neg-bg)",
                   color: emergencyFundPlan.state === "healthy" ? "var(--uf-pos-ink)" : emergencyFundPlan.state === "fragile" ? "var(--uf-warn-ink)" : emergencyFundPlan.state === "rebuilding" ? "var(--uf-ink-2)" : "var(--uf-neg-ink)",
-                  fontFamily: "Manrope, sans-serif",
+                  fontFamily: "Inter, sans-serif",
                 }}>
                   Safety: {emergencyFundPlan.stateLabel}
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Inter, sans-serif", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
               {efMonthlyBase > 0 ? emergencyFundPlan.headline : "Top 3 tasks right now"}
             </div>
-            <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 8, lineHeight: 1.6 }}>
+            <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", marginTop: 8, lineHeight: 1.6 }}>
               {efMonthlyBase > 0 ? emergencyFundPlan.guidance : "The moves that shift your date most."}
             </div>
           </div>
@@ -1992,7 +2049,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
                                 strokeDashoffset={dashOffset}
                               />
                             </svg>
-                            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "var(--uf-pos-ink)", fontFamily: "Manrope, sans-serif" }}>
+                            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: "var(--uf-pos-ink)", fontFamily: "Inter, sans-serif" }}>
                               {Math.round(task.progressPct)}%
                             </div>
                           </>
@@ -2000,27 +2057,27 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
                       })()}
                     </div>
                   ) : (
-                    <div style={{ width: 24, height: 24, borderRadius: 999, background: "var(--uf-green-50)", color: "var(--uf-pos-ink)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, fontFamily: "Manrope, sans-serif", flexShrink: 0 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: 999, background: "var(--uf-green-50)", color: "var(--uf-pos-ink)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, fontFamily: "Inter, sans-serif", flexShrink: 0 }}>
                       {index + 1}
                     </div>
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", lineHeight: 1.4 }}>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Inter, sans-serif", lineHeight: 1.4 }}>
                         {task.label}
                       </div>
                       {task.impactYears > 0 && (
-                        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--uf-pos-ink)", background: "var(--uf-green-50)", borderRadius: 999, padding: "4px 10px", fontFamily: "Manrope, sans-serif", whiteSpace: "nowrap" }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: "var(--uf-pos-ink)", background: "var(--uf-green-50)", borderRadius: 999, padding: "4px 10px", fontFamily: "Inter, sans-serif", whiteSpace: "nowrap" }}>
                           {task.impactYears >= 1.5 ? `${task.impactYears.toFixed(1)} years` : `${Math.round(task.impactYears * 12)} months`}
                         </div>
                       )}
                     </div>
                     {index < 2 && task.progressText && (
-                      <div style={{ fontSize: 12, color: "var(--uf-pos-ink)", fontFamily: "Manrope, sans-serif", fontWeight: 700, marginTop: 4 }}>
+                      <div style={{ fontSize: 12, color: "var(--uf-pos-ink)", fontFamily: "Inter, sans-serif", fontWeight: 700, marginTop: 4 }}>
                         Progress: {task.progressText}
                       </div>
                     )}
-                    <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.5, marginTop: 4 }}>
+                    <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", lineHeight: 1.5, marginTop: 4 }}>
                       {task.detail}
                     </div>
                   </div>
@@ -2028,7 +2085,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
               ))}
             </div>
           ) : (
-            <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>Finish your setup to generate your next best tasks.</div>
+            <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif" }}>Finish your setup to generate your next best tasks.</div>
           )}
         </div>
       </div>
@@ -2043,11 +2100,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       <HomeSlot id="goals">
       <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>
             Your goals
           </div>
           {goals.length > 0 && (
-            <button onClick={() => onTabChange?.("goals")} style={{ background: "none", border: "none", color: "var(--uf-pos-ink)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: 0 }}>
+            <button onClick={() => onTabChange?.("goals")} style={{ background: "none", border: "none", color: "var(--uf-pos-ink)", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif", padding: 0 }}>
               View all →
             </button>
           )}
@@ -2060,7 +2117,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
                 <div key={g.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <div style={{ fontSize: 20, width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--uf-surface)", borderRadius: 10, flexShrink: 0 }}>{g.emoji}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Inter, sans-serif" }}>
                       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.name}</span>
                       <span style={{ flexShrink: 0, color: "var(--uf-text-2)", fontWeight: 600 }}>{Math.round(pct * 100)}%</span>
                     </div>
@@ -2073,7 +2130,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
             })}
           </div>
         ) : (
-          <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", lineHeight: 1.6 }}>
             Set a goal to save toward.{" "}
             <button onClick={() => onTabChange?.("goals")} style={{ background: "none", border: "none", color: "var(--uf-pos-ink)", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 0, fontSize: "inherit" }}>
               Add one →
@@ -2087,35 +2144,35 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       <HomeSlot id="operating">
       <div className="uf-overview-grid-3" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s investing</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.03em" }}>{fmtMoney(goalContribution)}</div>
-          <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{investingHeadline}</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s investing</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Inter, sans-serif", letterSpacing: "-0.03em" }}>{fmtMoney(goalContribution)}</div>
+          <div style={{ fontSize: 14, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", lineHeight: 1.6 }}>{investingHeadline}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
             <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "12px 14px" }}>
-              <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Invested now</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(investedBalance, true)}</div>
+              <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Inter, sans-serif", marginBottom: 6 }}>Invested now</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Inter, sans-serif" }}>{fmtMoney(investedBalance, true)}</div>
             </div>
             <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "12px 14px" }}>
-              <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Cash ready</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: availableCash > 0 ? "var(--uf-text)" : "var(--uf-text-3)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(availableCash, true)}</div>
+              <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Inter, sans-serif", marginBottom: 6 }}>Cash ready</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: availableCash > 0 ? "var(--uf-text)" : "var(--uf-text-3)", fontFamily: "Inter, sans-serif" }}>{fmtMoney(availableCash, true)}</div>
             </div>
           </div>
-          <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{investingNote}</div>
+          <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", lineHeight: 1.6 }}>{investingNote}</div>
         </div>
 
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s expenses</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>This month&apos;s expenses</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
             <div>
-              <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>Planned</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(monthlyExpenses)}</div>
+              <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", marginBottom: 4 }}>Planned</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Inter, sans-serif" }}>{fmtMoney(monthlyExpenses)}</div>
             </div>
             <div>
-              <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>{hasActuals ? "So far" : "Current"}</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: hasActuals ? "var(--uf-text)" : "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(actualOrPlannedExpenses)}</div>
+              <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", marginBottom: 4 }}>{hasActuals ? "So far" : "Current"}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: hasActuals ? "var(--uf-text)" : "var(--uf-text-2)", fontFamily: "Inter, sans-serif" }}>{fmtMoney(actualOrPlannedExpenses)}</div>
             </div>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, fontFamily: "Manrope, sans-serif", fontSize: 12, color: "var(--uf-text-2)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, fontFamily: "Inter, sans-serif", fontSize: 12, color: "var(--uf-text-2)" }}>
             <span>{hasActuals ? `${Math.round(spendingProgressPct)}% of plan used` : "Budget watch"}</span>
             {hasActuals && <span>Day {now.getDate()} of {monthDays}</span>}
           </div>
@@ -2135,44 +2192,44 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
             )}
           </div>
           {hasActuals && (
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 11, color: "var(--uf-text-3)", fontFamily: "Manrope, sans-serif" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, fontSize: 11, color: "var(--uf-text-3)", fontFamily: "Inter, sans-serif" }}>
               <span>Expected pace by today: {fmtMoney(expectedSpendToDate, true)}</span>
               <span>{fmtMoney(Math.max(monthlyExpenses - actualExpenses - billsDueThisMonth, 0), true)} left{billsDueThisMonth > 0 ? " after bills" : ""}</span>
             </div>
           )}
-          <div style={{ fontSize: 14, color: spendingStatusColor, fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>{projectedSpendStatus}</div>
-          <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{spendingImpactLabel}</div>
+          <div style={{ fontSize: 14, color: spendingStatusColor, fontWeight: 700, fontFamily: "Inter, sans-serif" }}>{projectedSpendStatus}</div>
+          <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", lineHeight: 1.6 }}>{spendingImpactLabel}</div>
           {monthlyWorkCosts != null && monthlyWorkCosts > 0 && (
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "7px 10px", fontSize: 12, color: "var(--uf-ink-2)", fontWeight: 700, fontFamily: "Manrope, sans-serif" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "7px 10px", fontSize: 12, color: "var(--uf-ink-2)", fontWeight: 700, fontFamily: "Inter, sans-serif" }}>
               <span>💼</span>
               <span>{fmtMoney(monthlyWorkCosts, true)}/mo in work costs drops at FIRE → retirement target: {fmtMoney(retirementMonthlyExpenses * 12 / withdrawalRate, true)}</span>
             </div>
           )}
-          <button onClick={() => onTabChange?.("cashflow")} style={{ alignSelf: "flex-start", background: "transparent", color: "var(--uf-pos-ink)", border: "none", padding: 0, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>View categories →</button>
+          <button onClick={() => onTabChange?.("cashflow")} style={{ alignSelf: "flex-start", background: "transparent", color: "var(--uf-pos-ink)", border: "none", padding: 0, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>View categories →</button>
         </div>
 
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Consistency</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Consistency</div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <div>
-              <div style={{ fontSize: 28, fontWeight: 800, color: consistencyGood ? "var(--uf-pos)" : "var(--uf-warn)", fontFamily: "Manrope, sans-serif", lineHeight: 1 }}>
+              <div style={{ fontSize: 28, fontWeight: 800, color: consistencyGood ? "var(--uf-pos)" : "var(--uf-warn)", fontFamily: "Inter, sans-serif", lineHeight: 1 }}>
                 {consistencyLabel}
               </div>
-              <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", marginTop: 6, lineHeight: 1.6 }}>
+              <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", marginTop: 6, lineHeight: 1.6 }}>
                 {consistencyDetail}
               </div>
             </div>
             {trackedMonths > 0 && (
               <div style={{ minWidth: 72, borderRadius: 12, background: "var(--uf-surface)", border: "1px solid var(--uf-border)", padding: "10px 12px", textAlign: "center" }}>
-                <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 4 }}>On plan</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{onTrackMonths}/{trackedMonths}</div>
+                <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Inter, sans-serif", marginBottom: 4 }}>On plan</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Inter, sans-serif" }}>{onTrackMonths}/{trackedMonths}</div>
               </div>
             )}
           </div>
           <div style={{ height: 8, background: "var(--uf-border)", borderRadius: 999, overflow: "hidden" }}>
             <div style={{ width: `${trackedMonths > 0 ? (onTrackMonths / trackedMonths) * 100 : 0}%`, height: "100%", background: consistencyGood ? "linear-gradient(90deg, var(--uf-pos), var(--uf-green-700))" : "linear-gradient(90deg, var(--uf-warn), var(--uf-warn))", borderRadius: 999 }} />
           </div>
-          <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", lineHeight: 1.6 }}>{consistencySupport}</div>
+          <div style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", lineHeight: 1.6 }}>{consistencySupport}</div>
         </div>
       </div>
 
@@ -2181,13 +2238,13 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       <HomeSlot id="support">
       <div>
         <div className="uf-card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Where your money is</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase" }}>Where your money is</div>
           <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
             <div style={{ width: 140, height: 140, borderRadius: "50%", background: moneyMixGradient, position: "relative", flexShrink: 0 }}>
               <div style={{ position: "absolute", inset: 18, borderRadius: "50%", background: "var(--uf-card)", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 14 }}>
                 <div>
-                  <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Manrope, sans-serif", marginBottom: 6 }}>Total</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", lineHeight: 1.1 }}>{fmtMoney(positiveMoneyTotal, true)}</div>
+                  <div style={{ fontSize: 11, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, fontFamily: "Inter, sans-serif", marginBottom: 6 }}>Total</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Inter, sans-serif", lineHeight: 1.1 }}>{fmtMoney(positiveMoneyTotal, true)}</div>
                 </div>
               </div>
             </div>
@@ -2198,7 +2255,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
                 { label: "Cash", value: displayCashAssets, color: "var(--uf-green)", pct: cashPct, text: "var(--uf-pos-ink)" },
               ].map((row) => (
                 <div key={row.label}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 5, fontSize: 13, fontFamily: "Manrope, sans-serif" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 5, fontSize: 13, fontFamily: "Inter, sans-serif" }}>
                     <span style={{ color: "var(--uf-text-2)" }}>{row.label}</span>
                     <span style={{ color: row.text ?? "var(--uf-text)", fontWeight: 800 }}>{fmtMoney(row.value, true)}</span>
                   </div>
@@ -2207,9 +2264,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
                   </div>
                 </div>
               ))}
-              <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>{moneyMixSourceLabel}</div>
+              <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif" }}>{moneyMixSourceLabel}</div>
               {(totalDebt + mortgageBalance) > 0 && (
-                <div style={{ paddingTop: 4, borderTop: "1px solid var(--uf-border)", fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>
+                <div style={{ paddingTop: 4, borderTop: "1px solid var(--uf-border)", fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif" }}>
                   Debt: <span style={{ color: "var(--uf-neg)", fontWeight: 800 }}>{fmtMoney(totalDebt + mortgageBalance, true)}</span>
                 </div>
               )}
@@ -2231,7 +2288,7 @@ const CALCULATORS = [
     title: "FIRE Number Calculator",
     description: "Calculate exactly how much you need to retire. Adjust the withdrawal rate and see how it changes your target.",
     tag: "FIRE · Retirement",
-    color: "#064E3B",
+    color: "#151719",
     label: "FI",
   },
   {
@@ -2239,7 +2296,7 @@ const CALCULATORS = [
     title: "Savings Rate Calculator",
     description: "Find your savings rate and see exactly how it shifts your FIRE date — the single most powerful FIRE lever.",
     tag: "FIRE · Core",
-    color: "#059669",
+    color: "#17684B",
     label: "SR",
   },
   {
@@ -2255,7 +2312,7 @@ const CALCULATORS = [
     title: "Compound Interest Calculator",
     description: "Project how your investments grow with regular contributions over any time horizon.",
     tag: "Investing",
-    color: "#047857",
+    color: "#151719",
     label: "↗",
   },
   {
@@ -2271,7 +2328,7 @@ const CALCULATORS = [
 function _CalculatorsTab() {
   return (
     <div>
-      <p style={{ color: "#64748B", fontSize: 12, fontFamily: "Manrope, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 20 }}>
+      <p style={{ color: "#64748B", fontSize: 12, fontFamily: "Inter, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 20 }}>
         All tools
       </p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
@@ -2298,7 +2355,7 @@ function _CalculatorsTab() {
 }
 
 // ─── Budget Tracker Tab ───────────────────────────────────────────────────────
-function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], bills = [], onOpenUpcoming, spreadCategories = [] }: {
+function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], bills = [], onOpenUpcoming, spreadCategories = [], categoryNeeds = {} }: {
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
   actuals: Record<string, number>;
@@ -2312,12 +2369,14 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   spendToggles?: Record<string, boolean>;
   onSpendToggle?: (id: string, on: boolean) => void;
   displayCurrency: string; displayRates: Record<string, number>;
-  recentTransactions?: { date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; category?: string; tags?: string[]; description?: string }[];
+  recentTransactions?: { date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; category?: string; sub_category?: string | null; tags?: string[]; description?: string }[];
   /** Upcoming expense bills (USD): which categories are bills, and what falls due before payday. */
   bills?: Bill[];
   /** Categories judged over 12 months, set on the phone (FIRE profile spreadCategories). */
   spreadCategories?: string[];
   onOpenUpcoming?: () => void;
+  /** Need or want per category (FIRE profile), for the 50/30/20 starter. */
+  categoryNeeds?: NeedOverrides;
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
@@ -2355,6 +2414,27 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const monthTxns = recentTransactions.filter(t => t.date.startsWith(curMonth));
 
+  /* The 50/30/20 starter (D-116), while no category has a budget. The
+     onboarding estimate under "other" doesn't count, as in setup step 5. */
+  const noRealBudget = !Object.entries(expenses).some(([k, v]) => !k.startsWith("_") && k !== "other" && typeof v === "number" && v > 0);
+  const starter = useMemo(() => noRealBudget && income > 0
+    ? starterBudget(income, usualByCategory(
+        recentTransactions.map((t) => ({ ...t, usd: toUSD(netAmt(t), t.currency, displayRates) })),
+        new Date(), categoryNeeds, billCategorySet(bills)))
+    : null, [noRealBudget, income, recentTransactions, displayRates, categoryNeeds, bills]);
+  const starterCard = starter && (
+    <StarterBudgetCard
+      takeHome={income}
+      starter={starter}
+      cats={allExpenseCats}
+      fmt={fmtMoney}
+      amountInput={(value, onChange, label) => <NumberInput value={value} onChange={onChange} ariaLabel={label} prefix={currencyPrefix} currency={displayCurrency} rates={displayRates} />}
+      // Replaces the onboarding estimate under "other", so nothing is counted twice.
+      onUse={(limits) => setExpenses({ ...expenses, other: 0, ...limits })}
+      onOwn={() => setBudgetSetupOpen(true)}
+    />
+  );
+
   const guidedSetupModal = budgetSetupOpen && (
     <BudgetSetupModal
       transactions={recentTransactions.map(t => ({
@@ -2374,7 +2454,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   if (isEmpty) {
     return (
       <div className="uf-budget-grid">
-        <div className="uf-card" style={{ padding: "48px 32px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 14 }}>
+        {starterCard || <div className="uf-card" style={{ padding: "48px 32px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 14 }}>
           <div style={{ fontSize: 32 }}>🧭</div>
           <div style={{ fontSize: 16, fontWeight: 800 }}>You haven&apos;t set a budget yet</div>
           <div style={{ color: "var(--uf-text-2)", fontSize: 13, maxWidth: "34ch", lineHeight: 1.5 }}>
@@ -2383,7 +2463,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
           <Button variant="primary" onClick={() => setBudgetSetupOpen(true)} style={{ marginTop: 6 }}>
             Set up my budget
           </Button>
-        </div>
+        </div>}
 
         <div className="uf-card" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 8, padding: "8px 0" }}>
@@ -2546,6 +2626,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
         ]} />
         {showMonth && <MonthCalendar today={now} spentByDay={spentByDay} bills={bills} perDay={leftInBudget > 0 ? leftInBudget / daysLeftInMonth : 0} fmt={fmtMoney} />}
       </MoneyHead>
+      {starterCard}
 
       {editAll ? (
         <>
@@ -2657,8 +2738,8 @@ function SurveyModal({ onSubmit, onDismiss }: {
     <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
       <div style={{ background: "#fff", borderRadius: 20, padding: "40px 32px", maxWidth: 400, width: "100%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>🙏</div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>Thank you!</div>
-        <div style={{ fontSize: 13, color: "#64748B", marginTop: 8, fontFamily: "Manrope, sans-serif", lineHeight: 1.5 }}>Your feedback shapes what we build next.</div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px" }}>Thank you!</div>
+        <div style={{ fontSize: 13, color: "#64748B", marginTop: 8, fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>Your feedback shapes what we build next.</div>
       </div>
     </div>
   );
@@ -2670,15 +2751,15 @@ function SurveyModal({ onSubmit, onDismiss }: {
         {/* Header */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#059669", marginBottom: 6, fontFamily: "Manrope, sans-serif" }}>Optional check-in</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Manrope, sans-serif", letterSpacing: "-0.5px" }}>Want to help us improve this?</div>
-            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4, fontFamily: "Manrope, sans-serif" }}>A few optional questions · skip anytime</div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#17684B", marginBottom: 6, fontFamily: "Inter, sans-serif" }}>Optional check-in</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px" }}>Want to help us improve this?</div>
+            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4, fontFamily: "Inter, sans-serif" }}>A few optional questions · skip anytime</div>
           </div>
         </div>
 
         {/* Q1 — Satisfaction */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>1. If you have a minute, how is UntilFire feeling so far?</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Inter, sans-serif" }}>1. If you have a minute, how is UntilFire feeling so far?</div>
           <div style={{ display: "flex", gap: 8 }}>
             {[1, 2, 3, 4, 5].map(n => (
               <button
@@ -2691,7 +2772,7 @@ function SurveyModal({ onSubmit, onDismiss }: {
             ))}
           </div>
           {satisfaction && (
-            <div style={{ fontSize: 11, color: "#94A3B8", fontFamily: "Manrope, sans-serif" }}>
+            <div style={{ fontSize: 11, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>
               {["", "Very dissatisfied", "Dissatisfied", "Neutral", "Satisfied", "Very satisfied"][satisfaction]}
             </div>
           )}
@@ -2699,12 +2780,12 @@ function SurveyModal({ onSubmit, onDismiss }: {
 
         {/* Q2 — Features used */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>2. Which features do you use most? <span style={{ color: "#94A3B8", fontWeight: 400 }}>(pick any)</span></div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Inter, sans-serif" }}>2. Which features do you use most? <span style={{ color: "#94A3B8", fontWeight: 400 }}>(pick any)</span></div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {SURVEY_FEATURES.map(f => {
               const active = featuresUsed.includes(f);
               return (
-                <button key={f} onClick={() => toggleFeature(f)} style={{ padding: "7px 12px", borderRadius: 99, border: `1.5px solid ${active ? "#059669" : "#E2E8F0"}`, background: active ? "#F0FDF4" : "#F8FAFC", color: active ? "#064E3B" : "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>
+                <button key={f} onClick={() => toggleFeature(f)} style={{ padding: "7px 12px", borderRadius: 99, border: `1.5px solid ${active ? "#17684B" : "#E2E8F0"}`, background: active ? "#F0FDF4" : "#F8FAFC", color: active ? "#151719" : "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
                   {active ? "✓ " : ""}{f}
                 </button>
               );
@@ -2714,12 +2795,12 @@ function SurveyModal({ onSubmit, onDismiss }: {
 
         {/* Q3 — Missing */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>3. Was anything confusing or missing?</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Inter, sans-serif" }}>3. Was anything confusing or missing?</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {SURVEY_MISSING.map(m => {
               const active = missing === m;
               return (
-                <button key={m} onClick={() => setMissing(active ? null : m)} style={{ padding: "7px 12px", borderRadius: 99, border: `1.5px solid ${active ? "#F97316" : "#E2E8F0"}`, background: active ? "#FFF7ED" : "#F8FAFC", color: active ? "#C2410C" : "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>
+                <button key={m} onClick={() => setMissing(active ? null : m)} style={{ padding: "7px 12px", borderRadius: 99, border: `1.5px solid ${active ? "#F97316" : "#E2E8F0"}`, background: active ? "#FFF7ED" : "#F8FAFC", color: active ? "#C2410C" : "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
                   {m}
                 </button>
               );
@@ -2731,17 +2812,17 @@ function SurveyModal({ onSubmit, onDismiss }: {
               value={missingOther}
               onChange={e => setMissingOther(e.target.value)}
               placeholder="Tell us more…"
-              style={{ border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 13, fontFamily: "Manrope, sans-serif", outline: "none", color: "#0F172A" }}
+              style={{ border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none", color: "#0F172A" }}
             />
           )}
         </div>
 
         {/* Q4 — Recommend */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>4. Would you recommend UntilFire to a friend?</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Inter, sans-serif" }}>4. Would you recommend UntilFire to a friend?</div>
           <div style={{ display: "flex", gap: 8 }}>
-            {([["yes", "👍 Yes", "#059669", "#F0FDF4"], ["maybe", "🤔 Maybe", "#6366F1", "#EEF2FF"], ["no", "👎 No", "#DC2626", "#FEF2F2"]] as const).map(([val, label, activeColor, activeBg]) => (
-              <button key={val} onClick={() => setRecommend(recommend === val ? null : val)} style={{ flex: 1, padding: "9px 8px", borderRadius: 9, border: `1.5px solid ${recommend === val ? activeColor : "#E2E8F0"}`, background: recommend === val ? activeBg : "#F8FAFC", color: recommend === val ? activeColor : "#64748B", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Manrope, sans-serif" }}>
+            {([["yes", "👍 Yes", "#17684B", "#F0FDF4"], ["maybe", "🤔 Maybe", "#6366F1", "#EEF2FF"], ["no", "👎 No", "#DC2626", "#FEF2F2"]] as const).map(([val, label, activeColor, activeBg]) => (
+              <button key={val} onClick={() => setRecommend(recommend === val ? null : val)} style={{ flex: 1, padding: "9px 8px", borderRadius: 9, border: `1.5px solid ${recommend === val ? activeColor : "#E2E8F0"}`, background: recommend === val ? activeBg : "#F8FAFC", color: recommend === val ? activeColor : "#64748B", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
                 {label}
               </button>
             ))}
@@ -2750,13 +2831,13 @@ function SurveyModal({ onSubmit, onDismiss }: {
 
         {/* Q5 — Notes */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Manrope, sans-serif" }}>5. Anything else you&apos;d like us to know? <span style={{ color: "#94A3B8", fontWeight: 400 }}>(optional)</span></div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Inter, sans-serif" }}>5. Anything else you&apos;d like us to know? <span style={{ color: "#94A3B8", fontWeight: 400 }}>(optional)</span></div>
           <textarea
             value={notes}
             onChange={e => setNotes(e.target.value)}
             placeholder="Feature ideas, annoyances, compliments…"
             rows={3}
-            style={{ border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 13, fontFamily: "Manrope, sans-serif", outline: "none", resize: "none", color: "#0F172A" }}
+            style={{ border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none", resize: "none", color: "#0F172A" }}
           />
         </div>
 
@@ -2765,11 +2846,11 @@ function SurveyModal({ onSubmit, onDismiss }: {
           <button
             onClick={handleSubmit}
             disabled={!satisfaction || submitting}
-            style={{ background: satisfaction ? "#064E3B" : "#E5E7EB", color: satisfaction ? "#fff" : "#9CA3AF", border: "none", borderRadius: 10, padding: "13px 20px", fontSize: 15, fontWeight: 700, cursor: satisfaction ? "pointer" : "not-allowed", fontFamily: "Manrope, sans-serif" }}
+            style={{ background: satisfaction ? "#151719" : "#E5E7EB", color: satisfaction ? "#fff" : "#9CA3AF", border: "none", borderRadius: 10, padding: "13px 20px", fontSize: 15, fontWeight: 700, cursor: satisfaction ? "pointer" : "not-allowed", fontFamily: "Inter, sans-serif" }}
           >
             {submitting ? "Sending…" : "Send feedback →"}
           </button>
-          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "Manrope, sans-serif", padding: "4px 0" }}>
+          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "Inter, sans-serif", padding: "4px 0" }}>
             Skip for now
           </button>
         </div>
@@ -3122,7 +3203,7 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
                   ) : (
                     <>
                       <div style={{ fontSize: 12, color: "var(--uf-text-muted)", fontStyle: "italic" }}>&ldquo;{card.description}&rdquo;</div>
-                      <div style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-text)", fontFamily: "DM Mono, monospace", fontVariantNumeric: "tabular-nums" }}>
+                      <div style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Inter, monospace", fontVariantNumeric: "tabular-nums" }}>
                         ${card.estimate.toLocaleString()}
                       </div>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -3164,7 +3245,7 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
             borderRadius: 18, padding: "24px 24px 20px", width: "100%", maxWidth: 420,
             display: "flex", flexDirection: "column", gap: 18,
           }}>
-            <div style={{ fontSize: 17, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Fraunces, Georgia, serif" }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Inter, Georgia, serif" }}>
               {editingGoal ? "Edit Goal" : "New Goal"}
             </div>
 
@@ -3328,7 +3409,7 @@ function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => vo
     .split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
 
   if (!email) return (
-    <Link href="/login" style={{ background: "#064E3B", color: "#fff", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Sign in</Link>
+    <Link href="/login" style={{ background: "#151719", color: "#fff", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Sign in</Link>
   );
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -3911,7 +3992,7 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgages, setMortgages, conn
         value={fmtMoney(totalLiabilities)}
         sub={startTotal > 0
           ? <><Fig>{fmtMoney(paidTotal)}</Fig> paid off of <Fig>{fmtMoney(startTotal)}</Fig></>
-          : rows.some(r => r.rate != null) ? "Highest rate first" : "Tap a debt to add what it started at and see it paid down."}
+          : rows.some(r => r.rate != null) ? "Highest rate first" : "Choose a debt to add what it started at and see it paid down."}
       >
         {startTotal > 0 && <MoneyTrack share={paidTotal / startTotal} label={`${Math.round((paidTotal / startTotal) * 100)}% of tracked debt paid off`} />}
         <MoneyKey items={[["c", "Cards", debtsEff.cards], ["l", "Loans and other", debtsEff.otherDebt], ["m", "Mortgage", debtsEff.mortgage]]
@@ -4202,7 +4283,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
   const draftRet = draft.length ? simWeightedRet(draft) : 0;
   const draftDonut = simDonut(draft, 1);
 
-  const uppercaseLabel: React.CSSProperties = { fontFamily: "Manrope, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: "0.9px", textTransform: "uppercase", color: "var(--uf-text-3)" };
+  const uppercaseLabel: React.CSSProperties = { fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 700, letterSpacing: "0.9px", textTransform: "uppercase", color: "var(--uf-text-3)" };
 
   return (
     <>
@@ -4224,10 +4305,10 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
 
       <div className="uf-scn-head">
         <div>
-          <div style={{ fontFamily: "Manrope, sans-serif", fontSize: 27, fontWeight: 800, color: "var(--uf-text)", letterSpacing: "-0.5px" }}>Investment simulations</div>
+          <div style={{ fontFamily: "Inter, sans-serif", fontSize: 27, fontWeight: 800, color: "var(--uf-text)", letterSpacing: "-0.5px" }}>Investment simulations</div>
           <div style={{ fontSize: 15, color: "var(--uf-text-2)", marginTop: 4 }}>Compare strategies side-by-side. Click a scenario to adjust its holdings.</div>
         </div>
-        <button onClick={newScenario} style={{ flexShrink: 0, background: GREEN, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", fontFamily: "Manrope, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, boxShadow: "0 1px 2px rgba(22,160,106,0.3)" }}>
+        <button onClick={newScenario} style={{ flexShrink: 0, background: GREEN, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, boxShadow: "0 1px 2px rgba(22,160,106,0.3)" }}>
           <span style={{ fontSize: 18, lineHeight: 1 }}>+</span> New Scenario
         </button>
       </div>
@@ -4247,7 +4328,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "var(--uf-text)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                    {tag && <div style={{ fontFamily: "Manrope, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.5px", color: GREEN_TEXT, background: "#E7F6EE", padding: "3px 8px", borderRadius: 9999 }}>{tag}</div>}
+                    {tag && <div style={{ fontFamily: "Inter, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.5px", color: GREEN_TEXT, background: "#E7F6EE", padding: "3px 8px", borderRadius: 9999 }}>{tag}</div>}
                     {scenarios.length > 1 && (
                       <button onClick={e => { e.stopPropagation(); removeScenario(i); }} title="Remove scenario" aria-label={`Remove ${s.name}`} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--uf-text-3)", fontSize: 16, lineHeight: 1, padding: 0, width: 16, textAlign: "center" }}>×</button>
                     )}
@@ -4290,15 +4371,15 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
                       <g transform="rotate(-90 60 60)">
                         {donut.map((seg, k) => <circle key={k} cx="60" cy="60" r="44" fill="none" stroke={seg.c} strokeWidth="18" strokeDasharray={seg.dash} strokeDashoffset={seg.offset} />)}
                       </g>
-                      <text x="60" y="57" textAnchor="middle" style={{ fontFamily: "Manrope, sans-serif", fontSize: 11, fontWeight: 800, fill: "var(--uf-text)" }}>1Y</text>
-                      <text x="60" y="70" textAnchor="middle" style={{ fontFamily: "Manrope, sans-serif", fontSize: 14, fontWeight: 800, fill: ret >= 0 ? GREEN_TEXT : RED }}>{simFmtPct(ret)}</text>
+                      <text x="60" y="57" textAnchor="middle" style={{ fontFamily: "Inter, sans-serif", fontSize: 11, fontWeight: 800, fill: "var(--uf-text)" }}>1Y</text>
+                      <text x="60" y="70" textAnchor="middle" style={{ fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 800, fill: ret >= 0 ? GREEN_TEXT : RED }}>{simFmtPct(ret)}</text>
                     </svg>
                     <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
                       {col.s.holdings.map((h, k) => (
                         <div key={k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <div style={{ width: 9, height: 9, borderRadius: 3, background: h.color, flexShrink: 0 }} />
                           <div style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text)", flex: 1 }}>{h.ticker}</div>
-                          <div style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>{`${((h.pct || 0) / tot * 100).toFixed(0)}%`}</div>
+                          <div style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>{`${((h.pct || 0) / tot * 100).toFixed(0)}%`}</div>
                         </div>
                       ))}
                     </div>
@@ -4306,7 +4387,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, background: "var(--uf-border)", border: "1px solid var(--uf-border)", borderRadius: 9, overflow: "hidden", marginTop: 16 }}>
                     {stats.map((st, k) => (
                       <div key={k} style={{ background: "var(--uf-card)", padding: "11px 14px" }}>
-                        <div style={{ fontFamily: "Manrope, sans-serif", fontSize: 10, fontWeight: 600, color: "var(--uf-text-3)", marginBottom: 3 }}>{st.l}</div>
+                        <div style={{ fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 600, color: "var(--uf-text-3)", marginBottom: 3 }}>{st.l}</div>
                         <div style={{ fontSize: 16, fontWeight: 800, color: "var(--uf-text)" }}>{st.v}</div>
                       </div>
                     ))}
@@ -4328,7 +4409,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
                   <div key={k} style={{ display: "flex", alignItems: "center", gap: 7 }}>
                     <div style={{ width: 11, height: 11, borderRadius: 3, background: r.c }} />
                     <span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text)" }}>{r.label}</span>
-                    <span style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 800, color: "var(--uf-text)" }}>{r.pct}</span>
+                    <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 800, color: "var(--uf-text)" }}>{r.pct}</span>
                   </div>
                 ))}
               </div>
@@ -4349,9 +4430,9 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
               </div>
             </div>
             <div style={{ display: "flex", gap: 18, marginBottom: 12, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "#64748B" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>Your plan</span><span style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>{simFmtPct(baseRet)}</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: GREEN }} /><span style={{ fontSize: 12, fontWeight: 700, color: GREEN_TEXT }}>{sel.name}</span><span style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, color: GREEN_TEXT }}>{simFmtPct(selRet)}</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "#CBD5E1" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{bench}</span><span style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{simFmtPct(benchRet)}</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "#64748B" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>Your plan</span><span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>{simFmtPct(baseRet)}</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: GREEN }} /><span style={{ fontSize: 12, fontWeight: 700, color: GREEN_TEXT }}>{sel.name}</span><span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: GREEN_TEXT }}>{simFmtPct(selRet)}</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "#CBD5E1" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{bench}</span><span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{simFmtPct(benchRet)}</span></div>
             </div>
             <svg width="100%" viewBox={`0 0 ${GW} ${GH}`} preserveAspectRatio="none" style={{ display: "block", height: 196 }}>
               <line x1="0" y1="52" x2={GW} y2="52" stroke="var(--uf-border)" />
@@ -4402,7 +4483,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <div style={uppercaseLabel}>Holdings</div>
-                <div style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 800, color: draftTotal === 100 ? GREEN_TEXT : "#E0902B" }}>Total {draftTotal}%</div>
+                <div style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 800, color: draftTotal === 100 ? GREEN_TEXT : "#E0902B" }}>Total {draftTotal}%</div>
               </div>
               <div style={{ height: 7, borderRadius: 9999, background: "var(--uf-surface-2)", overflow: "hidden", display: "flex", marginBottom: 6 }}>
                 {draftDonut.map((g, k) => <div key={k} style={{ width: g.barW, background: g.c }} />)}
@@ -4411,9 +4492,9 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
               {draft.map((h, k) => (
                 <div key={k} style={{ padding: "13px 0", borderBottom: "1px solid var(--uf-border)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span style={{ background: h.color, color: "#fff", fontFamily: "Manrope, sans-serif", fontSize: 10, fontWeight: 800, padding: "4px 7px", borderRadius: 5, letterSpacing: "0.3px", minWidth: 42, textAlign: "center" }}>{h.ticker}</span>
+                    <span style={{ background: h.color, color: "#fff", fontFamily: "Inter, sans-serif", fontSize: 10, fontWeight: 800, padding: "4px 7px", borderRadius: 5, letterSpacing: "0.3px", minWidth: 42, textAlign: "center" }}>{h.ticker}</span>
                     <span style={{ flex: 1, fontSize: 13, fontWeight: 600, color: "var(--uf-text)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name}</span>
-                    <span style={{ fontFamily: "Manrope, sans-serif", fontSize: 12, fontWeight: 700, color: h.ret >= 0 ? GREEN_TEXT : RED }}>{simFmtPct(h.ret)}</span>
+                    <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: h.ret >= 0 ? GREEN_TEXT : RED }}>{simFmtPct(h.ret)}</span>
                     <div onClick={() => removeRow(k)} style={{ cursor: "pointer", color: "var(--uf-text-3)", fontSize: 18, lineHeight: 1, width: 18, textAlign: "center" }}>×</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 10 }}>
@@ -4436,8 +4517,8 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
               <div style={{ fontSize: 11.5, color: "var(--uf-text-3)", marginTop: 12, fontStyle: "italic" }}>Returns model 1-year historical CAGR. Past performance doesn&apos;t guarantee future results.</div>
             </div>
             <div style={{ position: "sticky", bottom: 0, background: "var(--uf-card)", display: "flex", justifyContent: "flex-end", gap: 10, padding: "16px 26px", borderTop: "1px solid var(--uf-border)" }}>
-              <button onClick={closeModal} style={{ background: "var(--uf-card)", color: "var(--uf-text-2)", border: "1px solid var(--uf-border)", borderRadius: 9, padding: "11px 20px", fontFamily: "Manrope, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Cancel</button>
-              <button onClick={save} style={{ background: GREEN, color: "#fff", border: "none", borderRadius: 9, padding: "11px 22px", fontFamily: "Manrope, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Save changes</button>
+              <button onClick={closeModal} style={{ background: "var(--uf-card)", color: "var(--uf-text-2)", border: "1px solid var(--uf-border)", borderRadius: 9, padding: "11px 20px", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Cancel</button>
+              <button onClick={save} style={{ background: GREEN, color: "#fff", border: "none", borderRadius: 9, padding: "11px 22px", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Save changes</button>
             </div>
           </div>
         </div>
@@ -4496,10 +4577,10 @@ function TaxProfileCard({
       {/* Header row */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "Manrope, sans-serif" }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: "var(--uf-text-2)", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "Inter, sans-serif" }}>
             Tax Profile
           </div>
-          <div style={{ fontSize: 14, color: "var(--uf-text-2)", marginTop: 2, fontFamily: "Manrope, sans-serif" }}>
+          <div style={{ fontSize: 14, color: "var(--uf-text-2)", marginTop: 2, fontFamily: "Inter, sans-serif" }}>
             {city?.flag ? <Flag emoji={city.flag} size={11} /> : "🌍"} {jurisdictionLabel}
           </div>
         </div>
@@ -4507,12 +4588,12 @@ function TaxProfileCard({
           onClick={handleToggle}
           style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", padding: 0 }}
         >
-          <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>
+          <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif" }}>
             Include taxes
           </span>
           <div style={{
             width: 40, height: 22, borderRadius: 11,
-            background: taxEnabled ? "#059669" : "var(--uf-border)",
+            background: taxEnabled ? "#151719" : "var(--uf-border)",
             position: "relative", transition: "background 0.2s",
           }}>
             <div style={{
@@ -4526,7 +4607,7 @@ function TaxProfileCard({
 
       {/* Off state */}
       {!taxEnabled && (
-        <div style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6, fontFamily: "Manrope, sans-serif" }}>
+        <div style={{ fontSize: 13, color: "var(--uf-text-2)", lineHeight: 1.6, fontFamily: "Inter, sans-serif" }}>
           {taxInfo
             ? `${taxInfo.label} detected. Turn on to include taxes.`
             : "Set your city in Plan to include taxes."}
@@ -4545,10 +4626,10 @@ function TaxProfileCard({
               { label: isUS ? "Long-term capital gains" : "Capital gains", value: isUS ? "0–20% (LTCG)" : "Verify locally" },
             ].map(row => (
               <div key={row.label} style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "10px 12px" }}>
-                <div style={{ fontSize: 10, color: "var(--uf-text-2)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", fontFamily: "Manrope, sans-serif" }}>
+                <div style={{ fontSize: 10, color: "var(--uf-text-2)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", fontFamily: "Inter, sans-serif" }}>
                   {row.label}
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", marginTop: 4, fontFamily: "Manrope, sans-serif" }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", marginTop: 4, fontFamily: "Inter, sans-serif" }}>
                   {row.value}
                 </div>
               </div>
@@ -4558,7 +4639,7 @@ function TaxProfileCard({
           {/* Editable rates */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", marginBottom: 6, fontFamily: "Manrope, sans-serif" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", marginBottom: 6, fontFamily: "Inter, sans-serif" }}>
                 Retirement effective rate
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -4569,17 +4650,17 @@ function TaxProfileCard({
                   style={{
                     width: 64, padding: "8px 10px", borderRadius: 8,
                     border: "1px solid var(--uf-border)", background: "var(--uf-surface)",
-                    color: "var(--uf-text)", fontSize: 15, fontWeight: 700, fontFamily: "Manrope, sans-serif",
+                    color: "var(--uf-text)", fontSize: 15, fontWeight: 700, fontFamily: "Inter, sans-serif",
                   }}
                 />
                 <span style={{ color: "var(--uf-text)", fontWeight: 700 }}>%</span>
               </div>
-              <div style={{ fontSize: 11, color: "var(--uf-text-2)", marginTop: 4, fontFamily: "Manrope, sans-serif" }}>
+              <div style={{ fontSize: 11, color: "var(--uf-text-2)", marginTop: 4, fontFamily: "Inter, sans-serif" }}>
                 On withdrawals in retirement (no payroll taxes)
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", marginBottom: 6, fontFamily: "Manrope, sans-serif" }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", marginBottom: 6, fontFamily: "Inter, sans-serif" }}>
                 Roth / tax-free %
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -4590,12 +4671,12 @@ function TaxProfileCard({
                   style={{
                     width: 64, padding: "8px 10px", borderRadius: 8,
                     border: "1px solid var(--uf-border)", background: "var(--uf-surface)",
-                    color: "var(--uf-text)", fontSize: 15, fontWeight: 700, fontFamily: "Manrope, sans-serif",
+                    color: "var(--uf-text)", fontSize: 15, fontWeight: 700, fontFamily: "Inter, sans-serif",
                   }}
                 />
                 <span style={{ color: "var(--uf-text)", fontWeight: 700 }}>%</span>
               </div>
-              <div style={{ fontSize: 11, color: "var(--uf-text-2)", marginTop: 4, fontFamily: "Manrope, sans-serif" }}>
+              <div style={{ fontSize: 11, color: "var(--uf-text-2)", marginTop: 4, fontFamily: "Inter, sans-serif" }}>
                 Roth IRA, Roth 401k, ISA, tax-free accounts
               </div>
             </div>
@@ -4607,24 +4688,24 @@ function TaxProfileCard({
               background: "rgba(5,150,105,0.07)", border: "1px solid rgba(5,150,105,0.18)",
               borderRadius: 10, padding: "12px 14px", display: "flex", flexDirection: "column", gap: 6,
             }}>
-              <div style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#059669", fontFamily: "Manrope, sans-serif" }}>
+              <div style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "#17684B", fontFamily: "Inter, sans-serif" }}>
                 FIRE Number Impact
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>Without tax adjustment</span>
-                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(baseFireTarget, true)}</span>
+                <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif" }}>Without tax adjustment</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-text)", fontFamily: "Inter, sans-serif" }}>{fmtMoney(baseFireTarget, true)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>Tax-adjusted FIRE number</span>
-                <span style={{ fontSize: 14, fontWeight: 800, color: "#059669", fontFamily: "Manrope, sans-serif" }}>{fmtMoney(adjFireTarget, true)}</span>
+                <span style={{ fontSize: 13, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif" }}>Tax-adjusted FIRE number</span>
+                <span style={{ fontSize: 14, fontWeight: 800, color: "#17684B", fontFamily: "Inter, sans-serif" }}>{fmtMoney(adjFireTarget, true)}</span>
               </div>
               {delta > 500 && (
-                <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif" }}>
+                <div style={{ fontSize: 12, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif" }}>
                   +{fmtMoney(delta, true)} extra needed to cover taxes on retirement withdrawals
                 </div>
               )}
               {ficaRate > 0 && income > 0 && (
-                <div style={{ fontSize: 12, color: "#059669", marginTop: 2, fontFamily: "Manrope, sans-serif" }}>
+                <div style={{ fontSize: 12, color: "#17684B", marginTop: 2, fontFamily: "Inter, sans-serif" }}>
                   Payroll taxes (FICA) drop at FIRE → saves ~{fmtMoney(income * ficaRate, true)}/yr
                 </div>
               )}
@@ -4742,6 +4823,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
     activeTabs: ["fire-calculator", "expat-fire", "goals", "citizenship", "learning-hub"],
     svg: ICON_PATHS.plan,
   },
+  { key: "profile", label: "Profile", svg: '<circle cx="12" cy="8" r="4"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/>' },
 ];
 
 // Section switches for the two multi-tab groups. Grouped on one axis: Money holds
@@ -4764,13 +4846,13 @@ const MONEY_SECTIONS: { label: string; tab: TabKey }[] = [
 type PlanSection = { label: string; tab: TabKey; subTab?: "menu" | "invest-sim" | "compare" };
 const PLAN_SECTIONS: PlanSection[] = [
   { label: "Freedom Date", tab: "fire-calculator", subTab: "menu"       },
-  // What if: life changes tried on top of your plan (D-69).
-  { label: "Compare",      tab: "fire-calculator", subTab: "compare"    },
-  { label: "Scenarios",    tab: "fire-calculator", subTab: "invest-sim" },
+  // What if: life changes tried on top of your plan (D-69), with Scenarios (investment
+  // mixes) one switch away inside it, so Plan lists one place to try a different future
+  // rather than two (choice overload, Oct 2026). The phone does the same.
+  { label: "What if",      tab: "fire-calculator", subTab: "compare"    },
   { label: "Goals",        tab: "goals"        },
   { label: "Contributions", tab: "contributions" },
   { label: "Explore",      tab: "expat-fire"   },
-  { label: "Citizenship",  tab: "citizenship"  },
   { label: "Learn",        tab: "learning-hub" },
 ];
 
@@ -4785,6 +4867,7 @@ const SUB_ICONS: Record<string, string> = {
   Transactions: "M4 7h13l-3-3M20 17H7l3 3",
   Calendar: "M3 5h18v16H3zM3 10h18M8 3v4M16 3v4",
   Compare: "M8 4v16M16 4v16M3 8h5M16 16h5M3 16h5M16 8h5",
+  "What if": "M8 4v16M16 4v16M3 8h5M16 16h5M3 16h5M16 8h5",
   Categories: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
   Budget: "M12 3a9 9 0 1 0 9 9h-9zM15 3.5A9 9 0 0 1 20.5 9H15z",
   Income: "M3 7h18v12H3zM8 7V5h8v2M3 12h18",
@@ -4799,6 +4882,9 @@ const SUB_ICONS: Record<string, string> = {
   Citizenship: "M6 3h12v18H6zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM9 17h6",
   Learn: "M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2zM4 19V5M8 7h8",
 };
+/** Scenarios sits inside What if, so the section list lights What if for it. */
+const whatIfOf = (sub: "menu" | "invest-sim" | "compare") => (sub === "invest-sim" ? "compare" : sub);
+
 function SubIcon({ label }: { label: string }) {
   const d = SUB_ICONS[label];
   return d ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="uf-sidebar-sub-icon"><path d={d} /></svg> : null;
@@ -4850,6 +4936,7 @@ export default function Dashboard() {
   }, []);
   const [cashflowSubTab, setCashflowSubTab] = useState<CashflowSubTab>("cashflow");
   const [categoriesKey, setCategoriesKey] = useState(0);
+  const [categoriesStart, setCategoriesStart] = useState<"categories" | "needs">("categories");
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "invest-sim" | "compare">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   // Set when a creator referred this account: its trial is 60 days, not 30 (D-27).
@@ -5147,9 +5234,9 @@ export default function Dashboard() {
     const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const byMonth: Record<string, number> = {};
     recentTransactions.filter(t => t.transaction_type === "expense" && inLastTwelve(t.date.slice(0, 7), curMonth) && transactionNeed(t, categoryNeeds) === "need")
-      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates); });
+      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates) * shareOf(t.plaid_account_id, accountShares); });
     return Object.entries(byMonth).sort((a, b) => b[0].localeCompare(a[0]));
-  }, [recentTransactions, rates, categoryNeeds]);
+  }, [recentTransactions, rates, categoryNeeds, accountShares]);
   /* Last complete month's spending, split by tag, in dollars. The
      contribution forecast's day-to-day estimate is built from the needs; the
      wants and untagged totals are shown beside it so it is clear what was
@@ -5159,7 +5246,7 @@ export default function Dashboard() {
     const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const key = `${first.getFullYear()}-${String(first.getMonth() + 1).padStart(2, "0")}`;
     const month = recentTransactions.filter(t => t.transaction_type === "expense" && t.date.startsWith(key));
-    const inUsd = (t: typeof month[number]) => toUSD(netAmt(t), t.currency, rates);
+    const inUsd = (t: typeof month[number]) => toUSD(netAmt(t), t.currency, rates) * shareOf(t.plaid_account_id, accountShares);
     const filed = month.filter(t => !!t.category);
     return {
       year: first.getFullYear(),
@@ -5170,7 +5257,7 @@ export default function Dashboard() {
       wants: filed.filter(t => transactionNeed(t, categoryNeeds) === "want").reduce((sum, t) => sum + inUsd(t), 0),
       untagged: month.filter(t => !t.category).reduce((sum, t) => sum + inUsd(t), 0),
     };
-  }, [recentTransactions, rates, categoryNeeds]);
+  }, [recentTransactions, rates, categoryNeeds, accountShares]);
   const histNeedsAvg = useMemo(() => {
     const vals = needsByMonth.map(([, v]) => v);
     return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
@@ -5219,7 +5306,7 @@ export default function Dashboard() {
     setSpendToggles((prev) => {
       const next = { ...prev, [id]: on };
       if (userId) supabase.from("profiles").update({ free_to_spend_accounts: next }).eq("user_id", userId)
-        .then(({ error }) => { if (error) console.error("[free-to-spend] saving account toggles", error); });
+        .then(({ error }) => { if (error) { console.error("[free-to-spend] saving account toggles", error); setSaveStatus("error"); setTimeout(() => setSaveStatus("idle"), 6000); } });
       return next;
     });
   }, [userId]);
@@ -5234,7 +5321,7 @@ export default function Dashboard() {
         const { error } = await supabase.from("user_budget").update({
           expenses: { ...ex, _fire_profile: { ...((ex._fire_profile as Record<string, unknown>) ?? {}), accountShares: next } },
         }).eq("user_id", userId);
-        if (error) console.error("[account-share] saving", error);
+        if (error) { console.error("[account-share] saving", error); setSaveStatus("error"); setTimeout(() => setSaveStatus("idle"), 6000); }
       })();
       return next;
     });
@@ -5525,7 +5612,7 @@ export default function Dashboard() {
       const next = { ...prev };
       if (usd > 0) next[key] = usd; else delete next[key];
       if (userId) supabase.from("profiles").update({ debt_originals: next }).eq("user_id", userId)
-        .then(({ error }) => { if (error) console.error("[debts] saving original balances", error); });
+        .then(({ error }) => { if (error) { console.error("[debts] saving original balances", error); setSaveStatus("error"); setTimeout(() => setSaveStatus("idle"), 6000); } });
       return next;
     });
   }, [userId]);
@@ -5576,8 +5663,12 @@ export default function Dashboard() {
   );
   const saveTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLoaded   = useRef(false);
+  const quietSave  = useRef(false);
   const plaidFetchedAt = useRef<number>(0);
   const [profileLoading, setProfileLoading] = useState(true);
+  // A failed read is not a new account: keep the plan hidden, never open the
+  // welcome form and never auto-save defaults over the saved row.
+  const [planLoadFailed, setPlanLoadFailed] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [surveyOpen,     setSurveyOpen]     = useState(false);
   const [tourOpen,       setTourOpen]       = useState(false);
@@ -5749,7 +5840,12 @@ export default function Dashboard() {
         if (d?.accounts) setPlaidAccounts(d.accounts);
       }).catch(() => {});
 
-      supabase.from("user_budget").select("*").eq("user_id", session.user.id).single().then(({ data }) => {
+      supabase.from("user_budget").select("*").eq("user_id", session.user.id).maybeSingle().then(({ data, error }) => {
+        if (error) {
+          console.error("[dashboard] loading saved plan", error);
+          setPlanLoadFailed(true);
+          return;
+        }
         // Consume calculator wizard prefill (written by landing page before login redirect)
         let prefill: import("@/lib/journey").CalculatorPrefill = {};
         let hadPrefill = false;
@@ -5815,6 +5911,10 @@ export default function Dashboard() {
           if (prefill.realReturn) setGrowthRate(prefill.realReturn);
         }
         isLoaded.current = true;
+        // Loading itself triggers one save (to store normalised values); it is
+        // not a change the person made, so it is not announced as "Saved".
+        quietSave.current = true;
+        setTimeout(() => { quietSave.current = false; }, 2500);
         setProfileLoading(false);
         if (!sessionStorage.getItem('uf_dv')) {
           sessionStorage.setItem('uf_dv', '1');
@@ -5869,14 +5969,19 @@ export default function Dashboard() {
   useEffect(() => {
     if (!isLoaded.current) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    setSaveStatus("saving");
+    if (!quietSave.current) setSaveStatus("saving");
     saveTimer.current = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const fireProfile = { k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, cityName, retirementCityName, retirementCityCol, lifestyleMultiplier, taxEnabled, retirementTaxRate, rothPct, plan: planSettings, mortgages, mortgageTerms, contributionDone, comparisons };
       // Read first so this write can't clobber _custom_cats/_custom_subcats written
       // independently (and asynchronously) by useCustomCategories().
-      const { data: existingRow } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
+      const { data: existingRow, error: readError } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
+      if (readError) {
+        setSaveStatus("error");
+        setTimeout(() => setSaveStatus("idle"), 6000);
+        return;
+      }
       const existingExpenses = (existingRow?.expenses as Record<string, unknown>) || {};
       const preserved: Record<string, unknown> = {};
       if (existingExpenses._custom_cats !== undefined) preserved._custom_cats = existingExpenses._custom_cats;
@@ -5902,10 +6007,10 @@ export default function Dashboard() {
       }, { onConflict: "user_id" });
       if (saveError) {
         setSaveStatus("error");
-        setTimeout(() => setSaveStatus("idle"), 3000);
+        setTimeout(() => setSaveStatus("idle"), 6000);
       } else {
-        setSaveStatus("saved");
-        setTimeout(() => setSaveStatus("idle"), 2000);
+        if (quietSave.current) { quietSave.current = false; setSaveStatus("idle"); }
+        else { setSaveStatus("saved"); setTimeout(() => setSaveStatus("idle"), 2000); }
         // Capture net worth snapshot when portfolio value changes
         const currentInvestable = k401 + rothIRA + taxable + cashSavings;
         if (currentInvestable !== lastSnapshotRef.current) {
@@ -5976,13 +6081,13 @@ export default function Dashboard() {
         .uf-shell { display: flex; min-height: 100vh; }
         .uf-sidebar { width: 248px; min-height: 100vh; position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--uf-surface); border-right: 1px solid var(--uf-border); display: flex; flex-direction: column; flex-shrink: 0; }
         .uf-main { flex: 1; overflow-y: auto; min-width: 0; }
-        .uf-content { padding: 32px 36px 60px; }
+        .uf-content { padding: 32px 36px 60px; max-width: 1152px; margin: 0 auto; }
 
-        .uf-sidebar-logo { padding: 22px 20px 20px; font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 800; color: var(--uf-ink); letter-spacing: -0.04em; text-decoration: none; display: block; border-bottom: 1px solid var(--uf-border); }
+        .uf-sidebar-logo { padding: 22px 20px 20px; font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 800; color: var(--uf-ink); letter-spacing: -0.04em; text-decoration: none; display: block; border-bottom: 1px solid var(--uf-border); }
         .uf-sidebar-logo span { color: var(--uf-teal); }
         .uf-sidebar-freedom { padding: 14px 20px; border-bottom: 1px solid var(--uf-border); display: flex; flex-direction: column; gap: 2px; }
         .uf-sidebar-freedom-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--uf-text-3); }
-        .uf-sidebar-freedom-value { font-size: 15px; font-weight: 800; color: var(--uf-text); font-family: 'Manrope', sans-serif; }
+        .uf-sidebar-freedom-value { font-size: 15px; font-weight: 800; color: var(--uf-text); font-family: 'Inter', sans-serif; }
         .uf-budget-grid { display: grid; grid-template-columns: 1fr 260px; gap: 16px; align-items: start; }
         @media (max-width: 720px) { .uf-budget-grid { grid-template-columns: 1fr; } }
         .uf-budget-row { display: grid; grid-template-columns: 68px 1fr auto; align-items: center; gap: 16px; padding: 10px 18px; margin: 0 -18px; border-bottom: 1px solid var(--uf-border); border-radius: 8px; transition: background 0.12s; cursor: pointer; }
@@ -5999,14 +6104,14 @@ export default function Dashboard() {
         .uf-budget-pencil { opacity: 0; transition: opacity 0.12s; }
         .uf-budget-row:hover .uf-budget-pencil { opacity: 1; }
         .uf-sidebar-nav { padding: 16px 10px 4px; display: flex; flex-direction: column; gap: 2px; }
-        .uf-sidebar-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 8px; font-size: 14px; font-weight: 700; color: var(--uf-text-2); cursor: pointer; border: 1px solid transparent; transition: all 0.15s; background: transparent; width: 100%; text-align: left; font-family: 'Manrope', sans-serif; }
+        .uf-sidebar-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 8px; font-size: 14px; font-weight: 700; color: var(--uf-text-2); cursor: pointer; border: 1px solid transparent; transition: all 0.15s; background: transparent; width: 100%; text-align: left; font-family: 'Inter', sans-serif; }
         .uf-sidebar-item:hover { background: var(--uf-surface); color: var(--uf-ink); }
         .uf-sidebar-item.active { background: var(--uf-green-50); border-color: var(--uf-green); color: var(--uf-green-700); }
         .uf-sidebar-icon { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: inherit; }
         .uf-sidebar-bottom { margin-top: auto; padding: 14px 16px; border-top: 1px solid var(--uf-border); display: flex; flex-direction: column; gap: 8px; }
 
         .uf-sidebar-sub-nav { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 4px; padding: 0 10px 0 28px; }
-        .uf-sidebar-sub-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; font-size: 13px; font-weight: 700; color: var(--uf-text-2); cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-family: 'Manrope', sans-serif; transition: all 0.13s; position: relative; }
+        .uf-sidebar-sub-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; font-size: 13px; font-weight: 700; color: var(--uf-text-2); cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-family: 'Inter', sans-serif; transition: all 0.13s; position: relative; }
         .uf-sidebar-sub-item::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--uf-border); transition: all 0.13s; }
         .uf-sidebar-sub-item:hover { background: var(--uf-surface); color: var(--uf-ink); }
         .uf-sidebar-sub-item:hover::before { background: var(--uf-green); }
@@ -6043,7 +6148,7 @@ export default function Dashboard() {
         .uf-nav-label-mobile { display: none; }
         .uf-mobile-topbar, .uf-mobile-bottom-nav, .uf-mobile-drawer-backdrop, .uf-mobile-drawer { display: none; }
         .uf-section-switch { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 22px; }
-        .uf-section-button { border: 1px solid var(--uf-border); background: var(--uf-card); color: var(--uf-text-2); border-radius: 999px; padding: 9px 13px; font-size: 12px; font-weight: 800; white-space: nowrap; font-family: 'Manrope', sans-serif; cursor: pointer; box-shadow: var(--uf-e1); }
+        .uf-section-button { border: 1px solid var(--uf-border); background: var(--uf-card); color: var(--uf-text-2); border-radius: 999px; padding: 9px 13px; font-size: 12px; font-weight: 800; white-space: nowrap; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: var(--uf-e1); }
         .uf-section-button.active { border-color: var(--uf-green); background: var(--uf-green-50); color: var(--uf-green-700); }
         .uf-holdings-grid { display: grid; grid-template-columns: 80px minmax(0, 1fr) 80px 90px 100px; gap: 8px; min-width: 0; }
         .uf-holdings-grid > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -6057,7 +6162,7 @@ export default function Dashboard() {
           .uf-mobile-top-title strong { font-size: 15px; font-weight: 800; color: var(--uf-ink); letter-spacing: -0.02em; }
           .uf-mobile-top-title span { font-size: 11px; color: var(--uf-text-2); font-weight: 600; }
           .uf-mobile-bottom-nav { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 120; background: var(--uf-topbar-glass); border-top: 1px solid var(--uf-border); padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); box-shadow: var(--uf-e2); }
-          .uf-mobile-bottom-item { border: none; background: transparent; color: var(--uf-text-2); border-radius: 14px; min-width: 0; padding: 7px 4px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-family: 'Manrope', sans-serif; font-size: 10px; font-weight: 800; cursor: pointer; }
+          .uf-mobile-bottom-item { border: none; background: transparent; color: var(--uf-text-2); border-radius: 14px; min-width: 0; padding: 7px 4px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; }
           .uf-mobile-bottom-item.active { background: var(--uf-green-50); color: var(--uf-green-700); }
           .uf-mobile-bottom-icon { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; }
           .uf-mobile-drawer-backdrop { display: block; position: fixed; inset: 0; z-index: 130; background: rgba(15,23,42,0.45); opacity: 0; pointer-events: none; transition: opacity 180ms ease; }
@@ -6067,7 +6172,7 @@ export default function Dashboard() {
           .uf-mobile-drawer-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--uf-border); margin-bottom: 10px; }
           .uf-mobile-drawer-close { border: none; background: var(--uf-surface-2); color: var(--uf-text-2); width: 36px; height: 36px; border-radius: 999px; cursor: pointer; font-size: 18px; }
           .uf-mobile-drawer-list { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; padding: 4px 0; }
-          .uf-mobile-drawer-item { border: 1px solid transparent; background: transparent; color: var(--uf-text); text-align: left; border-radius: 12px; padding: 12px 12px; cursor: pointer; font-family: 'Manrope', sans-serif; display: flex; flex-direction: column; gap: 3px; }
+          .uf-mobile-drawer-item { border: 1px solid transparent; background: transparent; color: var(--uf-text); text-align: left; border-radius: 12px; padding: 12px 12px; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; gap: 3px; }
           .uf-mobile-drawer-item strong { font-size: 14px; }
           .uf-mobile-drawer-item span { font-size: 12px; color: var(--uf-text-2); line-height: 1.4; }
           .uf-mobile-drawer-item.active { background: var(--uf-green-50); border-color: var(--uf-green); color: var(--uf-green-700); }
@@ -6075,7 +6180,7 @@ export default function Dashboard() {
           .uf-mobile-drawer-link { color: var(--uf-text); text-decoration: none; font-size: 13px; font-weight: 800; padding: 10px 12px; border-radius: 10px; background: var(--uf-surface-2); }
           .uf-section-switch { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; margin: -2px -16px 18px; padding: 0 16px 2px; }
           .uf-section-switch::-webkit-scrollbar { display: none; }
-          .uf-section-button { border: 1px solid var(--uf-border); background: var(--uf-card); color: var(--uf-text-2); border-radius: 999px; padding: 9px 13px; font-size: 12px; font-weight: 800; white-space: nowrap; font-family: 'Manrope', sans-serif; cursor: pointer; box-shadow: var(--uf-e1); }
+          .uf-section-button { border: 1px solid var(--uf-border); background: var(--uf-card); color: var(--uf-text-2); border-radius: 999px; padding: 9px 13px; font-size: 12px; font-weight: 800; white-space: nowrap; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: var(--uf-e1); }
           .uf-section-button.active { border-color: var(--uf-green); background: var(--uf-green-50); color: var(--uf-green-700); }
           .uf-main { overflow-y: unset; overflow-x: hidden; }
           .uf-content { padding: calc(72px + env(safe-area-inset-top, 0px)) 16px calc(112px + env(safe-area-inset-bottom, 0px)); }
@@ -6140,7 +6245,8 @@ export default function Dashboard() {
         {/* The logo already says UntilFire; the title says where you are (D-54). */}
         <div className="uf-mobile-top-title">
           <strong>{tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Explore" : tab === "goals" ? "Goals" : tab === "contributions" ? "Contributions" : tab === "citizenship" ? "Citizenship" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Money"}</strong>
-          {freedomDateCompactLabel && <span>{`Free · ${freedomDateCompactLabel}`}</span>}
+          {/* Home shows the date in its own card, so the bar doesn't repeat it there (D-108). */}
+          {freedomDateCompactLabel && tab !== "overview" && <span>{`Free · ${freedomDateCompactLabel}`}</span>}
         </div>
         <button type="button" onClick={() => window.dispatchEvent(new Event("uf:feedback"))} aria-label="Send feedback" className="uf-mobile-menu-button">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -6175,12 +6281,14 @@ export default function Dashboard() {
         })}
       </nav>
 
+      <a href="#uf-main" className="uf-skip">Skip to content</a>
       <div className="uf-shell">
         {/* ── Sidebar ──────────────────────────────────────────────────────── */}
         <aside className="uf-sidebar">
           <Link href="/" className="uf-sidebar-logo"><Logo variant="auto" size={26} /></Link>
 
-          {freedomDateLabel && (
+          {/* Home's own card shows the date; elsewhere the sidebar keeps it in view (D-108). */}
+          {freedomDateLabel && tab !== "overview" && (
             <div className="uf-sidebar-freedom">
               <span className="uf-sidebar-freedom-label">Freedom date</span>
               <span className="uf-sidebar-freedom-value">{freedomDateLabel}</span>
@@ -6227,7 +6335,7 @@ export default function Dashboard() {
                         <button
                           key={sub.label}
                           className={`uf-sidebar-sub-item ${
-                            tab === sub.tab && (!sub.subTab || fireCalcSubTab === sub.subTab) ? "active" : ""
+                            tab === sub.tab && (!sub.subTab || whatIfOf(fireCalcSubTab) === sub.subTab) ? "active" : ""
                           }`}
                           onClick={() => {
                             if (sub.subTab) setFireCalcSubTab(sub.subTab);
@@ -6252,16 +6360,21 @@ export default function Dashboard() {
                 background: "none", border: `1px solid var(--uf-border)`,
                 borderRadius: 8, padding: "7px 10px", cursor: "pointer",
                 color: "var(--uf-text-2)", fontSize: 12, fontWeight: 700,
-                fontFamily: "Manrope, sans-serif", width: "100%",
+                fontFamily: "Inter, sans-serif", width: "100%",
                 transition: "all 0.15s",
               }}
             >
               <span style={{ fontSize: 14 }}>{isDark ? "☀️" : "🌙"}</span>
               {isDark ? "Light mode" : "Dark mode"}
             </button>
-            {saveStatus === "saving" && <span style={{ color: "#64748B", fontSize: 12, fontFamily: "Manrope, sans-serif" }}>Saving…</span>}
-            {saveStatus === "saved"  && <span style={{ color: "#059669", fontSize: 12, fontFamily: "Manrope, sans-serif" }}>✓ Saved</span>}
-            {saveStatus === "error"  && <span style={{ color: "#dc2626", fontSize: 12, fontFamily: "Manrope, sans-serif" }}>Save failed</span>}
+            <span role="status" className="uf-t-small" style={{ minHeight: 16, color: saveStatus === "saved" ? "var(--uf-pos-ink)" : "var(--uf-ink-3)" }}>
+              {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "✓ Saved" : ""}
+            </span>
+            <button type="button" onClick={() => window.dispatchEvent(new Event("uf:feedback"))} className="uf-t-small"
+              style={{ background: "none", border: "none", color: "var(--uf-ink-2)", cursor: "pointer", font: "inherit", fontSize: 12, padding: "2px 0", textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}>
+              <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+              Send feedback
+            </button>
             <div data-tour-item="profile">
               <UserNav onProfileClick={() => setTab("profile")} isProfileActive={tab === "profile"} />
             </div>
@@ -6276,8 +6389,8 @@ export default function Dashboard() {
         </aside>
 
         {/* ── Main content ─────────────────────────────────────────────────── */}
-        <main className="uf-main">
-          <div className="uf-content">
+        <main id="uf-main" tabIndex={-1} className="uf-main">
+          <MotionScene className="uf-content" scene={`${tab}:${cashflowSubTab}:${fireCalcSubTab}`}>
             {upgradedBanner && (
               <Alert
                 tone="positive"
@@ -6313,7 +6426,7 @@ export default function Dashboard() {
                   <button
                     key={item.label}
                     className={`uf-section-button ${
-                      tab === item.tab && (!item.subTab || fireCalcSubTab === item.subTab) ? "active" : ""
+                      tab === item.tab && (!item.subTab || whatIfOf(fireCalcSubTab) === item.subTab) ? "active" : ""
                     }`}
                     onClick={() => {
                       if (item.subTab) setFireCalcSubTab(item.subTab);
@@ -6332,7 +6445,12 @@ export default function Dashboard() {
                 <HouseholdCard displayCurrency={defaultCurrency} />
               </div>
             )}
-            {profileLoading && <SavedPlanLoading />}
+            {profileLoading && (planLoadFailed ? (
+              <div style={{ maxWidth: 560, margin: "var(--uf-s7) auto" }}>
+                <Alert tone="warning" title="We couldn't load your plan. Nothing has changed."
+                  action={<Button variant="primary" size="sm" onClick={() => window.location.reload()}>Try again</Button>} />
+              </div>
+            ) : <SavedPlanLoading />)}
             {tab === "overview" && !profileLoading && (
               <DashTab homeValue={homeValue} spreadCategories={spreadCategories} coastRetireAge={compareRetireAge}
                 plan={plan}
@@ -6340,6 +6458,7 @@ export default function Dashboard() {
                 freeResult={freeResult}
                 bills={homeBills}
                 onOpenFreeToSpend={() => { setCashflowSubTab("budgets"); setTab("cashflow"); }}
+                onOpenNeeds={() => { setCategoriesStart("needs"); setCategoriesKey((k) => k + 1); setCashflowSubTab("categories"); setTab("cashflow"); }}
                 userId={userId}
                 income={effectiveIncome} expenses={freedomExpenses}
                 k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
@@ -6391,11 +6510,11 @@ export default function Dashboard() {
                 <div className="uf-cashflow-subtab-switch" style={{ marginBottom: 24 }}>
                   <PillTabs label="Cashflow" options={CASHFLOW_SUB_TABS} value={cashflowSubTab} onChange={setCashflowSubTab} />
                 </div>
-                {cashflowSubTab === "cashflow" && <TransactionsTab budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
-                {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} />}
+                {cashflowSubTab === "cashflow" && <TransactionsTab categoryNeeds={categoryNeeds} budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
+                {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} startOn={categoriesStart} onCategoryNeeds={setCategoryNeeds} />}
                 {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} plan={sharedPlan} facts={contributionFacts} billDue={billDue} onMarkDone={setContributionDone} onOpenTransactions={() => setCashflowSubTab("cashflow")} />}
                 {cashflowSubTab === "budgets" && (
-                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} spreadCategories={spreadCategories} />
+                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} spreadCategories={spreadCategories} categoryNeeds={categoryNeeds} />
                 )}
               </div>
             )}
@@ -6574,6 +6693,13 @@ export default function Dashboard() {
                     />
                   </>
                 )}
+                {(fireCalcSubTab === "compare" || fireCalcSubTab === "invest-sim") && (
+                  <div style={{ marginBottom: 16 }}>
+                    <SegmentedControl label="What if" value={fireCalcSubTab}
+                      options={[{ value: "compare", label: "Life changes" }, { value: "invest-sim", label: "Investing" }] as const}
+                      onChange={(v) => setFireCalcSubTab(v)} />
+                  </div>
+                )}
                 {fireCalcSubTab === "compare" && (
                   <WhatIf run={runChanges} ctx={compareCtx} growth={growthRate} retireAge={compareRetireAge} lease={compareLease}
                     m={{ money: (n) => fmt(n, defaultCurrency, rates, true), local: (n) => convertUSDAmount(n, defaultCurrency, rates),
@@ -6623,10 +6749,15 @@ export default function Dashboard() {
                 trialLabel={referredTrial ? REFERRED_TRIAL_LABEL : TRIAL_LABEL}
               />
             )}
-          </div>
+          </MotionScene>
         </main>
       </div>
       <FeedbackWidget />
+      {saveStatus === "error" && (
+        <div role="alert" className="uf-t-small" style={{ position: "fixed", left: "50%", transform: "translateX(-50%)", bottom: "calc(96px + env(safe-area-inset-bottom))", zIndex: 300, maxWidth: "calc(100vw - 32px)", padding: "10px 16px", borderRadius: 999, background: "var(--uf-neg-bg)", color: "var(--uf-neg-ink)", border: "1px solid var(--uf-neg)", fontWeight: 700 }}>
+          Couldn&apos;t save your last change. Check your connection and try again.
+        </div>
+      )}
       <UpgradeModal
         open={upgradeOpen}
         onClose={() => setUpgradeOpen(false)}
@@ -6637,4 +6768,3 @@ export default function Dashboard() {
     </>
   );
 }
-

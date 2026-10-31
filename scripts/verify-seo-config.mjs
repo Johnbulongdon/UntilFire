@@ -44,9 +44,9 @@ assert.match(siteConfig, /siteUrl\(/, 'siteUrl helper should centralize absolute
 
 // FAQ structured data belongs to the page that shows the questions. The layout
 // once carried a site-wide FAQPage that appeared on every page, invisible and
-// duplicating each page's own; the homepage builds its schema from homeFaqs.
+// duplicating each page's own. The homepage intentionally has no FAQ section.
 assert.doesNotMatch(fs.readFileSync(path.join(repoRoot, 'app/layout.tsx'), 'utf8'), /FAQPage/, 'app/layout.tsx must not carry FAQPage schema; it would repeat on every page');
-assert.match(fs.readFileSync(path.join(repoRoot, 'app/page.tsx'), 'utf8'), /'FAQPage',\s*mainEntity:\s*homeFaqs\.map/, 'Homepage FAQPage schema should be generated from the visible homeFaqs');
+assert.doesNotMatch(fs.readFileSync(path.join(repoRoot, 'app/page.tsx'), 'utf8'), /FAQPage|homeFaqs/, 'Homepage must not retain FAQ schema after its visible FAQ was removed');
 const noTaxStatesSource = fs.readFileSync(path.join(repoRoot, 'app/fire-number/no-income-tax-states/page.tsx'), 'utf8');
 assert.match(noTaxStatesSource, /\{faqs\.map\(/, 'No-income-tax states page should render its FAQ visibly');
 assert.match(noTaxStatesSource, /'FAQPage',\s*mainEntity:\s*faqs\.map/, 'No-income-tax states FAQPage schema should be generated from the visible faqs');
@@ -57,20 +57,18 @@ assert.match(noTaxStatesSource, /'FAQPage',\s*mainEntity:\s*faqs\.map/, 'No-inco
 const landingSource = ['app/page.tsx', 'app/HomeClient.tsx']
   .map((file) => fs.readFileSync(path.join(repoRoot, file), 'utf8'))
   .join('\n');
-// The hero that renders is AnimatedHero, inside LandingPage. HeroScreen.tsx,
-// which these checks used to read, has not been rendered since the landing
-// page replaced it (274a215), so checks on it passed whatever the homepage
-// showed. Confirm the render path first, so that cannot happen silently again.
-const landingPageSource = fs.readFileSync(path.join(repoRoot, 'app/components/landing/LandingPage.tsx'), 'utf8');
-const heroSource = fs.readFileSync(path.join(repoRoot, 'app/components/landing/AnimatedHero.tsx'), 'utf8');
-assert.match(fs.readFileSync(path.join(repoRoot, 'app/HomeClient.tsx'), 'utf8'), /<LandingPage onStart=/, 'Homepage should render LandingPage');
-assert.match(landingPageSource, /<AnimatedHero onStart=\{onStart\}/, 'LandingPage should render AnimatedHero as its hero');
-const heroCtaRow = heroSource.match(/<div className="hero-cta">[^]*?<\/div>/)?.[0] ?? '';
-
-assert.match(heroCtaRow, /Find my freedom date/i, 'Homepage primary CTA should lead with freedom date, not FIRE number');
-assert.doesNotMatch(heroSource, /Find my FIRE number/i, 'Homepage hero CTA should not say Find my FIRE number');
-assert.doesNotMatch(heroSource, />\s*Log in/i, 'Homepage hero should not show a secondary Log in CTA beside the no-login start button');
-assert.match(heroCtaRow, /onClick=\{onStart\}/, 'The hero CTA should start the no-login calculator');
+// Verify the actual selected landing component rather than retired hero files.
+const homeClientSource = fs.readFileSync(path.join(repoRoot, 'app/HomeClient.tsx'), 'utf8');
+const heroSource = fs.readFileSync(path.join(repoRoot, 'app/components/landing/NextHorizonLanding.tsx'), 'utf8');
+const landingCss = fs.readFileSync(path.join(repoRoot, 'app/components/landing/ConnectedLanding.module.css'), 'utf8');
+assert.match(homeClientSource, /import LandingPage from ["']@\/app\/components\/landing\/NextHorizonLanding["']/, 'Homepage must use the selected Next Horizon landing');
+assert.match(homeClientSource, /<LandingPage onStart=/, 'Homepage must pass the existing no-login start action');
+const heroCtaRow = heroSource.match(/function StartButton[^]*?function Reassurance/)?.[0] ?? '';
+assert.match(heroCtaRow, /Find my freedom date/i, 'Homepage primary CTA should lead with freedom date');
+assert.match(heroCtaRow, /onClick=\{onStart\}/, 'Landing action must start the existing no-login calculator');
+assert.doesNotMatch(heroSource, /Find my FIRE number/i, 'Homepage primary action should use freedom-date wording');
+assert.match(heroSource, /<StartButton onStart=\{onStart\}/, 'The selected landing must render its start action');
+assert.doesNotMatch(heroSource, /role="tab"/, 'The approved connected example must not pretend to navigate between product pages');
 
 // The decision-impact cards were removed on purpose (97ea213, "remove decision
 // impact"). If they come back, the pay lever must still be the positive one.
@@ -80,8 +78,9 @@ if (/Decision impact/i.test(landingSource)) {
 assert.doesNotMatch(landingSource, /Take a 10% pay cut/i, 'Decision-impact cards should not show confusing pay-cut acceleration copy');
 assert.match(landingSource, /initialPortfolioBalance/i, 'Adjust Inputs should preserve portfolio value when returning to the portfolio step');
 assert.match(landingSource, /initialAge/i, 'Adjust Inputs should preserve current age when returning to the portfolio step');
-// The live hero's narrow-screen rule: the primary action fills the row.
-assert.match(heroSource, /@container\(max-width:700px\)\{(?:[^{}]*\{[^{}]*\})*?[^{}]*\.uf-motion \.hero-cta>button\{flex:1/i, 'Mobile CSS should prioritize the primary action on small screens');
+// The selected mobile landing keeps a usable primary action and a narrow layout.
+assert.match(landingCss, /min-height:\s*48px/, 'Landing primary action must retain its 48px minimum touch height');
+assert.match(landingCss, /@media\s*\(max-width:\s*760px\)/, 'Landing must retain a phone layout');
 
 const fireCalculatorSource = fs.readFileSync(path.join(repoRoot, 'app/fire-calculator/page.tsx'), 'utf8');
 for (const required of [
@@ -185,8 +184,7 @@ assert.match(stateCsvSource, /state\.avgCityColAccross/, 'State reference CSV sh
 
 // The FIRE Type quiz link sits in the hero CTA row, secondary to the start
 // button (D-13). It was lost in the landing redesign (274a215) and restored.
-assert.match(heroCtaRow, /fire-type\?source=homepage-secondary/i, 'Homepage hero should offer the FIRE Type personality test next to the primary CTA');
-assert.ok(heroCtaRow.indexOf('onClick={onStart}') < heroCtaRow.indexOf('fire-type?source=homepage-secondary'), 'The freedom-date start button comes first; the quiz is the secondary action');
+assert.doesNotMatch(heroCtaRow, /fire-type/, 'Approved landing start action stays focused; personality is a secondary Profile flow');
 
 console.log('SEO config checks passed');
 

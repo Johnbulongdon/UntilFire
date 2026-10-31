@@ -10,7 +10,7 @@ import { freedomFor, planFromDraft, usePlan } from '@/state/plan'
 const LIFE = 100
 const ASSUMED_AGE = 35
 
-/** Reveal 2 of 5 (the website's "life in years"): a hundred squares, lived, working and free. */
+/** Reveal 2 of 4 (the website's "life in years"): a hundred squares, lived, working and free. */
 export default function Life() {
   const { draft } = usePlan()
   const plan = useMemo(() => planFromDraft(draft), [draft])
@@ -21,7 +21,7 @@ export default function Life() {
   // The same age as the reveal before it.
   const freeAt = result.years != null ? Math.min(LIFE, Math.floor(age + result.years)) : LIFE
   const free = LIFE - freeAt
-  const tone = (i: number) => (i < age ? 'rgba(255,255,255,0.18)' : i < freeAt ? 'rgba(255,255,255,0.45)' : '#62FAE3')
+  const tone = (i: number) => (i < age ? 'rgba(255,255,255,0.18)' : i < freeAt ? 'rgba(255,255,255,0.45)' : '#151719')
 
   return (
     <RevealFrame eyebrow="Your life in years" next="Continue" onNext={() => router.push('/onboarding/number')}>
@@ -32,10 +32,10 @@ export default function Life() {
           </Animated.View>
         ))}
       </View>
-      <Text className="mt-8 font-display text-[30px] font-bold leading-9 text-white">
-        {free > 0 ? <>Free at {freeAt} buys back <Text className="text-aqua">{free} years</Text>.</> : 'Every move from here buys back years.'}
+      <Text className="mt-8 font-display text-[30px] font-bold leading-9 text-ink">
+        {free > 0 ? <>Free at {freeAt} buys back <Text className="text-ink">{free} years</Text>.</> : 'Every move from here buys back years.'}
       </Text>
-      <Text className="mt-2 text-[15px] text-mint">{plan.age ? 'If you live to 100.' : `Assuming you're ${ASSUMED_AGE}, and live to 100.`}</Text>
+      <Text className="mt-2 text-[15px] text-ink-2">{plan.age ? 'If you live to 100.' : `Assuming you're ${ASSUMED_AGE}, and live to 100.`}</Text>
     </RevealFrame>
   )
 }

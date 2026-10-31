@@ -1,8 +1,8 @@
 export const UNTILFIRE_ANCHOR_HEADLINE =
-  "Personal finance that sets you free.";
+  "See beyond your balance. Open up your life.";
 
 export const UNTILFIRE_ANCHOR_DESCRIPTION =
-  "Start with your freedom date in 60 seconds. Then UntilFire gives you a plan to move it closer.";
+  "See your whole financial picture, understand your choices, and build toward the life you want.";
 
 export const UNTILFIRE_ANCHOR_PROOF = "Free, no login.";
 

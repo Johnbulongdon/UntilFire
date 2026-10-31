@@ -222,6 +222,7 @@ export default function Budget() {
         <View className="flex-1"><Button kind="quiet" label="+ Category" onPress={() => { haptic.tick(); router.push('/category') }} /></View>
         <View className="flex-1"><Button kind="quiet" label="Edit budget" onPress={() => { haptic.tick(); router.push('/budget-edit') }} /></View>
       </View>
+      <Button kind="quiet" label="Needs & wants" onPress={() => { haptic.tick(); router.push('/needs-wants') }} />
 
       {dayToDay > 0 && (
         <Card soft>

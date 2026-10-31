@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { markedCalendarEntries } from "@/lib/marked-calendar";
+import type { ScheduledCalendarItem } from "@/lib/marked-calendar";
 import { Card, InfoTip } from "@/components/ui";
 import { trackTxViewChanged } from "@/lib/analytics";
 import { type DateRange, monthOf, netAmount, type RangeTx, usualToDay } from "@/lib/spend-range";
@@ -24,14 +26,14 @@ const ICONS: Record<View, string> = { line: "M3 17l5-5 4 3 8-9", bars: "M5 20V10
  */
 // Ink, not amber or red: no category colour can be mistaken for going over (D-54).
 const OVER = "repeating-linear-gradient(135deg, var(--uf-ink) 0 2px, color-mix(in srgb, var(--uf-ink) 12%, var(--uf-card)) 2px 5px)";
-const BAND = "color-mix(in srgb, var(--uf-ink-3) 18%, transparent)";
-const BAND_EDGE = "1px dotted var(--uf-ink-3)";
+// A darker stretch inside the track, not a box around it, so it carries the same weight as the budget line.
+const BAND = "color-mix(in srgb, var(--uf-ink-3) 38%, transparent)";
 const BUDGET_AT = 0.7;
 
 /**
  * One category's bar (D-52): every budget sits on the same black line, so
- * going over always pokes past it as amber hatching; the shaded band is
- * where recent months landed. Without a budget the bar scales to its own
+ * going over always pokes past it as amber hatching; the darker stretch
+ * inside the track is where recent months landed. Without a budget the bar scales to its own
  * values. A ▸ at the end means something runs past the bar.
  */
 function CategoryBar({ r, fmt }: { r: { now: number; due: number; budget: number | null; color: string; typical: Typical | null }; fmt: (usd: number) => string }) {
@@ -40,23 +42,23 @@ function CategoryBar({ r, fmt }: { r: { now: number; due: number; budget: number
   const at = (n: number) => `${Math.min(100, Math.max(0, (n / scale) * 100))}%`;
   const runs = Math.max(used, r.typical?.high ?? 0) > scale;
   // Nothing by this day in past months is no band, not a sliver at $0.
-  const band = r.typical && r.typical.high > 0 && { left: at(r.typical.low), width: `max(4px, calc(${at(r.typical.high)} - ${at(r.typical.low)}))` };
+  const band = r.typical && r.typical.high > 0 && { left: at(r.typical.low), width: `max(6px, calc(${at(r.typical.high)} - ${at(r.typical.low)}))` };
   return (
     <span style={{ position: "relative", height: 22 }}>
-      {band && <i title={`Past months ${fmt(r.typical!.low)}–${fmt(r.typical!.high)}`} style={{ position: "absolute", top: 0, bottom: 0, ...band, borderRadius: 4, background: BAND, borderLeft: BAND_EDGE, borderRight: BAND_EDGE }} />}
-      <i style={{ position: "absolute", left: 0, right: 0, top: 6, height: 10, borderRadius: 99, background: "var(--uf-surface-2)" }} />
-      <i style={{ position: "absolute", left: 0, top: 6, height: 10, width: at(r.now), borderRadius: 99, background: r.color, transition: "width 400ms var(--uf-ease-spring)" }} />
-      {r.due > 0 && <i title={`Still due ${fmt(r.due)}`} style={{ position: "absolute", top: 6, height: 10, left: at(r.now), width: `calc(${at(used)} - ${at(r.now)})`,
+      <i style={{ position: "absolute", left: 0, right: 0, top: 5, height: 12, borderRadius: 99, background: "var(--uf-surface-2)" }} />
+      {band && <i title={`Past months ${fmt(r.typical!.low)}–${fmt(r.typical!.high)}`} style={{ position: "absolute", top: 5, height: 12, ...band, borderRadius: 99, background: BAND }} />}
+      <i style={{ position: "absolute", left: 0, top: 5, height: 12, width: at(r.now), borderRadius: 99, background: r.color, transition: "width 400ms var(--uf-ease-spring)" }} />
+      {r.due > 0 && <i title={`Still due ${fmt(r.due)}`} style={{ position: "absolute", top: 5, height: 12, left: at(r.now), width: `calc(${at(used)} - ${at(r.now)})`,
         background: `repeating-linear-gradient(135deg, ${r.color} 0 3px, transparent 3px 6px)`, boxShadow: `inset 0 0 0 1px ${r.color}` }} />}
-      {r.budget != null && used > r.budget && <i title={`Over by ${fmt(used - r.budget)}`} style={{ position: "absolute", top: 6, height: 10, left: `${BUDGET_AT * 100}%`,
+      {r.budget != null && used > r.budget && <i title={`Over by ${fmt(used - r.budget)}`} style={{ position: "absolute", top: 5, height: 12, left: `${BUDGET_AT * 100}%`,
         width: `max(6px, calc(${at(used)} - ${BUDGET_AT * 100}%))`, borderRadius: "0 99px 99px 0", background: OVER }} />}
-      {r.budget != null && <i title={`Budget ${fmt(r.budget)}`} style={{ position: "absolute", top: 1, height: 20, left: `calc(${BUDGET_AT * 100}% - 1.25px)`, width: 2.5, borderRadius: 2, background: "var(--uf-ink)" }} />}
+      {r.budget != null && <i title={`Budget ${fmt(r.budget)}`} style={{ position: "absolute", top: 3, height: 16, left: `calc(${BUDGET_AT * 100}% - 1px)`, width: 2, borderRadius: 2, background: "var(--uf-ink)" }} />}
       {runs && <i aria-hidden style={{ position: "absolute", right: -8, top: 6, borderTop: "5px solid transparent", borderBottom: "5px solid transparent", borderLeft: "6px solid var(--uf-ink-3)" }} />}
     </span>
   );
 }
 
-export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategories, onToggleCategory, onClearFilters, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel, expectedIncome = 0, bills = [] }: {
+export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategories, onToggleCategory, onClearFilters, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel, expectedIncome = 0, bills = [], calendarItems = [], compact = fmt }: {
   transactions: Tx[]; range: DateRange; today: string;
   toUSD: (amount: number, currency: string) => number; fmt: (usd: number) => string;
   expenseCats: CatDisplay[]; incomeCats: CatDisplay[];
@@ -70,7 +72,10 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
   expectedIncome?: number;
   /** Upcoming expense bills (USD, next due date), which date the forecast and budget line. */
   bills?: Bill[];
+  calendarItems?: ScheduledCalendarItem[];
+  compact?: (usd:number)=>string;
 }) {
+  const calendarEvents=useMemo(()=>markedCalendarEntries({start:range.start,end:range.end,today,items:calendarItems}).filter(e=>!selectedCategories.length||selectedCategories.includes(e.category??'')),[range.start,range.end,today,calendarItems,selectedCategories]);
   const [picking, setPicking] = useState<string | null>(null);
   const [mode, setMode] = useState<"spent" | "earned">("spent");
   const [view, setView] = useState<View>("line");
@@ -188,7 +193,7 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
 
   return (
     <Card style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 24 }}>
-      <div style={{ display: "grid", gap: 10, alignContent: "start", gridColumn: shown === "cal" && range.months.length > 3 ? "1 / -1" : undefined }}>
+      <div style={{ display: "grid", gap: 10, alignContent: "start", gridColumn: shown === "cal" ? "1 / -1" : undefined }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
           <div style={{ display: "grid", gap: 4 }}>
             <div role="radiogroup" aria-label="Show money" style={{ display: "inline-flex", justifySelf: "start", background: "var(--uf-surface-2)", borderRadius: 999, padding: 3 }}>
@@ -231,7 +236,7 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
         </div>
         {shown === "line" && <LineView range={range} today={today} daily={daily} usualByDay={usualByDay} usualMonth={usualByDay?.[31] ?? null} budgetLine={budgetLine} billsOver={billsOver} vsBudget={vsBudget} unbudgeted={unbudgeted} forecast={forecastLine} periodLabel={periodLabel} fmt={fmt} />}
         {shown === "bars" && <BarsView range={range} today={today} daily={daily} usualMonth={usualByDay?.[31] ?? null} budgetMonth={budgetMonth} fmt={fmt} valueLabel={mode === "spent" ? "Expenses" : "Income"} />}
-        {shown === "cal" && <CalendarView range={range} today={today} daily={daily} fmt={fmt} selectedDay={selectedDay} onSelectDay={onSelectDay} onZoomMonth={onZoomMonth} />}
+        {shown === "cal" && <CalendarView range={range} today={today} daily={daily} fmt={fmt} selectedDay={selectedDay} onSelectDay={onSelectDay} onZoomMonth={onZoomMonth} events={calendarEvents} compact={compact} colorFor={category=>expenseCats.find(c=>c.key===category)?.color} />}
       </div>
 
       <div style={{ display: "grid", gap: 2, alignContent: "start" }}>
@@ -286,10 +291,10 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
           <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", paddingLeft: 8, display: "inline-flex", flexWrap: "wrap", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
             <i style={{ display: "inline-block", width: 14, height: 8, borderRadius: 2, background: "var(--uf-ink-3)" }} />{mode === "spent" ? "Expenses" : "Income"}
             {rows.some((r) => r.due > 0) && <><i style={{ display: "inline-block", width: 14, height: 8, borderRadius: 2, marginLeft: 8, background: "repeating-linear-gradient(135deg, var(--uf-ink-3) 0 3px, transparent 3px 6px)", boxShadow: "inset 0 0 0 1px var(--uf-ink-3)" }} />Still due</>}
-            {rows.some((r) => r.budget != null) && <><i style={{ display: "inline-block", width: 3, height: 12, marginLeft: 8, borderRadius: 2, background: "var(--uf-ink)" }} />Budget</>}
+            {rows.some((r) => r.budget != null) && <><i style={{ display: "inline-block", width: 2, height: 12, marginLeft: 8, borderRadius: 2, background: "var(--uf-ink)" }} />Budget</>}
             {rows.some((r) => r.budget != null && r.now + r.due > r.budget) && <><i style={{ display: "inline-block", width: 14, height: 8, borderRadius: 2, marginLeft: 8, background: OVER }} />Over</>}
-            {rows.some((r) => r.typical) && <><i style={{ display: "inline-block", width: 16, height: 12, borderRadius: 3, marginLeft: 8, background: BAND, borderLeft: BAND_EDGE, borderRight: BAND_EDGE }} />Past months</>}
-            <InfoTip label="About past months">The shaded band is where your recent months landed by this day, leaving out the single highest and lowest. It appears once you have 3 months of history. A category with bills in Calendar counts from the first month one was paid, at today&apos;s bill amounts, so a new rent shows straight away. The black line is your budget from the Budget tab; what is left takes off bills still due this month.</InfoTip>
+            {rows.some((r) => r.typical) && <><i style={{ display: "inline-block", width: 16, height: 8, borderRadius: 99, marginLeft: 8, background: BAND }} />Past months</>}
+            <InfoTip label="About past months">The darker stretch in each bar is where your recent months landed by this day, leaving out the single highest and lowest. It appears once you have 3 months of history. A category with bills in Calendar counts from the first month one was paid, at today&apos;s bill amounts, so a new rent shows straight away. The black line is your budget from the Budget tab; what is left takes off bills still due this month.</InfoTip>
           </span>
         )}
       </div>

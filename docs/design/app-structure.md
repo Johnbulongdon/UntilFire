@@ -27,15 +27,15 @@ resize, hide and restore controls are removed; old stored layouts are ignored.
 ## The map
 
 ```
-Home                          synthesis · fixed layout
-  └ Freedom date · progress · next moves
+Home                          synthesis · fixed layout (D-108)
+  └ Today · freedom date · how far you've come · one next move · this month
 
 Money                         actual finances and operational planning
   ├ Cashflow
   │   ├ Transactions (date range, review bar, summary card, Worth a look, list)
   │   ├ Calendar (month of payments with cash by day and the invest day, or a list; recurring suggestions; D-61)
-  │   ├ Categories
-  │   └ Budget
+  │   ├ Categories (all categories · Needs & wants, D-106; phone: Budget › Needs & wants)
+  │   └ Budget (no budget yet: 50/30/20 starter, D-116)
   ├ Income (salary to take-home, pension before tax, employer money; D-59)
   ├ Net Worth
   ├ Debts
@@ -44,13 +44,12 @@ Money                         actual finances and operational planning
 
 Plan                          long-term projections and scenarios
   ├ Freedom Date
-  ├ Compare                   what if: life changes on your plan (D-69)
-  ├ Scenarios
+  ├ What if                   life changes on your plan (D-69), with
+  │                           Investing (Scenarios) one switch away (D-105)
   ├ Goals
   ├ Contributions
   ├ Explore
-  ├ Citizenship
-  └ Learn
+  └ Learn                     a quiet row under the phone's tiles (D-105)
 
 Profile                       account, household setup, FIRE personality/type,
                               give a month, creator program card (→ /invite)
@@ -65,9 +64,10 @@ Profile                       account, household setup, FIRE personality/type,
    contribution targets. An upcoming bill belongs in Money, not here merely
    because it has not happened yet.
 3. **Home** — if it interprets the other two, it goes here. Home never gets its
-   own independent financial inputs. Home has a fixed layout (D-94). One
-   exception: "Get set up" confirms payday and bills found in the bank with
-   one tap (D-101); nothing is typed on Home and the rows live in Calendar.
+   own independent financial inputs. Home has a fixed layout (D-94), Today
+   first (D-108). One exception: "Get set up", docked under the next move,
+   confirms payday and bills found in the bank with one tap (D-101); nothing
+   is typed on Home and the rows live in Calendar.
 4. **Profile** — if it's about the account rather than the money, it goes here.
 5. If a feature seems to fit two groups, it is **two features**. Split it.
 6. Every tab must be reachable from a nav array. **One array per nav — never a
@@ -154,6 +154,11 @@ browser.
 
 ## Deliberately decided
 
+- **What if is one place** (D-105). Compare (life changes) and Scenarios
+  (investment mixes) are both "try a different future", so Plan lists one
+  What if with a switch inside, not two neighbours to choose between. The
+  phone's What if adds a third part, Changes (quick moves). Citizenship stays
+  behind its release gate and is off the list until it ships.
 - **Learn is not a top-level group.** There is already a full public `/learn`
   (stages, articles, topics). A sidebar group duplicating it splits the content
   and spends a nav slot on something nobody opens the app to do. It sits inside
@@ -215,3 +220,5 @@ This is historical problem context, not a fresh audit or permission to add Home
 financial inputs. A guided setup flow remains a separate proposal: reconcile it
 with current onboarding and input ownership before implementing it. This document
 preserves current navigation; it does not authorize a redesign.
+
+31 October D-124 Home exception: Until payday supports temporary, visit-only everyday-cost and cushion adjustments. Persistent financial inputs remain in Money; this card does not edit budgets or move savings.

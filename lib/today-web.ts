@@ -1,18 +1,21 @@
 /**
  * The website's Today strip (D-73, D-89): the phone's Today list cut to the
- * kinds that need no extra screens — need or want on a recent spend, a bill
- * due tomorrow, the lease's "Stay or move?" (lib/lease.ts), the one-time Rent
- * or Mortgage question, and the closing "safe to spend today". Keys and the saved
+ * kinds that need no extra screens — the one-time "We sorted your buys" and
+ * need or want on a spend from a shop that sells both (D-106), a bill
+ * due tomorrow, the lease's "Stay or move?" (lib/lease.ts) and the one-time Rent
+ * or Mortgage question. Safe to spend today is shown beside the list, not asked
+ * (D-108); a day with nothing to answer counts once it is opened. Keys and the saved
  * progress are the phone's (mobile/src/lib/today.ts), so an answer on one
  * counts on the other and a day finished on either is counted once. Days are
  * counted, never streaked.
  */
 import { occurrences, type Bill } from "./spend-forecast.ts";
 import { leaseAsk, noticeDeadline, type LeaseDecision } from "./lease.ts";
+import { asksShop } from "./needs.ts";
 
 export interface TodayProgress { done: string[]; acks: string[] }
 
-export interface TodayRow { id: string; date: string; description: string; usd: number; category: string; tags: string[]; transaction_type: string }
+export interface TodayRow { id: string; date: string; description: string; usd: number; category: string; sub_category?: string | null; tags: string[]; transaction_type: string }
 
 /** A Rent bill with a lease on it (0059), as the strip reads it. */
 export interface TodayLease { id: string; ends_on: string; notice_days: number | null; decision: LeaseDecision | null }
@@ -20,9 +23,9 @@ export interface TodayLease { id: string; ends_on: string; notice_days: number |
 export type WebTodayItem =
   | { key: string; kind: "lease"; billId: string; deadline: string }
   | { key: string; kind: "renttag" }
+  | { key: string; kind: "sorted"; count: number }
   | { key: string; kind: "need"; row: TodayRow }
-  | { key: string; kind: "bill"; label: string; usd: number; iso: string }
-  | { key: string; kind: "number"; perDay: number | null };
+  | { key: string; kind: "bill"; label: string; usd: number; iso: string };
 
 /** The strip shows at most this many spends to sort; the phone has the rest. */
 const MAX_NEED = 2;
@@ -42,17 +45,19 @@ export function listDay(done: string[], now = new Date()): string {
   return now.getHours() < 12 && !done.includes(yesterday) && !done.includes(today) ? yesterday : today;
 }
 
-export function webTodayItems({ rows, bills, progress, perDay, leases = [], oldRentTag = false, now = new Date() }: {
+export function webTodayItems({ rows, bills, progress, leases = [], oldRentTag = false, shopRules = {}, sorted = 0, now = new Date() }: {
   /** Recent expense rows, newest first. */
   rows: TodayRow[];
   bills: Bill[];
   progress: TodayProgress;
-  /** What's safe to spend each day for the rest of the month; null without a budget. */
-  perDay: number | null;
   /** Rent bills with a lease end date. */
   leases?: TodayLease[];
   /** Anything still on the old "Rent/Mortgage" tag. */
   oldRentTag?: boolean;
+  /** "Always for this shop" answers (merchantRules), so a shop is asked once. */
+  shopRules?: Record<string, unknown>;
+  /** Bank purchases in the last 30 days: above zero, the one-time "We sorted" card shows. */
+  sorted?: number;
   now?: Date;
 }): { day: string; items: WebTodayItem[] } {
   const day = listDay(progress.done, now);
@@ -69,8 +74,11 @@ export function webTodayItems({ rows, bills, progress, perDay, leases = [], oldR
   }
   if (oldRentTag && !acked.has("renttag")) out.push({ key: "renttag", kind: "renttag" });
 
+  // Once, when bank spending first shows up; the phone's key, so it's seen on one only.
+  if (sorted > 0 && !acked.has("sorted")) out.push({ key: "sorted", kind: "sorted", count: sorted });
+
   const unsorted = rows.filter((r) => r.transaction_type === "expense" && r.date >= from && r.date <= isoDay(now)
-    && !r.tags.includes("sys:pending") && !r.tags.some((g) => g === "need" || g === "want"));
+    && !r.tags.includes("sys:pending") && asksShop(r, shopRules));
   for (const row of unsorted.slice(0, MAX_NEED)) out.push({ key: `need:${row.id}`, kind: "need", row });
 
   const tomorrow = addDays(day, 1);
@@ -79,10 +87,16 @@ export function webTodayItems({ rows, bills, progress, perDay, leases = [], oldR
     const key = `bill:${b.id}:${tomorrow}`;
     if (!acked.has(key)) out.push({ key, kind: "bill", label: b.description || "A bill", usd: b.usd, iso: tomorrow });
   }
-
-  // Always last, so a quiet day can still be finished.
-  if (!acked.has(`day:${day}`)) out.push({ key: `day:${day}`, kind: "number", perDay });
   return { day, items: out };
+}
+
+/**
+ * A quiet day counts once it is opened (D-108): with nothing to answer, today
+ * is the day to mark, if it isn't already. The phone's rule (mobile/src/lib/today.ts).
+ */
+export function quietDayToMark(done: string[], openItems: number, now = new Date()): string | null {
+  const today = isoDay(now);
+  return openItems === 0 && !done.includes(today) ? today : null;
 }
 
 /** Finished days this month, for "11 of 13 days". */

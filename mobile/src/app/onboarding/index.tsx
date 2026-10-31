@@ -1,9 +1,10 @@
 import { router } from 'expo-router'
 import { useEffect, useRef } from 'react'
-import { View } from 'react-native'
+import { Image, View } from 'react-native'
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { colors } from '@/theme/colors'
 import { Button } from '@/components/Button'
 import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
@@ -45,8 +46,7 @@ export default function Welcome() {
     else router.push('/onboarding/goal')
   }, [session, data, plan, savePlan])
 
-  // Account first (Oct 16 2026, the founder: someone who downloaded the app has
-  // already committed). Both buttons sign in; the questions follow for a new account.
+  // Restore an existing account through the real sign-in flow.
   const start = () => {
     haptic.tick()
     if (session) { router.push('/onboarding/goal'); return }
@@ -61,25 +61,25 @@ export default function Welcome() {
   }, [])
 
   return (
-    <SafeAreaView className="flex-1 bg-brand">
+    <SafeAreaView className="flex-1 bg-ground">
       <View className="flex-1 justify-between px-6 pb-4 pt-6">
         <Animated.View entering={FadeIn.duration(300)} style={{ alignItems: 'center', marginTop: 24 }}>
-          <Text className="font-display text-[30px] font-bold tracking-tight text-white">UntilFire</Text>
+          <Image source={colors.ink === '#151719' ? require('../../../assets/brand-logo.png') : require('../../../assets/brand-logo-white.png')} resizeMode="contain" style={{width:160,height:32}} accessibilityLabel="UntilFire"/>
         </Animated.View>
 
-        <Animated.View entering={FadeIn.delay(600).duration(900)}>
-          <View style={{ alignItems: 'center' }}><Sunny mood="rise" size={190} /></View>
+        <Animated.View entering={FadeIn.delay(120).duration(900)}>
+          <View style={{alignItems:'center',padding:44,borderRadius:32,backgroundColor:'#FFE58A'}}><Sunny onAccent mood="rise" size={190}/></View>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(1300).duration(700)}>
-          <Text className="font-display text-[42px] font-bold leading-[48px] tracking-tight text-white">
+        <Animated.View entering={FadeInDown.delay(250).duration(700)}>
+          <Text className="font-display text-[42px] font-bold leading-[48px] tracking-tight text-ink">
             Find the year work becomes optional.
           </Text>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(1800).duration(600)}>
-          <Button kind="onDark" label="Get started" onPress={start} />
-          <Button kind="onDarkQuiet" small style={{ marginTop: 10 }} label="I already have an account" onPress={start} />
+        <Animated.View entering={FadeInDown.delay(400).duration(600)}>
+          <Button label="Get started" onPress={()=>{haptic.tick();router.push('/onboarding/goal')}} />
+          <Button kind="quiet" style={{ marginTop: 10 }} label="I already have an account" onPress={start} />
         </Animated.View>
       </View>
     </SafeAreaView>

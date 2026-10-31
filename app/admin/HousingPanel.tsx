@@ -35,16 +35,16 @@ interface Data {
   countiesResolved: number;
 }
 
-const INK = "#19181E";
-const MUTED = "#64748B";
-const FAINT = "#94A3B8";
-const LINE = "#E2E8F0";
-const GOOD = "#059669";
+const INK = "var(--uf-ink)";
+const MUTED = "var(--uf-ink-2)";
+const FAINT = "var(--uf-ink-3)";
+const LINE = "var(--uf-border)";
+const GOOD = "var(--uf-pos)";
 const BAD = "#DC2626";
 const WARN = "#B45309";
 
 const money = (n: number | null) => (n == null ? "—" : "$" + n.toLocaleString("en-US"));
-const MONO = "'DM Mono', monospace";
+const MONO = "'Inter', monospace";
 
 export default function HousingPanel({ token }: { token: string }) {
   const [data, setData] = useState<Data | null>(null);
@@ -96,7 +96,7 @@ export default function HousingPanel({ token }: { token: string }) {
   const spread = rents.length ? Math.max(...rents) / Math.min(...rents) : null;
 
   return (
-    <div style={{ background: "#fff", border: `1px solid ${LINE}`, borderRadius: 12, padding: 18, marginBottom: 20 }}>
+    <div style={{ background: "var(--uf-card)", border: `1px solid ${LINE}`, borderRadius: "var(--uf-r-card)", padding: 18, marginBottom: 20 }}>
       <h2 style={{ fontSize: 15, fontWeight: 800, color: INK, margin: "0 0 2px" }}>Housing — HUD Fair Market Rents</h2>
       <p style={{ fontSize: 12.5, color: MUTED, margin: "0 0 14px", lineHeight: 1.6 }}>
         Rent by county, at the 40th percentile paid by recent movers &mdash; what someone planning a
@@ -110,7 +110,7 @@ export default function HousingPanel({ token }: { token: string }) {
           disabled={busy}
           style={{
             fontSize: 14, fontWeight: 700, padding: "10px 18px", borderRadius: 8,
-            border: "none", background: busy ? "#A7F3D0" : GOOD, color: busy ? "#065F46" : "#fff",
+            border: "none", background: busy ? "#A7F3D0" : GOOD, color: busy ? "#151719" : "#fff",
             cursor: busy ? "default" : "pointer", fontFamily: "inherit",
           }}
         >
@@ -150,7 +150,7 @@ export default function HousingPanel({ token }: { token: string }) {
         <div style={{ overflowX: "auto", marginTop: 16 }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 680 }}>
             <thead>
-              <tr style={{ textAlign: "left", color: FAINT, background: "#F8FAFC" }}>
+              <tr style={{ textAlign: "left", color: FAINT, background: "var(--uf-ground)" }}>
                 {["City", "2BR / mo", "County", "Studio", "1BR", "3BR", "4BR", ""].map((h, i) => (
                   <th key={i} style={{ padding: "8px 10px", fontWeight: 700, fontSize: 11, textTransform: "uppercase", whiteSpace: "nowrap" }}>{h}</th>
                 ))}

@@ -53,14 +53,14 @@ ok("Plaid rent arrives tagged Rent, a mortgage as Mortgage", () => {
 
 ok("the website's Today strip asks the lease and the old tag first, with the phone's keys", () => {
   const at = new Date("2027-01-10T15:00:00");
-  const base = { rows: [], bills: [], perDay: null, now: at };
+  const base = { rows: [], bills: [], now: at };
   const leases = [{ id: "b1", ends_on: "2027-03-31", notice_days: null, decision: null }];
   const { items } = webTodayItems({ ...base, progress: { done: [], acks: [] }, leases, oldRentTag: true });
-  assert.deepEqual(items.map((i) => i.key), ["lease:b1:2027-03-31:first", "renttag", "day:2027-01-10"]);
+  assert.deepEqual(items.map((i) => i.key), ["lease:b1:2027-03-31:first", "renttag"]);
   const answered = webTodayItems({ ...base, progress: { done: [], acks: ["lease:b1:2027-03-31:first", "renttag"] }, leases, oldRentTag: true });
-  assert.deepEqual(answered.items.map((i) => i.kind), ["number"]);
+  assert.deepEqual(answered.items, [], "answered: nothing left, so the day counts on opening (D-108)");
   const renewed = webTodayItems({ ...base, progress: { done: [], acks: [] }, leases: [{ ...leases[0], decision: "renew" as const }] });
-  assert.deepEqual(renewed.items.map((i) => i.kind), ["number"]);
+  assert.deepEqual(renewed.items, []);
 });
 
 console.log(`\n${n} lease checks passed`);

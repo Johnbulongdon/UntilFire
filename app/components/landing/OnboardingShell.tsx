@@ -14,7 +14,7 @@ export const ONBOARDING_CSS = `
   .uf-ob { width: 100%; max-width: 540px; margin: 0 auto; padding: 16px 24px 0; position: relative; z-index: 1; display: grid; gap: 16px; }
   .uf-ob-head { display: grid; grid-template-columns: 36px minmax(0, 1fr) 44px; align-items: center; gap: 10px; min-height: 36px; }
   .uf-ob-bar { display: grid; gap: 5px; }
-  .uf-ob-bar span { height: 4px; border-radius: 9px; background: var(--uf-surface-2); transition: background 400ms ${ease}; }
+  .uf-ob-bar span { height: 4px; border-radius: 9px; background: var(--uf-surface-2); transition: background 250ms ${ease}; }
   .uf-ob-bar span.on { background: var(--uf-teal); }
   .uf-iconbtn { width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center; border: 1px solid var(--uf-border); background: var(--uf-card); color: var(--uf-ink-2); cursor: pointer; padding: 0; }
   .uf-iconbtn:hover { color: var(--uf-ink); background: var(--uf-surface); }
@@ -24,7 +24,7 @@ export const ONBOARDING_CSS = `
   .uf-scene { position: relative; border-radius: 22px; overflow: hidden; aspect-ratio: 350 / 210; background: var(--uf-bg); }
   .uf-scene-tag { position: absolute; left: 14px; top: 14px; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px 7px 10px; border-radius: 999px;
     background: var(--uf-card); box-shadow: var(--uf-e1); font: 600 13px var(--uf-font); color: var(--uf-ink); max-width: calc(100% - 28px);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: ufPop 420ms ${ease} both; transform-origin: left center; }
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: ufPop 250ms ${ease} both; transform-origin: left center; }
   .uf-cloud { animation: ufDrift 9s ease-in-out infinite alternate; }
   .uf-cloud-2 { animation-duration: 13s; animation-direction: alternate-reverse; }
   @keyframes ufDrift { from { transform: translateX(-12px); } to { transform: translateX(14px); } }

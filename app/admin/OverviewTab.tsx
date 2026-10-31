@@ -24,7 +24,7 @@ export default function OverviewTab({ token }: { token: string }) {
   }, [token]);
 
   if (error) return <p style={{ color: "#DC2626" }}>{error}</p>;
-  if (!data) return <p style={{ color: "#64748B" }}>Loading&hellip;</p>;
+  if (!data) return <p style={{ color: "var(--uf-ink-2)" }}>Loading&hellip;</p>;
 
   const cards = [
     { label: "Total users", value: data.totalUsers },
@@ -39,9 +39,9 @@ export default function OverviewTab({ token }: { token: string }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12 }}>
       {cards.map((c) => (
-        <div key={c.label} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "18px 16px" }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>{c.label}</div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: "#19181E" }}>{c.value}</div>
+        <div key={c.label} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-card)", padding: "18px 16px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-ink-3)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>{c.label}</div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-ink)" }}>{c.value}</div>
         </div>
       ))}
     </div>

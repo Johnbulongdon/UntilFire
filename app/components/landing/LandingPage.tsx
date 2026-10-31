@@ -10,9 +10,9 @@ import { PRO_ANNUAL_LABEL, PRO_MONTHLY_LABEL, REFERRED_TRIAL_LABEL, TRIAL_LABEL 
 import { REAL_RETURN, yearsToTarget } from "@/lib/fire/strategies/traditional";
 
 
-const F = "'Manrope', sans-serif";
-const SERIF = "'Instrument Serif', Georgia, 'Times New Roman', serif";
-const MONO = "'DM Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
+const F = "'Inter', sans-serif";
+const SERIF = "'Inter', Georgia, 'Times New Roman', serif";
+const MONO = "'Inter', ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
 
 /* The calculator's own projection (lib/fire): REAL_RETURN growth, 25x annual spending. */
 function monthsToTarget(startBalance: number, monthlySave: number, target: number): number {
@@ -465,6 +465,36 @@ function FooterSection() {
         <details className="uf7-listings" open>
           <summary>Directory partners</summary>
           <div className="uf7-listings-badges" aria-label="Directory badges">
+          <a
+            href="https://saascubes.com"
+            target="_blank"
+            rel="noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://saascubes.com/images/badges/badge-dark.png"
+              alt="Listed on SaaS Cubes"
+              width={175}
+              height={54}
+              loading="lazy"
+            />
+          </a>
+          <a
+            href="https://toolcurio.com"
+            target="_blank"
+            rel="noopener"
+            style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://toolcurio.com/badge-light.png"
+              alt="Featured on Toolcurio"
+              width={200}
+              height={54}
+              loading="lazy"
+            />
+          </a>
           <a
             href="https://www.founder.best/products/untilfire?ref=founderbest"
             target="_blank"

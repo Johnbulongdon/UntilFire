@@ -1,206 +1,78 @@
-# UntilFire Design System — v3 Warm
+# UntilFire Design System — Next Horizon
 
-Agreed with John on 2026-08-27 (v3 Warm; the system itself landed 2026-08-26). This is the default for all design and all code
-from here on. Tokens live in `app/globals.css`; primitives live in
-`components/ui/`.
+Approved by John, 29 October 2026. This replaces the v3 Warm presentation across the website, native app, public pages and admin. Historical choices remain in the decision log; this file defines the current visual contract.
 
-It exists because the app had no system, only a memory of one — each screen was
-built by approximating the last. Measured before this document: **44 font sizes,
-23 border radii, 25 spacing values, 8 greens, 302 hand-rolled buttons, 0 shared
-components.** Two fonts (Syne, DM Sans) were referenced but never loaded, so
-they had never rendered.
+## Brand
 
-The visual language is **v3 Warm**, chosen from four directions explored on
-2026-08-27.
+Black sunrise and winding path, paired with the outlined Inter UntilFire wordmark. Masters and exports live in `public/brand/`; compatible legacy logo URLs resolve to the new artwork. Use the supplied geometry, never redraw the mark or typeset an approximate lockup. Black artwork on light/yellow; white artwork on charcoal. Keep one mark-height of clear space. Do not distort, rotate, add shadows or gradients.
 
-## The one rule
+## Colours
 
-> **Green acts. Teal means freedom.**
-
-Green (`--uf-green`) identifies primary actions and action links. Neutral
-secondary/ghost controls and red destructive actions (`--uf-neg`) are valid,
-as implemented by `Button`; not every interactive affordance must be green.
-Use labels, icons, or other cues as well as color to communicate meaning.
-
-Teal (`--uf-teal`) is reserved for **progress toward the freedom date** — the
-freedom date itself, progress bars, "2.4 years earlier", time saved. Teal never
-appears on a button and never means generic success (that's `--uf-pos`).
-
-The point is that teal carries meaning. Whenever someone sees it, it says *you
-moved closer*. Spending it on decoration destroys the only colour in the product
-that means something.
-
-## Decisions
-
-| | Decision |
+| Role | Hex |
 | --- | --- |
-| **Ground** | Warm cream `#FDF8F1`, light default; warm dark `#16120D` via `.dark`, every route |
-| **Display** | Fraunces — freedom date, page titles, h1/h2. Display sizes only |
-| **Body** | Manrope — everything h3 and below |
-| **Data** | DM Mono, tabular numerals — financial figures, dates, percentages; prominent freedom-date display uses Fraunces |
-| **Marketing serif** | Instrument Serif — landing page and HomeClient hero only |
+| Ink / primary action | #151719 |
+| Freedom / main accent | #FFE58A |
+| Mint | #E3F7EF |
+| Lilac | #EEE9FA |
+| Blue | #E8F3FF |
+| Pink | #FBE7F2 |
+| Ground | #F8F8FB |
+| Card | #FFFFFF |
+| Secondary ink | #5C6170 |
 
-Money apps are cold; this one deliberately isn't. Neutrals are **warm all the way
-down** — ink is `#221B12`, not black — and shadows are warm too
-(`rgba(120,80,30,…)`). Dark mode keeps the warmth: a warm near-black, not the
-usual blue-black, so the personality survives the toggle.
+Pastels group content. They do not replace positive, warning or negative financial meanings. Use black text on pastel cards in either theme. Dark mode uses charcoal surfaces, readable light ink and the same accents. Legacy `green` and `teal` token names remain compatibility aliases; they no longer mandate those hues.
 
-Radius is generous (12 control / 20 card / 28 modal) and buttons are full pills.
+## Category fills — lighter palette B
 
-### Why teal for freedom
+Approved 29 October: blue `#B9D9F7`, peach `#FFD4B8`, mint `#BCE9DA`, yellow `#FFE58A`, pink `#F4CEE3`, lime `#CDE6AE`, lilac `#D9CEF3`, rose `#F7C6CB`, neutral `#DED8CD`. Shared source: `lib/categories.ts`, used by web and phone. Use readable theme ink for labels; category fills are not text colors. Keep semantic loss/shortfall ink and patterns. Legacy saved hues map to their matching pastel family at display time without changing stored financial data.
 
-Green is taken (acts), red is taken (negative), amber is taken (warning). Teal is
-the only cool note in a warm system — and that contrast is the argument *for* it:
-the colour that doesn't belong to the warm world is the one that means escape
-from it. It also collides with nothing, and it's the brand colour already in use.
+## Type and shape
 
-Gold was considered and rejected: it sits next to the warning amber, so a
-"2.4 years earlier" badge and a "due in 5d" badge read as the same temperature in
-the same Cashflow list.
+Inter 400, 500, 600, 700, 800, bundled locally on web and native. Tabular numerals for financial values. Clear bold headings, short labels, one idea per card. Rounded cards 24–28px; black pill actions; equal full-width welcome actions on phone. No serif display typography, heavy button lips, mascot, decorative glow or media-player controls.
 
-### Illustration colour
+## Journey
 
-`--uf-sun` and `--uf-sun-soft` exist only for the onboarding scene's sun and
-path (D-50). They are not a fourth semantic colour: never use them for buttons,
-text, numbers or status.
+Goal → City → Pay frequency → Monthly income → Monthly expenses/saved → Saved and invested → Age → Worry → Housing → Investing → Freedom date → Life → Freedom number → Monthly picture → Try one improvement → Save account → Home. Optional questions allow Skip. Required money fields accept explicit numbers. Preserve the real projection, currency conversion and account saving; example data is labelled and only belongs on public examples.
 
-`--uf-bronze`, `--uf-silver`, `--uf-gold` and their `-deep` partners exist only
-for the freedom badge medals in Explore (D-67, `app/explore/Medal.tsx`). They
-draw an object, so they stay the same in both themes, and a medal never carries
-meaning by colour alone: it has its stars, and its label on hover or once a city
-is opened. Placeholder art; a drawn medal can replace the disc later.
+Monthly savings is the default. A single improvement button says Use updated plan when changed and Use original plan at its original amount. No assumptions links or Change my answers prompt at the final review; inputs remain editable after Home. Bank connection remains optional after value. Typical city savings is a research to-do, never invented data.
 
-### Sunny and the drawn icons (app)
+## Motion and accessibility
 
-The iOS app has a character, **Sunny** (the logo sun with a face, D-76), and its
-own two-tone icon set. Sunny is drawn in its fixed warm palette in both themes,
-like the medals: it is an object, not a status colour, and never the only
-carrier of meaning (every Sunny moment has its words). Use `EmptyState` for any
-empty or error screen, and `Icon` names from `components/icon-set.tsx` before an
-SF Symbol or emoji. Emoji stay only where a person picked them.
+Short coordinated transitions and reactions; reduced-motion support; numeric focus must survive edits. Keyboard access, labelled inputs, visible focus and sufficient contrast remain required. Use flexible layouts at 390px and desktop widths; never hide actual content behind a mock toolbar.
 
-### Contrast
+## Release
 
-Badge text is 11px and needs 4.5:1 contrast. Use the `--uf-*-ink` variants
-instead of assuming base brand colors work at that size. Verify the actual
-foreground/background combinations in both themes when changing colors.
-Target WCAG 2.2 AA; these tokens are not proof of current app-wide compliance.
+This migration is reviewed on `codex/next-horizon-rebrand`, based on origin/main d8ad674a71fddf284a96718ea8be7c3b30c57a2b. It is not a production release. Keep money logic and current security work separate. Native icon/splash changes need a store build and a separately authorized phone release.
 
-## Scales
+## Until payday — C
 
-Use these for new layouts. Existing shared primitives have bounded internal
-exceptions below; those are not extra general-purpose scale steps.
+Approved 29 October: show future cash from today to payday at real date spacing, with one readout above the chart and individually selectable bills. Mouse movement and horizontal touch dragging inspect points. Keep keyboard/screen-reader adjustment and Previous/Next buttons. No visible range slider, stacked category icons or +N aggregation. Keep Money navigation separate from inspection. Negative cash keeps an explicit shortfall label and zero reference. Shared presentation helpers: lib/payday-chart.ts. Money calculations remain lib/payday-line.ts / Until payday D-90; no changes to amounts or saved data.
 
-| Scale | Steps | Was |
-| --- | --- | --- |
-| Type | 56 · 34 · 24 · 18 · 16 · 14 · 13 · 11 | 44 sizes |
-| Space | 4 · 8 · 12 · 16 · 24 · 32 · 48 | 25 values |
-| Radius | 12 control · 20 card · 28 modal · 999 pill | 23 values |
-| Elevation | e1 · e2 · e3 | ad hoc |
-| Weight | 400 · 500 · 600 · 700 · 800 | 7 — kept |
+## Browser interaction and motion
 
-Type classes are in `globals.css`: `.uf-t-display`, `.uf-t-h1`, `.uf-t-h2`,
-`.uf-t-h3`, `.uf-t-lead`, `.uf-t-body`, `.uf-t-small`, `.uf-t-label`,
-`.uf-t-data`.
+Short feedback, not constant movement: 120–160ms hover/press, 180ms disclosures, 240ms section/result entry, up to 300ms question choreography. Preserve focused fields, original answers and financial values. Animate section containers without remounting their editors. Respect system reduced motion and cancel active section motion if that preference changes. Decorative onboarding panels collapse at narrow widths; useful monthly numbers stay. Loading placeholders announce loading and never display invented balances. Public example controls are clearly labelled and use the existing engine; they do not save to an account.
 
-### Bounded primitive exceptions
+## Browser calendar — marked dates B
 
-Keep existing component sizing when reusing primitives: `Button` uses 15px
-large text and padding of 8px/16px (sm), 11px/22px (md), and 14px/28px (lg).
-`Stat` uses a 20px medium value, 12px delta text, and 5px internal spacing.
-These component-specific values are not permission to invent page-level sizes
-or rewrite UI during documentation work. Review and document new exceptions
-at the primitive level. `Button`'s primary label uses `--uf-card`, not white:
-white on the dark theme's green (`#2FA383`) is 3.1:1, under the 4.5:1 its
-text needs, while `--uf-card` is 4.5:1 on the light green and 5.5:1 on the
-dark one. Reuse `Button` (or that colour) for green-filled actions rather
-than inventing an `--uf-on-green` token. `Logo variant="auto"` belongs on
-any surface that follows the theme; `light` and `dark` are for surfaces that
-stay one colour in both themes.
+Transactions calendar and Money → Calendar use the same marked month: Sunday-first, quiet date cells, pastel category payment labels, yellow incoming-payment labels and full selected-day details below. Keep every same-day payment. Narrow cells use compact amounts in the display currency, with exact amounts in accessible labels and details. Keep line/bars alternatives and the existing recorded/expected distinction, recurrence sources and cash/contribution actions. This browser presentation does not change native money logic or release the phone app.
 
-## The primitives
+Calendar clarification (29 October): only scheduled bills and income/payday appear in date cells and selected-day details. Do not fill the calendar with bank transactions. Preserve original occurrence dates as today advances. Forecast catch-up dates are for cash planning only, never for calendar placement.
 
-```tsx
-import { Button, Card, Field, Input, Badge, Stat } from "@/components/ui";
-```
+## Public landing — connected example (30 October 2026)
 
-- **Button** — `primary | secondary | ghost | danger` × `sm | md | lg`.
-  Only one `primary` per screen. If two things are both primary, one isn't.
-- **Card** — `flat | raised | float`.
-- **Field / Input / Select** — labelled control with hint and error.
-  Pass `numeric` on anything holding a figure.
-- **Badge** — `positive | negative | warning | freedom | muted`.
-- **Stat** — label, figure, delta. The shape you render on nearly every screen.
-- **InfoTip** — a small "i" that shows an explanation on hover, focus or tap.
-  Where a sentence would explain a number, put it here instead (rule 7).
+John selected original landing option 2, with space reserved for directory badges. Use a centered hero, three pastel product regions (monthly picture, freedom projection, marked bills calendar), a single connected preview without Home/Money/Plan selectors and a separate extra-income-saved scenario. Keep public examples explicitly labeled and separate from saved accounts. Use the shared calculation helper, whole monthly amounts and the established logo/palette/type. Preserve all directory verification links and images in a wrapping Listed on tray near the footer, with readable link fallbacks when images fail. Preserve pricing, metadata, useful calculator/city navigation and the existing onboarding entry. John subsequently requested no landing FAQ or article appendage: end with grouped navigation and legal links, after the badge tray; keep detailed explanations on existing Learn/calculator pages. Remove FAQ schema when removing the FAQ. Implemented on `codex/landing-connected-preview`; review and publication pending.
 
-Category colours are `COLOR_PALETTE` in `lib/categories.ts`: eight hues
-checked for colour-blind separation and contrast on the cream and warm-dark
-cards, plus a neutral for Other (D-31). They mark identity only, always next
-to a label or emoji; charts show the top six categories and fold the rest.
+Landing closing section follow-up: make the free starting plan a full mint invitation with an included-plan visual and a working onboarding action, using library icons and the approved logo. Keep Pro prices secondary and badges compact; preserve the rest of the approved landing.
 
-## Rules for new code
+Landing conversion selection: Include 1 (hero message), 2 (reassurance), 3 (multiple rotating user stories); skip 4 (founder) and 5 (savings-result redesign). Use genuine attributed quotes and approved portraits, never fabricated testimonials. Until supplied, the public story list is empty/hidden; localhost ?preview-stories=1 previews four visibly labeled placeholder cards. Superseded: the one-card rotator was rejected. Follow the approved compact multi-card mock: continuous right-to-left rail, three visible cards plus a next-card glimpse on desktop, one plus a glimpse on phone, drag/swipe and previous/pause/next. Pause on hover/focus and with reduced motion. Membership duration is optional and computed only from an approved date. Human presentation comes from real attribution and portraits when supplied.
 
-1. **Never hand-roll** a button, card, labelled input, status pill, or
-   label-figure-delta block. Use the primitive.
-2. **Never write a hex colour.** Use a token. A colour you can't find a token
-   for is a colour that needs a token, not a literal.
-3. **Use the scales** for layout, retaining documented primitive exceptions.
-4. **Financial data uses DM Mono** with tabular numerals — currency, dates,
-   percentages, table columns, and `Stat` values. The prominent freedom-date
-   display is the deliberate Fraunces exception; a date in a table or `Stat`
-   remains data, including when its tone is `freedom`.
-5. **Teal is not a button.** See the one rule.
-6. **Both themes, always.** Use tokens, then verify light and dark rendering;
-   tokens alone do not guarantee contrast, hierarchy, or correct states.
-7. **Doing screens stay short.** On screens where people act (the free
-   calculator and result, calculator tools, Home and Plan), write a headline of
-   8 words or fewer and at most one supporting line, then a number, visual or
-   button. Use a label rather than a sentence. Put explanations and sources
-   behind a tap ("Change", "Sources", a selected row's detail). Show with a
-   number, bar or dots what would otherwise be a sentence. Reading pages
-   (articles, city guides, the text below a calculator) may run long for search.
-   The founder set this on 2026-09-26 after comparing the site with Duolingo
-   and Liftoff. Before, result steps ran 38–130 words and the growth list 248.
-8. **Fixed money words.** Money coming in is **Income**, money going out is
-   **Expenses**, the difference is **Saved** (and its share of income the
-   savings rate), and the two kinds of expense are **Needs** and **Wants**.
-   Not Earned, Spent, In, Out or Money in/out, in any label, chip, key,
-   tooltip or email. The founder set this on 2026-10-06 after the
-   Transactions page said Spent/Earned in one place and In/Out in another.
-   Headings and labels for money going out say Expenses; "spending" stays
-   for prose and onboarding questions ("What do you spend a month?").
-9. **Sentence case and one name per thing.** Labels, headings and buttons are
-   sentence case ("Total debts", not "Total Debts"). Menu names (Net Worth,
-   Expat FIRE, Freedom Date) and badge names are names and keep theirs. A
-   thing has one name everywhere: the FIRE number (not target or freedom
-   number), Upcoming payments (not expected payments), Debts (not
-   liabilities). Amounts in copy use the display currency, never a typed "$".
-10. **Counts, not streaks.** Progress is a count ("4 of 6 months on plan",
-   "18 of 30 days complete"), never a run to protect or lose (D-73).
+Approved review-rail visual target: exec-30a09b8a-4004-4fc8-87de-a5f7ed32b35a.png from the task generated-images folder. Keep the section on the page base, using individual lilac, butter, mint and blue cards; no giant enclosing lilac panel. Fictional sample portraits and quotes match the local concept and remain behind the explicit localhost preview flag. The public approved story list remains empty pending genuine testimonials. Generated demo portrait asset: public/landing/testimonial-demo-portraits.webp, built-in ImageGen, four fictional candid portraits, never real customers.
 
-## Interaction and verification
+Final review-rail refinement (30 October): remove all visible arrow/playback buttons and progress dots. Preserve continuous scrolling, hover/focus pause, card tap/click pause/resume, swipe/drag, Space pause/resume and arrow-key browsing. Reduced motion stops auto-scroll. Keep membership dates optional and approved. The labeled fictional demo is local-only; genuine public stories remain pending.
 
-Follow the shared checks in `AGENTS.md`: labeled inputs and associated errors,
-keyboard access, visible focus, appropriate touch targets, reduced motion, and
-meaning beyond color. Browser QA includes 390px and 1280px viewports, overflow
-checks, expected states, and touch interaction where applicable. Use available
-tooling rather than assuming fixed browser installation paths.
+Landing refinement approved 30 October: the current hero wording is locked. Phone spacing is tighter with unboxed reassurance; savings interaction gets a direct drag prompt and short reduced-motion-aware result feedback. Free/Pro bank allowances are visual tiles (one vs unlimited) using existing pricing constants. Footer directory badges are small grayscale links with full-color hover/focus, preserved image URLs/attributes and no enclosing promotional panel.
 
-Navigation follows `docs/design/app-structure.md`: Money includes operational
-budgets and upcoming payments as well as recorded finances; Plan handles
-long-term projections and scenarios. Home owns no independent financial inputs,
-and its card layout is fixed (D-94).
+Approved global-planning chapter: light mint/lilac interactive globe with yellow accent, city markers and short city-selection buttons; Different cities. Different living costs. See what could work for you. No currency pills or banking coverage promise. Example annual USD costs use the existing city dataset. Approved backdrop motion uses the existing artwork, no moving content, pointer and scroll response, a brief entrance and reduced-motion fallback.
 
-## Migration
-
-No freeze, no big-bang refactor. Existing screens carry ~2,000 hardcoded hex
-values and they keep working — `globals.css` maps the old token names
-(`--uf-card`, `--uf-text`, `--uf-bg`) onto the new ones as aliases.
-
-**Adopt on touch:** when you're already editing a file, migrate the parts you
-touched. New surfaces use the system from the start.
-
-The Plan lever panel, the Cashflow redesign and the debt roadmap are all new
-surfaces — they should be built entirely on these primitives, and they're the
-reason this landed before them rather than after.
+## Remaining web surfaces — 31 October 2026
+Explore city cards use mint, dark ink and yellow amount badges. Referral hero/closing bands use lilac/mint with fixed dark ink. Portfolio tools use shared theme tokens and supplied logo; exported graphics and the printable freedom report use the fixed light Next Horizon palette. Admin uses theme-aware panels, pill navigation/actions and readable fields. Import and budget dialogs inherit shared surfaces and semantic status ink rather than hard-coded dark backgrounds. Keep chart series and financial meaning distinguishable.

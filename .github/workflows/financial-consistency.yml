@@ -1,0 +1,21 @@
+name: Financial consistency
+on:
+  pull_request:
+jobs:
+  calculations:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:financial-consistency
+      - run: npm run test:money-rules
+      - run: npm run test:safety-cash
+      - run: npm run test:plan-freedom-date
+      - run: npm run test:account-currency
+      - run: npm run test:fire-projection
+      - run: npm run test:payday-spending
+      - run: npm run test:marked-calendar

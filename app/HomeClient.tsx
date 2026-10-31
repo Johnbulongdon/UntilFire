@@ -40,7 +40,8 @@ import {
   setAcquisitionSource,
 } from "@/lib/acquisition";
 import Nav from "@/app/components/landing/Nav";
-import LandingPage from "@/app/components/landing/LandingPage";
+import BrandedIntake from "@/app/components/landing/BrandedIntake";
+import LandingPage from "@/app/components/landing/NextHorizonLanding";
 import CityScreen, { type CityState } from "@/app/components/landing/CityScreen";
 import OnboardingShell, { ONBOARDING_CSS } from "@/app/components/landing/OnboardingShell";
 import type { SceneIcon } from "@/app/components/landing/OnboardingScene";
@@ -790,8 +791,8 @@ function ShareModal({
             </div>
           ) : (
             <>
-              <div className="uf-share-card-number" style={{ fontSize: selectedCard === "year" && retireYear ? 42 : 28, lineHeight: 1.1, color: selectedCard === "year" ? "#62FAE3" : undefined }}>{effectiveShareTitle}</div>
-              <div className="uf-share-card-meta" style={{ fontSize: 15, color: selectedCard === "year" ? "rgba(255,255,255,0.75)" : "#62FAE3", fontWeight: selectedCard === "year" ? 500 : 800, lineHeight: 1.35 }}>{effectiveShareBody}</div>
+              <div className="uf-share-card-number" style={{ fontSize: selectedCard === "year" && retireYear ? 42 : 28, lineHeight: 1.1, color: selectedCard === "year" ? "#FFE58A" : undefined }}>{effectiveShareTitle}</div>
+              <div className="uf-share-card-meta" style={{ fontSize: 15, color: selectedCard === "year" ? "rgba(255,255,255,0.75)" : "#FFE58A", fontWeight: selectedCard === "year" ? 500 : 800, lineHeight: 1.35 }}>{effectiveShareBody}</div>
               {selectedCard === "benchmark" ? (
                 <div className="uf-share-card-benchmark-stat">
                   <span>{benchmark.savingsRate}% saved</span>
@@ -935,8 +936,8 @@ function FireGrowthChart({ data, extraSavings, baseRetireYear, boostedRetireYear
           {currentAge ? `${currentAge + y}` : (y === 0 ? "Today" : `+${y}y`)}
         </text>
       ))}
-      <line x1={padL} x2={W - padR} y1={fireY} y2={fireY} stroke="#059669" strokeWidth="1.2" strokeDasharray="2 4" />
-      <text x={W - padR} y={fireY - 8} textAnchor="end" fontSize="10" fontWeight="700" fill="#059669">
+      <line x1={padL} x2={W - padR} y1={fireY} y2={fireY} stroke="#17684B" strokeWidth="1.2" strokeDasharray="2 4" />
+      <text x={W - padR} y={fireY - 8} textAnchor="end" fontSize="10" fontWeight="700" fill="#17684B">
         FIRE · {fmtFire(data.fireTarget)}
       </text>
       <path d={toAreaPts(data.basePts)} fill="url(#fg-base)" />
@@ -995,7 +996,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
   // The age at freedom, rounded as on the dashboard (D-65), so both say the same age.
   const freedomAge = result.years === null ? null : freedomAgeAt(planningAge, result.years);
   const pctThere = result.fireTarget > 0
-    ? Math.max(0, Math.min(100, Math.round((portfolioBalance / result.fireTarget) * 100)))
+    ? Math.max(0, Math.round((portfolioBalance / result.fireTarget) * 100))
     : 0;
 
   // Fire the reveal funnel event once per mount, tied to the user reaching a result.
@@ -1046,7 +1047,7 @@ function RevealScreen({ city, income, savings, stateKey, currency = "USD", curre
 
   const symbol = getCurrencySymbol(currency);
   const formatCompact = (n: number) => {
-    const v = Math.max(0, n);
+    const v = Math.max(0, n) * (FALLBACK_RATES[currency] ?? 1);
     if (v >= 1_000_000) return `${symbol}${(v / 1_000_000).toFixed(2)}M`;
     if (v >= 1_000) return `${symbol}${Math.round(v / 1000)}k`;
     return `${symbol}${Math.round(v)}`;
@@ -1254,6 +1255,7 @@ export default function HomeClient() {
       return;
     }
     landingTracked.current = false;
+    if (screen !== "reveal") return;
     const stepMap: Partial<Record<Screen, CalculatorStepId>> = {
       city: "city",
       income: "income",
@@ -1290,7 +1292,7 @@ export default function HomeClient() {
 
         :root {
           --bg: var(--uf-ground);
-          --bg-hero: #003527;
+          --bg-hero: var(--uf-yellow);
           --bg-card: var(--uf-card);
           --bg-elevated: var(--uf-surface);
           --border: var(--uf-border);
@@ -1306,9 +1308,9 @@ export default function HomeClient() {
           --teal-dim: var(--uf-teal-soft);
           --danger: var(--uf-neg);
           --purple: #a78bfa;
-          --font-display: 'Manrope', sans-serif;
-          --font-body: 'Manrope', sans-serif;
-          --font-mono: 'Manrope', sans-serif;
+          --font-display: var(--uf-font);
+          --font-body: var(--uf-font);
+          --font-mono: 'Inter', sans-serif;
         }
 
         body { background: var(--bg); color: var(--text); font-family: var(--font-body); min-height: 100vh; }
@@ -1395,7 +1397,7 @@ export default function HomeClient() {
         .uf-btn-outline { height: 44px; padding: 0 16px; border-radius: 10px; cursor: pointer; background: var(--bg-card); border: 1px solid var(--border); color: var(--text); font-size: 13px; font-weight: 600; font-family: inherit; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s, border-color 0.15s; text-decoration: none; justify-content: center; }
         .uf-btn-outline:hover { background: var(--bg-elevated); border-color: var(--text-dim); }
         .uf-btn-dark { height: 44px; padding: 0 20px; border-radius: 10px; background: #003527; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; transition: background 0.15s, transform 0.15s; }
-        .uf-btn-dark:hover { background: #065F46; transform: translateY(-1px); }
+        .uf-btn-dark:hover { background: #151719; transform: translateY(-1px); }
         .uf-nav-row { margin-top: 32px; display: flex; gap: 12px; }
 
         /* -- INPUTS -- */
@@ -1532,7 +1534,7 @@ export default function HomeClient() {
         .uf-preview-card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 24px; backdrop-filter: blur(4px); }
 
         /* Stats strip below hero */
-        .uf-hero-strip { width: 100%; background: #064E3B; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-around; padding: 20px 48px; }
+        .uf-hero-strip { width: 100%; background: #151719; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-around; padding: 20px 48px; }
         .uf-hero-strip-item { text-align: center; }
         .uf-hero-strip-val { font-size: 28px; font-weight: 800; color: #fff; letter-spacing: -0.4px; }
         .uf-hero-strip-lab { font-size: 11px; color: rgba(255,255,255,0.5); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-top: 2px; }
@@ -1540,10 +1542,10 @@ export default function HomeClient() {
         /* Entrance animations */
         @keyframes heroEnter { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
         .uf-hero--mounted .uf-live-counter { animation: heroEnter 0.5s cubic-bezier(0.22,1,0.36,1) 0s both; }
-        .uf-hero--mounted .uf-badge        { animation: heroEnter 0.65s cubic-bezier(0.22,1,0.36,1) 0.08s both; }
-        .uf-hero--mounted .uf-h1           { animation: heroEnter 0.65s cubic-bezier(0.22,1,0.36,1) 0.20s both; }
-        .uf-hero--mounted .uf-body         { animation: heroEnter 0.65s cubic-bezier(0.22,1,0.36,1) 0.32s both; }
-        .uf-hero--mounted .uf-hero-ctas    { animation: heroEnter 0.65s cubic-bezier(0.22,1,0.36,1) 0.44s both; }
+        .uf-hero--mounted .uf-badge        { animation: heroEnter 0.3s cubic-bezier(0.22,1,0.36,1) 0.08s both; }
+        .uf-hero--mounted .uf-h1           { animation: heroEnter 0.3s cubic-bezier(0.22,1,0.36,1) 0.20s both; }
+        .uf-hero--mounted .uf-body         { animation: heroEnter 0.3s cubic-bezier(0.22,1,0.36,1) 0.32s both; }
+        .uf-hero--mounted .uf-hero-ctas    { animation: heroEnter 0.3s cubic-bezier(0.22,1,0.36,1) 0.44s both; }
         .uf-hero--mounted .uf-social-proof { animation: heroEnter 0.55s cubic-bezier(0.22,1,0.36,1) 0.52s both; }
         .uf-hero--mounted .uf-hero-preview { animation: heroEnter 0.70s cubic-bezier(0.22,1,0.36,1) 0.28s both; }
         .uf-hero--mounted .uf-hero-strip   { animation: heroEnter 0.50s cubic-bezier(0.22,1,0.36,1) 0.60s both; }
@@ -1678,9 +1680,9 @@ export default function HomeClient() {
         }
         .uf-reveal-ring { animation: ringDrift var(--ring-dur,16s) ease-in-out var(--ring-delay,0s) infinite; }
         .uf-stage-chip-anim { animation: chipPulse 3s ease-in-out 1.4s infinite; }
-        .uf-section-up { animation: sectionSlideUp 0.65s cubic-bezier(0.22,1,0.36,1) var(--su-delay,0s) both; }
+        .uf-section-up { animation: sectionSlideUp 0.3s cubic-bezier(0.22,1,0.36,1) var(--su-delay,0s) both; }
         .uf-automate-btn {
-          background: linear-gradient(90deg, #22D3A5 0%, #62FAE3 38%, #22D3A5 62%, #1ab896 100%);
+          background: linear-gradient(90deg, #22D3A5 0%, #FFE58A 38%, #22D3A5 62%, #1ab896 100%);
           background-size: 200% auto;
           animation: automateShimmer 2.6s linear infinite;
           color: #003527 !important; border: none !important;
@@ -1967,7 +1969,7 @@ export default function HomeClient() {
           font-weight: 850;
         }
         .uf-bridge-control-head strong {
-          color: #059669;
+          color: #17684B;
           white-space: nowrap;
         }
         .uf-bridge-control input {
@@ -2045,11 +2047,11 @@ export default function HomeClient() {
           margin-bottom: 18px;
           border-color: #bfe8d4;
           background: #effaf4;
-          color: #047857;
+          color: #151719;
           letter-spacing: 0.11em;
         }
         .uf-bridge-chip-dot {
-          background: #059669;
+          background: #151719;
           box-shadow: 0 0 0 4px rgba(5,150,105,0.12);
         }
         .uf-bridge-layout {
@@ -2131,7 +2133,7 @@ export default function HomeClient() {
         }
         .uf-bridge-bar {
           border-radius: 9px 9px 3px 3px;
-          background: linear-gradient(180deg, #22d3a5 0%, #059669 100%);
+          background: linear-gradient(180deg, #22d3a5 0%, #151719 100%);
           box-shadow: 0 12px 26px rgba(5,150,105,0.2);
         }
         .uf-bridge-bar.future {
@@ -2175,7 +2177,7 @@ export default function HomeClient() {
           border-color: #bbf7d0;
         }
         .uf-bridge-move-card strong {
-          color: #065f46;
+          color: #151719;
           font-size: clamp(21px, 2.2vw, 28px);
           line-height: 1.05;
         }
@@ -2552,7 +2554,7 @@ export default function HomeClient() {
           z-index: 2;
           width: 58%;
           border-radius: 999px 999px 4px 4px;
-          background: linear-gradient(180deg, #62fae3 0%, #22d3a5 38%, #059669 100%);
+          background: linear-gradient(180deg, #62fae3 0%, #22d3a5 38%, #151719 100%);
           box-shadow: 0 18px 34px rgba(34,211,165,0.18), 0 0 22px rgba(98,250,227,0.12), inset 0 1px 0 rgba(255,255,255,0.28);
         }
         .uf-bridge-column.is-future .uf-bridge-base-column {
@@ -2640,7 +2642,7 @@ export default function HomeClient() {
           isolation: isolate;
         }
         .uf-fire-hero-celebrate { border: 1px solid rgba(159,232,112,0.34); }
-        .uf-celebration-pill { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; margin-bottom: 14px; border-radius: 999px; background: rgba(159,232,112,0.14); border: 1px solid rgba(159,232,112,0.28); color: #62FAE3; font-size: 12px; font-weight: 800; letter-spacing: 0.01em; animation: celebrationPop 0.55s cubic-bezier(0.34,1.56,0.64,1) both; }
+        .uf-celebration-pill { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 7px 12px; margin-bottom: 14px; border-radius: 999px; background: rgba(159,232,112,0.14); border: 1px solid rgba(159,232,112,0.28); color: #FFE58A; font-size: 12px; font-weight: 800; letter-spacing: 0.01em; animation: celebrationPop 0.55s cubic-bezier(0.34,1.56,0.64,1) both; }
         .uf-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
         .uf-confetti span {
           position: absolute; top: 8px;
@@ -2648,25 +2650,25 @@ export default function HomeClient() {
           border-radius: var(--br,3px);
           animation: confettiFall var(--dur,1.9s) ease-out var(--delay,0s) forwards;
         }
-        .uf-confetti span:nth-child(1)  { left:3%;  background:#62FAE3; --x:-280px; --r:-210deg; --delay:.02s; --w:6px;  --h:11px; }
+        .uf-confetti span:nth-child(1)  { left:3%;  background:#FFE58A; --x:-280px; --r:-210deg; --delay:.02s; --w:6px;  --h:11px; }
         .uf-confetti span:nth-child(2)  { left:9%;  background:#A7F3D0; --x:-200px; --r:170deg;  --delay:.30s; --br:50%; --w:10px; --h:10px; }
         .uf-confetti span:nth-child(3)  { left:15%; background:#A7F3D0; --x:-140px; --r:-150deg; --delay:.06s; }
         .uf-confetti span:nth-child(4)  { left:21%; background:#22D3A5; --x: -90px; --r:200deg;  --delay:.40s; --br:2px; --w:11px; --h:6px; }
         .uf-confetti span:nth-child(5)  { left:27%; background:#B8FFE9; --x: -44px; --r:-180deg; --delay:.10s; --br:50%; --w:9px;  --h:9px; }
         .uf-confetti span:nth-child(6)  { left:33%; background:#A7F3D0; --x:   8px; --r:160deg;  --delay:.48s; --w:7px;  --h:13px; }
-        .uf-confetti span:nth-child(7)  { left:39%; background:#62FAE3; --x:  52px; --r:-200deg; --delay:.14s; --br:2px; --w:12px; --h:6px; }
+        .uf-confetti span:nth-child(7)  { left:39%; background:#FFE58A; --x:  52px; --r:-200deg; --delay:.14s; --br:2px; --w:12px; --h:6px; }
         .uf-confetti span:nth-child(8)  { left:45%; background:#A7F3D0; --x:  86px; --r:230deg;  --delay:.52s; }
         .uf-confetti span:nth-child(9)  { left:51%; background:#fff;    --x: 108px; --r:-170deg; --delay:.04s; --br:50%; --w:7px;  --h:7px;  --dur:1.6s; }
         .uf-confetti span:nth-child(10) { left:57%; background:#B8FFE9; --x: 134px; --r:190deg;  --delay:.36s; }
         .uf-confetti span:nth-child(11) { left:63%; background:#22D3A5; --x: 164px; --r:-220deg; --delay:.08s; --br:2px; --w:9px;  --h:6px; }
         .uf-confetti span:nth-child(12) { left:69%; background:#A7F3D0; --x: 200px; --r:180deg;  --delay:.44s; --br:50%; --w:11px; --h:11px; }
         .uf-confetti span:nth-child(13) { left:75%; background:#A7F3D0; --x: 238px; --r:-160deg; --delay:.12s; }
-        .uf-confetti span:nth-child(14) { left:81%; background:#62FAE3; --x: 268px; --r:200deg;  --delay:.56s; --br:2px; --w:13px; --h:5px; }
+        .uf-confetti span:nth-child(14) { left:81%; background:#FFE58A; --x: 268px; --r:200deg;  --delay:.56s; --br:2px; --w:13px; --h:5px; }
         .uf-confetti span:nth-child(15) { left:87%; background:#B8FFE9; --x: 298px; --r:-240deg; --delay:.16s; --br:50%; --w:8px;  --h:8px; }
         .uf-confetti span:nth-child(16) { left:93%; background:#A7F3D0; --x: 320px; --r:170deg;  --delay:.60s; }
         .uf-confetti span:nth-child(17) { left:6%;  background:#22D3A5; --x:-260px; --r:190deg;  --delay:.75s; --br:50%; --w:9px;  --h:9px; }
         .uf-confetti span:nth-child(18) { left:18%; background:#A7F3D0; --x:-160px; --r:-160deg; --delay:.82s; }
-        .uf-confetti span:nth-child(19) { left:30%; background:#62FAE3; --x: -70px; --r:210deg;  --delay:.68s; --br:2px; --w:10px; --h:6px; }
+        .uf-confetti span:nth-child(19) { left:30%; background:#FFE58A; --x: -70px; --r:210deg;  --delay:.68s; --br:2px; --w:10px; --h:6px; }
         .uf-confetti span:nth-child(20) { left:42%; background:#B8FFE9; --x:  28px; --r:-200deg; --delay:.88s; --br:50%; --w:8px;  --h:8px; }
         .uf-confetti span:nth-child(21) { left:55%; background:#A7F3D0; --x: 118px; --r:170deg;  --delay:.74s; }
         .uf-confetti span:nth-child(22) { left:67%; background:#fff;    --x: 188px; --r:-220deg; --delay:.94s; --br:2px; --w:11px; --h:7px; }
@@ -2692,19 +2694,19 @@ export default function HomeClient() {
 
         .uf-result-milestones { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: -8px 0 16px; animation: cardLiftIn 0.55s cubic-bezier(0.22,1,0.36,1) 0.05s both; }
         .uf-result-milestone { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 10px 12px; border-radius: 999px; background: #FFFFFF; border: 1px solid #E2E8F0; color: #475569; font-size: 12px; font-weight: 800; text-align: center; box-shadow: 0 1px 4px rgba(15,23,42,0.04); }
-        .uf-result-milestone-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 999px; background: #ECFDF5; color: #047857; font-size: 12px; flex: 0 0 auto; }
+        .uf-result-milestone-icon { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 999px; background: #ECFDF5; color: #151719; font-size: 12px; flex: 0 0 auto; }
         .uf-result-milestone.active { background: #F7FEE7; border-color: #BEF264; color: #365314; }
         .uf-result-milestone.active .uf-result-milestone-icon { background: #A7F3D0; color: #163300; }
         .uf-benchmark-card, .uf-identity-card { background: #FFFFFF; border: 1px solid #DDEFE3; border-radius: 18px; padding: 18px; margin-bottom: 14px; box-shadow: 0 10px 30px rgba(15,23,42,0.05); animation: cardLiftIn 0.55s cubic-bezier(0.22,1,0.36,1) 0.08s both; }
         .uf-benchmark-card { background: linear-gradient(135deg, #F7FEE7 0%, #FFFFFF 72%); border-color: #BEF264; }
         .uf-identity-card { background: linear-gradient(135deg, #F0FDFA 0%, #FFFFFF 72%); border-color: #99F6E4; }
-        .uf-insight-kicker { font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: 0.12em; color: #047857; margin-bottom: 8px; }
+        .uf-insight-kicker { font-size: 11px; font-weight: 850; text-transform: uppercase; letter-spacing: 0.12em; color: #151719; margin-bottom: 8px; }
         .uf-insight-title { font-size: 22px; font-weight: 900; letter-spacing: -0.03em; color: #0F172A; line-height: 1.1; }
         .uf-insight-copy { font-size: 14px; color: #334155; line-height: 1.45; margin-top: 8px; }
         .uf-insight-source { font-size: 11px; color: #64748B; line-height: 1.45; margin-top: 10px; }
         .uf-identity-row { display: flex; align-items: center; gap: 12px; }
-        .uf-identity-icon { width: 42px; height: 42px; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: #064E3B; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); flex: 0 0 auto; }
-        .uf-monthly-move-card { background: linear-gradient(135deg, #064E3B 0%, #047857 100%); border: 1px solid rgba(159,232,112,0.32); border-radius: 18px; padding: 18px 18px 16px; margin-bottom: 16px; color: white; box-shadow: 0 14px 35px rgba(6,78,59,0.18); animation: cardLiftIn 0.6s cubic-bezier(0.22,1,0.36,1) 0.12s both, softGlow 3.2s ease-in-out 0.9s infinite; }
+        .uf-identity-icon { width: 42px; height: 42px; border-radius: 999px; display: flex; align-items: center; justify-content: center; background: #151719; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); flex: 0 0 auto; }
+        .uf-monthly-move-card { background: linear-gradient(135deg, #151719 0%, #151719 100%); border: 1px solid rgba(159,232,112,0.32); border-radius: 18px; padding: 18px 18px 16px; margin-bottom: 16px; color: white; box-shadow: 0 14px 35px rgba(6,78,59,0.18); animation: cardLiftIn 0.6s cubic-bezier(0.22,1,0.36,1) 0.12s both, softGlow 3.2s ease-in-out 0.9s infinite; }
 
         .uf-cost-card { background: #ECFDF5; border: 1px solid #D1FAE5; border-radius: 14px; padding: 20px 24px; text-align: center; margin-bottom: 20px; }
         .uf-cost-label { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
@@ -2732,7 +2734,7 @@ export default function HomeClient() {
 
 /* -- SHARE TRIGGER -- */
         .uf-share-trigger { display: inline-flex; align-items: center; gap: 8px; margin: 18px auto 0; padding: 10px 22px; border-radius: 8px; background: #ECFDF5; border: 1px solid #D1FAE5; color: var(--accent); font-family: var(--font-body); font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-        .uf-share-trigger:hover { background: #D1FAE5; border-color: #047857; transform: translateY(-1px); }
+        .uf-share-trigger:hover { background: #D1FAE5; border-color: #151719; transform: translateY(-1px); }
 
         /* -- SHARE MODAL -- */
         .uf-share-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.15s ease; }
@@ -2745,8 +2747,8 @@ export default function HomeClient() {
         .uf-share-subheading { font-size: 12px; line-height: 1.45; color: var(--text-muted); margin-bottom: 14px; }
         .uf-share-card-options { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-bottom: 14px; }
         .uf-share-card-option { border: 1px solid var(--border); background: #fff; color: var(--text-muted); border-radius: 10px; padding: 10px 12px; font-size: 12px; font-weight: 800; cursor: pointer; transition: all 0.18s; }
-        .uf-share-card-option:hover { border-color: #047857; color: #047857; }
-        .uf-share-card-option.active { background: #ECFDF5; border-color: #047857; color: #064E3B; box-shadow: 0 0 0 3px rgba(5,150,105,0.10); }
+        .uf-share-card-option:hover { border-color: #151719; color: #151719; }
+        .uf-share-card-option.active { background: #ECFDF5; border-color: #151719; color: #151719; box-shadow: 0 0 0 3px rgba(5,150,105,0.10); }
 
         /* Share preview card */
         .uf-share-card { background: #003527; border: none; border-radius: 16px; padding: 26px 24px 20px; margin-bottom: 20px; text-align: center; position: relative; overflow: hidden; }
@@ -2763,7 +2765,7 @@ export default function HomeClient() {
         .uf-share-card-identity { display: grid; gap: 10px; }
         .uf-share-card-avatar-shell { display: flex; justify-content: center; margin-bottom: 4px; }
         .uf-share-card-avatar-stage { width: 190px; max-width: 100%; min-height: 220px; border-radius: 18px; background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01)); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); display: flex; align-items: flex-end; justify-content: center; overflow: hidden; margin: 0 auto; }
-        .uf-share-card-code { font-family: var(--font-mono); font-size: 26px; font-weight: 800; letter-spacing: 0.24em; color: #62FAE3; margin-left: 0.24em; }
+        .uf-share-card-code { font-family: var(--font-mono); font-size: 26px; font-weight: 800; letter-spacing: 0.24em; color: #FFE58A; margin-left: 0.24em; }
         .uf-share-card-quote { color: rgba(255,255,255,0.82); font-size: 14px; line-height: 1.5; font-style: italic; margin-top: 2px; }
         .uf-share-card-benchmark-stat { display: inline-flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; color: #D1FAE5; font-size: 12px; font-weight: 700; }
         .uf-share-card-benchmark-stat span { padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,0.08); }
@@ -2783,7 +2785,7 @@ export default function HomeClient() {
         .uf-share-whatsapp:hover { background: #1ebe5b; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,211,102,0.32); }
         .uf-share-email { background: #FFF7ED; color: #9A3412; border: 1px solid #FED7AA; }
         .uf-share-email:hover { background: #FFEDD5; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(251,146,60,0.22); }
-        .uf-share-more { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+        .uf-share-more { background: #ECFDF5; color: #151719; border: 1px solid #A7F3D0; }
         .uf-share-more:hover { background: #D1FAE5; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(16,185,129,0.20); }
         .uf-share-copy { background: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border); }
         .uf-share-copy:hover { color: var(--text); background: #fff; border-color: var(--accent); }
@@ -3096,15 +3098,15 @@ export default function HomeClient() {
         .uf-bridge-age-delta {
           border-color: rgba(98,250,227,0.28);
           background: rgba(98,250,227,0.09);
-          color: #62FAE3;
+          color: #FFE58A;
         }
         .uf-bridge-chip-dot {
-          background: #62FAE3;
+          background: #FFE58A;
           box-shadow: 0 0 18px rgba(98,250,227,0.45);
         }
         .uf-bridge-age,
         .uf-bridge-runway-copy strong {
-          font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+          font-family: 'Inter', Georgia, 'Times New Roman', serif;
           font-weight: 400;
           letter-spacing: -0.035em;
           text-shadow: 0 4px 60px rgba(34,211,165,0.24);
@@ -3113,7 +3115,7 @@ export default function HomeClient() {
           background: none;
           -webkit-background-clip: initial;
           background-clip: initial;
-          color: #62FAE3 !important;
+          color: #FFE58A !important;
           animation: none;
         }
         .uf-bridge-chart-sweep {
@@ -3133,7 +3135,7 @@ export default function HomeClient() {
           backdrop-filter: none;
         }
         .uf-bridge-plan-column {
-          background: linear-gradient(180deg, #B8FFE9 0%, #62FAE3 36%, #22D3A5 100%);
+          background: linear-gradient(180deg, #B8FFE9 0%, #FFE58A 36%, #22D3A5 100%);
           box-shadow: 0 14px 28px rgba(34,211,165,0.16), inset 0 1px 0 rgba(255,255,255,0.24);
         }
         .uf-bridge-base-column {
@@ -3141,12 +3143,12 @@ export default function HomeClient() {
         }
         .uf-bridge-chart-flag,
         .uf-reveal-continuation .uf-btn-outline {
-          color: #62FAE3 !important;
+          color: #FFE58A !important;
           border-color: rgba(98,250,227,0.24) !important;
           background: rgba(98,250,227,0.08) !important;
         }
         .uf-bridge-save {
-          background: linear-gradient(90deg, #B8FFE9, #62FAE3 50%, #22D3A5) !important;
+          background: linear-gradient(90deg, #B8FFE9, #FFE58A 50%, #22D3A5) !important;
           color: #04110c !important;
           box-shadow: 0 14px 34px rgba(34,211,165,0.22) !important;
           animation: none !important;
@@ -3180,7 +3182,7 @@ export default function HomeClient() {
             box-shadow: 0 16px 38px rgba(34,211,165,0.20) !important;
           }
         }
-        .uf-confetti span:nth-child(odd) { background: #62FAE3 !important; }
+        .uf-confetti span:nth-child(odd) { background: #FFE58A !important; }
         .uf-confetti span:nth-child(even) { background: #A7F3D0 !important; }
         .uf-confetti span:nth-child(3n) { background: #22D3A5 !important; }
         .uf-confetti span:nth-child(5n) { background: #FFFFFF !important; }
@@ -3261,111 +3263,13 @@ export default function HomeClient() {
         <LandingPage onStart={() => setScreen("city")} signedIn={signedIn} referred={!!landingSource?.startsWith("ref-")} />
       ) : (
       <>
-      {/* The reveal is a full-screen takeover with its own top bar + progress,
-          so the app chrome nav is hidden there to avoid a duplicated header. */}
-      {screen !== "reveal" && (
-        <Nav
-          step={wizardIndex + 1}
-          totalSteps={0} // the question header shows progress (D-50)
-          onRestart={() => setScreen("hero")}
-          onSignIn={signIn}
-        />
-      )}
-
-      <div ref={wizardRef} className={`uf-page uf-onboarding-motion${screen === "reveal" ? " uf-page-flush" : ""}`}>
-        <div className="uf-page-bg" aria-hidden="true">
-          <div className="uf-atm-orb uf-atm-orb-1" />
-          <div className="uf-atm-orb uf-atm-orb-2" />
-          <div className="uf-atm-orb uf-atm-orb-3" />
-        </div>
-        <style>{ONBOARDING_CSS}</style>
-        {wizardStep && (
-          <OnboardingShell
-            step={wizardIndex}
-            steps={WIZARD.length}
-            icon={wizardStep.icon}
-            answer={answers[wizardStep.screen] || wizardStep.empty}
-            onBack={() => setScreen(wizardIndex === 0 ? "hero" : WIZARD[wizardIndex - 1].screen)}
-            onSkip={screen === "city" ? skipCity : screen === "age" ? () => { setCurrentAge(undefined); setScreen("reveal"); } : undefined}
-            skipLabel={screen === "city" ? "Skip, use my own spending" : screen === "age" ? "Skip, leave my age out" : undefined}
-          />
-        )}
-        {(screen === "city" || visited.includes("city")) && (
-          <div data-onboarding-step="city" hidden={screen !== "city"} inert={screen !== "city"}>
-          <CityScreen
-            initialCity={cityState}
-            onAnswer={reportAnswer.city}
-            onNext={c => { setCityState(c); setCurrency(stateToCurrency(c.stateKey)); setScreen("income"); }}
-          />
-          </div>
-        )}
-        {(screen === "income" || visited.includes("income")) && (
-          <div data-onboarding-step="income" hidden={screen !== "income"} inert={screen !== "income"}>
-          <IncomeScreen
-            stateKey={cityState?.stateKey ?? "custom"}
-            cityName={cityState?.name}
-            cityCol={cityState?.isCustom ? 0 : cityState?.col}
-            currency={currency}
-            onCurrencyChange={setCurrency}
-            onAnswer={reportAnswer.income}
-            onNext={inc => { setIncome(inc); setScreen("savings"); }}
-          />
-          </div>
-        )}
-        {(screen === "savings" || visited.includes("savings")) && (
-          <div data-onboarding-step="savings" hidden={screen !== "savings"} inert={screen !== "savings"}>
-          <SavingsScreen
-            income={income}
-            currency={currency}
-            onAnswer={reportAnswer.savings}
-            onNext={(sav, monthlyExpenses) => {
-              setSavings(sav);
-              setCityState(prev => ({
-                name: prev?.name || "Your current lifestyle",
-                col: Math.max(0, monthlyExpenses * 12),
-                stateKey: prev?.stateKey || "custom",
-                isCustom: prev?.isCustom ?? true,
-              }));
-              setScreen("portfolio");
-            }}
-          />
-          </div>
-        )}
-        {(screen === "portfolio" || visited.includes("portfolio")) && (
-          <div data-onboarding-step="portfolio" hidden={screen !== "portfolio"} inert={screen !== "portfolio"}>
-          <PortfolioScreen
-            currency={currency}
-            income={income}
-            initialPortfolioBalance={portfolioBalance}
-            onAnswer={reportAnswer.portfolio}
-            onNext={p => { setPortfolioBalance(p); setScreen("age"); }}
-          />
-          </div>
-        )}
-        {(screen === "age" || visited.includes("age")) && (
-          <div data-onboarding-step="age" hidden={screen !== "age"} inert={screen !== "age"}>
-          <AgeScreen
-            initialAge={currentAge}
-            onAnswer={reportAnswer.age}
-            onNext={age => { setCurrentAge(age); setScreen("reveal"); }}
-          />
-          </div>
-        )}
-        {screen === "reveal" && cityState && (
-          <RevealScreen
-            city={cityState}
-            income={income}
-            savings={savings}
-            stateKey={cityState.stateKey}
-            currency={currency}
-            currentAge={currentAge}
-            portfolioBalance={portfolioBalance}
-            landingSource={landingSource}
-            onAdjust={() => setScreen("age")}
-          />
-        )}
-
+      <div hidden={screen === "reveal"}>
+        <BrandedIntake initialCity={cityState} initialCurrency={currency} startAt={screen === "income" ? 3 : 0}
+          currencyForState={stateToCurrency} onBack={()=>setScreen("hero")}
+          onStep={index=>{const ids:Record<number,CalculatorStepId>={1:'city',3:'income',4:'savings',5:'portfolio',6:'age'};if(ids[index])trackCalculatorStepViewed(ids[index],landingSource)}}
+          onComplete={answer=>{setCityState(answer.city);setCurrency(answer.currency);setIncome(answer.income);setSavings(answer.income/12-answer.expenses);setPortfolioBalance(answer.invested);setCurrentAge(answer.age);setScreen("reveal")}}/>
       </div>
+      {screen === "reveal" && cityState && <RevealScreen city={cityState} income={income} savings={savings} stateKey={cityState.stateKey} currency={currency} currentAge={currentAge} portfolioBalance={portfolioBalance} landingSource={landingSource} onAdjust={()=>setScreen("age")}/>}
       </>
       )}
     </>

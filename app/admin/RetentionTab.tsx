@@ -54,18 +54,18 @@ interface Data {
   users: UserRow[];
 }
 
-const INK = "#19181E";
-const MUTED = "#64748B";
-const FAINT = "#94A3B8";
-const LINE = "#E2E8F0";
-const GOOD = "#059669";
+const INK = "var(--uf-ink)";
+const MUTED = "var(--uf-ink-2)";
+const FAINT = "var(--uf-ink-3)";
+const LINE = "var(--uf-border)";
+const GOOD = "var(--uf-pos)";
 const BAD = "#DC2626";
 const WARN = "#B45309";
 
 const card: React.CSSProperties = {
-  background: "#fff",
+  background: "var(--uf-card)",
   border: `1px solid ${LINE}`,
-  borderRadius: 12,
+  borderRadius: "var(--uf-r-card)",
   padding: 18,
   marginBottom: 20,
 };
@@ -123,7 +123,7 @@ export default function RetentionTab({ token }: { token: string }) {
           return (
             <div key={j.job} style={{ marginBottom: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
-                <span style={{ fontSize: 13.5, fontWeight: 700, color: INK, fontFamily: "'DM Mono', monospace" }}>
+                <span style={{ fontSize: 13.5, fontWeight: 700, color: INK, fontFamily: "'Inter', monospace" }}>
                   {j.job}
                 </span>
                 <span style={{
@@ -163,8 +163,8 @@ export default function RetentionTab({ token }: { token: string }) {
                         <td style={{ padding: "6px 8px", fontWeight: 700, color: r.status === "ok" ? GOOD : r.status === "error" ? BAD : WARN }}>
                           {r.status}
                         </td>
-                        <td style={{ padding: "6px 8px", fontFamily: "'DM Mono', monospace" }}>{r.considered}</td>
-                        <td style={{ padding: "6px 8px", fontFamily: "'DM Mono', monospace" }}>{r.acted}</td>
+                        <td style={{ padding: "6px 8px", fontFamily: "'Inter', monospace" }}>{r.considered}</td>
+                        <td style={{ padding: "6px 8px", fontFamily: "'Inter', monospace" }}>{r.acted}</td>
                         <td style={{ padding: "6px 0", color: BAD, maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {r.error ?? ""}
                         </td>
@@ -189,7 +189,7 @@ export default function RetentionTab({ token }: { token: string }) {
           <div key={s.event} style={{ marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: INK }}>{s.label}</span>
-              <span style={{ fontSize: 12.5, color: MUTED, fontFamily: "'DM Mono', monospace" }}>
+              <span style={{ fontSize: 12.5, color: MUTED, fontFamily: "'Inter', monospace" }}>
                 {s.count}
                 {i > 0 && (
                   <span style={{ color: s.fromPrevious < 25 && s.drop ? BAD : FAINT, marginLeft: 8 }}>
@@ -198,7 +198,7 @@ export default function RetentionTab({ token }: { token: string }) {
                 )}
               </span>
             </div>
-            <div style={{ height: 8, background: "#F1F5F9", borderRadius: 99, overflow: "hidden" }}>
+            <div style={{ height: 8, background: "var(--uf-surface)", borderRadius: 99, overflow: "hidden" }}>
               <div style={{
                 width: `${s.fromTop}%`, height: "100%",
                 background: s.drop && s.fromPrevious < 25 ? BAD : GOOD,
@@ -229,7 +229,7 @@ export default function RetentionTab({ token }: { token: string }) {
                   <tr key={c.week} style={{ borderTop: `1px solid ${LINE}` }}>
                     <td style={{ padding: "6px 8px 6px 0", color: MUTED, whiteSpace: "nowrap" }}>{shortDate(c.week)}</td>
                     {c.steps.map((st) => (
-                      <td key={st.event} style={{ padding: "6px 8px", fontFamily: "'DM Mono', monospace", color: st.count === 0 ? FAINT : INK }}>
+                      <td key={st.event} style={{ padding: "6px 8px", fontFamily: "'Inter', monospace", color: st.count === 0 ? FAINT : INK }}>
                         {st.count}
                       </td>
                     ))}
@@ -276,7 +276,7 @@ export default function RetentionTab({ token }: { token: string }) {
                         <span style={{ fontSize: 10.5, fontWeight: 800, color: WARN, marginLeft: 6 }}>UNSUB</span>
                       )}
                     </td>
-                    <td style={{ padding: "8px", color: MUTED, fontFamily: "'DM Mono', monospace", whiteSpace: "nowrap" }}>{u.ageDays}d</td>
+                    <td style={{ padding: "8px", color: MUTED, fontFamily: "'Inter', monospace", whiteSpace: "nowrap" }}>{u.ageDays}d</td>
                     {u.emails.map((e) => (
                       <td key={e.event} style={{ padding: "8px" }}>
                         <Dot state={e.state} />
@@ -288,7 +288,7 @@ export default function RetentionTab({ token }: { token: string }) {
                     <td style={{ padding: "8px 0" }}><Tick on={u.returned} /></td>
                   </tr>
                   {expanded === u.id && (
-                    <tr style={{ background: "#F8FAFC" }}>
+                    <tr style={{ background: "var(--uf-ground)" }}>
                       <td colSpan={5 + u.emails.length} style={{ padding: "10px 0 14px", fontSize: 12.5, color: MUTED }}>
                         <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
                           <span>{u.email}</span>
@@ -316,7 +316,7 @@ export default function RetentionTab({ token }: { token: string }) {
 
 /** Sent, missed, or not due yet — three states, because two would lie. */
 function Dot({ state }: { state: EmailState }) {
-  const map = { sent: GOOD, missed: BAD, pending: "#CBD5E1" } as const;
+  const map = { sent: GOOD, missed: BAD, pending: "var(--uf-border-2)" } as const;
   const title = { sent: "Sent", missed: "Due but never sent", pending: "Not due yet" } as const;
   return (
     <span
@@ -331,6 +331,6 @@ function Dot({ state }: { state: EmailState }) {
 
 function Tick({ on }: { on: boolean }) {
   return (
-    <span style={{ color: on ? GOOD : "#CBD5E1", fontWeight: 800 }}>{on ? "✓" : "–"}</span>
+    <span style={{ color: on ? GOOD : "var(--uf-border-2)", fontWeight: 800 }}>{on ? "✓" : "–"}</span>
   );
 }

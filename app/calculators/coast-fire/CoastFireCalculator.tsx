@@ -271,20 +271,20 @@ export default function CoastFireCalculator() {
                     <CartesianGrid stroke="var(--uf-chart-grid)" strokeDasharray="2 4" vertical={false} />
                     <XAxis
                       dataKey="age" tickLine={false} axisLine={false}
-                      tick={{ fill: 'var(--uf-ink-3)', fontSize: 11, fontFamily: "'DM Mono', monospace" }}
+                      tick={{ fill: 'var(--uf-ink-3)', fontSize: 11, fontFamily: "'Inter', monospace" }}
                       interval="preserveStartEnd" minTickGap={30}
                     />
                     <YAxis
                       domain={[0, result.ceiling]}
                       tickLine={false} axisLine={false} width={52}
-                      tick={{ fill: 'var(--uf-ink-3)', fontSize: 11, fontFamily: "'DM Mono', monospace" }}
+                      tick={{ fill: 'var(--uf-ink-3)', fontSize: 11, fontFamily: "'Inter', monospace" }}
                       tickFormatter={(v) => formatMoney(v as number, { style: 'compact' })}
                     />
                     <Tooltip
                       cursor={{ stroke: 'var(--uf-border)' }}
                       contentStyle={{
                         background: 'var(--uf-card)', border: '1px solid var(--uf-border)',
-                        borderRadius: 12, fontSize: 13, fontFamily: "'Manrope', sans-serif",
+                        borderRadius: 12, fontSize: 13, fontFamily: "'Inter', sans-serif",
                       }}
                       labelFormatter={(a) => `Age ${a}`}
                       formatter={(v, name) => [formatMoney(v as number), name as string]}
@@ -293,7 +293,7 @@ export default function CoastFireCalculator() {
                         with no legend is a puzzle, not a chart. */}
                     <Legend
                       verticalAlign="bottom" height={26} iconType="plainline" iconSize={16}
-                      wrapperStyle={{ fontSize: 11, fontFamily: "'Manrope', sans-serif", color: 'var(--uf-ink-2)' }}
+                      wrapperStyle={{ fontSize: 11, fontFamily: "'Inter', sans-serif", color: 'var(--uf-ink-2)' }}
                     />
                     <ReferenceLine
                       y={result.fireTarget}
@@ -481,7 +481,7 @@ export default function CoastFireCalculator() {
           </p>
           <p className="uf-t-lead" style={{ color: 'var(--uf-ink-2)', margin: '0 0 var(--uf-s4)', lineHeight: 1.8 }}>
             <strong style={{ color: 'var(--uf-ink)' }}>The formula:</strong>{' '}
-            <span style={{ fontFamily: "'DM Mono', monospace" }}>
+            <span style={{ fontFamily: "'Inter', monospace" }}>
               Coast number = FIRE target ÷ (1 + r)<sup>years to retirement</sup>
             </span>
           </p>

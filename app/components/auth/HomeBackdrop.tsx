@@ -5,6 +5,7 @@ import { Icon } from '@/components/ui'
 import { FreedomCard, GlanceRow, NextMoveCard, UntilPaydayCard } from '@/app/dashboard/HomeCards'
 import type { CalculatorPrefill } from '@/lib/journey'
 import type { PaydayLine } from '@/lib/payday-line'
+import { FALLBACK_RATES } from '@/lib/currency'
 
 // A still, blurred glimpse of the real Home behind the sign-up card, drawn
 // with the dashboard's own cards. The visitor's calculator numbers fill the
@@ -12,7 +13,9 @@ import type { PaydayLine } from '@/lib/payday-line'
 // Purely decorative: hidden from screen readers, never clickable, no motion.
 
 const noop = () => {}
-const fmt = (n: number) => (n < 0 ? '−$' : '$') + Math.abs(Math.round(n)).toLocaleString('en-US')
+// Amounts are stored in USD; show them in the visitor's own currency.
+const moneyIn = (currency: string) => (n: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n * (FALLBACK_RATES[currency] ?? 1)).replace('-', '−')
 
 /** Yearly balances from today to the freedom year, compounding the monthly savings. */
 function projection(p: CalculatorPrefill | null, now: number): { label: string; value: number }[] {
@@ -39,6 +42,7 @@ const LINE: PaydayLine = {
 const ICONS: Record<string, string> = { Subscriptions: '📺', Phone: '📱', Utilities: '⚡', Housing: '🏠', Shopping: '🛍️' }
 
 export default function HomeBackdrop({ prefill }: { prefill: CalculatorPrefill | null }) {
+  const fmt = moneyIn(prefill?.defaultCurrency ?? 'USD')
   const now = new Date().getFullYear()
   const points = projection(prefill, now)
   const year = prefill?.retireYear ?? now + 15
@@ -81,7 +85,7 @@ export default function HomeBackdrop({ prefill }: { prefill: CalculatorPrefill |
               key: 'backdrop', title: 'Put $300 into your safety pot', payoff: 'A buffer before anything else', door: 'plan', tab: 'contributions', button: 'Open your plan',
               split: [{ label: 'Safety pot', amount: 300 }, { label: '401(k) match', amount: 250 }, { label: 'Invest', amount: 150 }],
             }} />
-            <UntilPaydayCard line={LINE} paydayIso="2026-11-01" billCount={4} billTotal={650} icon={(c) => ICONS[c ?? ''] ?? '💳'} fmt={fmt} onOpen={noop} />
+            <UntilPaydayCard everyday={650} line={LINE} paydayIso="2026-11-01" billCount={4} billTotal={650} icon={(c) => ICONS[c ?? ''] ?? '💳'} fmt={fmt} onOpen={noop} />
           </div>
           <GlanceRow netWorth={prefill?.portfolioBalance ?? 184200} invested={[]} safety={{ months: 4.2, target: 6 }} savingsRate={rate} fmt={fmt} onNetWorth={noop} onSafety={noop} onSavings={noop} />
         </div>

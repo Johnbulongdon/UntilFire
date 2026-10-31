@@ -7,7 +7,7 @@ import type { SupportedCurrency } from "@/lib/currency";
 /**
  * A figure of money.
  *
- * Always DM Mono with tabular numerals, so a column of balances lines up on
+ * Always Inter with tabular numerals, so a column of balances lines up on
  * the decimal instead of drifting. That is legibility in a finance product,
  * not decoration — a misread balance is the whole trust problem.
  *

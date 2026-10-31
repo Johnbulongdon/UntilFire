@@ -1,17 +1,19 @@
+import { paydayRemainder } from '@engine/payday-spending.ts'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Redirect, router } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { Appearance, Pressable, StyleSheet, View } from 'react-native'
-import Svg, { Circle, Defs, Line, LinearGradient as SvgGradient, Path, Pattern, Rect, Stop } from 'react-native-svg'
+import { Appearance, Pressable, View } from 'react-native'
+import Svg, { Circle, Line, Path } from 'react-native-svg'
 
+import { UntilPaydayCard } from '@/components/UntilPaydayCard'
 import { Button } from '@/components/Button'
 import { FreedomLineChart } from '@/components/FreedomLineChart'
 import { GuidedTour } from '@/components/GuidedTour'
 import { useTourAnchor } from '@/components/tour-anchors'
 import { HouseholdCard } from '@/components/HouseholdCard'
 import { RecurringTeaser } from '@/components/RecurringCard'
-import { SetupCard } from '@/components/SetupCard'
-import { CategoryGlyph, Icon } from '@/components/Icon'
+import { SetupCard, useSetupOpen } from '@/components/SetupCard'
+import { Icon } from '@/components/Icon'
 import { ProgressTrack, Screen } from '@/components/Screen'
 import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
@@ -23,20 +25,22 @@ import { useAuth } from '@/state/auth'
 import { saveFireProfile } from '@/lib/mutations'
 import { useFreedom, type Freedom } from '@/state/freedom'
 import { useLivePlan } from '@/state/live-plan'
-import { everydayByDay, guessBillCategory, isCounted, isoDay, paydayLine, quickFreedom, type NextMove } from '@/engine'
+import { everydayByDay, freedomProgress, guessBillCategory, progressPercent, isCounted, isoDay, paydayLine, quickFreedom, type NextMove } from '@/engine'
 import { usePlan } from '@/state/plan'
-import { colors, TAB_COLOR } from '@/theme/colors'
+import { brand, colors } from '@/theme/colors'
 import { splitBudget } from '@/lib/budget-split'
 import { freeUntilPayday, unpaid, upcoming } from '@/lib/bills'
 import { phoneNextMove, snoozedMoves, snoozeMove } from '@/lib/next-move'
 import { spentUSD, toUSD } from '@/state/account'
 import { expenseCategories } from '@/lib/custom-categories'
+import { monthCount, quietDayToMark, safeToSpendToday, saveTodayProgress, todayItems } from '@/lib/today'
 
 /**
- * Home (V2, after the October audit; D-89): the freedom date and its path, the
- * one next move, then four round actions, Phantom-style. What's left this
- * month gets a pace line and the next big bill; safety lives in the top bar;
- * Today is pinned above the tabs. Home interprets; it owns no inputs
+ * Home (V2, after the October audit; D-89, D-108): Today first, then the
+ * freedom date and its path, the one next move with Get set up docked under
+ * it, then four round actions, Phantom-style. What's left this month gets a
+ * pace line and the next big bill; safety lives in the top bar. On the other
+ * tabs Today is pinned above the tab bar. Home interprets; it owns no inputs
  * (docs/design/app-structure.md).
  */
 export default function Home() {
@@ -44,17 +48,24 @@ export default function Home() {
   const result = useFreedom()
   const { session } = useAuth()
   const { data, loading, refresh } = useAccount()
+  const [paydayAdjustment,setPaydayAdjustment]=useState<{window:string;everyday:number|null;cushion:number}|null>(null)
+  const payday = data ? freeUntilPayday(data) : null
+  const paydayWindow = session?.user.id+':'+payday?.payday.iso+':'+isoDay(new Date())
+  const activeAdjustment=paydayAdjustment?.window===paydayWindow?paydayAdjustment:null
+  const paydayRemaining=payday?paydayRemainder(payday.free,activeAdjustment?.everyday??payday.everyday?.amount??null,activeAdjustment?.cushion??0):null
+  const setupOpen = useSetupOpen(data)
   if (!plan || !result) return <Redirect href="/onboarding" />
 
   return (
     <Screen tab="home" flat hideTitle title="Home" refreshing={loading && !!data} onRefresh={data ? refresh : undefined}>
-      {data && <SetupCard data={data} freedomYear={result.year ?? null} />}
+      {data && session && <TodayCard data={data} userId={session.user.id} paydayDaily={payday ? paydayRemaining===null?null:Math.max(0,Math.floor(paydayRemaining/payday.days)):undefined} />}
       <Hero result={result} />
       <DateMoved result={result} />
       {data && <SavingsGap data={data} />}
-      {data && <NextMoveCard data={data} />}
+      {data && setupOpen === false && <NextMoveCard data={data} />}
+      {data && <SetupCard data={data} freedomYear={result.year ?? null} />}
       <Actions signedIn={!!session} />
-      {data && (freeUntilPayday(data) ? <UntilPayday data={data} /> : <ThisMonth data={data} />)}
+      {data && (freeUntilPayday(data) ? <UntilPayday key={paydayWindow} data={data} onAdjustmentChange={a=>setPaydayAdjustment({window:paydayWindow,...a})} /> : <ThisMonth data={data} />)}
       {data && <RecurringTeaser data={data} freedom={result} />}
       {data && <NextGoal data={data} />}
       {data && <HouseholdCard />}
@@ -73,23 +84,40 @@ function Hero({ result }: { result: Freedom }) {
   const date = result.year == null ? '65+ years' : result.date ? result.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : String(result.year)
   const sub = [yearsAway != null ? (yearsAway <= 0 ? 'Now' : yearsAway < 1 ? 'Under a year away' : `${yearsAway.toFixed(1)} years away`) : null, result.ageAtFreedom != null ? `age ${result.ageAtFreedom}` : null].filter(Boolean).join(' · ')
   return (
-    <View {...useTourAnchor('hero')} style={{ borderRadius: 28, overflow: 'hidden', backgroundColor: TAB_COLOR.home }}>
-      <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" preserveAspectRatio="none" viewBox="0 0 100 100">
-        <Defs>
-          <SvgGradient id="hero" x1="0" y1="0" x2="0.4" y2="1">
-            <Stop offset="0" stopColor="#0E9C86" />
-            <Stop offset="1" stopColor="#06412F" />
-          </SvgGradient>
-        </Defs>
-        <Rect x="0" y="0" width="100" height="100" fill="url(#hero)" />
-      </Svg>
+    <View {...useTourAnchor('hero')} style={{ borderRadius: 28, overflow: 'hidden', backgroundColor: brand.yellow }}>
       <View style={{ padding: 18, paddingBottom: 14 }}>
         <Pressable accessibilityRole="button" accessibilityLabel={`Free in ${date}. Open your freedom date`} onPress={() => { haptic.tick(); router.push('/plan/freedom') }}>
-          <Text style={{ color: 'rgba(255,255,255,0.8)' }} className="text-[12px] font-bold uppercase tracking-[2px]">Free in</Text>
-          <Text style={{ color: '#FFFFFF' }} className="font-display text-[50px] font-bold leading-[56px] tracking-tight">{date}</Text>
-          {!!sub && <Text style={{ color: 'rgba(255,255,255,0.85)' }} className="text-[15px]">{sub}</Text>}
+          <Text style={{ color: '#5C5130' }} className="text-[12px] font-bold uppercase tracking-[2px]">Free in</Text>
+          <Text style={{ color: '#151719' }} className="font-display text-[50px] font-bold leading-[56px] tracking-tight">{date}</Text>
+          {!!sub && <Text style={{ color: '#5C5130' }} className="text-[15px]">{sub}</Text>}
         </Pressable>
-        <View className="mt-4"><FreedomLineChart f={result} onDark /></View>
+        <HowFar result={result} />
+        <View className="mt-4"><FreedomLineChart f={result} /></View>
+      </View>
+    </View>
+  )
+}
+
+/**
+ * How far you've come (goal gradient, lib/freedom-progress): the share of the
+ * freedom number already there and the next quarter mark, close enough to chase.
+ */
+function HowFar({ result }: { result: Freedom }) {
+  const p = freedomProgress(result.invested, result.target, result.series.map(s => ({ year: s.year, value: s.invested })))
+  if (!p) return null
+  const pct = progressPercent(p.share)
+  const next = p.next ? `Next: ${Math.round(p.next.mark * 100)}%${p.next.year != null ? ` in ${p.next.year}` : `, ${money(p.next.toGo)} to go`}` : 'Your freedom number is there'
+  return (
+    <View className="mt-4" accessible accessibilityLabel={`${pct} of your freedom number. ${next}`}>
+      <View className="flex-row items-baseline justify-between">
+        <Text style={{ color: '#151719' }} className="font-mono text-[15px] font-bold">{pct} there</Text>
+        <Text style={{ color: '#5C5130' }} className="text-[13px]">{next}</Text>
+      </View>
+      <View className="mt-2 h-2.5 overflow-hidden rounded-full" style={{ backgroundColor: '#D8C67B' }}>
+        <View className="h-full rounded-full" style={{ width: `${Math.max(2, p.share * 100)}%`, backgroundColor: brand.deep }} />
+        {[0.25, 0.5, 0.75].map(m => (
+          <View key={m} className="absolute bottom-0 top-0 w-[2px]" style={{ left: `${m * 100}%`, backgroundColor: 'rgba(6,65,47,0.55)' }} />
+        ))}
       </View>
     </View>
   )
@@ -154,7 +182,58 @@ function SavingsGap({ data }: { data: AccountData }) {
 }
 
 /** A soft panel that shows against the page in both themes (surface in light, card in dark). */
-const panel = () => (Appearance.getColorScheme() === 'dark' ? colors.card : colors.surface)
+const panel = () => (Appearance.getColorScheme() === 'dark' ? '#213F35' : '#E3F7EF')
+
+/**
+ * Today on Home (D-108): what's left to answer, opening into the one-at-a-time
+ * list, or the day's check when it's done. Safe to spend is a figure under it,
+ * not a step to tick, and a day with nothing to answer counts once it's opened.
+ */
+function TodayCard({ data, userId, paydayDaily }: { data: AccountData; userId: string; paydayDaily?:number|null }) {
+  const { refresh } = useAccount()
+  const anchor = useTourAnchor('today')
+  const progress = data.profile.today
+  const { day, items } = todayItems(data, progress)
+  const count = monthCount(progress.done)
+  const safe = paydayDaily !== undefined ? paydayDaily : safeToSpendToday(data)
+  const quiet = quietDayToMark(progress.done, items.length)
+  useEffect(() => {
+    if (!quiet) return
+    saveTodayProgress(userId, { ...progress, done: [...progress.done, quiet] }).then(() => refresh()).catch(() => {})
+    // Once per day to mark; progress is read at that moment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quiet, userId])
+  const left = items.length
+  return (
+    <View {...anchor} className="gap-3 rounded-3xl p-4" style={{ backgroundColor: panel() }}>
+      <View className="flex-row items-baseline justify-between">
+        <Text className="text-[18px] font-bold text-ink">Today</Text>
+        <Text className="text-[13px] text-ink-2"><Text className="font-mono text-[13px] text-ink-2">{count.done}</Text> of <Text className="font-mono text-[13px] text-ink-2">{count.of}</Text> days</Text>
+      </View>
+      {left > 0 ? (
+        <View className="flex-row items-center justify-between gap-3">
+          <Text className="flex-1 text-[15px] leading-5 text-ink">
+            {progress.done.includes(day) ? `${left} new since you finished` : `${left === 1 ? 'One thing to sort' : `${left} things to sort`}, about a minute`}
+          </Text>
+          <Button small label="Start" onPress={() => { haptic.press(); router.push('/today') }} />
+        </View>
+      ) : (
+        <View className="flex-row items-center gap-2">
+          <Icon name="checkmark.circle.fill" fallback="✓" size={22} color={colors.teal} />
+          <Text className="text-[15px] font-bold" style={{ color: colors.tealDeep }}>Today&apos;s done</Text>
+        </View>
+      )}
+      <Pressable accessibilityRole="button" accessibilityLabel={safe != null ? `Safe to spend today ${money(safe)}. Open your budget` : 'Set a budget to see what\'s safe to spend each day'}
+        onPress={() => { haptic.tick(); router.push(safe != null ? '/money/budget' : '/budget-edit') }}
+        className="flex-row items-center justify-between border-t pt-3 active:opacity-70" style={{ borderTopColor: colors.border }}>
+        {safe != null
+          ? <Text className="text-[15px] text-ink">Safe to spend today <Text className="font-mono text-[15px] font-semibold text-ink">{money(safe)}</Text></Text>
+          : <Text className="text-[15px] text-ink-2">Set a budget to see what&apos;s safe to spend each day</Text>}
+        <Text className="text-[16px] text-ink-3">›</Text>
+      </Pressable>
+    </View>
+  )
+}
 
 const MOVE_ROUTE: Record<NextMove['tab'], '/money/budget' | '/plan/contributions' | '/plan/what-if'> = {
   cashflow: '/money/budget', contributions: '/plan/contributions', 'fire-calculator': '/plan/what-if',
@@ -169,10 +248,16 @@ function NextMoveCard({ data }: { data: AccountData }) {
   const move = phoneNextMove(data, snoozed, answers)
   if (!move) return null
   const later = () => { haptic.tick(); snoozeMove(move.key).catch(() => {}); setSnoozed(new Set([...snoozed, move.key])) }
+  const icon = MOVE_ICON[move.key === 'lease' ? 'lease' : move.tab]
+  // The one card on Home that looks different (Von Restorff): a green frame and
+  // an icon, where every other card is a plain soft panel.
   return (
-    <View className="gap-3 rounded-3xl p-4" style={{ backgroundColor: panel() }}>
-      <View className="flex-row items-center justify-between">
-        <Text className="text-[12px] font-bold uppercase tracking-[1.5px] text-ink-3">Your next move</Text>
+    <View className="gap-3 rounded-3xl p-4" style={{ backgroundColor: colors.card, borderWidth: 2, borderColor: colors.green }}>
+      <View className="flex-row items-center gap-3">
+        <View className="h-11 w-11 items-center justify-center rounded-[13px]" style={{ backgroundColor: colors.green50 }}>
+          <Icon name={icon.name} fallback={icon.fallback} size={24} color={colors.green} />
+        </View>
+        <Text className="flex-1 text-[12px] font-bold uppercase tracking-[1.5px]" style={{ color: colors.green }}>Your next move</Text>
         <Text className="text-[13px] font-bold" style={{ color: colors.green }}>{move.door === 'plan' ? 'Plan ›' : 'Money ›'}</Text>
       </View>
       <Text className="text-[18px] font-bold leading-6 text-ink">{move.title}</Text>
@@ -190,8 +275,13 @@ function NextMoveCard({ data }: { data: AccountData }) {
   )
 }
 
-const signed = (n: number) => `${n < 0 ? '−' : ''}${money(Math.abs(n))}`
-const dayLabel = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+const MOVE_ICON: Record<NextMove['tab'] | 'lease', { name: 'chart.pie.fill' | 'chart.line.uptrend.xyaxis' | 'wand.and.stars' | 'house.fill'; fallback: string }> = {
+  cashflow: { name: 'chart.pie.fill', fallback: '🥧' },
+  contributions: { name: 'chart.line.uptrend.xyaxis', fallback: '📈' },
+  'fire-calculator': { name: 'wand.and.stars', fallback: '✨' },
+  lease: { name: 'house.fill', fallback: '🏠' },
+}
+
 
 /**
  * Until payday (D-90), the website's card: one number, then the line behind
@@ -199,8 +289,7 @@ const dayLabel = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString
  * flat but for the bills, each icon at the start of its drop, ending on
  * payday at the number. Below zero is striped red.
  */
-function UntilPayday({ data }: { data: AccountData }) {
-  const [w, setW] = useState(0)
+function UntilPayday({ data,onAdjustmentChange }: { data: AccountData;onAdjustmentChange:(a:{everyday:number|null;cushion:number})=>void }) {
   const f = freeUntilPayday(data)
   if (!f) return null
   const counted = new Set(data.plaidAccounts.filter(a => a.type === 'depository' && isCounted({ id: a.id, name: a.name, type: a.type, subtype: a.subtype, balanceUSD: 0 }, data.spendToggles ?? {})).map(a => a.plaid_account_id).filter(Boolean))
@@ -211,74 +300,9 @@ function UntilPayday({ data }: { data: AccountData }) {
   const bills = f.bills.map(b => ({ iso: b.iso, usd: -b.amount, description: b.description, category: b.category ?? guessBillCategory(b.description) }))
   if (f.cardsOwed > 0) bills.unshift({ iso: isoDay(new Date()), usd: f.cardsOwed, description: 'Card balance', category: 'credit_card' })
   const line = paydayLine({ today: new Date(), cash: f.spending, paydayIso: f.payday.iso, bills, rows, payMin: biggestPay * 0.5 })
-  const { span, today, past, dips, end } = line
-  const short = end < 0
-  const H = 130, TOP = 32
-  const vals = [...past, end, ...line.bills.map(b => b.before)]
-  const hi = Math.max(...vals), lo = Math.min(0, ...vals)
-  const floor = short ? Math.min(lo, -(hi - lo) * 0.3) : lo
-  const x = (d: number) => (d / Math.max(1, span)) * w
-  const y = (v: number) => TOP + ((hi - v) / Math.max(1, hi - floor)) * (H - TOP)
-  const pastPath = past.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
-  let fut = `M${x(today).toFixed(1)},${y(past[today]).toFixed(1)}`
-  for (const b of line.bills) fut += ` L${x(b.day).toFixed(1)},${y(b.before).toFixed(1)} L${x(b.day).toFixed(1)},${y(b.before - b.usd).toFixed(1)}`
-  fut += ` L${w},${y(end).toFixed(1)}`
-  const zero = y(0)
-  const marks: (typeof line.bills[number] & { more: number })[] = []
-  for (const b of line.bills) {
-    const near = marks.find(m => Math.abs(x(m.day) - x(b.day)) < 32)
-    if (!near) marks.push({ ...b, more: 0 })
-    else { near.more += 1; if (b.usd > near.usd) Object.assign(near, { day: b.day, usd: b.usd, before: b.before, category: b.category }) }
-  }
   const cats = expenseCategories()
-  const Pin = ({ left, top, category, more = 0, faded = false }: { left: number; top: number; category: string | null; more?: number; faded?: boolean }) => (
-    <View style={{ position: 'absolute', left: left - 14, top: top - 32, width: 28, height: 28, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface2, borderWidth: 2, borderColor: panel(), opacity: faded ? 0.8 : 1 }}>
-      <CategoryGlyph cat={{ key: category ?? 'other', color: cats.find(c => c.key === category)?.color }} size={13} />
-      {more > 0 && <View style={{ position: 'absolute', right: -8, top: -8, borderRadius: 7, paddingHorizontal: 4, backgroundColor: colors.ink }}><Text style={{ fontSize: 10, fontWeight: '800', color: panel() }}>+{more}</Text></View>}
-    </View>
-  )
-  return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`Until payday: ${signed(end)} ${short ? 'short' : 'yours'} until ${dayLabel(f.payday.iso)}. Open your budget`} onPress={() => { haptic.tick(); router.push('/money/budget') }}
-      className="gap-2 rounded-3xl p-4 active:opacity-80" style={{ backgroundColor: panel() }}>
-      <View className="flex-row items-center justify-between">
-        <Text className="text-[12px] font-bold uppercase tracking-[1.5px] text-ink-3">Until payday</Text>
-        <Text className="text-[13px] font-bold" style={{ color: colors.green }}>Money ›</Text>
-      </View>
-      <View className="flex-row items-baseline gap-2">
-        <Text className={`font-mono text-[30px] ${short ? 'text-neg-ink' : 'text-ink'}`}>{signed(end)}</Text>
-        <Text className="text-[13px] text-ink-3">{short ? 'short before payday' : 'yours until payday'}</Text>
-      </View>
-      <View style={{ height: H + 22, marginTop: 4 }} onLayout={e => setW(e.nativeEvent.layout.width - 14)}>
-        {w > 0 && (
-          <>
-            <Svg width={w + 14} height={H} style={{ overflow: 'visible' }}>
-              <Defs>
-                <SvgGradient id="payfill" x1="0" y1="0" x2="0" y2="1"><Stop offset="0" stopColor={colors.teal} stopOpacity={0.22} /><Stop offset="1" stopColor={colors.teal} stopOpacity={0} /></SvgGradient>
-                <Pattern id="payshort" width={7} height={7} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                  <Rect width={7} height={7} fill={colors.negBg} /><Line x1={0} y1={0} x2={0} y2={7} stroke={colors.neg} strokeWidth={2} opacity={0.45} />
-                </Pattern>
-              </Defs>
-              <Path d={`${fut} L${w},${Math.min(zero, H)} L${x(today)},${Math.min(zero, H)} Z`} fill="url(#payfill)" />
-              {short && <Rect x={0} y={zero} width={w} height={H - zero} fill="url(#payshort)" />}
-              {short && <Line x1={0} x2={w} y1={zero} y2={zero} stroke={colors.neg} strokeWidth={1.5} />}
-              <Path d={pastPath} fill="none" stroke={colors.teal} strokeOpacity={0.35} strokeWidth={2.5} strokeLinejoin="round" />
-              <Path d={fut} fill="none" stroke={colors.teal} strokeWidth={2.5} strokeLinejoin="round" />
-              <Line x1={x(today)} x2={x(today)} y1={y(past[today])} y2={H} stroke={colors.teal} strokeWidth={1.5} strokeDasharray="2 3" />
-              <Circle cx={x(today)} cy={y(past[today])} r={6} fill={colors.tealDeep} stroke={panel()} strokeWidth={2.5} />
-            </Svg>
-            {dips.map(d => <Pin key={`d${d.day}`} left={x(d.day - 1)} top={y(past[d.day - 1])} category={d.category} faded />)}
-            {marks.map(m => <Pin key={`b${m.day}`} left={x(m.day)} top={y(m.before)} category={m.category} more={m.more} />)}
-            <View style={{ position: 'absolute', left: w - 12, top: y(end) - 12, width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: short ? colors.neg : colors.green, borderWidth: 2, borderColor: panel() }}>
-              <Text style={{ fontSize: 12, fontWeight: '800', color: '#FFFFFF' }}>$</Text>
-            </View>
-            <Text className="absolute bottom-0 left-0 text-[11px] font-bold text-ink-3">{dayLabel(line.startIso)}</Text>
-            <Text className="absolute bottom-0 right-0 text-[11px] font-bold text-ink-3">Payday · {dayLabel(f.payday.iso)}</Text>
-          </>
-        )}
-      </View>
-      {f.bills.length > 0 && <Text className="text-[13px] text-ink-2">{money(f.billsBefore)} in {f.bills.length} {f.bills.length === 1 ? 'bill' : 'bills'} before payday</Text>}
-    </Pressable>
-  )
+  const estimate = f.everyday
+  return <UntilPaydayCard onAdjustmentChange={onAdjustmentChange} key={f.payday.iso+':'+isoDay(new Date())} everyday={estimate?.amount??null} estimateSource={estimate?.source} line={line} paydayIso={f.payday.iso} billCount={f.bills.length} billTotal={f.bills.reduce((s,b)=>s+Math.abs(b.amount),0)} icon={key=>cats.find(c=>c.key===key)?.emoji??'💳'} onOpen={()=>{haptic.tick();router.push('/money/budget')}} />
 }
 
 /**

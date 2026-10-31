@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase";
 import { fetchAllPages } from "@/lib/supabase-pages";
 import CsvImportModal from "./CsvImportModal";
 import PlaidConnect, { type BankStatus } from "./PlaidConnect";
 import SpendRangePill, { rangeLabel } from "./SpendRangePill";
+import TransactionsLoading from "./TransactionsLoading";
+import type { ScheduledCalendarItem } from "@/lib/marked-calendar";
 import SpendCard, { type CatDisplay } from "./SpendCard";
 import ReviewPill from "./ReviewPill";
 import WorthALook from "./WorthALook";
@@ -18,6 +21,11 @@ import { SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/li
 import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 
 /* Transactions show cents: these are reconciled against a statement. */
+// The category picker renders in a portal: the row clips its overflow. Desktop anchors it to the icon; phones show a bottom sheet.
+function PickerHost({ children }: { children: ReactNode }) {
+  return typeof document !== "undefined" ? createPortal(children, document.body) : null;
+}
+
 const txMoney = (n: number, currency = "USD") => formatMoney(n, { currency, decimals: 2 });
 import {
   EXPENSE_CATEGORIES, INCOME_CATEGORIES, ALL_CATEGORIES as ALL_CATEGORIES_BASE,
@@ -27,6 +35,9 @@ import {
 import { useCustomCategories } from "@/lib/useCustomCategories";
 import { combineDateAndTime, formatTime, timeInputValue } from "@/lib/transaction-time";
 import { buildMerchantMemory, merchantKey, suggestFromHistory } from "@/lib/merchant-memory";
+import { transactionNeed, type NeedOverrides } from "@/lib/needs";
+import { SegmentedControl } from "@/components/ui";
+import { readMerchantRules } from "@/lib/merchant-rules";
 import { trackTxFlagResolved, trackTxRangeChanged, trackTxReviewOpened } from "@/lib/analytics";
 
 type CustomCategory = { key: string; label: string; code: string; color: string; emoji?: string };
@@ -171,7 +182,7 @@ function ProjectInput({
           <button
             type="button"
             onClick={commit}
-            style={{ background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 8, padding: "0 14px", fontSize: 12, fontWeight: 700, color: "#047857", cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit" }}
+            style={{ background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 8, padding: "0 14px", fontSize: 12, fontWeight: 700, color: "#151719", cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit" }}
           >
             + Add
           </button>
@@ -224,6 +235,9 @@ function QuickAddForm({
   preferredCurrencies,
   onAddCategory,
   onAddSubCategory,
+  alwaysShop = false,
+  onAlwaysShop,
+  categoryNeeds = {},
 }: {
   draft: DraftTransaction;
   setDraft: React.Dispatch<React.SetStateAction<DraftTransaction>>;
@@ -238,6 +252,10 @@ function QuickAddForm({
   preferredCurrencies: string[];
   onAddCategory: (cat: CustomCategory) => void;
   onAddSubCategory: (catKey: string, sub: string) => void;
+  /** "Always for this shop" (D-106), offered when editing a saved spend. */
+  alwaysShop?: boolean;
+  onAlwaysShop?: (on: boolean) => void;
+  categoryNeeds?: NeedOverrides;
 }) {
   const amountRef = useRef<HTMLInputElement>(null);
   const [categorizing, setCategorizing] = useState(false);
@@ -317,16 +335,9 @@ function QuickAddForm({
     <div className="cf-quick-form" style={{ display: "flex", flexDirection: "column" }}>
       {/* Header */}
       <div style={{ padding: "14px 20px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--uf-border)" }}>
-        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "1.1px", textTransform: "uppercase", color: "#047857" }}>
-          {editing ? "Edit transaction" : "Quick add"}
-        </div>
-        {editing ? (
-          <button onClick={onCancelEdit} style={{ background: "transparent", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "var(--uf-text-2)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-            ✕ Cancel
-          </button>
-        ) : (
-          <div style={{ fontSize: 10.5, fontWeight: 700, color: "var(--uf-text-3)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Pinned</div>
-        )}
+        <h2 id="cf-quick-form-title" style={{ margin: 0, fontSize: 17, fontWeight: 800, color: "var(--uf-ink)" }}>
+          {editing ? "Edit transaction" : "Add a transaction"}
+        </h2>
       </div>
 
       {/* Body */}
@@ -339,7 +350,7 @@ function QuickAddForm({
               onClick={() => setDraft((d) => ({ ...d, transaction_type: t, category: t === "income" ? "salary" : "", sub_category: "", aiSuggestion: null }))}
               style={{
                 background: draft.transaction_type === t ? (t === "income" ? "#ECFDF5" : t === "transfer" ? "#F3F4F6" : "var(--uf-card)") : "transparent",
-                color: draft.transaction_type === t ? (t === "income" ? "#047857" : t === "transfer" ? "#6B7280" : "var(--uf-text)") : "var(--uf-text-2)",
+                color: draft.transaction_type === t ? (t === "income" ? "#151719" : t === "transfer" ? "#6B7280" : "var(--uf-text)") : "var(--uf-text-2)",
                 border: "none", borderRadius: 999, padding: "5px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer",
                 boxShadow: draft.transaction_type === t && t === "expense" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
               }}
@@ -358,7 +369,7 @@ function QuickAddForm({
           display: "flex", alignItems: "baseline", gap: 6,
           transition: "border-color 0.15s",
         }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = "#047857")}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--uf-ink)")}
           onBlur={(e) => (e.currentTarget.style.borderColor = "var(--uf-border)")}
         >
           <span style={{ fontSize: 26, fontWeight: 700, color: "var(--uf-text-3)", letterSpacing: "-0.6px" }}>$</span>
@@ -372,8 +383,8 @@ function QuickAddForm({
               const v = e.target.value.replace(/[^0-9.]/g, "").replace(/(\..*?)\./g, "$1");
               setField("amount", v);
             }}
-            autoFocus
-            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 34, fontWeight: 800, color: isIncome ? "#059669" : "#064E3B", letterSpacing: "-1px", fontVariantNumeric: "tabular-nums", minWidth: 0, width: "100%", fontFamily: "inherit" }}
+            data-drawer-autofocus
+            style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 34, fontWeight: 800, color: "var(--uf-ink)", letterSpacing: "-1px", fontVariantNumeric: "tabular-nums", minWidth: 0, width: "100%", fontFamily: "inherit" }}
           />
           <select
             value={draft.currency}
@@ -391,10 +402,10 @@ function QuickAddForm({
             onClick={() => setShowDescription((v) => !v)}
             style={{
               display: "inline-flex", alignItems: "center", gap: 4,
-              background: (showDescription || !!draft.description) ? "rgba(99,102,241,0.1)" : "var(--uf-surface-2)",
-              border: `1px solid ${(showDescription || !!draft.description) ? "#6366f1" : "var(--uf-border)"}`,
+              background: (showDescription || !!draft.description) ? "#EEE9FA" : "var(--uf-surface-2)",
+              border: `1px solid ${(showDescription || !!draft.description) ? "#D9CEF3" : "var(--uf-border)"}`,
               borderRadius: 999, padding: "5px 10px",
-              fontSize: 11, fontWeight: 700, color: (showDescription || !!draft.description) ? "#6366f1" : "var(--uf-text-2)",
+              fontSize: 11, fontWeight: 700, color: (showDescription || !!draft.description) ? "#151719" : "var(--uf-text-2)",
               cursor: "pointer", fontFamily: "inherit",
             }}
           >
@@ -405,10 +416,10 @@ function QuickAddForm({
             onClick={() => setShowNotes((v) => !v)}
             style={{
               display: "inline-flex", alignItems: "center", gap: 4,
-              background: (showNotes || !!draft.notes) ? "rgba(99,102,241,0.1)" : "var(--uf-surface-2)",
-              border: `1px solid ${(showNotes || !!draft.notes) ? "#6366f1" : "var(--uf-border)"}`,
+              background: (showNotes || !!draft.notes) ? "#EEE9FA" : "var(--uf-surface-2)",
+              border: `1px solid ${(showNotes || !!draft.notes) ? "#D9CEF3" : "var(--uf-border)"}`,
               borderRadius: 999, padding: "5px 10px",
-              fontSize: 11, fontWeight: 700, color: (showNotes || !!draft.notes) ? "#6366f1" : "var(--uf-text-2)",
+              fontSize: 11, fontWeight: 700, color: (showNotes || !!draft.notes) ? "#151719" : "var(--uf-text-2)",
               cursor: "pointer", fontFamily: "inherit",
             }}
           >
@@ -421,7 +432,7 @@ function QuickAddForm({
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
               Description
-              {categorizing && <span style={{ color: "#f97316", marginLeft: 8, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>categorizing…</span>}
+              {categorizing && <span style={{ color: "var(--uf-warn)", marginLeft: 8, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>categorizing…</span>}
             </label>
             <input
               type="text"
@@ -463,7 +474,7 @@ function QuickAddForm({
             style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               background: "linear-gradient(95deg, rgba(32,212,191,0.12), rgba(98,250,227,0.12))",
-              border: "1px solid #6EE7B7", color: "#047857",
+              border: "1px solid #6EE7B7", color: "#151719",
               borderRadius: 999, padding: "6px 12px 6px 10px",
               fontSize: 12, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start",
             }}
@@ -511,7 +522,7 @@ function QuickAddForm({
                     onClick={() => { setField("category", c.key); setField("sub_category", ""); setShowSubForm(false); }}
                     style={{
                       background: isSelected ? "#ECFDF5" : "transparent",
-                      border: `1px solid ${isSelected ? "#047857" : "var(--uf-border)"}`,
+                      border: `1px solid ${isSelected ? "#151719" : "var(--uf-border)"}`,
                       borderRadius: 8, padding: "8px 4px 6px",
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                       cursor: "pointer", transition: "all 0.12s",
@@ -519,10 +530,10 @@ function QuickAddForm({
                     }}
                   >
                     {isCustom && (
-                      <span style={{ position: "absolute", top: 4, right: 4, width: 6, height: 6, borderRadius: "50%", background: "#f97316", flexShrink: 0 }} title="Custom category" />
+                      <span style={{ position: "absolute", top: 4, right: 4, width: 6, height: 6, borderRadius: "50%", background: "#FFD4B8", flexShrink: 0 }} title="Custom category" />
                     )}
                     <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.emoji}</div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#047857" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2 }}>{c.label}</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#151719" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2 }}>{c.label}</span>
                   </button>
                 );
               })}
@@ -563,7 +574,7 @@ function QuickAddForm({
                     <button
                       key={c} type="button"
                       onClick={() => setNewCatColor(c)}
-                      style={{ width: 22, height: 22, borderRadius: "50%", background: c, border: "none", cursor: "pointer", outline: newCatColor === c ? "2.5px solid #047857" : "2px solid transparent", outlineOffset: 2 }}
+                      style={{ width: 22, height: 22, borderRadius: "50%", background: c, border: "none", cursor: "pointer", outline: newCatColor === c ? "2.5px solid #151719" : "2px solid transparent", outlineOffset: 2 }}
                     />
                   ))}
                 </div>
@@ -571,7 +582,7 @@ function QuickAddForm({
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 4 }}>
                   {emojiPalette.map((em) => (
                     <button key={em} type="button" onClick={() => setNewCatEmoji(newCatEmoji === em ? "" : em)}
-                      style={{ width: 28, height: 28, background: newCatEmoji === em ? "#DCFCE7" : "transparent", border: `1.5px solid ${newCatEmoji === em ? "#059669" : "var(--uf-border)"}`, borderRadius: 5, cursor: "pointer", fontSize: 15, lineHeight: 1 }}>
+                      style={{ width: 28, height: 28, background: newCatEmoji === em ? "#DCFCE7" : "transparent", border: `1.5px solid ${newCatEmoji === em ? "#151719" : "var(--uf-border)"}`, borderRadius: 5, cursor: "pointer", fontSize: 15, lineHeight: 1 }}>
                       {em}
                     </button>
                   ))}
@@ -588,7 +599,7 @@ function QuickAddForm({
                       setField("category", key); setField("sub_category", "");
                       setShowCatForm(false); setNewCatLabel(""); setNewCatColor(colorPalette[0]); setNewCatEmoji("");
                     }}
-                    style={{ flex: 1, background: "#047857", color: "#fff", border: "none", borderRadius: 6, padding: "7px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                    style={{ flex: 1, background: "#151719", color: "#fff", border: "none", borderRadius: 6, padding: "7px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                   >
                     Add
                   </button>
@@ -619,10 +630,10 @@ function QuickAddForm({
                     onClick={() => setField("sub_category", isSelected ? "" : sc)}
                     style={{
                       background: isSelected ? "#ECFDF5" : "var(--uf-surface-2)",
-                      border: `1px solid ${isSelected ? "#047857" : "transparent"}`,
+                      border: `1px solid ${isSelected ? "#151719" : "transparent"}`,
                       borderRadius: 999, padding: "5px 12px",
                       fontSize: 12, fontWeight: 600,
-                      color: isSelected ? "#047857" : "var(--uf-text-2)",
+                      color: isSelected ? "#151719" : "var(--uf-text-2)",
                       cursor: "pointer", fontFamily: "inherit",
                     }}>
                     {sc}
@@ -666,48 +677,26 @@ function QuickAddForm({
             <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
               Classify
             </label>
-            <div style={{ display: "flex", gap: 6 }}>
-              {(["need", "want", "work", "untagged"] as const).map((option) => {
-                const hasNeed = draft.tags.includes("need");
-                const hasWant = draft.tags.includes("want");
-                const hasWork = draft.tags.includes("work");
-                const isSelected = option === "need" ? hasNeed : option === "want" ? hasWant : option === "work" ? hasWork : !hasNeed && !hasWant && !hasWork;
-                const bgMap = { need: "#DCFCE7", want: "#FEE2E2", work: "#EEF2FF", untagged: "var(--uf-surface-2)" };
-                const borderMap = { need: "#22d3a5", want: "#f97316", work: "#6366f1", untagged: "var(--uf-border)" };
-                const colorMap = { need: "#059669", want: "#ea580c", work: "#4f46e5", untagged: "var(--uf-text)" };
-                return (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => {
-                      const base = draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work");
-                      if (option === "untagged") {
-                        setField("tags", base);
-                      } else if (isSelected) {
-                        setField("tags", base);
-                      } else {
-                        setField("tags", [...base, option]);
-                      }
-                    }}
-                    style={{
-                      flex: 1,
-                      background: isSelected ? bgMap[option] : "transparent",
-                      border: `1px solid ${isSelected ? borderMap[option] : "var(--uf-border)"}`,
-                      borderRadius: 8,
-                      padding: "9px 6px",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: isSelected ? colorMap[option] : "var(--uf-text-2)",
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                      transition: "all 0.12s",
-                    }}
-                  >
-                    {option === "need" ? "💚 Need" : option === "want" ? "🧡 Want" : option === "work" ? "💼 Work" : "◯ Clear"}
-                  </button>
-                );
-              })}
+            {/* One switch, Need or Want, the same pill as elsewhere (D-106); work costs keep their own tag. */}
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              <SegmentedControl
+                label="Need or want"
+                value={draft.tags.includes("need") ? "need" : draft.tags.includes("want") ? "want" : transactionNeed({ category: draft.category, sub_category: draft.sub_category || null, tags: [] }, categoryNeeds)}
+                onChange={(v) => setField("tags", [...draft.tags.filter((t) => t !== "need" && t !== "want"), v])}
+                options={[{ value: "need", label: "Need" }, { value: "want", label: "Want" }]}
+              />
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--uf-text-2)", cursor: "pointer" }}>
+                <input type="checkbox" checked={draft.tags.includes("work")}
+                  onChange={(e) => setField("tags", e.target.checked ? [...draft.tags.filter((t) => t !== "work"), "work"] : draft.tags.filter((t) => t !== "work"))} />
+                Work cost
+              </label>
             </div>
+            {editing && onAlwaysShop && draft.description.trim() && (
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--uf-text-2)", cursor: "pointer" }}>
+                <input type="checkbox" checked={alwaysShop} onChange={(e) => onAlwaysShop(e.target.checked)} />
+                Always for {draft.description.trim()}
+              </label>
+            )}
           </div>
         )}
 
@@ -734,11 +723,11 @@ function QuickAddForm({
               onClick={() => setShowProject((v) => !v)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
-                background: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "rgba(99,102,241,0.1)" : "var(--uf-surface-2)",
-                border: `1px solid ${(showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#6366f1" : "var(--uf-border)"}`,
+                background: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#EEE9FA" : "var(--uf-surface-2)",
+                border: `1px solid ${(showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#D9CEF3" : "var(--uf-border)"}`,
                 borderRadius: 999, padding: "5px 10px",
                 fontSize: 11, fontWeight: 700,
-                color: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#6366f1" : "var(--uf-text-2)",
+                color: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#151719" : "var(--uf-text-2)",
                 cursor: "pointer", fontFamily: "inherit",
               }}
             >
@@ -779,7 +768,7 @@ function QuickAddForm({
               )}
             </div>
             {draft.refund_amount && parseFloat(draft.refund_amount) > 0 && draft.amount && parseFloat(draft.amount) > 0 && (
-              <div style={{ fontSize: 12, color: "#059669", fontWeight: 600 }}>
+              <div style={{ fontSize: 12, color: "#17684B", fontWeight: 600 }}>
                 {parseFloat(draft.refund_amount) >= parseFloat(draft.amount)
                   ? "✓ Fully refunded — net cost: 0"
                   : `Net cost: ${txMoney(parseFloat(draft.amount) - parseFloat(draft.refund_amount), draft.currency)}`}
@@ -797,12 +786,12 @@ function QuickAddForm({
             {draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").map((tag) => (
-                  <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "#047857" }}>
+                  <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "#151719" }}>
                     #{tag}
                     <button
                       type="button"
                       onClick={() => setField("tags", draft.tags.filter((t) => t !== tag))}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: "#6EE7B7", fontSize: 16, lineHeight: 1, padding: "0 0 0 2px", display: "flex", alignItems: "center" }}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "#E3F7EF", fontSize: 16, lineHeight: 1, padding: "0 0 0 2px", display: "flex", alignItems: "center" }}
                     >×</button>
                   </span>
                 ))}
@@ -830,14 +819,14 @@ function QuickAddForm({
                     onClick={() => setField("category", c.key)}
                     style={{
                       background: isSelected ? "#ECFDF5" : "transparent",
-                      border: `1px solid ${isSelected ? "#047857" : "var(--uf-border)"}`,
+                      border: `1px solid ${isSelected ? "#151719" : "var(--uf-border)"}`,
                       borderRadius: 8, padding: "8px 4px 6px",
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                       cursor: "pointer",
                     }}
                   >
                     <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.emoji}</div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#047857" : "var(--uf-text-2)", textAlign: "center" }}>{c.label}</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#151719" : "var(--uf-text-2)", textAlign: "center" }}>{c.label}</span>
                   </button>
                 );
               })}
@@ -847,7 +836,7 @@ function QuickAddForm({
       </div>
 
       {/* Footer */}
-      <div className="cf-quick-form-footer" style={{ padding: "14px 20px 18px", paddingBottom: "calc(18px + env(safe-area-inset-bottom, 0px))", borderTop: "1px solid var(--uf-border)", background: "linear-gradient(180deg, rgba(250,251,252,0.92), var(--uf-card) 24%)", display: "flex", flexDirection: "column", gap: 10, position: "sticky", bottom: 0, zIndex: 2 }}>
+      <div className="cf-quick-form-footer" style={{ padding: "14px 20px 18px", paddingBottom: "calc(18px + env(safe-area-inset-bottom, 0px))", borderTop: "1px solid var(--uf-border)", background: "var(--uf-card)", display: "flex", flexDirection: "column", gap: 10, position: "sticky", bottom: 0, zIndex: 2 }}>
         {!editing && (
           <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", fontSize: 12 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -857,7 +846,7 @@ function QuickAddForm({
                 onClick={() => setSaveAndAddAnother((v) => !v)}
                 style={{
                   display: "inline-block", width: 32, height: 18,
-                  background: saveAndAddAnother ? "#059669" : "#CBD5E1",
+                  background: saveAndAddAnother ? "#151719" : "#CBD5E1",
                   borderRadius: 999, position: "relative", cursor: "pointer", transition: "background 0.12s", flexShrink: 0,
                 }}
               >
@@ -880,8 +869,8 @@ function QuickAddForm({
           onClick={() => handleSubmit()}
           disabled={!canSave || saving}
           style={{
-            background: canSave ? "#047857" : "#CBD5E1",
-            color: "#fff", border: "none", borderRadius: 8,
+            background: canSave ? "var(--uf-ink)" : "var(--uf-surface-2)",
+            color: canSave ? "var(--uf-card)" : "var(--uf-ink-3)", border: "none", borderRadius: 999,
             padding: "12px 16px", fontSize: 14, fontWeight: 700,
             display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
             cursor: canSave ? "pointer" : "not-allowed",
@@ -918,6 +907,7 @@ function TransactionList({
   formatAmount,
   catCustomizations,
   expenseCategories,
+  categoryNeeds = {},
 }: {
   transactions: Transaction[];
   editingId: string | null;
@@ -929,11 +919,14 @@ function TransactionList({
   formatAmount: (value: number) => string;
   catCustomizations: CatCustomizations;
   expenseCategories: CustomCategory[];
+  /** The person's need/want per category, so every expense shows what it counts as (D-106). */
+  categoryNeeds?: NeedOverrides;
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "expense" | "income" | "transfer">("all");
   const [tagFilter, setTagFilter] = useState<"all" | "need" | "want" | "work">("all");
   const [catPickerTxId, setCatPickerTxId] = useState<string | null>(null);
+  const [pickerPos, setPickerPos] = useState<{ left: number; top?: number; bottom?: number }>({ left: 0 });
   const [swipedId, setSwipedId] = useState<string | null>(null);
   const touchStartX = useRef<number>(0);
 
@@ -942,8 +935,11 @@ function TransactionList({
     const handler = (e: MouseEvent) => {
       if (!(e.target as HTMLElement).closest("[data-cat-picker]")) setCatPickerTxId(null);
     };
+    // Anchored to the icon, so it would drift when the page scrolls under it.
+    const onScroll = () => { if (window.innerWidth > 700) setCatPickerTxId(null); };
     document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    window.addEventListener("scroll", onScroll, true);
+    return () => { document.removeEventListener("mousedown", handler); window.removeEventListener("scroll", onScroll, true); };
   }, [catPickerTxId]);
   const todayYmd = new Date().toISOString().split("T")[0];
   const allCategories = useMemo(() => [...expenseCategories, ...INCOME_CATEGORIES], [expenseCategories]);
@@ -951,9 +947,9 @@ function TransactionList({
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
       if (filter !== "all" && t.transaction_type !== filter) return false;
-      if (tagFilter !== "all") {
-        if (!(t.tags || []).includes(tagFilter)) return false;
-      }
+      if (tagFilter === "work" && !(t.tags || []).includes("work")) return false;
+      // Need or want is what the row counts as, sorted for you or tagged (D-106).
+      if ((tagFilter === "need" || tagFilter === "want") && (t.transaction_type !== "expense" || transactionNeed(t, categoryNeeds) !== tagFilter)) return false;
       if (search) {
         const s = search.toLowerCase();
         const cat = allCategories.find((c) => c.key === t.category);
@@ -965,7 +961,7 @@ function TransactionList({
       }
       return true;
     });
-  }, [transactions, search, filter, tagFilter, allCategories]);
+  }, [transactions, search, filter, tagFilter, allCategories, categoryNeeds]);
 
   // What the rows on screen add up to, so a filter (a tag, a search, the
   // work chip) answers "how much was that" without leaving the list. The
@@ -996,7 +992,7 @@ function TransactionList({
       {/* List header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid var(--uf-border)", gap: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#064E3B", letterSpacing: "-0.2px" }}>Transactions</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "#151719", letterSpacing: "-0.2px" }}>Transactions</span>
           <span style={{ fontSize: 12, color: "var(--uf-text-3)", fontWeight: 600, marginLeft: 8 }}>{filtered.length}</span>
           {shownSpent > 0 && (
             <span style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 600, marginLeft: 12, fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" }}>
@@ -1025,10 +1021,10 @@ function TransactionList({
               onClick={() => setFilter(f)}
               style={{
                 background: filter === f ? "#ECFDF5" : "var(--uf-surface-2)",
-                border: `1px solid ${filter === f ? "#6EE7B7" : "transparent"}`,
+                border: `1px solid ${filter === f ? "#E3F7EF" : "transparent"}`,
                 borderRadius: 999, padding: "6px 14px",
                 fontSize: 12, fontWeight: 600,
-                color: filter === f ? "#047857" : "var(--uf-text-2)",
+                color: filter === f ? "#151719" : "var(--uf-text-2)",
                 cursor: "pointer", fontFamily: "inherit",
               }}
             >
@@ -1046,15 +1042,15 @@ function TransactionList({
             onClick={() => setTagFilter(tag)}
             style={{
               background: tagFilter === tag
-                ? tag === "need" ? "rgba(34,211,165,0.15)" : tag === "want" ? "rgba(249,115,22,0.15)" : tag === "work" ? "rgba(99,102,241,0.15)" : "#ECFDF5"
+                ? tag === "need" ? "#BCE9DA" : tag === "want" ? "#FFD4B8" : tag === "work" ? "#D9CEF3" : "#FFE58A"
                 : "var(--uf-surface-2)",
               border: `1px solid ${tagFilter === tag
-                ? tag === "need" ? "#22d3a5" : tag === "want" ? "#f97316" : tag === "work" ? "#6366f1" : "#6EE7B7"
+                ? tag === "need" ? "#BCE9DA" : tag === "want" ? "#FFD4B8" : tag === "work" ? "#D9CEF3" : "#E3F7EF"
                 : "transparent"}`,
               borderRadius: 999, padding: "4px 12px",
               fontSize: 11, fontWeight: 600,
               color: tagFilter === tag
-                ? tag === "need" ? "#22d3a5" : tag === "want" ? "#f97316" : tag === "work" ? "#6366f1" : "#047857"
+                ? "#151719"
                 : "var(--uf-text-2)",
               cursor: "pointer", fontFamily: "inherit",
             }}
@@ -1069,7 +1065,7 @@ function TransactionList({
         {groups.length === 0 ? (
           <div style={{ padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}>
             <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#17684B" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 17 9 13l3 3 7-7" /><path d="M14 6h5v5" />
               </svg>
             </div>
@@ -1077,7 +1073,7 @@ function TransactionList({
               <>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "var(--uf-text)" }}>No matches</div>
                 <div style={{ fontSize: 13, color: "var(--uf-text-2)", maxWidth: 260 }}>Try clearing the search or tag filter.</div>
-                <button onClick={() => { setSearch(""); setTagFilter("all"); }} style={{ background: "#047857", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Clear filters</button>
+                <button onClick={() => { setSearch(""); setTagFilter("all"); }} style={{ background: "#151719", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Clear filters</button>
               </>
             ) : (
               <>
@@ -1121,7 +1117,7 @@ function TransactionList({
                     const baseDisplay = { color: cat?.color || "#6b7280", emoji: (cat as {emoji?: string})?.emoji || "📦" };
                     const { color: chipColor, emoji: chipEmoji } = resolveDisplay(baseDisplay, catCustomizations, tx.category);
                     const txTags = tx.tags || [];
-                    const needOrWant = txTags.includes("need") ? "need" : txTags.includes("want") ? "want" : null;
+                    const needOrWant = transactionNeed(tx, categoryNeeds);
                     const isWorkCost = txTags.includes("work");
                     const displayTags = txTags.filter((t) => t !== "need" && t !== "want" && t !== "work" && !isSystemTag(t)).slice(0, 2);
                     // Null for most rows — only Plaid, an import that carried
@@ -1149,7 +1145,8 @@ function TransactionList({
                           borderTop: "1px solid var(--uf-border)", cursor: "pointer",
                           background: isEditing ? "rgba(16,185,129,0.12)" : wasJustAdded ? "rgba(16,185,129,0.08)" : "transparent",
                           transition: "background 0.12s, transform 0.2s",
-                          transform: swipedId === tx.id ? "translateX(-72px)" : "translateX(0)",
+                          // No transform at rest: one would trap the phone category sheet (position: fixed) inside the row.
+                          transform: swipedId === tx.id ? "translateX(-72px)" : "none",
                           position: "relative", zIndex: 1,
                         }}
                         onMouseEnter={(e) => { if (!isEditing && swipedId !== tx.id) (e.currentTarget as HTMLDivElement).style.background = "var(--uf-surface)"; }}
@@ -1168,6 +1165,9 @@ function TransactionList({
                             onClick={(e) => {
                               e.stopPropagation();
                               if (tx.transaction_type === "transfer") return;
+                              const r = e.currentTarget.getBoundingClientRect();
+                              const below = r.bottom + 6 + 300 <= window.innerHeight;
+                              setPickerPos({ left: Math.max(8, Math.min(r.left, window.innerWidth - 292)), ...(below ? { top: r.bottom + 6 } : { bottom: window.innerHeight - r.top + 6 }) });
                               setCatPickerTxId(catPickerTxId === tx.id ? null : tx.id);
                             }}
                             style={{ width: 36, height: 36, borderRadius: "50%", background: chipColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, border: "none", cursor: tx.transaction_type === "transfer" ? "default" : "pointer", padding: 0, outline: catPickerTxId === tx.id ? `2px solid ${chipColor}` : "none", outlineOffset: 2, transition: "outline 0.1s" }}
@@ -1175,9 +1175,12 @@ function TransactionList({
                             {chipEmoji}
                           </button>
                           {catPickerTxId === tx.id && (
+                            <PickerHost>
+                            <div aria-hidden className="uf-cat-scrim" />
                             <div
                               data-cat-picker
-                              style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, zIndex: 200, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: 12, boxShadow: "0 6px 24px rgba(0,0,0,0.14)", width: 228, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}
+                              className="uf-cat-picker"
+                              style={{ position: "fixed", ...pickerPos, zIndex: 200, background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: 12, boxShadow: "0 6px 24px rgba(0,0,0,0.14)", width: 284, display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 6 }}
                             >
                               <div style={{ gridColumn: "1/-1", fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--uf-text-3)", marginBottom: 4 }}>
                                 Change category
@@ -1191,15 +1194,16 @@ function TransactionList({
                                     key={c.key}
                                     data-cat-picker
                                     onClick={(e) => { e.stopPropagation(); onCategoryChange(tx, c.key); setCatPickerTxId(null); }}
-                                    style={{ background: isCurrent ? "#ECFDF5" : "transparent", border: `1px solid ${isCurrent ? "#047857" : "var(--uf-border)"}`, borderRadius: 8, padding: "7px 3px 5px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer", transition: "all 0.1s" }}
+                                    style={{ background: isCurrent ? "#ECFDF5" : "transparent", border: `1px solid ${isCurrent ? "#151719" : "var(--uf-border)"}`, borderRadius: 8, padding: "7px 3px 5px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer", transition: "all 0.1s" }}
                                     title={c.label}
                                   >
                                     <div style={{ width: 26, height: 26, borderRadius: "50%", background: cColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>{cEmoji}</div>
-                                    <span style={{ fontSize: 9, fontWeight: 600, color: isCurrent ? "#047857" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{c.label}</span>
+                                    <span style={{ fontSize: 9, fontWeight: 600, color: isCurrent ? "#151719" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{c.label}</span>
                                   </button>
                                 );
                               })}
                             </div>
+                            </PickerHost>
                           )}
                         </div>
 
@@ -1215,20 +1219,20 @@ function TransactionList({
                             {tx.transaction_type === "expense" && needOrWant && (
                               <span
                                 style={{
-                                  background: needOrWant === "need" ? "rgba(34,211,165,0.15)" : "rgba(249,115,22,0.15)",
-                                  color: needOrWant === "need" ? "#22d3a5" : "#f97316",
+                                  background: needOrWant === "need" ? "color-mix(in srgb, var(--uf-pos) 15%, transparent)" : "color-mix(in srgb, var(--uf-warn) 15%, transparent)",
+                                  color: needOrWant === "need" ? "var(--uf-pos)" : "var(--uf-warn)",
                                   border: "none", borderRadius: 999, padding: "1px 8px",
                                   fontSize: 10, fontWeight: 700, flexShrink: 0,
                                 }}
                               >
-                                {needOrWant}
+                                {needOrWant === "need" ? "Need" : "Want"}
                               </span>
                             )}
                             {tx.transaction_type === "expense" && isWorkCost && (
                               <span
                                 style={{
-                                  background: "rgba(99,102,241,0.12)",
-                                  color: "#6366f1",
+                                  background: "#EEE9FA",
+                                  color: "#151719",
                                   border: "none", borderRadius: 999, padding: "1px 8px",
                                   fontSize: 10, fontWeight: 700, flexShrink: 0,
                                 }}
@@ -1258,13 +1262,13 @@ function TransactionList({
                                 −{txMoney(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
                               </div>
                               {tx.refund_amount >= tx.amount ? (
-                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#059669", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ fully refunded</span>
+                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#17684B", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ fully refunded</span>
                               ) : (
-                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#059669", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ −{txMoney(tx.refund_amount, tx.currency).replace(/^−/, "")} net {txMoney(netAmt(tx), tx.currency).replace(/^−/, "")}</span>
+                                <span style={{ fontSize: 10.5, fontWeight: 700, color: "#17684B", background: "rgba(5,150,105,0.1)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ −{txMoney(tx.refund_amount, tx.currency).replace(/^−/, "")} net {txMoney(netAmt(tx), tx.currency).replace(/^−/, "")}</span>
                               )}
                             </>
                           ) : (
-                            <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "#059669" : "var(--uf-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "#17684B" : "var(--uf-text)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
                               {isIncome ? "+" : "−"}{txMoney(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
                             </div>
                           )}
@@ -1309,22 +1313,22 @@ function Toast({
 }) {
   const isErr = toast?.isError;
   return (
-    <div style={{
-      position: "fixed", bottom: 28, left: "50%",
+    <div className="cf-toast" role="status" aria-live="polite" style={{
+      position: "fixed", left: "50%",
       transform: `translateX(-50%) translateY(${toast ? 0 : 20}px)`,
-      opacity: toast ? 1 : 0, transition: "all 220ms",
-      background: isErr ? "#7F1D1D" : "#064E3B", color: "#fff", borderRadius: 999,
+      opacity: toast ? 1 : 0, transition: "opacity 200ms, transform 200ms",
+      background: isErr ? "var(--uf-neg-bg)" : "var(--uf-ink)", color: isErr ? "var(--uf-neg-ink)" : "var(--uf-card)", borderRadius: 999,
       padding: "10px 16px 10px 14px", fontSize: 13, fontWeight: 600,
-      display: "flex", alignItems: "center", gap: 12, zIndex: 50,
+      display: "flex", alignItems: "center", gap: 12, zIndex: 60, maxWidth: "calc(100vw - 32px)",
       pointerEvents: toast ? "auto" : "none",
       boxShadow: "0 12px 32px rgba(15,23,42,0.14)",
     }}>
-      <span style={{ width: 18, height: 18, background: isErr ? "#EF4444" : "#10B981", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12 }}>
+      <span aria-hidden style={{ width: 18, height: 18, background: isErr ? "var(--uf-neg)" : "var(--uf-pos)", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12, flexShrink: 0 }}>
         {isErr ? "✕" : "✓"}
       </span>
       <span>{toast?.msg}</span>
       {toast?.undoId && (
-        <button onClick={onUndo} style={{ background: "transparent", border: "none", color: "#62FAE3", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.4px", cursor: "pointer", padding: 0 }}>
+        <button type="button" onClick={onUndo} style={{ background: "transparent", border: "none", color: "inherit", fontSize: 13, fontWeight: 800, textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer", padding: "4px 0" }}>
           Undo
         </button>
       )}
@@ -1339,7 +1343,7 @@ function MobileBar({ onOpen, onImport }: { onOpen: () => void; onImport: () => v
       <button
         onClick={onOpen}
         aria-label="Add transaction"
-        style={{ flex: 1, background: "#047857", color: "#fff", border: "none", borderRadius: "999px 0 0 999px", padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
+        style={{ flex: 1, background: "#151719", color: "#fff", border: "none", borderRadius: "999px 0 0 999px", padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
         Add
@@ -1348,7 +1352,7 @@ function MobileBar({ onOpen, onImport }: { onOpen: () => void; onImport: () => v
       <button
         onClick={onImport}
         aria-label="Import CSV"
-        style={{ background: "#047857", color: "#fff", border: "none", borderRadius: "0 999px 999px 0", padding: "12px 16px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
+        style={{ background: "#151719", color: "#fff", border: "none", borderRadius: "0 999px 999px 0", padding: "12px 16px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
       >
         ↑ CSV
       </button>
@@ -1357,20 +1361,30 @@ function MobileBar({ onOpen, onImport }: { onOpen: () => void; onImport: () => v
 }
 
 function MobileDrawer({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  const panel = useRef<HTMLDivElement>(null);
+  // The parent passes a new onClose each render; read it through a ref so
+  // typing doesn't re-run the open/close effect (which returns focus).
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const back = document.activeElement as HTMLElement | null;
+    // Typing straight away should go into the amount.
+    const t = setTimeout(() => panel.current?.querySelector<HTMLElement>("[data-drawer-autofocus]")?.focus(), 60);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeRef.current(); };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+    return () => { clearTimeout(t); window.removeEventListener("keydown", onKey); back?.focus?.(); };
+  }, [open]);
 
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 40, opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none", transition: "opacity 200ms" }} />
-      <div className="cf-mobile-drawer" style={{ position: "fixed", left: 0, right: 0, bottom: 0, background: "var(--uf-card)", borderTopLeftRadius: 18, borderTopRightRadius: 18, zIndex: 50, transform: `translateY(${open ? 0 : "100%"})`, transition: "transform 240ms cubic-bezier(0.2,0,0,1)", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 -10px 32px rgba(15,23,42,0.2)" }}>
+      <style>{`@media (min-width: 900px){.cf-mobile-drawer{left:50%!important;right:auto!important;top:50%;bottom:auto!important;width:min(560px,calc(100vw - 48px));max-height:88vh!important;border-radius:28px!important;transform:translate(-50%,-50%)!important;transition:opacity 180ms ease!important}.cf-mobile-drawer:not([data-open]){opacity:0;visibility:hidden}.cf-mobile-drawer .cf-drawer-handle{display:none}.cf-mobile-drawer > div:first-of-type{min-height:48px}}`}</style>
+      <div ref={panel} className="cf-mobile-drawer" role="dialog" aria-modal="true" aria-labelledby="cf-quick-form-title"
+        data-open={open ? "" : undefined} inert={!open} style={{ position: "fixed", left: 0, right: 0, bottom: 0, background: "var(--uf-card)", borderTopLeftRadius: 18, borderTopRightRadius: 18, zIndex: 50, transform: `translateY(${open ? 0 : "100%"})`, transition: "transform 240ms cubic-bezier(0.2,0,0,1)", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 -10px 32px rgba(15,23,42,0.2)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "10px 16px 4px", position: "relative" }}>
-          <div onClick={onClose} style={{ width: 44, height: 5, borderRadius: 99, background: "#CBD5E1", cursor: "pointer" }} />
-          <button onClick={onClose} style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", fontSize: 20, color: "var(--uf-text-3)", cursor: "pointer", lineHeight: 1, padding: "4px 8px" }}>✕</button>
+          <div className="cf-drawer-handle" aria-hidden onClick={onClose} style={{ width: 44, height: 5, borderRadius: 99, background: "var(--uf-border-2)", cursor: "pointer" }} />
+          <button type="button" aria-label="Close" onClick={onClose} style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", fontSize: 20, color: "var(--uf-text-3)", cursor: "pointer", lineHeight: 1, padding: "4px 8px" }}>✕</button>
         </div>
         <div style={{ flex: 1, overflowY: "auto", overscrollBehavior: "contain" }}>
           <div style={{ maxWidth: 480, margin: "0 auto" }}>{children}</div>
@@ -1466,7 +1480,7 @@ function AiReviewModal({
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button onClick={() => onApproveAll(pending.map(resolve))}
-              style={{ background: "var(--uf-green)", color: "#fff", border: "none", borderRadius: 7, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              style={{ background: "var(--uf-green)", color: "var(--uf-card)", border: "none", borderRadius: 7, padding: "7px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
               Approve all
             </button>
             <button onClick={onClose} aria-label="Close" style={{ background: "none", border: "none", fontSize: 18, color: "var(--uf-text-3)", cursor: "pointer", padding: "4px 8px" }}>✕</button>
@@ -1516,7 +1530,7 @@ function AiReviewModal({
                   </div>
                   <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
                     <button onClick={() => approve(item)}
-                      style={{ background: "var(--uf-green)", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Approve</button>
+                      style={{ background: "var(--uf-green)", color: "var(--uf-card)", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Approve</button>
                     <button onClick={() => onSkip(tx.id)}
                       style={{ background: "none", color: "var(--uf-text-3)", border: "1px solid var(--uf-border)", borderRadius: 6, padding: "6px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Skip</button>
                   </div>
@@ -1563,7 +1577,8 @@ function AiReviewModal({
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick, budgets, expectedIncome, freeToSpend }: {
+export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick, budgets, expectedIncome, freeToSpend, categoryNeeds }: {
+  categoryNeeds?: NeedOverrides;
   defaultCurrency?: string;
   displayCurrency?: string;
   displayRates?: Record<string, number>;
@@ -1647,6 +1662,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 
   // Form state (lifted so edit can populate it)
   const [draft, setDraft] = useState<DraftTransaction>(() => ({ ...EMPTY_DRAFT(), currency: defaultCurrency }));
+  const [alwaysShop, setAlwaysShop] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; undoId?: string; _removed?: Transaction; isError?: boolean } | null>(null);
@@ -1761,6 +1777,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       .map((d) => ({ description: d.description, category: d.category, usd: d.avgAmountUSD, due: d.nextDueDate, recurrence: d.frequency as Recurrence }));
     return mergeBills(listed, spotted);
   }, [listedBills, transactions, rates, usd]);
+  const calendarItems=useMemo<ScheduledCalendarItem[]>(()=>expected.filter(r=>(r.transaction_type==='income'||r.transaction_type==='expense')&&r.due_date).map(r=>({description:r.description??(r.transaction_type==='income'?'Income':'Bill'),amountUSD:usd(Number(r.amount)||0,r.currency??'USD'),type:r.transaction_type as 'income'|'expense',dueDate:r.due_date.slice(0,10),category:r.category,completed:!!r.completed_at&&(r.recurrence??'none')==='none',recurrence: (['weekly','biweekly','monthly','quarterly','annual'].includes(r.recurrence??'')?r.recurrence:'none') as Recurrence})),[expected,usd]);
   const expenseCatDisplay = useMemo(() => catDisplay(allExpenseCats), [catDisplay, allExpenseCats]);
   const incomeCatDisplay = useMemo(() => catDisplay(INCOME_CATEGORIES), [catDisplay]);
   const spentThisMonth = useMemo(() => transactions
@@ -1782,7 +1799,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const showToast = useCallback((msg: string, undoId?: string, removed?: Transaction, isError?: boolean) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast({ msg, undoId, _removed: removed, isError });
-    toastTimer.current = setTimeout(() => setToast(null), undoId ? 4000 : 3200);
+    toastTimer.current = setTimeout(() => setToast(null), undoId ? 6000 : 3200);
   }, []);
 
   const applyClassifications = useCallback(async (toApply: { tx: Transaction; suggestion: "need" | "want"; filing?: { category: string; sub_category: string | null } }[]) => {
@@ -1917,6 +1934,18 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         return;
       }
       setTransactions((prev) => prev.map((t) => (t.id === draft.id ? data : t)));
+      // "Always for this shop" (D-106): later buys there are filed and sorted the same way, on both apps.
+      if (alwaysShop && payload.transaction_type === "expense" && merchantKey(payload.description)) {
+        const { data: budget } = await supabase.from("user_budget").select("expenses").eq("user_id", session.user.id).maybeSingle();
+        const ex = (budget?.expenses as Record<string, unknown>) ?? {};
+        const fp = (ex._fire_profile as Record<string, unknown>) ?? {};
+        const rule = { category: payload.category, sub_category: payload.sub_category, need: transactionNeed(payload, categoryNeeds) };
+        const { error: ruleError } = await supabase.from("user_budget").update({
+          expenses: { ...ex, _fire_profile: { ...fp, merchantRules: { ...readMerchantRules(fp.merchantRules), [merchantKey(payload.description)]: rule } } },
+        }).eq("user_id", session.user.id);
+        if (ruleError) showToast("Saved, but couldn't remember the shop — please try again", undefined, undefined, true);
+      }
+      setAlwaysShop(false);
       setEditingId(null);
       setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency });
       showToast("Transaction updated");
@@ -1939,7 +1968,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       }
       if (drawerOpen && !keepOpen) setDrawerOpen(false);
     }
-  }, [defaultCurrency, draft, drawerOpen, inRange, showToast]);
+  }, [defaultCurrency, draft, drawerOpen, inRange, showToast, alwaysShop, categoryNeeds]);
 
   const handleEdit = useCallback((tx: Transaction) => {
     setEditingId(tx.id);
@@ -1963,6 +1992,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 
   const handleCancelEdit = useCallback(() => {
     setEditingId(null);
+    setAlwaysShop(false);
     setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency });
     if (drawerOpen) setDrawerOpen(false);
   }, [defaultCurrency, drawerOpen]);
@@ -2024,11 +2054,12 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 
   const handleCategoryChange = useCallback(async (tx: Transaction, category: string) => {
     const { error } = await supabase.from("expenses").update({ category }).eq("id", tx.id);
-    if (!error) setTransactions(prev => prev.map(t => t.id === tx.id ? { ...t, category } : t));
-  }, []);
+    if (error) { showToast("Couldn't change the category. Try again.", undefined, undefined, true); return; }
+    setTransactions(prev => prev.map(t => t.id === tx.id ? { ...t, category } : t));
+  }, [showToast]);
 
   const handleDelete = useCallback(async (tx: Transaction) => {
-    if (!window.confirm(`Delete "${tx.description}"?`)) return;
+    // No confirm popup: the toast offers Undo for six seconds.
     const { error } = await supabase.from("expenses").delete().eq("id", tx.id);
     if (error) {
       showToast("Failed to delete — please try again", undefined, undefined, true);
@@ -2073,7 +2104,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   }, [showToast, toast, transactions]);
 
   if (loading) {
-    return <div style={{ textAlign: "center", padding: "60px 0", color: "var(--uf-text-3)" }}>Loading transactions…</div>;
+    return <TransactionsLoading />;
   }
 
   return (
@@ -2085,6 +2116,22 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         }
         @media (min-width: 1025px) {
           .cf-mobile-bar { left: 50%; right: auto; width: 100%; max-width: 340px; transform: translateX(-50%); bottom: 28px; }
+        }
+        /* Toasts sit above the Add bar, never on it. */
+        .cf-toast { bottom: calc(140px + env(safe-area-inset-bottom, 0px)); }
+        @media (min-width: 1025px) { .cf-toast { bottom: 88px; } }
+        .uf-cat-scrim { display: none; }
+        /* The row clips its overflow, so on phones the picker is a bottom sheet instead of a popover. */
+        @media (max-width: 700px) {
+          .uf-cat-scrim { display: block; position: fixed; inset: 0; z-index: 229; background: var(--uf-scrim); }
+          .uf-cat-picker {
+            position: fixed !important; top: auto !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+            width: auto !important; z-index: 230 !important; border-radius: 16px 16px 0 0 !important; gap: 8px !important;
+            padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px)) !important;
+            max-height: 70dvh; overflow-y: auto; box-shadow: var(--uf-e2) !important;
+          }
+          .uf-cat-picker button { min-height: 64px; }
+          .uf-cat-picker button span { font-size: 11px !important; }
         }
       `}</style>
 
@@ -2117,7 +2164,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           selectedDay={selectedDay} onSelectDay={setSelectedDay}
           onZoomMonth={(m) => { setRange(1, m); setSelectedDay(null); }}
           palette={COLOR_PALETTE} onColor={handleCategoryColor}
-          budgets={budgets} expectedIncome={expectedIncome} bills={bills} periodLabel={rangePreset === 1 && rangeEnd === currentMonth ? "This month" : rangeLabel(rangePreset, rangeEnd)} />
+          budgets={budgets} expectedIncome={expectedIncome} bills={bills} calendarItems={calendarItems} compact={n=>formatUSDInCurrency(n,displayCurrency,displayRates,{compact:true})} periodLabel={rangePreset === 1 && rangeEnd === currentMonth ? "This month" : rangeLabel(rangePreset, rangeEnd)} />
         <WorthALook flags={flags} notes={billNotes} rows={monthTxns} fmt={fmtDisplay} toUSD={usd} displayCurrency={displayCurrency}
           onYes={(r, k) => resolveFlag(r, k, true)} onNo={(r, k) => resolveFlag(r, k, false)} />
       </div>
@@ -2133,7 +2180,10 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         formatAmount={fmtDisplay}
         catCustomizations={catCustomizations}
         expenseCategories={allExpenseCats}
+        categoryNeeds={categoryNeeds}
       />
+      {/* Room for the floating Add bar, so the last row is never under it. */}
+      <div aria-hidden style={{ height: 72 }} />
 
       <MobileBar
         onOpen={() => { setEditingId(null); setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency }); setDrawerOpen(true); }}
@@ -2154,6 +2204,9 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           onAddCategory={handleAddCategory}
           onAddSubCategory={handleAddSubCategory}
           preferredCurrencies={preferredCurrencies}
+          alwaysShop={alwaysShop}
+          onAlwaysShop={setAlwaysShop}
+          categoryNeeds={categoryNeeds}
         />
       </MobileDrawer>
 

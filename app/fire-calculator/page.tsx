@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { SITE_URL, siteUrl } from '@/lib/site'
+import { SITE_URL, siteUrl, DEFAULT_OG_IMAGE } from '@/lib/site'
 
 const pageUrl = siteUrl('/fire-calculator')
 
@@ -12,6 +12,7 @@ export const metadata: Metadata = {
     'FIRE calculator, financial independence calculator, retire early calculator, FIRE number calculator, how much money do I need to retire, Coast FIRE calculator, savings rate calculator',
   alternates: { canonical: siteUrl('/fire-calculator') },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: 'FIRE Calculator - Find When Work Becomes Optional | UntilFire',
     description:
       'Estimate your FIRE number, retirement timeline, savings rate, Coast FIRE milestone, and the monthly moves that can make work optional sooner.',
@@ -20,6 +21,7 @@ export const metadata: Metadata = {
     type: 'website',
   },
   twitter: {
+    images: [DEFAULT_OG_IMAGE.url],
     card: 'summary_large_image',
     title: 'FIRE Calculator | UntilFire',
     description: 'Find your freedom date, your FIRE number, and the monthly moves that bring work-optional life closer.',
@@ -141,7 +143,7 @@ const breadcrumbSchema = {
 export default function FireCalculatorLandingPage() {
   return (
     <>
-      <main style={{ background: 'var(--uf-surface)', minHeight: '100vh', color: 'var(--uf-ink)', fontFamily: "'Manrope', sans-serif" }}>
+      <main style={{ background: 'var(--uf-surface)', minHeight: '100vh', color: 'var(--uf-ink)', fontFamily: "'Inter', sans-serif" }}>
         <div style={{ maxWidth: 1120, margin: '0 auto', padding: '56px 24px 88px' }}>
           <nav style={{ fontSize: 13, color: 'var(--uf-ink-3)', marginBottom: 28, display: 'flex', gap: 8 }}>
             <Link href="/" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none', fontWeight: 700 }}>UntilFire</Link>
@@ -149,7 +151,8 @@ export default function FireCalculatorLandingPage() {
             <span style={{ color: 'var(--uf-green-900)', fontWeight: 800 }}>FIRE Calculator</span>
           </nav>
 
-          <header style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(280px, 0.65fr)', gap: 28, alignItems: 'stretch', marginBottom: 34 }}>
+          <style>{`@media (max-width: 720px) { .uf-fc-hero { grid-template-columns: minmax(0, 1fr) !important; } .uf-fc-hero > section { padding: 26px 20px !important; } }`}</style>
+          <header className="uf-fc-hero" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(280px, 0.65fr)', gap: 28, alignItems: 'stretch', marginBottom: 34 }}>
             <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 24, padding: '34px 30px' }}>
               <p style={{ margin: '0 0 12px', color: 'var(--uf-green)', fontSize: 12, fontWeight: 800, letterSpacing: '2px', textTransform: 'uppercase' }}>
                 FIRE calculator

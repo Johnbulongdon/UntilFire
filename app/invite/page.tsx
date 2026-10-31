@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { siteUrl } from "@/lib/site";
+import { siteUrl, DEFAULT_OG_IMAGE } from "@/lib/site";
 import { REFERRAL_RATE_LABEL, REFERRAL_MONTHS } from "@/lib/referrals";
 import InviteClient from "./InviteClient";
 
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: `Creator program: earn ${REFERRAL_RATE_LABEL} for a year | UntilFire`,
   description,
   alternates: { canonical: url },
-  openGraph: { title: `UntilFire creator program: earn ${REFERRAL_RATE_LABEL} for a year`, description, url, siteName: "UntilFire", type: "website" },
+  openGraph: { images: [DEFAULT_OG_IMAGE], title: `UntilFire creator program: earn ${REFERRAL_RATE_LABEL} for a year`, description, url, siteName: "UntilFire", type: "website" },
 };
 
 export default function InvitePage() {

@@ -38,7 +38,7 @@ export default function LoginPage() {
       alignItems: 'center',
       justifyContent: 'center',
       background: 'var(--uf-ground)',
-      fontFamily: "'Manrope', sans-serif",
+      fontFamily: "'Inter', sans-serif",
       position: 'relative',
       padding: '48px 0',
     }}>

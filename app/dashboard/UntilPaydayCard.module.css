@@ -1,0 +1,46 @@
+.card { padding:0!important; overflow:hidden; color:var(--uf-ink); border-radius:24px; min-width:0; background:var(--uf-card); }
+.hero { padding:24px; background:#e3f7ef; color:#151719; }
+.header,.ledgerHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.header h2,.ledger h3 { font-size:17px; font-weight:700; margin:0; }
+.payday { display:inline-flex; align-items:center; gap:8px; padding:9px 13px; background:#ffe58a; border-radius:999px; font-size:13px; font-weight:700; white-space:nowrap; }
+.summary { display:grid; grid-template-columns:1fr 1.15fr; gap:28px; margin-top:24px; }
+.answer { display:flex; flex-direction:column; gap:8px; min-width:0; }
+.answer strong { font-size:clamp(36px,6cqi,64px); letter-spacing:-.04em; line-height:1.1; font-weight:800; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.answer>span { font-size:18px; font-weight:600; }
+.answer small,.row small { color:#52635d; font-size:12px; line-height:1.5; }
+.negative { color:var(--uf-neg-ink,#a52c35); }
+.row { display:flex; align-items:center; gap:10px; padding:12px 0; border-bottom:1px solid #15171914; font-size:14px; }
+.row>span:nth-child(2) { flex:1; min-width:0; }
+.row small { display:block; }
+.row b { font-size:18px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.badge { display:grid; place-items:center; flex-shrink:0; width:36px; height:36px; border-radius:12px; background:#bce9da; color:#151719; }
+.lilac { background:#d9cef3; }.yellow { background:#ffe58a; }
+.adjust { margin-top:6px; font-size:13px; }
+.adjust summary { display:flex; align-items:center; gap:7px; min-height:44px; cursor:pointer; list-style:none; color:#43584f; width:fit-content; }
+.adjust summary::-webkit-details-marker { display:none; }
+.adjust[open] summary>svg:last-child { transform:rotate(180deg); }
+.adjust label,.adjust small { display:block; margin:8px 0; }
+.adjust input { display:block; width:100%; max-width:220px; min-height:44px; background:var(--uf-card); color:var(--uf-ink); border:1px solid var(--uf-border-2); border-radius:12px; padding:8px 12px; font:inherit; }
+.adjust button,.all { min-height:44px; background:transparent; border:0; cursor:pointer; font:inherit; color:inherit; text-decoration:underline; }
+.ledger { padding:22px 24px 16px; }
+.ledgerHeader { margin-bottom:16px; }
+.ledger h3 small { display:inline-block; margin-left:8px; font-size:12px; font-weight:400; color:var(--uf-ink-2); }
+.ledgerHeader button { display:inline-flex; align-items:center; gap:5px; background:var(--uf-surface); color:var(--uf-ink); border:0; border-radius:999px; padding:8px 12px; min-height:44px; font:inherit; font-size:13px; cursor:pointer; }
+.ledger table { width:100%; border-collapse:collapse; table-layout:fixed; font-size:14px; }
+.ledger th { font-size:11px; text-transform:uppercase; color:var(--uf-ink-2); font-weight:500; text-align:left; padding:0 0 10px; }
+.ledger th:first-child { width:22%; }.ledger th:last-child { width:25%; }
+.ledger td { padding:12px 0; border-top:1px solid var(--uf-border); vertical-align:middle; overflow-wrap:anywhere; }
+.ledger td:nth-child(2)>span:last-child { vertical-align:middle; }
+.ledger td:last-child,.ledger th:last-child { text-align:right; font-variant-numeric:tabular-nums; }
+.billIcon { display:inline-grid; place-items:center; width:28px; height:28px; margin-right:8px; border-radius:8px; background:var(--uf-surface); font-size:16px; vertical-align:middle; }
+.note { font-size:12px; color:var(--uf-ink-2); margin:16px 0 0; line-height:1.6; }
+.all { display:flex; gap:8px; align-items:center; font-size:13px; }
+.card :is(button,summary,input):focus-visible { outline:2px solid currentColor; outline-offset:3px; }
+:global(.dark) .hero { background:#243b33; color:#fafafd; }
+:global(.dark) .answer small,:global(.dark) .row small,:global(.dark) .adjust summary { color:#c3d9cf; }
+:global(.dark) .payday { color:#151719; }
+:global(.dark) .row { border-bottom-color:#ffffff20; }
+@container (max-width:620px) { .summary { grid-template-columns:1fr; gap:14px; }.answer strong { font-size:48px; }.hero,.ledger { padding:20px; }.ledger h3 small { display:block; margin:5px 0 0; } }
+@container (max-width:350px) { .hero,.ledger { padding:16px; }.row { gap:8px; font-size:13px; }.row b { font-size:16px; }.ledger table { font-size:12px; }.billIcon { display:none; } }
+
+.ledger table { color:var(--uf-ink); }

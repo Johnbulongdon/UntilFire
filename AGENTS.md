@@ -44,6 +44,18 @@ product constraints, navigation, design and working map apply to all agents.
   [docs/marketing/BACKLINK_LEDGER.md](docs/marketing/BACKLINK_LEDGER.md) within
   the authorized task.
 
+## Shared active task list
+
+[ROADMAP.md — Current priorities](docs/ROADMAP.md#current-priorities) is the one
+shared Now / Next / Later queue for all agents (D-110). Read it from latest main
+before starting; identify the task ID, check open PRs for overlap, and record
+owner, status, blocker/next action and the update date in the same PR as the work.
+Keep at most three Now priorities across all agents. Keep unmerged work In review
+with a PR link; mark completed only with evidence. Preserve completed, deferred
+and rejected items with their reason; put meaningful direction changes in the
+decision log. The queue does not authorize unrelated tasks, merge or deployment,
+and does not cancel existing authorized work. Raw user research stays private.
+
 ## Baseline and collaboration
 
 1. Fetch `origin/main`, inspect status and local history, and compare the workspace
@@ -177,6 +189,19 @@ Use relevant skills/workflows only when available and applicable.
   diff review, path/script/reference checks, and `git diff --check`; no application
   build solely for ceremony. Report checks not run and verification limits.
   Investigate relevant failures; never remove a guard just to make checks green.
+
+### Signing in locally
+
+To see signed-in screens on this computer, run `npm run dev:login` instead of
+asking John to sign in. It signs in the Journeys test account
+(journeys-bot@untilfire.com, which never pays or deletes anything) and writes
+`.dev-login/` (git-ignored): `storage-state.json` for Playwright and `sign-in.js`
+to run on the local page in any other browser, then reload. It covers the
+website (`--site`, default `http://localhost:3000`) and the phone's web build
+(`--app`, default `http://localhost:8081`), refuses any address that is not
+localhost, and `--open` opens a signed-in Chromium. It needs `SUPABASE_URL` and
+`SUPABASE_SERVICE_ROLE_KEY` in `.env.local`; never print, paste or commit them.
+The account's data is real, so treat changes there like any shared test data.
 
 Treat deployment identifiers (for example `6Tb7dySgE`) as deployment references,
 not git revisions, unless verified otherwise.

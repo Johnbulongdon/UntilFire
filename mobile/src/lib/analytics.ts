@@ -83,11 +83,11 @@ export function yearsBucket(years: number | null) {
 /**
  * Onboarding question number → the website's step_id and step_index
  * (CALCULATOR_STEP_INDEX), so a breakdown by step lines up across both.
- * Pay, worry and home exist only on the phone, so they carry no website index.
+ * Pay, worry and housing exist only on the phone, so they carry no website index.
  */
 const STEP_IDS: Record<number, [string, number | null]> = {
   1: ['goal', 0], 2: ['city', 1], 3: ['pay', null], 4: ['income', 3],
-  5: ['savings', 4], 6: ['portfolio', 5], 7: ['age', 6], 8: ['worry', null], 9: ['home', null],
+  5: ['savings', 4], 6: ['portfolio', 5], 7: ['age', 6], 8: ['worry', null], 9: ['housing', null],
 }
 
 export function stepProps(step: number, steps: number) {

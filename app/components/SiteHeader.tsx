@@ -24,19 +24,23 @@ export default function SiteHeader({
   fixed = false,
   onStart,
   signedIn,
+  startLabel = "Get started",
+  showSignIn = true,
 }: {
   /** Float over the page (the landing hero) instead of taking up space. */
   fixed?: boolean;
   /** On the landing page, "Get started" opens the calculator in place. */
   onStart?: () => void;
   signedIn?: boolean;
+  startLabel?: string;
+  showSignIn?: boolean;
 }) {
   const pathname = usePathname() ?? "/";
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [pathname]);
 
-  if (!fixed && !showsSiteHeader(pathname)) return null;
+  if (!fixed && !onStart && !showsSiteHeader(pathname)) return null;
 
   const home = pathname === "/";
   const isSignedIn = signedIn ?? !!user;
@@ -64,10 +68,11 @@ export default function SiteHeader({
         ))}
       </nav>
       <div className={styles.actions}>
+        {showSignIn && !isSignedIn && <Link href="/login" className={styles.signIn}>Log in</Link>}
         {isSignedIn ? (
           <Link className={styles.cta} href="/dashboard">Dashboard</Link>
         ) : onStart ? (
-          <button type="button" className={styles.cta} onClick={onStart}>Get started</button>
+          <button type="button" className={styles.cta} onClick={onStart}>{startLabel === "Get started" ? startLabel : <><span className={styles.desktopLabel}>{startLabel}</span><span className={styles.mobileLabel}>Get started</span></>}</button>
         ) : (
           <Link className={styles.cta} href={`/?source=${encodeURIComponent(source)}`}>Get started</Link>
         )}

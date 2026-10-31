@@ -206,7 +206,7 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
 
   return (
     <>
-      <main className="city-guide-root" style={{ background: 'var(--uf-surface)', minHeight: '100vh', fontFamily: "'Manrope', sans-serif" }}>
+      <main className="city-guide-root" style={{ background: 'var(--uf-ground)', minHeight: '100vh', fontFamily: "'Inter', sans-serif" }}>
         <div className="city-guide-page" style={{ maxWidth: 860, margin: '0 auto', padding: '28px 24px 88px' }}>
           <nav style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 26, fontSize: 13 }}>
             <Link href="/" style={{ color: 'var(--uf-ink-2)', textDecoration: 'none' }}>Home</Link>
@@ -227,7 +227,7 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
               marginBottom: 28,
             }}
           >
-            <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '28px 24px' }}>
+            <article style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 24, padding: '28px 24px' }}>
               <h2 style={{ margin: '0 0 16px', fontSize: 28, color: 'var(--uf-ink)', letterSpacing: '-0.03em' }}>
                 Why {page.city.name} changes your FIRE math
               </h2>
@@ -272,7 +272,7 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
             </article>
 
             <aside style={{ display: 'grid', gap: 18 }}>
-              <div style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '24px 20px' }}>
+              <div style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 24, padding: '24px 20px' }}>
                 <div style={{ fontSize: 12, color: 'var(--uf-green)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>
                   Next best tool
                 </div>
@@ -283,18 +283,18 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
                   Start with {page.calculatorLabel} if you want one specific answer, or use the full UntilFire calculator if you want your retirement date adjusted for income, savings, and taxes.
                 </p>
                 <div style={{ display: 'grid', gap: 10 }}>
-                  <Link href={`/?source=${source}`} style={{ textDecoration: 'none', background: 'var(--uf-green-900)', color: 'var(--uf-card)', borderRadius: 10, padding: '12px 14px', fontWeight: 700, fontSize: 14 }}>
+                  <Link href={`/?source=${source}`} style={{ textDecoration: 'none', background: 'var(--uf-green-900)', color: 'var(--uf-card)', borderRadius: 999, padding: '12px 18px', fontWeight: 700, fontSize: 14 }}>
                     Calculate my FIRE date
                   </Link>
-                  <Link href={`${page.calculatorHref}?source=${source}`} style={{ textDecoration: 'none', background: 'var(--uf-green-50)', color: 'var(--uf-green-900)', borderRadius: 10, padding: '12px 14px', fontWeight: 700, fontSize: 14 }}>
+                  <Link href={`${page.calculatorHref}?source=${source}`} style={{ textDecoration: 'none', background: 'var(--uf-green-50)', color: 'var(--uf-green-900)', borderRadius: 999, padding: '12px 18px', fontWeight: 700, fontSize: 14 }}>
                     Open {page.calculatorLabel}
                   </Link>
                 </div>
               </div>
 
               {article ? (
-                <div style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '24px 20px' }}>
-                  <div style={{ fontSize: 12, color: '#0F766E', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>
+                <div style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 24, padding: '24px 20px' }}>
+                  <div style={{ fontSize: 12, color: 'var(--uf-ink-2)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>
                     Related reading
                   </div>
                   <h2 style={{ margin: '0 0 8px', fontSize: 20, lineHeight: 1.25, color: 'var(--uf-ink)' }}>
@@ -312,7 +312,7 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
           </section>
 
           {spendingScenarios.length > 0 ? (
-            <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '28px 24px', marginBottom: 28 }}>
+            <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 24, padding: '28px 24px', marginBottom: 28 }}>
               <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--uf-green)', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
                 Spending sensitivity
               </p>
@@ -362,7 +362,7 @@ function CuratedCityFireNumberPage({ page }: { page: CityLandingPage }) {
             </section>
           ) : null}
 
-          <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 20, padding: '28px 24px' }}>
+          <section style={{ background: 'var(--uf-card)', border: '1px solid var(--uf-border)', borderRadius: 24, padding: '28px 24px' }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 14, marginBottom: 20 }}>
               <div>
                 <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--uf-green)', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
@@ -548,7 +548,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
     <>
       <div className="city-guide-root">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         .city-guide-root *, .city-guide-root *::before, .city-guide-root *::after { box-sizing: border-box; }
 
         .city-guide-root a { color: inherit; }
@@ -577,7 +577,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
           <summary>Example timelines, FIRE options & methodology</summary>
           <div className="city-guide-details-content">
         {/* Scenarios table */}
-        {TAX_ESTIMATES_AVAILABLE && <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, overflow: "hidden", marginBottom: 32 }}>
+        {TAX_ESTIMATES_AVAILABLE && <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 24, overflow: "hidden", marginBottom: 32 }}>
           <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--uf-border)" }}>
             <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-green-900)", margin: 0 }}>
               Sample retirement timelines in {data.name}
@@ -651,7 +651,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
           style={{
             background: "var(--uf-card)",
             border: "1px solid var(--uf-border)",
-            borderRadius: 16,
+            borderRadius: 24,
             padding: "24px 22px",
             marginBottom: 40,
           }}
@@ -717,7 +717,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
             {fireVariants.map((v) => (
-              <div key={v.label} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "20px 18px" }}>
+              <div key={v.label} style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 24, padding: "20px 18px" }}>
                 <div style={heading}>{v.label} in {data.name}</div>
                 <div style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-green-900)", letterSpacing: "-0.5px", marginBottom: 8 }}>{formatMoney(v.value)}</div>
                 <p style={{ margin: 0, fontSize: 13.5, color: "var(--uf-ink-2)", lineHeight: 1.7 }}>{v.note}</p>
@@ -727,7 +727,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
         </div>
 
         {/* Monthly savings to retire in this city */}
-        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, overflow: "hidden", marginBottom: 40 }}>
+        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 24, overflow: "hidden", marginBottom: 40 }}>
           <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid var(--uf-border)" }}>
             <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-green-900)", margin: 0 }}>
               How much to save each month to retire in {data.name}
@@ -757,7 +757,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 40 }}>
-          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 20px" }}>
+          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 24, padding: "22px 20px" }}>
             <div style={heading}>National context</div>
             <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-green-900)", marginBottom: 8 }}>
               {ordinal(nationalRank.rank)} of {nationalRank.total}
@@ -767,7 +767,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
             </p>
           </div>
 
-          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 20px" }}>
+          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 24, padding: "22px 20px" }}>
             <div style={heading}>Compared with the US median</div>
             <div style={{ fontSize: 22, fontWeight: 800, color: "var(--uf-green-900)", marginBottom: 8 }}>
               {spendDelta >= 0 ? `${formatMoney(spendDelta)} higher` : `${formatMoney(Math.abs(spendDelta))} lower`}
@@ -777,7 +777,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
             </p>
           </div>
 
-          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 20px" }}>
+          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 24, padding: "22px 20px" }}>
             <div style={heading}>Closest cost comparisons</div>
             <p style={{ margin: 0, fontSize: 14, color: "var(--uf-ink-2)", lineHeight: 1.8 }}>
               {nearestHigherCostCity ? `Nearest higher baseline: ${nearestHigherCostCity.name} at ${formatMoney(nearestHigherCostCity.col)}/year.` : 'This is already among the highest baselines in the current data set.'}
@@ -789,7 +789,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 40 }}>
-          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 20px" }}>
+          <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 24, padding: "22px 20px" }}>
             <div style={heading}>Next calculator</div>
             <h2 style={{ fontSize: 20, lineHeight: 1.25, margin: "0 0 10px", color: "var(--uf-ink)" }}>
               {suggestedCalculator.label}
@@ -803,7 +803,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
           </div>
 
           {relatedArticle ? (
-            <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "22px 20px" }}>
+            <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 24, padding: "22px 20px" }}>
               <div style={heading}>Related reading</div>
               <h2 style={{ fontSize: 20, lineHeight: 1.25, margin: "0 0 10px", color: "var(--uf-ink)" }}>
                 {relatedArticle.title}
@@ -818,7 +818,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
           ) : null}
         </div>
 
-        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: "24px 22px", marginBottom: 40 }}>
+        <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 24, padding: "24px 22px", marginBottom: 40 }}>
           <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-green-900)", margin: "0 0 16px" }}>
             Questions people ask about FIRE in {data.name}
           </h2>
@@ -850,7 +850,7 @@ function GenericCityFireNumberPage({ data }: { data: City }) {
                     padding: "14px 16px",
                     background: "var(--uf-card)",
                     border: "1px solid var(--uf-border)",
-                    borderRadius: 10,
+                    borderRadius: 14,
                     textDecoration: "none",
                     fontSize: 14,
                     fontWeight: 600,

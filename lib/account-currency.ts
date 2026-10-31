@@ -75,3 +75,25 @@ export function daysSinceSync(syncedAt: string | null | undefined, now: Date = n
 
 /** Older than this and a balance is flagged as possibly out of date. */
 export const STALE_AFTER_DAYS = 3;
+
+/** A connected group replaces its typed counterpart even at zero. Unknown or
+ * unconvertible balances are excluded, never replaced with stale typed money.
+ * undefined means no account of this kind is connected at all. */
+export function connectedBalance<A extends { balance_current?: number | null; converted?: boolean }>(
+  accounts: A[], keep: (account: A) => boolean,
+): number | undefined {
+  const matching = accounts.filter(keep);
+  if (!matching.length) return undefined;
+  return matching.reduce((sum, a) => sum + (a.converted !== false && typeof a.balance_current === "number" && Number.isFinite(a.balance_current) ? a.balance_current : 0), 0);
+}
+
+/** Unknown liabilities must not become paid-off balances. Keep the typed
+ * aggregate as a conservative floor until every connected balance is known. */
+export function connectedDebt<A extends { balance_current?: number | null; converted?: boolean }>(
+  accounts: A[], keep: (account: A) => boolean, typed: number,
+): number {
+  const matching = accounts.filter(keep);
+  const known = matching.filter(a => a.converted !== false && typeof a.balance_current === "number" && Number.isFinite(a.balance_current));
+  const total = known.reduce((sum, a) => sum + Math.max(0, a.balance_current!), 0);
+  return !matching.length || known.length < matching.length ? Math.max(total, typed, 0) : total;
+}

@@ -1,83 +1,83 @@
-// The website's v3 Warm tokens (../app/globals.css: :root and .dark), in both
+// The website's Next Horizon tokens (../app/globals.css: :root and .dark), in both
 // themes. Tailwind classes read them as CSS variables (tailwind.config.js), set
 // on the root view by ThemeRoot; `colors` is for the places that take a colour
 // value rather than a className: icons, the tab bar, spinners, sliders.
-// Green acts. Teal means freedom, and is never a button.
+// Legacy colour names remain aliases for black actions and yellow progress.
 import { vars } from 'nativewind'
 
 const light = {
-  ground: '#FDF8F1',
-  card: '#FFFDFA',
-  surface: '#F7EFE3',
-  surface2: '#F0E5D5',
-  border: '#EFE2D0',
-  border2: '#DFCDB4',
-  ink: '#221B12',
-  ink2: '#6B5C48',
+  ground: '#F8F8FB',
+  card: '#FFFFFF',
+  surface: '#F1EFF6',
+  surface2: '#E9E6F0',
+  border: '#E7E5ED',
+  border2: '#A5A3B3',
+  ink: '#151719',
+  ink2: '#5C6170',
   // The website's #9A8B76 is 3.1:1 on ground; darkened to pass WCAG AA (4.5:1) for small text.
-  ink3: '#76674F',
-  green: '#12856A',
-  green700: '#0C6B55',
-  green900: '#06412F',
-  green100: '#CDEBE1',
-  green50: '#E6F5EF',
-  teal: '#0E9C86',
-  tealDeep: '#0A7665',
-  tealSoft: '#D3F1EA',
-  tealLine: '#7FD9C6',
-  pos: '#12856A',
-  posInk: '#107B62',
-  neg: '#C0483C',
-  negInk: '#B24237',
-  negBg: '#FAE6E2',
-  warn: '#C4831A',
-  warnBg: '#FCEFD8',
+  ink3: '#686D7C',
+  green: '#151719',
+  green700: '#303238',
+  green900: '#151719',
+  green100: '#FFE58A',
+  green50: '#FFF5CB',
+  teal: '#151719',
+  tealDeep: '#151719',
+  tealSoft: '#FFE58A',
+  tealLine: '#B49B3E',
+  pos: '#17684B',
+  posInk: '#17684B',
+  neg: '#B63D46',
+  negInk: '#A52C35',
+  negBg: '#FCE8EB',
+  warn: '#815A16',
+  warnBg: '#FFF1D2',
 }
 
 type Palette = typeof light
 
 const dark: Palette = {
-  ground: '#16120D',
-  card: '#1F1A13',
-  surface: '#191410',
-  surface2: '#2A2318',
-  border: '#332B21',
-  border2: '#463C2D',
-  ink: '#F5EDE1',
-  ink2: '#BAAB95',
+  ground: '#151719',
+  card: '#202226',
+  surface: '#282A30',
+  surface2: '#32353D',
+  border: '#3A3D46',
+  border2: '#747986',
+  ink: '#FAFAFD',
+  ink2: '#C3C6D0',
   // The website's #8A7C68 passes on the ground (4.6:1) but not on cards (4.2:1); lightened to pass AA on both.
-  ink3: '#9C8E78',
-  green: '#2FA383',
-  green700: '#3CBA97',
-  green900: '#BFE9DA',
-  green100: '#123A2E',
-  green50: '#0E2C23',
-  teal: '#35C9AE',
-  tealDeep: '#5FDCC4',
-  tealSoft: '#0F3A33',
-  tealLine: '#1E6B5D',
-  pos: '#2FA383',
-  posInk: '#5FCFAC',
-  neg: '#E07A6C',
-  negInk: '#EE9B90',
-  negBg: '#3A201C',
-  warn: '#E0A84E',
-  warnBg: '#3A2C13',
+  ink3: '#A9ADBA',
+  green: '#FAFAFD',
+  green700: '#E0E2EA',
+  green900: '#FFFFFF',
+  green100: '#4B4226',
+  green50: '#302D23',
+  teal: '#FFE58A',
+  tealDeep: '#FFE58A',
+  tealSoft: '#3F3825',
+  tealLine: '#B49B3E',
+  pos: '#8FD8B9',
+  posInk: '#8FD8B9',
+  neg: '#F4A5AC',
+  negInk: '#F4A5AC',
+  negBg: '#48272E',
+  warn: '#F2D18A',
+  warnBg: '#41351D',
 }
 
 /** Theme-independent: the logo's sun and the deep green the welcome and reveal screens sit on. */
-export const brand = { aqua: '#62FAE3', deep: '#06412F', sun: '#F2A65A' } as const
+export const brand = { aqua: '#FFE58A', deep: '#151719', sun: '#FFE58A', yellow: '#FFE58A', mint: '#E3F7EF', lilac: '#EEE9FA', blue: '#E8F3FF', pink: '#FBE7F2' } as const
 
 /**
  * Each tab's bright colour (founder's call, Oct 2026: one colour per place, like
  * Duolingo's units). Deep enough for white text in both themes. Green stays the
  * action colour everywhere, so no tab is green.
  */
-export const TAB_COLOR = { home: '#0A7665', money: '#3866C9', plan: '#B9561D', profile: '#7E4FAA' } as const
+export const TAB_COLOR = { home: '#151719', money: '#151719', plan: '#151719', profile: '#151719' } as const
 export type TabKey = keyof typeof TAB_COLOR
 
 // The tab colours as text on the warm-dark ground, lighter so they keep their contrast.
-const TAB_INK_DARK: Record<TabKey, string> = { home: '#5FDCC4', money: '#9DB8F5', plan: '#F2A574', profile: '#C9A6EC' }
+const TAB_INK_DARK: Record<TabKey, string> = { home: '#FFE58A', money: '#E8F3FF', plan: '#EEE9FA', profile: '#E3F7EF' }
 
 let current: Palette = light
 

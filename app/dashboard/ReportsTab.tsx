@@ -199,7 +199,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
         <div>
-          <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 22, fontWeight: 800, color: "var(--uf-text)", margin: "0 0 4px", letterSpacing: "-0.5px" }}>
+          <h2 style={{ fontFamily: "Inter, sans-serif", fontSize: 22, fontWeight: 800, color: "var(--uf-text)", margin: "0 0 4px", letterSpacing: "-0.5px" }}>
             Insights
           </h2>
           <p style={{ color: "var(--uf-text-2)", fontSize: 13, margin: 0 }}>
@@ -268,7 +268,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <div className="uf-report-header">
         <div>
-          <h2 style={{ fontFamily: "Manrope, sans-serif", fontSize: 22, fontWeight: 800, color: "var(--uf-text)", margin: "0 0 4px", letterSpacing: "-0.5px" }}>
+          <h2 style={{ fontFamily: "Inter, sans-serif", fontSize: 22, fontWeight: 800, color: "var(--uf-text)", margin: "0 0 4px", letterSpacing: "-0.5px" }}>
             Insights
           </h2>
           <p style={{ color: "var(--uf-text-2)", fontSize: 13, margin: 0 }}>
@@ -394,7 +394,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
                     {pct.toFixed(0)}%
                   </div>
                   {/* Amount */}
-                  <div style={{ fontSize: 14, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Manrope, sans-serif", textAlign: "right", minWidth: 80 }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Inter, sans-serif", textAlign: "right", minWidth: 80 }}>
                     {fmtDisplay(cat.total)}
                   </div>
                 </div>
@@ -435,10 +435,10 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
               className="uf-report-month-grid uf-report-month-row"
               style={{
                 padding: "12px 0", borderBottom: "1px solid var(--uf-border)",
-                fontSize: 14, fontFamily: "Manrope, sans-serif",
+                fontSize: 14, fontFamily: "Inter, sans-serif",
               }}
             >
-              <span style={{ fontWeight: 600, color: "var(--uf-text-2)", fontFamily: "Manrope, sans-serif", fontSize: 13 }}>
+              <span style={{ fontWeight: 600, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", fontSize: 13 }}>
                 {row.label}{inProgress && <span style={{ color: "var(--uf-ink-3)", fontWeight: 500 }}> · so far</span>}
               </span>
               <span className="uf-report-money" style={{ textAlign: "right", fontWeight: 700, color: empty ? "var(--uf-ink-3)" : "var(--uf-pos-ink)" }}>

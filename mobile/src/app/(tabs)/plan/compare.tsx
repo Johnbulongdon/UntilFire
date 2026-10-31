@@ -4,6 +4,7 @@ import { Alert, Pressable, ScrollView, Switch, TextInput, View } from 'react-nat
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated'
 
 import { DetailScreen } from '@/components/DetailScreen'
+import { WhatIfTabs, whatIfSubtitle } from '@/components/WhatIfTabs'
 import { Card, Label } from '@/components/Screen'
 import { Text } from '@/components/Text'
 import {
@@ -128,7 +129,8 @@ export default function Compare() {
   }
 
   return (
-    <DetailScreen back="Plan" title="Compare" subtitle="Try life changes on your plan">
+    <DetailScreen back="Plan" title="What if" subtitle={whatIfSubtitle('compare')}>
+      <WhatIfTabs current="compare" />
       {saved.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
           {saved.map(v => (

@@ -33,7 +33,8 @@ const checks = [
     name: 'feedback widget opens only from an explicit click or the ?feedback= link someone clicked',
     pass: (() => {
       const openers = feedbackWidget.match(/setOpen\(true\)/g) ?? [];
-      if (openers.length !== 2 || !feedbackWidget.includes('onClick={() => setOpen(true)}')) return false;
+      if (openers.length !== 3 || !feedbackWidget.includes('onClick={() => setOpen(true)}')) return false;
+      if (!feedbackWidget.includes('const show = () => setOpen(true);') || !feedbackWidget.includes('window.addEventListener("uf:feedback", show)') || !feedbackWidget.includes('window.removeEventListener("uf:feedback", show)')) return false;
       // The deep-link opener must bail out when the param is absent, and
       // strip it afterwards so a refresh does not reopen the dialog.
       const link = feedbackWidget.match(/params\.get\("feedback"\)[^]*?setOpen\(true\)[^]*?replaceState/);

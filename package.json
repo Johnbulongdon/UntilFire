@@ -29,6 +29,7 @@
     "test:dashboard-layout": "node --experimental-strip-types --no-warnings scripts/verify-dashboard-layout.ts",
     "test:next-move": "node --experimental-strip-types --no-warnings scripts/verify-next-move.ts",
     "test:setup-steps": "node --experimental-strip-types --no-warnings scripts/verify-setup-steps.ts",
+    "test:freedom-progress": "node --experimental-strip-types --no-warnings scripts/verify-freedom-progress.ts",
     "test:plaid-pfc": "node --experimental-strip-types --no-warnings scripts/verify-plaid-pfc.ts",
     "test:transaction-time": "node --experimental-strip-types --no-warnings scripts/verify-transaction-time.ts",
     "test:city-page-seo": "node scripts/verify-city-page-seo.mjs",
@@ -40,6 +41,7 @@
     "test:savings-pace": "node scripts/verify-savings-pace.mjs",
     "test:journey-canvas": "node --experimental-strip-types --no-warnings scripts/verify-journey-canvas.ts",
     "test:journeys": "node --experimental-strip-types --no-warnings scripts/verify-journeys.ts",
+    "dev:login": "node --use-env-proxy --experimental-strip-types --no-warnings scripts/dev-login.ts",
     "journeys:capture": "node --experimental-strip-types --no-warnings scripts/capture-journeys.ts",
     "test:hysa-empty-state": "node scripts/verify-hysa-empty-state-card.mjs",
     "test:emergency-fund-needs": "node scripts/verify-emergency-fund-needs-only.mjs",
@@ -50,6 +52,7 @@
     "test:reveal-save-plan-cta": "node scripts/verify-reveal-save-plan-cta.mjs",
     "test:categories-management": "node scripts/verify-categories-management.mjs",
     "test:supabase-writes-execute": "node scripts/verify-supabase-writes-execute.mjs",
+    "test:bank-budget-reliability": "node scripts/verify-bank-budget-reliability.mjs",
     "test:expense-reads-paged": "node --experimental-strip-types --no-warnings scripts/verify-expense-reads-paged.mjs",
     "test:plaid-refresh": "node --experimental-strip-types --no-warnings scripts/verify-plaid-refresh.mjs",
     "test:plaid-billing": "node --experimental-strip-types --no-warnings scripts/verify-plaid-billing.mjs",
@@ -90,7 +93,11 @@
     "test:contribution-waterfall": "node --experimental-strip-types --no-warnings scripts/verify-contribution-waterfall.mjs",
     "test:savings-withdrawals": "node --experimental-strip-types --no-warnings scripts/verify-savings-withdrawals.ts",
     "test:reward-month": "node --experimental-strip-types scripts/verify-reward-month.ts",
-    "test:replay-repairs": "node --experimental-strip-types --no-warnings scripts/verify-replay-repairs.mjs"
+    "test:replay-repairs": "node --experimental-strip-types --no-warnings scripts/verify-replay-repairs.mjs",
+    "test:financial-consistency": "node --experimental-strip-types --no-warnings scripts/verify-financial-consistency.mjs",
+    "test:marked-calendar": "node --experimental-strip-types --no-warnings scripts/verify-marked-calendar.mjs",
+    "test:landing-stories": "node --experimental-strip-types --no-warnings scripts/verify-landing-story-rail.ts",
+    "test:payday-spending": "node --experimental-strip-types --no-warnings scripts/verify-payday-spending.mjs"
   },
   "dependencies": {
     "@apple/app-store-server-library": "^3.1.0",

@@ -9,13 +9,13 @@ import { buildLineChartPaths } from '@/lib/portfolio/linechart'
 
 export const runtime = 'edge'
 
-const BG = '#08080e'
-const CARD = '#111118'
-const BORDER = '#23232d'
-const MUTED = '#8a8a99'
-const TEAL = '#22d3a5'
+const BG = '#F8F8FB'
+const CARD = '#FFFFFF'
+const BORDER = '#E7E5ED'
+const MUTED = '#5C6170'
+const TEAL = '#151719'
 
-const NOTE_COLORS: Record<string, string> = { good: TEAL, warn: '#fbbf24', bad: '#f97316' }
+const NOTE_COLORS: Record<string, string> = { good: TEAL, warn: '#815A16', bad: '#B63D46' }
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   if (holdings.length === 0) {
     return new ImageResponse(
       <div style={{ width: '100%', height: '100%', background: BG, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif' }}>
-        <span style={{ fontSize: 60, fontWeight: 800, color: '#fff' }}>Until</span>
+        <span style={{ fontSize: 60, fontWeight: 800, color: '#151719' }}>Until</span>
         <span style={{ fontSize: 60, fontWeight: 800, color: TEAL }}>Fire</span>
       </div>,
       { width: 1080, height: 1920 },
@@ -59,11 +59,11 @@ export async function GET(req: NextRequest) {
 
   return new ImageResponse(
     (
-      <div style={{ width: '100%', height: '100%', background: BG, display: 'flex', flexDirection: 'column', padding: '72px 64px', fontFamily: 'sans-serif', color: '#ffffff' }}>
+      <div style={{ width: '100%', height: '100%', background: BG, display: 'flex', flexDirection: 'column', padding: '72px 64px', fontFamily: 'sans-serif', color: '#151719' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex' }}>
-            <span style={{ fontSize: 34, fontWeight: 800, color: '#fff', letterSpacing: '-1px' }}>Until</span>
+            <span style={{ fontSize: 34, fontWeight: 800, color: '#151719', letterSpacing: '-1px' }}>Until</span>
             <span style={{ fontSize: 34, fontWeight: 800, color: TEAL, letterSpacing: '-1px' }}>Fire</span>
           </div>
           <span style={{ fontSize: 24, color: MUTED, textTransform: 'uppercase', letterSpacing: '3px' }}>Portfolio Check</span>
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', marginLeft: 36, flex: 1 }}>
             <span style={{ fontSize: 22, color: MUTED, textTransform: 'uppercase', letterSpacing: '2px' }}>Is this portfolio OK?</span>
-            <span style={{ fontSize: 46, fontWeight: 800, color: '#fff', lineHeight: 1.1, marginTop: 8 }}>{verdict.headline}</span>
+            <span style={{ fontSize: 46, fontWeight: 800, color: '#151719', lineHeight: 1.1, marginTop: 8 }}>{verdict.headline}</span>
           </div>
         </div>
 
@@ -94,7 +94,7 @@ export async function GET(req: NextRequest) {
               return (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
                   <div style={{ width: 20, height: 20, borderRadius: 5, background: s.color, display: 'flex' }} />
-                  <span style={{ fontSize: 28, fontWeight: 700, color: '#fff', marginLeft: 14, width: 120 }}>{s.ticker}</span>
+                  <span style={{ fontSize: 28, fontWeight: 700, color: '#151719', marginLeft: 14, width: 120 }}>{s.ticker}</span>
                   <span style={{ fontSize: 28, fontWeight: 700, color: TEAL, width: 80 }}>{Math.round(s.weight)}%</span>
                   <span style={{ fontSize: 22, color: MUTED, flex: 1 }}>{fund ? fund.name : 'Unrecognized'}</span>
                 </div>
@@ -107,15 +107,15 @@ export async function GET(req: NextRequest) {
         {hasPerf && chartPaths ? (
           <div style={{ display: 'flex', flexDirection: 'column', marginTop: 44, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 20, padding: '28px 32px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-              <span style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>Portfolio vs S&P 500 — {yrs}Y</span>
+              <span style={{ fontSize: 24, fontWeight: 700, color: '#151719' }}>Portfolio vs S&P 500 — {yrs}Y</span>
               <div style={{ display: 'flex', gap: 28 }}>
                 <span style={{ fontSize: 24, fontWeight: 700, color: TEAL }}>{Number(ret) >= 0 ? '+' : ''}{ret}%</span>
-                <span style={{ fontSize: 24, color: '#94a3b8' }}>{Number(sp) >= 0 ? '+' : ''}{sp}%</span>
+                <span style={{ fontSize: 24, color: '#686D7C' }}>{Number(sp) >= 0 ? '+' : ''}{sp}%</span>
               </div>
             </div>
             <svg width={chartW} height={chartH} viewBox={`0 0 ${chartW} ${chartH}`} style={{ display: 'block' }}>
               <line x1={0} y1={chartPaths.baselineY} x2={chartW} y2={chartPaths.baselineY} stroke={BORDER} strokeWidth={1} strokeDasharray="4 4" />
-              <polyline points={chartPaths.benchmarkPoints} fill="none" stroke="#94a3b8" strokeWidth={2} strokeLinejoin="round" />
+              <polyline points={chartPaths.benchmarkPoints} fill="none" stroke="#686D7C" strokeWidth={2} strokeLinejoin="round" />
               <polyline points={chartPaths.portfolioPoints} fill="none" stroke={TEAL} strokeWidth={3} strokeLinejoin="round" />
             </svg>
             {/* Metrics row */}
@@ -130,7 +130,7 @@ export async function GET(req: NextRequest) {
               ].filter(m => m.val !== null).map((m, i) => (
                 <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                   <span style={{ fontSize: 18, color: MUTED, textTransform: 'uppercase', letterSpacing: '1px' }}>{m.label}</span>
-                  <span style={{ fontSize: 30, fontWeight: 800, color: '#fff', marginTop: 4 }}>{m.val}</span>
+                  <span style={{ fontSize: 30, fontWeight: 800, color: '#151719', marginTop: 4 }}>{m.val}</span>
                 </div>
               ))}
             </div>
@@ -141,7 +141,7 @@ export async function GET(req: NextRequest) {
             {notes.map((n, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 20 }}>
                 <div style={{ width: 14, height: 14, borderRadius: '50%', background: NOTE_COLORS[n.kind] ?? MUTED, marginTop: 10, display: 'flex' }} />
-                <span style={{ fontSize: 28, color: '#d6d6e0', marginLeft: 18, flex: 1, lineHeight: 1.35 }}>{n.text}</span>
+                <span style={{ fontSize: 28, color: '#5C6170', marginLeft: 18, flex: 1, lineHeight: 1.35 }}>{n.text}</span>
               </div>
             ))}
           </div>
@@ -149,7 +149,7 @@ export async function GET(req: NextRequest) {
 
         {/* Footer */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 32 }}>
-          <span style={{ fontSize: 26, color: '#fff', fontWeight: 700 }}>Rate your portfolio free</span>
+          <span style={{ fontSize: 26, color: '#151719', fontWeight: 700 }}>Rate your portfolio free</span>
           <span style={{ fontSize: 26, color: TEAL, fontWeight: 700 }}>untilfire.com →</span>
         </div>
         <span style={{ fontSize: 18, color: MUTED, marginTop: 12 }}>Educational only — not financial advice.</span>

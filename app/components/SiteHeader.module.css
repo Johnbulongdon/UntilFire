@@ -7,7 +7,7 @@
   padding: 14px 28px;
   background: var(--uf-topbar-glass); backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--uf-surface);
-  font-family: 'Manrope', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 .fixed { position: fixed; top: 0; left: 0; right: 0; }
 .logo { text-decoration: none; display: inline-flex; }
@@ -43,3 +43,12 @@
   .links a { padding: 12px 0; font-size: 16px; border-bottom: 1px solid var(--uf-surface); }
   .links a:last-child { border-bottom: none; }
 }
+
+.signIn { color: var(--uf-ink); font-size: 13px; font-weight: 700; text-decoration: none; padding: 10px 14px; min-height:44px; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--uf-border-2); border-radius:var(--uf-r-pill); white-space:nowrap; }
+
+.mobileLabel{display:none}
+@media(max-width:760px){.desktopLabel{display:none}.mobileLabel{display:inline}}
+
+.cta { min-height:44px; display:inline-flex; align-items:center; justify-content:center; }
+.signIn:focus-visible { outline:3px solid #9278BF; outline-offset:3px; }
+@media(max-width:760px) { .bar { gap:8px; padding:12px; } .logo img { max-width:108px; height:auto; } .signIn { padding:10px; } .cta { padding:9px 12px; } .menu { min-height:44px; width:38px; } }

@@ -5,7 +5,6 @@ import Script from 'next/script'
 import { AuthProvider } from '../lib/auth-context'
 import { Toaster } from 'react-hot-toast'
 import { Analytics } from '@vercel/analytics/react'
-import LoadingSplash from './components/LoadingSplash'
 import SiteHeader from './components/SiteHeader'
 import AcquisitionCapture from './components/AcquisitionCapture'
 import {
@@ -17,11 +16,11 @@ import { BRAND_PROFILES, SITE_URL } from '@/lib/site'
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#08080e',
+  themeColor: '#FFFFFF',
 }
 
 export const metadata: Metadata = {
-  title: 'UntilFire | Personal Finance That Sets You Free',
+  title: 'UntilFire | See Beyond Your Balance. Open Up Your Life.',
   description: UNTILFIRE_ANCHOR_COPY,
   keywords:
     'FIRE calculator, financial independence retire early, freedom date calculator, when can I retire, personal finance planning, work optionality, financial freedom, early retirement calculator, FIRE number, savings rate calculator, coast FIRE, barista FIRE, lean FIRE, fat FIRE, retirement timeline, how much do I need to retire',
@@ -29,16 +28,16 @@ export const metadata: Metadata = {
     canonical: SITE_URL,
   },
   openGraph: {
-    title: 'UntilFire — Find Your Freedom Date in 60 Seconds',
+    title: 'UntilFire — See beyond your balance. Open up your life.',
     description: UNTILFIRE_ANCHOR_DESCRIPTION,
     url: SITE_URL,
     siteName: 'UntilFire',
     type: 'website',
-    images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: 'UntilFire — personal finance that sets you free' }],
+    images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: 'UntilFire — See beyond your balance. Open up your life.' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'UntilFire — Find Your Freedom Date in 60 Seconds',
+    title: 'UntilFire — See beyond your balance. Open up your life.',
     description: UNTILFIRE_ANCHOR_DESCRIPTION,
     images: [`${SITE_URL}/opengraph-image`],
   },
@@ -68,14 +67,6 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{if(localStorage.getItem('uf-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}})()`,
-          }}
-        />
-        {/* Decide the logo-reveal splash before first paint: first load of a
-            session only, and never for reduced-motion. Keeps it flash-free and
-            off internal navigations. See app/components/LoadingSplash.tsx. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var r=window.matchMedia('(prefers-reduced-motion: reduce)').matches;var s=sessionStorage.getItem('uf_splash_seen')==='1';var e=location.pathname.indexOf('/embed/')===0;if(!r&&!s&&!e){document.documentElement.setAttribute('data-splash','1');sessionStorage.setItem('uf_splash_seen','1')}}catch(e){}})()`,
           }}
         />
         <script
@@ -162,7 +153,7 @@ export default function RootLayout({
               alternateName: 'Until Fire',
               url: SITE_URL,
               logo: `${SITE_URL}/icon.png`,
-              description: 'Personal finance that sets you free. UntilFire helps you calculate your FIRE number, freedom date, and monthly plan to reach financial independence.',
+              description: 'See beyond your balance. Open up your life. UntilFire helps you calculate your FIRE number, freedom date, and monthly plan to reach financial independence.',
               sameAs: BRAND_PROFILES,
               contactPoint: {
                 '@type': 'ContactPoint',
@@ -176,7 +167,6 @@ export default function RootLayout({
             }),
           }}
         />
-        <LoadingSplash />
         <AuthProvider>
           <AcquisitionCapture />
           <SiteHeader />

@@ -6,10 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { Button } from '@/components/Button'
 import { Icon } from '@/components/Icon'
-import { Sunrise } from '@/components/Sunrise'
+import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
 import { useAuth } from '@/state/auth'
-import { brand } from '@/theme/colors'
+import { colors } from '@/theme/colors'
 
 /**
  * The last onboarding step (V2): an invitation, not a warning. Someone who
@@ -24,13 +24,13 @@ export default function SavePlan() {
   useEffect(() => { if (session) router.replace('/(tabs)') }, [session])
 
   return (
-    <SafeAreaView className="flex-1 bg-brand">
+    <SafeAreaView className="flex-1 bg-ground">
       <View className="flex-1 justify-center px-6">
         <Animated.View entering={FadeIn.duration(700)}>
-          <Sunrise share={0.6} height={130} sun={brand.sun} horizon={brand.aqua} sky={brand.aqua} />
+          <Sunny mood="rise" size={180} />
         </Animated.View>
         <Animated.View entering={FadeInDown.delay(300).duration(500)}>
-          <Text className="mt-6 font-display text-[38px] font-bold leading-[44px] tracking-tight text-white">Your path starts today.</Text>
+          <Text className="mt-6 font-display text-[38px] font-bold leading-[44px] tracking-tight text-ink">Your path starts today.</Text>
           <View className="mt-6 gap-3">
             {[
               ['sun.max.fill', '☀', 'Today: one minute a day keeps your plan on track'],
@@ -38,16 +38,16 @@ export default function SavePlan() {
               ['laptopcomputer.and.iphone', '⇄', 'The same account on untilfire.com'],
             ].map(([icon, fallback, t]) => (
               <View key={t} className="flex-row items-center gap-3">
-                <Icon name={icon as 'sun.max.fill'} fallback={fallback} size={20} color={brand.aqua} />
-                <Text className="flex-1 text-[16px] leading-6 text-mint">{t}</Text>
+                <Icon name={icon as 'sun.max.fill'} fallback={fallback} size={20} color={colors.ink} />
+                <Text className="flex-1 text-[16px] leading-6 text-ink-2">{t}</Text>
               </View>
             ))}
           </View>
         </Animated.View>
       </View>
       <View className="gap-3 px-6 pb-4">
-        <Button kind="onDark" label="Create my free account" onPress={() => router.push('/sign-in')} />
-        <Button kind="onDarkQuiet" label="I already have an account" onPress={() => router.push('/sign-in')} />
+        <Button kind="primary" label="Create my free account" onPress={() => router.push('/sign-in')} />
+        <Button kind="quiet" label="I already have an account" onPress={() => router.push('/sign-in')} />
       </View>
     </SafeAreaView>
   )

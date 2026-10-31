@@ -8,6 +8,7 @@ import { countriesByCost } from "@/lib/country-pages";
 import { cityPagePath } from "@/lib/city-pages";
 import { STATE_NAMES } from "@/lib/state-pages";
 import Flag from "@/app/components/Flag";
+import { DEFAULT_OG_IMAGE } from "@/lib/site"
 
 
 const US_CITIES = CITIES.filter((c) => isUS(c.state));
@@ -22,6 +23,7 @@ export const metadata: Metadata = {
   },
   alternates: { canonical: "https://www.untilfire.com/fire-number" },
   openGraph: {
+    images: [DEFAULT_OG_IMAGE],
     title: "FIRE Number by City | UntilFire",
     description: `Compare ${US_CITIES.length} US city FIRE baselines and see how local costs change your retirement target.`,
     type: "website",
@@ -41,9 +43,9 @@ export default function FireNumberHubPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
-        body { background: var(--uf-surface); color: var(--uf-ink); font-family: 'Manrope', sans-serif; margin: 0; }
+        body { background: var(--uf-surface); color: var(--uf-ink); font-family: 'Inter', sans-serif; margin: 0; }
         a { color: inherit; }
         .city-card:hover { border-color: var(--uf-green) !important; background: var(--uf-green-50) !important; }
         @media(max-width: 640px) {

@@ -217,7 +217,6 @@ const mw = read('middleware.ts');
   check('code holds are service-role only', holdsSql.includes('ALTER TABLE referral_code_holds ENABLE ROW LEVEL SECURITY;') && !/CREATE POLICY/i.test(holdsSql));
 }
 check('only /embed/ can be framed; everything else stays DENY', mw.includes('pathname.startsWith("/embed/")') && mw.includes('"frame-ancestors *"') && mw.includes('"X-Frame-Options", "DENY"'));
-check('no logo splash inside an embed', read('app/layout.tsx').includes("location.pathname.indexOf('/embed/')===0"));
 const embed = read('app/embed/[code]/EmbedCalculator.tsx');
 check('every link out of the embed goes through the creator link', embed.includes('`https://www.untilfire.com/r/${code}`') && !/href="https:\/\/www\.untilfire\.com\/(?!r\/)/.test(embed));
 const invite = read('app/invite/CreatorArea.tsx');

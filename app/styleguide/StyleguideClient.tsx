@@ -22,14 +22,14 @@ const COLOR_GROUPS: { title: string; tokens: string[] }[] = [
 ];
 
 const TYPE_STEPS: { cls: string; note: string }[] = [
-  { cls: "uf-t-display", note: "56 · Fraunces · the freedom date" },
-  { cls: "uf-t-h1", note: "34 · Fraunces · page titles" },
-  { cls: "uf-t-h2", note: "24 · Fraunces · section titles" },
-  { cls: "uf-t-h3", note: "18 · Manrope 700" },
-  { cls: "uf-t-lead", note: "16 · Manrope 400" },
-  { cls: "uf-t-body", note: "14 · Manrope 400 · default" },
-  { cls: "uf-t-small", note: "13 · Manrope 400" },
-  { cls: "uf-t-label", note: "11 · Manrope 700 · uppercase" },
+  { cls: "uf-t-display", note: "56 · Inter · the freedom date" },
+  { cls: "uf-t-h1", note: "34 · Inter · page titles" },
+  { cls: "uf-t-h2", note: "24 · Inter · section titles" },
+  { cls: "uf-t-h3", note: "18 · Inter 700" },
+  { cls: "uf-t-lead", note: "16 · Inter 400" },
+  { cls: "uf-t-body", note: "14 · Inter 400 · default" },
+  { cls: "uf-t-small", note: "13 · Inter 400" },
+  { cls: "uf-t-label", note: "11 · Inter 700 · uppercase" },
 ];
 
 const RADII = [
@@ -231,7 +231,7 @@ export default function StyleguideClient() {
         {/* Field */}
         <Section
           id="field" title="Field, Input, Select" source="components/ui/Field.tsx"
-          subtitle="A labelled control with an optional hint or error. Set numeric on anything holding a figure — it switches to DM Mono with tabular numerals so decimals line up in a column."
+          subtitle="A labelled control with an optional hint or error. Set numeric on anything holding a figure — it switches to Inter with tabular numerals so decimals line up in a column."
         >
           <Card>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "var(--uf-s5)" }}>
@@ -247,7 +247,7 @@ export default function StyleguideClient() {
               <Field label="Net worth" error="Enter a number">
                 <Input defaultValue="abc" />
               </Field>
-              <Field label="Plain text" hint="numeric is off, so this uses Manrope">
+              <Field label="Plain text" hint="numeric is off, so this uses Inter">
                 <Input defaultValue="Not a figure" />
               </Field>
             </div>
@@ -257,7 +257,7 @@ export default function StyleguideClient() {
         {/* Stat */}
         <Section
           id="stat" title="Stat" source="components/ui/Stat.tsx"
-          subtitle="Label, figure, delta. The figure is always DM Mono with tabular numerals. tone=freedom is the teal treatment and belongs only to the freedom date and time saved."
+          subtitle="Label, figure, delta. The figure is always Inter with tabular numerals. tone=freedom is the teal treatment and belongs only to the freedom date and time saved."
         >
           <Card style={{ marginBottom: "var(--uf-s4)" }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "var(--uf-s5)" }}>
@@ -307,7 +307,7 @@ export default function StyleguideClient() {
         {/* Type */}
         <Section
           id="type" title="Type scale" source="app/globals.css — .uf-t-*"
-          subtitle="Eight steps and nothing between them. Fraunces is display only; Manrope is body; DM Mono with tabular numerals is every figure."
+          subtitle="Eight steps and nothing between them. Inter is display only; Inter is body; Inter with tabular numerals is every figure."
         >
           <Card>
             {TYPE_STEPS.map(s => (
@@ -440,7 +440,7 @@ export default function StyleguideClient() {
             <div className="uf-t-label" style={{ color: "var(--uf-ink-3)", marginBottom: 16 }}>Component variants</div>
             {[
               { v: "auto" as const, note: "follows --uf-ink · use this by default" },
-              { v: "light" as const, note: "fixed #064E3B · only on a light surface" },
+              { v: "light" as const, note: "fixed #151719 · only on a light surface" },
             ].map(({ v, note }) => (
               <Row key={v} label={`variant="${v}"`}>
                 <Logo variant={v} size={22} />

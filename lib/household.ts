@@ -2,8 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { randomBytes } from "node:crypto";
 import { adminClient } from "./supabase-admin";
 import { FALLBACK_RATES } from "./currency";
+import { accountInUSD, connectedBalance } from "./account-currency";
+import { retirementCash, CASH_INFLATION_RATE } from "./freedom-cash";
 import { fetchAllPages } from "./supabase-pages";
-import { householdSpending, type MemberSpendRow } from "./household-spending";
+import { confirmedAccountGroups, householdSpending, type MemberSpendRow } from "./household-spending";
 
 /**
  * Household membership, server side.
@@ -312,6 +314,8 @@ export interface MemberPosition {
   monthlyExpenses: number;
   monthlySavings: number;
   portfolio: number;
+  cashSavings: number;
+  cashGrowthRate: number;
 }
 
 export interface HouseholdPosition {
@@ -321,6 +325,8 @@ export interface HouseholdPosition {
     monthlyExpenses: number;
     monthlySavings: number;
     portfolio: number;
+    cashSavings: number;
+    cashGrowthRate: number;
     annualExpenses: number;
   };
   /** Balance removed because both partners had linked the same account. */
@@ -329,140 +335,125 @@ export interface HouseholdPosition {
   undecidedDuplicates: number;
 }
 
-/** Mirrors isRetirementInvestmentAccount in app/dashboard/page.tsx. */
+/** Same retirement classification as personal balances. */
 function isRetirementAccount(a: { subtype: string | null }): boolean {
   const subtype = (a.subtype ?? "").toLowerCase().replace(/[_-]/g, " ");
-  return ["401", "403", "457", "ira", "roth", "retirement", "pension", "annuity", "sep", "simple", "keogh"]
-    .some((t) => subtype.includes(t));
+  return ["401", "403", "457", "ira", "roth", "retirement", "pension", "annuity", "sep", "simple", "keogh"].some(t => subtype.includes(t));
 }
 
-/**
- * Both partners' numbers, summed.
- *
- * Aggregate, not pooled: each person's own figures are untouched and this only
- * ever adds them up. Read through the service-role client because it needs
- * both members at once, and every value comes from the same sources each
- * person's own dashboard reads.
- *
- * Portfolio is 401k + Roth + taxable, with linked investment accounts
- * replacing the typed figures as on the dashboard. Cash savings live outside
- * scenario_assumptions, so they are deliberately absent rather than guessed —
- * a household total that quietly invents a number is worse than one that is
- * visibly conservative.
- */
-export async function householdPosition(admin: Admin, userId: string): Promise<HouseholdPosition | null> {
-  const { data: mine } = await admin
-    .from("household_members")
-    .select("household_id")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!mine) return null;
-
-  const { data: memberRows } = await admin
-    .from("household_members")
-    .select("user_id")
-    .eq("household_id", mine.household_id)
-    .order("member_slot");
-  const ids = (memberRows ?? []).map((m) => m.user_id as string);
+/** Read-only household aggregation from the current personal account store.
+ * Ownership shares apply to personal views, not this full-household aggregate.
+ * Confirmed bank duplicates count once; typed shared funds cannot be inferred. */
+export async function householdPosition(admin: Admin, userId: string, suppliedRates?: Record<string, number>): Promise<HouseholdPosition | null> {
+  const membership = await admin.from("household_members").select("household_id").eq("user_id", userId).maybeSingle();
+  if (membership.error) throw new Error(membership.error.message);
+  if (!membership.data) return null;
+  const householdId = membership.data.household_id;
+  const roster = await admin.from("household_members").select("user_id").eq("household_id", householdId).order("member_slot");
+  if (roster.error) throw new Error(roster.error.message);
+  const ids = [...new Set((roster.data ?? []).map(m => m.user_id as string))];
   if (ids.length < 2) return null;
-
-  const { data: investRows } = await admin
-    .from("plaid_accounts")
-    .select("plaid_account_id, user_id, subtype, balance_current")
-    .in("user_id", ids)
-    .eq("type", "investment");
-  const invest = (investRows ?? []) as { plaid_account_id: string; user_id: string; subtype: string | null; balance_current: number | null }[];
-
+  let rates = suppliedRates;
+  if (!rates) {
+    try {
+      const response = await fetch("https://api.frankfurter.app/latest?from=USD", { signal: AbortSignal.timeout(4000) });
+      if (!response.ok) throw new Error("Exchange rates unavailable");
+      const result = await response.json();
+      rates = { ...FALLBACK_RATES, ...(result.rates ?? {}) };
+    } catch { rates = FALLBACK_RATES; }
+  }
+  const toUsd = (amount: number, currency: string) => {
+    const code = currency.trim().toUpperCase() || "USD";
+    if (code === "USD") return amount;
+    const rate = rates![code];
+    if (!(rate > 0) || !Number.isFinite(rate)) throw new Error("Missing exchange rate for " + code);
+    return amount / rate;
+  };
+  const accountResult = await fetchAllPages((from, to) => admin.from("plaid_accounts")
+    .select("id, plaid_account_id, user_id, name, type, subtype, balance_current, iso_currency_code, apy")
+    .in("user_id", ids).order("id").range(from, to));
+  if (accountResult.error) throw new Error(accountResult.error.message);
+  type Account = { id: string; plaid_account_id: string; user_id: string; name: string | null; type: string; subtype: string | null; balance_current: number | null; iso_currency_code: string | null; apy?: number | null };
+  const accounts = ((accountResult.data ?? []) as Account[]).map(a => {
+    const converted = accountInUSD(a, rates!);
+    if (!converted.converted) throw new Error("Missing exchange rate for " + converted.native_currency);
+    if (a.balance_current == null || !Number.isFinite(a.balance_current)) throw new Error("Connected balance unavailable");
+    return converted;
+  });
+  const linkResult = await admin.from("shared_account_links").select("plaid_account_id_a, plaid_account_id_b, status").eq("household_id", householdId);
+  if (linkResult.error) throw new Error(linkResult.error.message);
+  const byId = new Map(accounts.map(a => [a.plaid_account_id, a]));
+  const confirmedLinks = (linkResult.data ?? []).filter(l => {
+    const a = byId.get(l.plaid_account_id_a), b = byId.get(l.plaid_account_id_b);
+    return l.status === "confirmed" && a && b && a.user_id !== b.user_id && a.type === b.type;
+  }).map(l => ({ a: l.plaid_account_id_a as string, b: l.plaid_account_id_b as string }));
   const members: MemberPosition[] = [];
+  const included = new Map<string, { amount: number; cash: boolean; realInterest: number }>();
+  const numeric = (value: unknown, fallback = 0) => typeof value === "number" && Number.isFinite(value) ? value : fallback;
   for (const id of ids) {
-    const [{ data: prof }, { data: assumptions }, auth] = await Promise.all([
-      admin.from("profiles").select("display_name").eq("user_id", id).maybeSingle(),
-      admin
-        .from("scenario_assumptions")
-        .select("monthly_income, fire_age, k401, roth_ira, taxable, budget_categories, scenarios!inner(is_default)")
-        .eq("user_id", id)
-        .eq("scenarios.is_default", true)
-        .maybeSingle(),
+    const [profileResult, budgetResult, auth] = await Promise.all([
+      admin.from("profiles").select("display_name, default_currency, free_to_spend_accounts").eq("user_id", id).maybeSingle(),
+      admin.from("user_budget").select("income, expenses, fire_age, fire_assets").eq("user_id", id).maybeSingle(),
       admin.auth.admin.getUserById(id),
     ]);
-
-    const categories = (assumptions?.budget_categories ?? {}) as Record<string, number>;
-    const monthlyExpenses = Object.values(categories).reduce((sum, v) => sum + (Number(v) || 0), 0);
-    const monthlyIncome = Number(assumptions?.monthly_income ?? 0);
-    // Same rule as each person's own dashboard (D-32): linked retirement
-    // accounts replace the typed 401(k) and Roth, linked brokerage replaces
-    // typed taxable. Bank accounts are not part of the portfolio.
-    const mineInvest = invest.filter((a) => a.user_id === id);
-    const retirement = mineInvest.filter(isRetirementAccount).reduce((s, a) => s + Number(a.balance_current ?? 0), 0);
-    const brokerage = mineInvest.filter((a) => !isRetirementAccount(a)).reduce((s, a) => s + Number(a.balance_current ?? 0), 0);
-    const portfolio =
-      (retirement > 0 ? retirement : Number(assumptions?.k401 ?? 0) + Number(assumptions?.roth_ira ?? 0))
-      + (brokerage > 0 ? brokerage : Number(assumptions?.taxable ?? 0));
-
-    members.push({
-      userId: id,
-      name: (prof?.display_name as string)?.trim()
-        || auth.data?.user?.email?.split("@")[0]
-        || "Partner",
-      isYou: id === userId,
-      age: Number(assumptions?.fire_age ?? 0),
-      monthlyIncome,
-      monthlyExpenses,
-      monthlySavings: Math.max(0, monthlyIncome - monthlyExpenses),
-      portfolio,
-    });
+    if (profileResult.error || budgetResult.error) throw new Error(profileResult.error?.message ?? budgetResult.error!.message);
+    if (!budgetResult.data) throw new Error("Partner budget unavailable");
+    const budget = budgetResult.data, profile = profileResult.data;
+    const raw = (budget.expenses ?? {}) as Record<string, unknown>;
+    const fp = (raw._fire_profile ?? {}) as Record<string, unknown>;
+    const categories = Object.fromEntries(Object.entries(raw).filter(([k, v]) => !k.startsWith("_") && typeof v === "number" && Number.isFinite(v))) as Record<string, number>;
+    const local = raw._budget_local as { currency?: string; values?: Record<string, number> } | undefined;
+    if (local && local.currency && local.currency === (profile?.default_currency || "USD") && local.values) {
+      for (const [key, value] of Object.entries(local.values)) if (!key.startsWith("_") && Number.isFinite(value)) categories[key] = toUsd(value, local.currency);
+    }
+    const monthlyExpenses = Object.values(categories).reduce((sum, value) => sum + value, 0);
+    const monthlyIncome = Number(budget.income ?? 0);
+    const mine = accounts.filter(a => a.user_id === id);
+    const retirement = connectedBalance(mine, a => a.type === "investment" && isRetirementAccount(a));
+    const brokerage = connectedBalance(mine, a => a.type === "investment" && !isRetirementAccount(a));
+    const toggles = (profile?.free_to_spend_accounts ?? {}) as Record<string, boolean>;
+    const cash = retirementCash(mine, toggles, numeric(fp.cashSavings));
+    const portfolio = (retirement ?? numeric(fp.k401, Number(budget.fire_assets ?? 0)) + numeric(fp.rothIRA)) + (brokerage ?? numeric(fp.taxable)) + cash.cashSavings;
+    for (const a of mine) {
+      if (a.type === "investment") included.set(a.plaid_account_id, { amount: a.balance_current ?? 0, cash: false, realInterest: 0 });
+      else if (a.type === "depository") {
+        const held = retirementCash([a], toggles, 0);
+        if (held.cashSavings > 0) included.set(a.plaid_account_id, { amount: held.cashSavings, cash: true, realInterest: held.cashSavings * held.cashGrowthRate });
+      }
+    }
+    members.push({ userId: id, name: (profile?.display_name as string)?.trim() || auth.data?.user?.email?.split("@")[0] || "Partner", isYou: id === userId,
+      age: Number(budget.fire_age ?? 0), monthlyIncome, monthlyExpenses, monthlySavings: Math.max(0, monthlyIncome - monthlyExpenses), portfolio, ...cash });
   }
-
-  // Confirmed duplicates are counted once. Undecided ones stay counted for
-  // both — overstating a household total is a smaller failure than silently
-  // halving it — but the caller is told how many are outstanding so it can say so.
-  const { data: links } = await admin
-    .from("shared_account_links")
-    .select("plaid_account_id_b, status")
-    .eq("household_id", mine.household_id);
-
-  const confirmed = (links ?? []).filter((l) => l.status === "confirmed");
-  // Only a linked investment account is inside a portfolio above, so only
-  // that kind can be counted twice. A shared checking account was never in
-  // the total, and subtracting it would push the household date later.
-  const confirmedIds = new Set(confirmed.map((l) => l.plaid_account_id_b as string));
-  const dedupedBalance = invest
-    .filter((a) => confirmedIds.has(a.plaid_account_id))
-    .reduce((sum, a) => sum + Number(a.balance_current ?? 0), 0);
-
+  let dedupedBalance = 0, dedupedCash = 0, dedupedInterest = 0;
+  const groups = confirmedAccountGroups(confirmedLinks);
+  for (const group of new Set(groups.values())) {
+    const values = [...groups].filter(([, value]) => value === group).map(([id]) => included.get(id)).filter((v): v is NonNullable<typeof v> => !!v);
+    if (values.length < 2) continue;
+    const kept = values.reduce((a, b) => a.amount >= b.amount ? a : b);
+    const removed = values.filter(value => value !== kept);
+    dedupedBalance += removed.reduce((sum, v) => sum + v.amount, 0);
+    dedupedCash += removed.filter(v => v.cash).reduce((sum, v) => sum + v.amount, 0);
+    dedupedInterest += removed.filter(v => v.cash).reduce((sum, v) => sum + v.realInterest, 0);
+  }
   const undecided = await duplicateCandidates(admin, userId);
-
-  const monthlyIncome = members.reduce((s, m) => s + m.monthlyIncome, 0);
-  /* Real spending once both have three months of it, with a joint account
-     both connected counted once (lib/household-spending); adding two typed
-     budgets counted shared rent twice. Typed budgets before that. */
-  let monthlyExpenses = members.reduce((s, m) => s + m.monthlyExpenses, 0);
+  const monthlyIncome = members.reduce((sum, m) => sum + m.monthlyIncome, 0);
+  let monthlyExpenses = members.reduce((sum, m) => sum + m.monthlyExpenses, 0);
   try {
-    const now = new Date();
-    const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const since = new Date(now.getFullYear(), now.getMonth() - 13, 1).toISOString().slice(0, 10);
-    const { data: spendRows } = await fetchAllPages((from, to) => admin.from("expenses")
-      .select("user_id, date, amount, refund_amount, currency, description, sub_category")
-      .in("user_id", ids).eq("transaction_type", "expense").gte("date", since)
-      .order("date").order("id").range(from, to));
-    const real = householdSpending((spendRows ?? []) as MemberSpendRow[], current,
-      (amount, currency) => (currency === "USD" ? amount : amount / (FALLBACK_RATES[currency] || 1)));
+    const now = new Date(), current = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+    const start = new Date(now.getFullYear(), now.getMonth() - 13, 1);
+    const since = start.getFullYear() + "-" + String(start.getMonth() + 1).padStart(2, "0") + "-01";
+    // Any transaction establishes a member's first observed date; spending only contributes amounts.
+    const result = await fetchAllPages((from, to) => admin.from("expenses")
+      .select("user_id, date, amount, refund_amount, currency, description, sub_category, plaid_account_id, transaction_type")
+      .in("user_id", ids).gte("date", since).order("date").order("id").range(from, to));
+    if (result.error) throw new Error(result.error.message);
+    const real = householdSpending((result.data ?? []) as MemberSpendRow[], current, toUsd, { memberIds: ids, confirmedLinks });
     if (real.average != null) monthlyExpenses = real.average;
-  } catch (spendErr) {
-    console.error("[household] real spending:", spendErr);
-  }
-  const portfolio = Math.max(0, members.reduce((s, m) => s + m.portfolio, 0) - dedupedBalance);
-
-  return {
-    members,
-    combined: {
-      monthlyIncome,
-      monthlyExpenses,
-      monthlySavings: Math.max(0, monthlyIncome - monthlyExpenses),
-      portfolio,
-      annualExpenses: monthlyExpenses * 12,
-    },
-    dedupedBalance,
-    undecidedDuplicates: undecided.length,
-  };
+  } catch (error) { console.error("[household] using saved budgets; history unavailable:", error); }
+  const portfolio = Math.max(0, members.reduce((sum, m) => sum + m.portfolio, 0) - dedupedBalance);
+  const cashSavings = Math.max(0, members.reduce((sum, m) => sum + m.cashSavings, 0) - dedupedCash);
+  const cashInterest = members.reduce((sum, m) => sum + m.cashSavings * m.cashGrowthRate, 0) - dedupedInterest;
+  return { members, combined: { monthlyIncome, monthlyExpenses, monthlySavings: Math.max(0, monthlyIncome - monthlyExpenses), portfolio, cashSavings,
+    cashGrowthRate: cashSavings > 0 ? cashInterest / cashSavings : 1 / (1 + CASH_INFLATION_RATE) - 1, annualExpenses: monthlyExpenses * 12 },
+    dedupedBalance, undecidedDuplicates: undecided.length };
 }

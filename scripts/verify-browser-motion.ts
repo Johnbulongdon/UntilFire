@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import { animateScene } from '../lib/browser-motion.ts';
+let starts=0,cancels=0,listener:(()=>void)|undefined;
+const node={animate:()=>{starts++;return {cancel:()=>{cancels++}}}} as unknown as HTMLElement;
+const preference={matches:true,addEventListener:(_name:string,cb:()=>void)=>{listener=cb},removeEventListener:()=>{listener=undefined}} as unknown as MediaQueryList;
+animateScene(node,preference)();assert.equal(starts,0,'Reduced-motion users skip the animation');
+const normal={...preference,matches:false} as MediaQueryList;
+const cleanup=animateScene(node,normal);assert.equal(starts,1);assert.ok(listener);listener!();assert.equal(cancels,1,'Preference changes cancel ongoing motion');cleanup();assert.equal(listener,undefined,'Unmount/navigation removes its listener');
+animateScene({} as HTMLElement,normal)();assert.equal(starts,1,'Unsupported browsers keep the static content');
+console.log('Browser scene motion: reduced preference, live cancellation, cleanup and static fallback passed.');

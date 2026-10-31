@@ -1,9 +1,155 @@
 # Changelog
 
-## 2026-10-25 — Phone app on Expo SDK 58
+## 2026-10-31 — Phone app on Expo SDK 58
 
 - The phone app moves from Expo SDK 57 to 58 (React Native 0.88, React 19.3), so it opens in the current Expo Go again. App version is now 0.3.0, which gives it a new update runtime: build 14 (0.2.0) keeps its current code and gets no SDK 58 updates. Phones get this only through a new store build (D-102).
 - Code changes for the new versions: React Native views are typed by their instance types (`ViewInstance`, `ScrollViewInstance`, `TextInputInstance`), and the Explore globe builds its Skia paths with `Skia.PathBuilder`, since Skia 2.14 paths are read-only.
+- Includes the PostHog replay plugin 2.12.7 (OkHttp 4.12.1, eMudhra certificate fix), folded in from #339 because it is also a native change.
+
+## 2026-10-31 — October update email pictures
+
+- Add the October monthly update email's banner and four feature previews (new look, Until payday, Today, Where could you retire?) under public/email/october/, so the admin draft "Monthly update — October 2026" can load them. No app behaviour change.
+
+## 31 October 2026 — Until payday after everyday costs
+
+- Home now estimates cash left after bills, card payments and normal everyday costs, using spending history or the saved category budget without counting repeating bills twice.
+- Replace chart inspection with the approved mint summary, compact breakdown and three-row bill ledger linking to Money.
+- Add an editable estimate and optional collapsed cushion (zero by default); adjustments apply to the current visit and update Home Today. No automatic savings deduction or budget mutation.
+- Match the phone card and shared forecast rule; missing estimates remain visibly unknown.
+
+
+## Unreleased — website audit follow-ups
+
+- Add a branded 404 page with "Find my freedom date" and "Explore cities", instead of the plain Next.js default.
+- "Try one improvement": tapping the savings bar now sets the amount there (it was the most rage-clicked spot), and the bar uses theme tokens so it reads in dark mode.
+
+## Unreleased — landing refinements and city globe
+
+- Add the approved draggable city globe with shared living-cost estimates, keyboard/city controls and lazy map loading.
+- Add restrained backdrop entrance, pointer response and parallax with reduced-motion support.
+- Preserve approved hero copy; tighten phone spacing and reassurance.
+- Clarify savings slider, animate its result, and enlarge small labels/controls.
+- Show Free/Pro connection allowances visually; quiet directory badges without changing backlinks.
+
+## Unreleased — Connected landing page
+
+- Replaced the rejected single-story rotator with the approved compact, continuously scrolling multi-card review rail. Added swipe/drag, manual arrows, pause controls, seam wrapping, optional approved membership dates and reduced-motion handling. Generated fictional portraits/quotes are explicit local-preview content; no reviews are published while the approved list is empty.
+
+- Selected conversion options 1 and 2: clearer hero supporting message and a compact free/no-account/optional-bank reassurance row. Added a multi-story rotating component for option 3, with pause/manual navigation and reduced-motion support. No fabricated reviews: approved story data is empty pending quotes and attribution. Explicit localhost-only layout preview uses labeled placeholders. Options 4 (founder) and 5 (savings-result redesign) are excluded.
+
+- Expanded the free starting-plan invitation into a mint closing section with a visual plan summary and onboarding action; reduced directory badge footprint without dropping links.
+
+- The landing ends with grouped UntilFire, calculator and city-guide navigation plus legal links. Removed the long educational/FAQ appendage and its FAQ schema; detailed content remains on the existing destination pages.
+
+- Approved option 2: centered headline, one connected pastel product preview without page tabs, selectable example bill dates and categories, and a whole-dollar savings scenario powered by the existing projection helper. Initial estimate still opens the existing free onboarding.
+- A dedicated wrapping Listed on tray preserves all directory URLs, issued badge images and verification attributes. Failed third-party images retain readable links. Phone layouts stack the preview and keep the header action compact.
+
+
+## 2026-10-29 — Starting budget (50/30/20)
+
+- Website only (D-116). With no budget yet, Money › Budget suggests 50% needs, 30% wants and 20% saving of take-home pay, built from what you usually spend. No limit is ever higher than your usual spending: only wants that aren't bills are trimmed, by one shared percentage; needs over 50% stay and wants give way. "Use this" saves it, "Set my own" opens guided setup. With no spending yet, the three totals show as a guide. Nothing is saved, and the freedom date doesn't move, until "Use this".
+
+## 2026-10-29 — Website interaction fixes
+
+- Website only. A failed plan load now shows "Try again" instead of the new-user welcome form, and auto-save waits for a good load, so a brief network blip cannot overwrite a saved plan. Save failures (including account toggles, debt start balances and shares) show a visible message; opening a page no longer flashes "Saved".
+- Dark mode: buttons that hardcoded white text on the ink accent (Pricing Pro, Categories, Transactions, review and spend-range pills, freedom report, share and savings calculators) use the card colour.
+- Calculator: Enter moves on from amount boxes and choice steps; one city match is picked on Enter; an empty city says Skip; disabled Continue explains what is missing. Amounts show commas while typing, the amount field has a rounded focus outline, the slider is ink-filled and 44px tall. When age is skipped, the reveal says the age is assumed; currency wording is neutral and the sign-up backdrop uses the visitor's currency. Duplicate step labels are removed.
+- Transactions: the savings card is one row, "Over by" reads "Short after bills", quick add is a centred dialog on desktop with the amount focused, pill Save and one close button. Delete uses Undo (six seconds, announced) instead of a browser popup; category-change failures are shown. The floating Feedback pill is gone (sidebar and header keep Feedback) and toasts sit above the Add bar.
+- Consistency: Apple sign-in shows "Soon" before it is tapped, "Skip to content" on the dashboard and landing page, Money and Plan content capped at 1,152px on desktop, reveal and onboarding motion at 300ms or less, "Choose a debt" instead of "Tap a debt".
+
+## Unreleased — Next Horizon
+
+- Website: the first-visit logo screen is gone (D-117). Every page, including city and calculator pages from search, shows straight away; the logo stays in the header.
+- Share cards: state, ranking and region guides get the yellow share card (their images were non-route files and returned 404), X gets the same picture, and Pricing, calculators, country, comparison and creator pages share with the site card instead of no picture. robots.txt allows /api/og/ so X can fetch them.
+- Pricing no longer lists an "AI FIRE adviser", which never existed; Pro lists the AI needs and wants tagging it really includes.
+
+- City guides use Next Horizon: each city page drops its own sage-green palette for the yellow freedom-number card, mint/blue tiles, a numbered plan card and black pill actions. The city share image is now the yellow card and works again (it was a non-route file, so links returned 404). Move-to-a-cheaper-city pages use theme tokens, so dark mode works; positive and negative results keep their own colours and words.
+
+- Slogan rollout (D-109): search and social titles, descriptions, structured data, the install-app description, email footer and demo video now say "See beyond your balance. Open up your life." instead of "Personal finance that sets you free."
+
+- Homepage "Listed on" tray restores the directory badges that live listings require, in a quiet light tray that stays readable in dark mode.
+
+- Browser interaction: try the example plan, clearer onboarding selection and directional transitions, section/editor/button feedback, structural Money loading, and live savings feedback. Decimal slider undo restores the exact original plan. Narrow onboarding removes decorative panels while retaining money summaries.
+
+- Until payday uses approved C: inspect each bill on the chart or list, with details above it and no visible slider. Cash calculations remain unchanged.
+
+- Lighter category palette B across the shared web/phone category system; existing saved hue families stay recognizable without rewriting account data.
+
+- Approved yellow horizon/path logo and Inter wordmark across web, native, admin, email and share previews, with downloadable SVG/PNG, palette and font exports.
+- Monthly onboarding with separate Housing and Investing, a freedom-date canvas, own monthly picture and a single saving-improvement action before saving an account.
+- Colourful Home cards, black pill actions and matched phone welcome controls. Financial calculations retain the shared engine; local-currency display values round-trip to USD once.
+- Native icon and splash assets require a new store build; this branch is not a production release.
+
+
+## 2026-10-27 — Aligned phone welcome actions
+
+- On the phone welcome screen, I already have an account uses the standard full-width, 56-point button and 17-point label, matching Get started. Retain the quieter secondary styling, spacing and existing sign-in behavior. The shared Button component is unchanged.
+
+
+## 2026-10-27 — Financial consistency repairs
+
+- Web and phone: connected accounts replace typed figures even at zero; unavailable or unconvertible amounts cannot revive stale money. Paid-off linked loans also stay at zero.
+- Web and phone: freedom today requires today's pension bridge. Fractional dates do not precede a year whose bridge is still short. Known zero-interest loans remain zero; current included balances set interest weights, with defaults only for unknown rates.
+- Personal needs, safety coverage and contribution needs apply joint-account ownership consistently.
+- Household totals read current user_budget inputs, convert linked balances before summing/deduplication, filter budget metadata, preserve zero and include non-spending safety cash at cash returns. Required read failures stop aggregation; unavailable or insufficient history uses saved budgets.
+- Household history requires three common complete spending months for every member. Only confirmed account links deduplicate purchases; repeated same-day purchases retain their count.
+- Add behavioral calculation regressions and PR CI. No database migration or dependency/native API change. Release pending review.
+
+## 2026-10-27 — Bank and budget save reliability
+
+- Bank sync now rejects failed core transaction writes, failed edit-preservation reads and failed cursor saves instead of reporting a successful import. Pending edits must be preserved before removed rows are deleted. The previous cursor remains retryable after a transaction failure. First-time bank imports also keep a starting cursor until transactions are saved and return a retry message instead of claiming completion.
+- Website Needs & wants loads every transaction page and stops on loading errors. A category save requires a loaded budget, preserves unrelated settings and rejects a conflicting edit from another tab or phone. Repeated clicks wait for the current save.
+- Existing-row and refund/purchase reads are paged in a stable order; ID lookups use bounded batches. The shared backend serves website and phone; the phone already guards profile-read errors and pages its dashboard history. No native release or database migration.
+
+## 2026-10-27 — Queue welcome-screen button alignment
+
+- Add the reported Android welcome-screen sign-in button alignment issue to Next (X4), with reproduction and verification criteria. Planning only; no UI fix shipped.
+
+## 2026-10-27 — Shared Now / Next / Later roadmap
+
+- Put three current priorities, ordered follow-ups, deferred ideas, completion criteria and blockers at the front of the roadmap. Preserve the detailed backlog and historical checks.
+- Agent entry points and project memory now direct every agent to the same queue and require status/evidence updates in the work PR. D-110 records the rationale. Documentation only; no app behavior change.
+
+## 2026-10-27 — Positioning recorded: see beyond your balance
+
+- Current product guidance now uses “See beyond your balance. Open up your life.” with “See your whole financial picture, understand your choices, and build toward the life you want.”
+- D-109 preserves the previous slogan, “Personal finance that sets you free,” and the founder's rationale. D-02 retains the free-first-value experience constraints; its headline emphasis is superseded.
+- Documentation only. Runtime marketing copy alignment and comprehension testing remain tracked in the roadmap; no website or deployment change.
+
+## 2026-10-27 — Startup without a video player
+
+- Replace the first-session MP4 splash with the existing vector sun mark on the app background. Keep a brief rise/fade and immediate pointer, key or scroll skip. A CSS deadline dismisses it even before hydration; reduced motion skips the introduction. No media element means no native play controls or black video rectangle.
+
+
+## 2026-10-26 — Today leads Home
+
+- Website and phone: Home opens with Today. Safe to spend today is a line under the list (it opens Money), not a "Got it" to tap, and a day with nothing to answer counts as soon as you open it.
+- Website Home is one column in the same order on every screen, centred at a readable width on desktop.
+- Get set up sits under your next move instead of floating over the page; the cards use quiet "Plan ›" / "Money ›" links, the freedom date shows once, and chart labels no longer clip.
+- Phone: Today is Home's first card; the pinned Today bar stays on the other tabs.
+
+## 2026-10-26 — Today's done gets a small celebration
+
+- Website Home: answering the last Today item plays a short check animation (ring fills, dot pops, check draws, a few sparks), once. A day already done when you open the page, and anyone with reduced motion on, sees the finished check with no motion. No streaks or loss states.
+
+## 2026-10-25 — Calmer category bars
+
+- Money › Transactions category bars: Past months is now a darker stretch inside each bar instead of a faint dotted box, and the black budget line is only as tall as the bar, so the row reads as one shape (D-107).
+
+## 2026-10-25 — Needs and wants are sorted for you
+
+- Today no longer asks Need or Want about every purchase. The category decides (eating out and delivery are wants, groceries and gas are needs), and Today only asks about a shop that sells both, like Target or Amazon, once per shop and only for $20 or more (D-106).
+- The first time bank spending shows up, Today shows one "We sorted N buys for you" card with a way to see all of it.
+- New Needs & wants screen (phone: Money › Budget; website: Money › Categories) to move a category, or eating out, to the other side, and to change shops you answered.
+- Every purchase shows Need or Want; editing one offers "Always for this shop".
+
+## 2026-10-25 — App psychology pass
+
+- Home's "Your next move" is the one card with a green frame and an icon. While Get set up is open, its next step is Home's only ask (phone hides the next move; website shows the setup step in that slot).
+- Home's freedom card shows how far you've come: "23% there" and the next quarter mark, from the same projection as the date.
+- Linking a bank shows the work: connected, transactions read, payday found, bills found, date updated. The exchange-token API now returns `accounts_count` and `found`.
+- Phone onboarding ends on a "Your plan" screen (the year and first moves) after the reminder ask; the "Free sooner abroad" reveal is gone from onboarding.
+- Plan: Compare and Scenarios are one "What if" with a switch (website: Life changes / Investing; phone: Changes / Life / Investing). Phone Plan has four tiles plus a Learn row (D-105).
 
 ## 2026-10-25 — Phone onboarding asks what gets in the way
 
@@ -1537,3 +1683,27 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - SEO: OG image, JSON-LD, canonical URLs, sitemap, robots.txt
 - Supabase + Google OAuth auth flow
 - Stripe integration with Pro paywall (later opened to all users)
+
+### Unreleased — onboarding feedback, 29 October
+- Use whole-number improvement controls while retaining exact original plan values on undo.
+- Fix stale city choices and convert entered answers when currency changes; correct Saved question wording.
+- Hide Skip actions, show today's-dollar freedom target, and repair/shorten the year-grid reveal.
+- Give existing sessions a Home action and failed/slow sign-ins visible recovery.
+
+- Fix Saved-mode keystroke corruption by preserving typed input instead of recomputing it on each key.
+
+### Unreleased — marked calendar B
+- Replace the browser's Transactions heatmap and Calendar date cells with pastel bill labels, yellow income/payday markers, and exact selected-day details.
+- Keep every same-day payment, date navigation, and existing cash/contribution actions; use compact display-currency amounts in narrow cells.
+
+### Calendar date repair
+- Calendar now shows scheduled bills and payday only; ordinary transactions stay in Transactions.
+- Keep past and completed bills on their original scheduled dates instead of moving them onto today. Cash forecasting still accounts for overdue unpaid bills independently.
+
+- Landing globe follow-up: slow automatic rotation, pause/resume control, interaction hold, reduced-motion and off-screen/hidden-tab suspension.
+
+### Web style consistency
+- Carry Next Horizon into Explore cards, referrals, portfolio and report exports, Learn/calculator cards, admin surfaces and navigation, budget/import dialogs and unsubscribe. Keep semantic states and financial behavior.
+- Keep Log in visible beside Get started in desktop and phone public headers.
+
+- Refine the web Until payday card with mint/white panels, clearer balance/payday hierarchy and aligned bill rows while preserving all forecast calculations and selection controls.

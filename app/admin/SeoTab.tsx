@@ -36,12 +36,12 @@ interface Report {
 }
 
 const card: React.CSSProperties = {
-  background: '#fff',
-  border: '1px solid #E2E8F0',
-  borderRadius: 12,
+  background: "var(--uf-card)",
+  border: '1px solid var(--uf-border)',
+  borderRadius: "var(--uf-r-card)",
   padding: '18px 16px',
 }
-const muted: React.CSSProperties = { color: '#64748B', fontSize: 12 }
+const muted: React.CSSProperties = { color: 'var(--uf-ink-2)', fontSize: 12 }
 
 const integer = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 const percent = (value: number | null) =>
@@ -142,7 +142,7 @@ export default function SeoTab({ token }: { token: string }) {
           <div key={metric.label} style={card}>
             <div style={{ ...muted, textTransform: 'uppercase', fontWeight: 700, letterSpacing: 0.5 }}>{metric.label}</div>
             <div style={{ fontSize: 26, fontWeight: 800, margin: '6px 0 2px' }}>{metric.value}</div>
-            <div style={{ fontSize: 12, color: metric.delta.good === null ? '#64748B' : metric.delta.good ? '#047857' : '#B91C1C' }}>
+            <div style={{ fontSize: 12, color: metric.delta.good === null ? 'var(--uf-ink-2)' : metric.delta.good ? '#151719' : '#B91C1C' }}>
               {metric.delta.text}
             </div>
           </div>
@@ -193,7 +193,7 @@ function SearchTable({ title, rows, query = false }: { title: string; rows: Dime
       ) : (
         <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 620, fontSize: 13 }}>
           <thead>
-            <tr style={{ textAlign: 'left', color: '#64748B' }}>
+            <tr style={{ textAlign: 'left', color: 'var(--uf-ink-2)' }}>
               <th style={{ padding: '8px 6px' }}>{query ? 'Query' : 'Page'}</th>
               <th style={{ padding: '8px 6px', textAlign: 'right' }}>Clicks</th>
               <th style={{ padding: '8px 6px', textAlign: 'right' }}>Impressions</th>
@@ -203,7 +203,7 @@ function SearchTable({ title, rows, query = false }: { title: string; rows: Dime
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.value} style={{ borderTop: '1px solid #E2E8F0' }}>
+              <tr key={row.value} style={{ borderTop: '1px solid var(--uf-border)' }}>
                 <td style={{ padding: '9px 6px', maxWidth: 540, overflowWrap: 'anywhere' }}>
                   {row.value}
                   {query && row.branded && <span style={{ ...muted, marginLeft: 6 }}>brand</span>}

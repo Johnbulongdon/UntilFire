@@ -5,18 +5,10 @@ import type { Holding } from '@/lib/portfolio/parse'
 import { normalizeHoldings } from '@/lib/portfolio/parse'
 import type { Grade } from '@/lib/portfolio/rules'
 
-// Allocation slice palette (brand teal/orange family + supporting tones).
+// Allocation fills use Next Horizon palette B; grades retain semantic ink.
 export const SLICE_COLORS = [
-  '#22d3a5',
-  '#f97316',
-  '#34d399',
-  '#60a5fa',
-  '#fbbf24',
-  '#a78bfa',
-  '#f472b6',
-  '#2dd4bf',
-  '#fb7185',
-  '#94a3b8',
+  "#BCE9DA", "#FFD4B8", "#D9CEF3", "#B9D9F7", "#FFE58A",
+  "#F4CEE3", "#CDE6AE", "#F7C6CB", "#DED8CD", "#EEE9FA",
 ]
 
 export interface DonutSegment {
@@ -50,8 +42,8 @@ export function buildDonutSegments(rawHoldings: Holding[], circumference: number
 }
 
 export const GRADE_COLORS: Record<Grade, string> = {
-  A: '#22d3a5',
-  B: '#34d399',
-  C: '#fbbf24',
-  D: '#f97316',
+  A: '#17684B',
+  B: '#2C826C',
+  C: '#815A16',
+  D: '#B63D46',
 }

@@ -33,16 +33,16 @@ module.exports = {
         warn: 'rgb(var(--uf-warn) / <alpha-value>)',
         'warn-bg': 'rgb(var(--uf-warn-bg) / <alpha-value>)',
         // the same in both themes: the logo's sun, and the deep green behind the welcome and reveal
-        aqua: '#62FAE3',
-        brand: '#06412F',
-        mint: '#CDEBE1',
-        sun: '#F2A65A',
+        aqua: '#FFE58A',
+        brand: '#151719',
+        mint: '#E3F7EF',
+        sun: '#FFE58A',
       },
       fontFamily: {
         // Weights map to the loaded files in src/components/Text.tsx.
-        display: ['Fraunces'],
-        sans: ['Manrope'],
-        mono: ['DMMono'],
+        display: ['Inter'],
+        sans: ['Inter'],
+        mono: ['Inter'],
       },
       borderRadius: {
         control: '12px',

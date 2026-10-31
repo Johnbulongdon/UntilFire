@@ -42,11 +42,13 @@ export default function Button({
   size = "md",
   fullWidth = false,
   style,
+  className,
   disabled,
   ...rest
 }: ButtonProps) {
   return (
     <button
+      className={["uf-button", className].filter(Boolean).join(" ")}
       disabled={disabled}
       style={{
         fontFamily: "var(--uf-font)",
@@ -60,7 +62,6 @@ export default function Button({
         whiteSpace: "nowrap",
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.45 : 1,
-        transition: "filter 120ms ease, background 120ms ease",
         width: fullWidth ? "100%" : undefined,
         ...SIZES[size],
         ...VARIANTS[variant],

@@ -8,9 +8,9 @@ import { buildLineChartPaths } from '@/lib/portfolio/linechart'
 
 export const runtime = 'edge'
 
-const BG = '#08080e'
-const MUTED = '#8a8a99'
-const TEAL = '#22d3a5'
+const BG = '#F8F8FB'
+const MUTED = '#5C6170'
+const TEAL = '#151719'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   if (holdings.length === 0) {
     return new ImageResponse(
       <div style={{ width: '100%', height: '100%', background: BG, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif' }}>
-        <span style={{ fontSize: 56, fontWeight: 800, color: '#fff' }}>Until</span>
+        <span style={{ fontSize: 56, fontWeight: 800, color: '#151719' }}>Until</span>
         <span style={{ fontSize: 56, fontWeight: 800, color: TEAL }}>Fire</span>
       </div>,
       { width: 1200, height: 630 },
@@ -48,10 +48,10 @@ export async function GET(req: NextRequest) {
 
   return new ImageResponse(
     (
-      <div style={{ width: '100%', height: '100%', background: BG, display: 'flex', flexDirection: 'column', padding: '52px 60px', fontFamily: 'sans-serif', color: '#ffffff' }}>
+      <div style={{ width: '100%', height: '100%', background: BG, display: 'flex', flexDirection: 'column', padding: '52px 60px', fontFamily: 'sans-serif', color: '#151719' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <span style={{ fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: '-1px' }}>Until</span>
+          <span style={{ fontSize: 26, fontWeight: 800, color: '#151719', letterSpacing: '-1px' }}>Until</span>
           <span style={{ fontSize: 26, fontWeight: 800, color: TEAL, letterSpacing: '-1px' }}>Fire</span>
           <span style={{ fontSize: 18, color: MUTED, textTransform: 'uppercase', letterSpacing: '3px', marginLeft: 18 }}>Portfolio Check</span>
         </div>
@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
               <span style={{ fontSize: 100, fontWeight: 800, color: gradeColor, lineHeight: 1 }}>{verdict.grade}</span>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: 20, color: MUTED, textTransform: 'uppercase', letterSpacing: '2px' }}>Is this OK?</span>
-                <span style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>{verdict.headline}</span>
+                <span style={{ fontSize: 32, fontWeight: 800, color: '#151719', lineHeight: 1.1 }}>{verdict.headline}</span>
               </div>
             </div>
 
@@ -81,15 +81,15 @@ export async function GET(req: NextRequest) {
                   <span style={{ fontSize: 20, fontWeight: 700, color: TEAL }}>
                     Portfolio {Number(ret) >= 0 ? '+' : ''}{ret}%
                   </span>
-                  <span style={{ fontSize: 20, color: '#94a3b8' }}>
+                  <span style={{ fontSize: 20, color: '#686D7C' }}>
                     S&P 500 {Number(sp) >= 0 ? '+' : ''}{sp}% ({yrs}Y)
                   </span>
                   {sharpe && <span style={{ fontSize: 20, color: MUTED }}>Sharpe {sharpe}</span>}
                   {dd && <span style={{ fontSize: 20, color: MUTED }}>DD {dd}%</span>}
                 </div>
                 <svg width={chartW} height={chartH} viewBox={`0 0 ${chartW} ${chartH}`} style={{ display: 'block' }}>
-                  <line x1={0} y1={chartPaths.baselineY} x2={chartW} y2={chartPaths.baselineY} stroke="#23232d" strokeWidth={1} strokeDasharray="4 4" />
-                  <polyline points={chartPaths.benchmarkPoints} fill="none" stroke="#94a3b8" strokeWidth={1.5} strokeLinejoin="round" />
+                  <line x1={0} y1={chartPaths.baselineY} x2={chartW} y2={chartPaths.baselineY} stroke="#E7E5ED" strokeWidth={1} strokeDasharray="4 4" />
+                  <polyline points={chartPaths.benchmarkPoints} fill="none" stroke="#686D7C" strokeWidth={1.5} strokeLinejoin="round" />
                   <polyline points={chartPaths.portfolioPoints} fill="none" stroke={TEAL} strokeWidth={2.5} strokeLinejoin="round" />
                 </svg>
               </div>

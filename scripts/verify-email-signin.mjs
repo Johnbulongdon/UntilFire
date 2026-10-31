@@ -56,7 +56,7 @@ check('asking for another code does not count as another signup start',
   /if \(!isResend\) started\('email'\)/.test(card));
 check('errors are announced', (card.match(/role="alert"/g) ?? []).length >= 2);
 const callback = readFileSync('app/auth/callback/page.tsx', 'utf8');
-check('Google and email links share one finish', /finishSignIn\(session, callbackMethod\(window\.location\.search\)\)/.test(callback) && !/authProvider: 'google'/.test(callback));
+check('Google and email links share one finish', /finishSignIn\(session,\s*callbackMethod\(window\.location\.search\)\)/.test(callback) && !/authProvider: 'google'/.test(callback));
 const stub = readFileSync('lib/supabase.ts', 'utf8');
 check('without Supabase configured, sending or checking a code fails cleanly', /signInWithOtp: fail/.test(stub) && /verifyOtp: fail/.test(stub));
 

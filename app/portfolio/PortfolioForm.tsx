@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation'
 import { parseHoldingsText, encodeHoldings } from '@/lib/portfolio/parse'
 import { getFund } from '@/lib/funds/metadata'
 
-const BG = '#08080e'
-const CARD = '#111118'
-const BORDER = '#23232d'
-const MUTED = '#8a8a99'
-const TEAL = '#22d3a5'
+const BG = 'var(--uf-ground)'
+const CARD = 'var(--uf-card)'
+const BORDER = 'var(--uf-border)'
+const MUTED = 'var(--uf-ink-2)'
+const TEAL = 'var(--uf-green)'
 
 const EXAMPLES: { label: string; value: string }[] = [
   { label: 'Three-fund', value: 'VTI 60%, VXUS 30%, BND 10%' },
@@ -44,13 +44,13 @@ export default function PortfolioForm() {
           width: '100%',
           background: CARD,
           border: `1px solid ${BORDER}`,
-          borderRadius: 14,
-          color: '#fff',
+          borderRadius: "var(--uf-r-card)",
+          color: 'var(--uf-ink)',
           fontSize: 18,
           padding: '18px 20px',
           fontFamily: 'inherit',
           resize: 'vertical',
-          outline: 'none',
+          outlineOffset: 4,
         }}
       />
 
@@ -64,7 +64,7 @@ export default function PortfolioForm() {
             style={{
               background: 'transparent',
               border: `1px solid ${BORDER}`,
-              color: '#d6d6e0',
+              color: 'var(--uf-ink-2)',
               borderRadius: 999,
               padding: '6px 14px',
               fontSize: 14,
@@ -78,14 +78,14 @@ export default function PortfolioForm() {
 
       {/* Live preview */}
       {hasHoldings && (
-        <div style={{ marginTop: 20, background: CARD, border: `1px solid ${BORDER}`, borderRadius: 14, padding: '16px 20px' }}>
+        <div style={{ marginTop: 20, background: CARD, border: `1px solid ${BORDER}`, borderRadius: "var(--uf-r-card)", padding: '16px 20px' }}>
           {parsed.holdings.map((h) => {
             const fund = getFund(h.ticker)
             return (
               <div key={h.ticker} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ color: '#fff', fontWeight: 700, fontSize: 16, width: 80 }}>{h.ticker}</span>
-                  <span style={{ color: fund ? MUTED : '#f97316', fontSize: 14 }}>
+                  <span style={{ color: 'var(--uf-ink)', fontWeight: 700, fontSize: 16, width: 80 }}>{h.ticker}</span>
+                  <span style={{ color: fund ? MUTED : 'var(--uf-neg)', fontSize: 14 }}>
                     {fund ? fund.name : 'Unrecognized ticker'}
                   </span>
                 </div>
@@ -95,7 +95,7 @@ export default function PortfolioForm() {
           })}
           <div style={{ borderTop: `1px solid ${BORDER}`, marginTop: 8, paddingTop: 10, display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: MUTED, fontSize: 14 }}>Total weight</span>
-            <span style={{ color: weightOk ? TEAL : '#fbbf24', fontWeight: 700, fontSize: 16 }}>
+            <span style={{ color: weightOk ? TEAL : 'var(--uf-warn)', fontWeight: 700, fontSize: 16 }}>
               {total}%{weightOk ? '' : ' · will be normalized to 100%'}
             </span>
           </div>
@@ -103,7 +103,7 @@ export default function PortfolioForm() {
       )}
 
       {parsed.errors.length > 0 && text.trim() !== '' && (
-        <div style={{ marginTop: 12, color: '#fbbf24', fontSize: 14 }}>
+        <div style={{ marginTop: 12, color: 'var(--uf-warn)', fontSize: 14 }}>
           {parsed.errors.slice(0, 3).map((e, i) => (
             <div key={i}>{e}</div>
           ))}
@@ -115,12 +115,12 @@ export default function PortfolioForm() {
         disabled={!hasHoldings}
         style={{
           marginTop: 24,
-          background: hasHoldings ? TEAL : '#1c1c26',
+          background: hasHoldings ? TEAL : 'var(--uf-surface)',
           color: hasHoldings ? BG : MUTED,
           fontWeight: 800,
           fontSize: 18,
           padding: '16px 32px',
-          borderRadius: 12,
+          borderRadius: "var(--uf-r-pill)",
           border: 'none',
           cursor: hasHoldings ? 'pointer' : 'not-allowed',
         }}

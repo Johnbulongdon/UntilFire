@@ -4,6 +4,7 @@ import path from 'node:path'
 
 import { chromium, type Browser, type Page } from 'playwright'
 
+import { appAuthKey, botSession, BOT_EMAIL, SITE_AUTH_KEY } from './journeys-bot.ts'
 import { CALC_SHOTS, JOURNEYS, SHOT_BUCKET, SHOT_VIEWPORTS, shotDevice, shotFile, type ShotDevice } from '../lib/journeys.ts'
 
 // Screenshots every journey step that has a `shot`, at desktop and phone size,
@@ -22,9 +23,6 @@ const calculatorOnly = process.env.JOURNEY_CALCULATOR_ONLY === '1'
 const skipCalculator = process.env.JOURNEY_SKIP_CALCULATOR === '1'
 const upload = !calculatorOnly && !!supabaseUrl && !!serviceKey && process.env.JOURNEY_DRY_RUN !== '1'
 
-// A real account the script signs in as. It never pays and never deletes.
-const BOT_EMAIL = 'journeys-bot@untilfire.com'
-
 async function save(file: string, body: Buffer | string, contentType: string) {
   if (!upload) {
     fs.mkdirSync('journey-shots', { recursive: true })
@@ -39,24 +37,12 @@ async function save(file: string, body: Buffer | string, contentType: string) {
   if (!res.ok) throw new Error(`Upload of ${file} failed: ${res.status} ${await res.text()}`)
 }
 
-/** Signs the test account in through the admin API and returns its Supabase session. */
-async function botSession(): Promise<Record<string, unknown> | null> {
+/** Signs the test account in, or returns null without the Supabase variables. */
+async function signInBot(): Promise<Record<string, unknown> | null> {
   if (!supabaseUrl || !serviceKey) return null
-  const headers = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' }
-  const post = (path: string, body: object) => fetch(`${supabaseUrl}${path}`, { method: 'POST', headers, body: JSON.stringify(body) })
-  await post('/auth/v1/admin/users', { email: BOT_EMAIL, email_confirm: true }) // 422 once it exists
-  const link = await (await post('/auth/v1/admin/generate_link', { type: 'magiclink', email: BOT_EMAIL })).json()
-  const res = await post('/auth/v1/verify', { type: 'magiclink', token_hash: link.hashed_token ?? link.properties?.hashed_token })
-  if (!res.ok) throw new Error(`Test account sign-in failed: ${res.status} ${await res.text()}`)
-  const session = await res.json()
-  // Keep the retention emails away from an inbox nobody reads.
-  await fetch(`${supabaseUrl}/rest/v1/profiles?on_conflict=user_id`, {
-    method: 'POST',
-    headers: { ...headers, Prefer: 'resolution=merge-duplicates' },
-    body: JSON.stringify({ user_id: session.user.id, marketing_unsubscribed_at: new Date().toISOString() }),
-  })
-  console.log(`Signed in as the journeys test account (${session.user.id})`)
-  return { ...session, expires_at: session.expires_at ?? Math.floor(Date.now() / 1000) + session.expires_in }
+  const session = await botSession(supabaseUrl, serviceKey)
+  console.log(`Signed in as the journeys test account (${(session.user as { id: string }).id})`)
+  return session
 }
 
 /** $6,000 take-home a month, then $6,000 invested; savings and age keep their suggested values. */
@@ -69,24 +55,17 @@ const settle = (page: Page) => page.waitForTimeout(900) // let entrance motion f
  * per CALC_SHOTS page, and ends on the save step, which is the sign-up card.
  */
 async function walkCalculator(page: Page, shoot: (name: string) => Promise<void>) {
-  await page.goto(`${base}/?start=onboarding&city=austin&uf_internal=1`, { waitUntil: 'networkidle', timeout: 45_000 })
-  await settle(page)
-  const step = page.locator('[data-onboarding-step]:not([hidden])')
+  await page.goto(base+'/?start=onboarding&uf_internal=1', {waitUntil:'networkidle',timeout:45000})
   for (const name of CALC_SHOTS) {
-    const next = step.getByRole('button', { name: /^(Continue|Show my freedom date)/ })
-    if (await next.count()) {
-      // A question with nothing filled in yet: type the same sample amount on every size.
-      if (await next.first().isDisabled()) await step.locator('input:visible').first().fill(SAMPLE_ANSWER)
-      await next.first().click()
-    } else {
-      await page.getByRole('button', { name: /^(Continue →|Save my starting point →|Try a different pace →|Use original plan|Use updated plan)$/ }).first().click()
-    }
     await settle(page)
-    // The freedom date first plays a short loading scene.
-    if (name === 'freedom-age') await page.getByRole('button', { name: 'Continue →' }).waitFor({ timeout: 20_000 })
-    // Result pages count their numbers up; wait for them to land.
-    if (!(await next.count())) await page.waitForTimeout(2200)
-    await shoot(`calc:${name}`)
+    if(name==='freedom-age') await page.getByRole('button',{name:'Continue →',exact:true}).waitFor({timeout:20000})
+    if(['freedom-age','life','number','standing'].includes(name)) await page.waitForTimeout(2200) // capture settled reveal scenes
+    await shoot('calc:'+name)
+    const answers: Record<string,string>={income:'6000',expenses:'3000',portfolio:'6000',age:'32'}
+    if(answers[name]) await page.locator('.nh-intake .nh-amount, .nh-intake input[type=number]').first().fill(answers[name])
+    if(name==='city') await page.getByRole('button',{name:/^(Continue|Skip)$/}).click()
+    else if(name==='save') break
+    else await page.getByRole('button',{name:/^(Continue|Continue →|Show my freedom date|Try one improvement →|Use original plan|Use updated plan)$/}).last().click()
   }
 }
 
@@ -110,10 +89,12 @@ const APP_ANSWERS: Record<string, (page: Page) => Promise<void>> = {
   goal: (page) => tapText(page, 'Financial freedom'),
   city: (page) => tapText(page, 'Skip'),
   pay: (page) => tapText(page, 'Once a month'),
-  income: (page) => tapText(page, 'Continue'),
+  income: async (page) => {
+    await page.getByRole('textbox', { name: 'Take-home pay', exact: true }).fill(SAMPLE_ANSWER)
+    await tapText(page, 'Continue')
+  },
   spending: async (page) => {
-    await tapText(page, 'Type it instead')
-    await page.locator('input:visible').last().fill('3000')
+    await page.getByRole('textbox', { name: 'Monthly spending', exact: true }).fill('3000')
     await tapText(page, 'Continue')
   },
   invested: async (page) => {
@@ -122,10 +103,16 @@ const APP_ANSWERS: Record<string, (page: Page) => Promise<void>> = {
   },
   age: (page) => tapText(page, 'Continue'),
   worry: (page) => tapText(page, 'Money runs out before payday'),
-  home: async (page) => {
-    for (const text of ['Rent', 'Dividends']) await tapText(page, text)
-    await tapText(page, 'Show my freedom date')
+  housing: async (page) => {
+    await tapText(page, 'Rent')
+    await tapText(page, 'Continue')
   },
+  investing: async (page) => { await tapText(page, 'Dividends'); await tapText(page, 'Show my freedom date') },
+  standing: (page) => tapText(page, 'Try one improvement'),
+  pace: (page) => tapText(page, 'Use original plan'),
+  'your-plan': (page) => tapText(page, 'Start my plan'),
+  // Not the last screen any more (Your plan follows, D-105); the web build has no notifications to turn on.
+  reminder: (page) => tapText(page, 'Not now'),
 }
 const tapText = (page: Page, text: string) => page.getByText(text, { exact: true }).last().click()
 
@@ -193,7 +180,7 @@ async function captureApp(browser: Browser, dir: string, shots: string[], shoot:
     })
     if (session) {
       // The app's Supabase client keeps its session under the default key.
-      const key = `sb-${new URL(supabaseUrl!).hostname.split('.')[0]}-auth-token`
+      const key = appAuthKey(supabaseUrl!)
       await page.evaluate(([k, v]) => localStorage.setItem(k, v), [key, JSON.stringify(session)])
       // GuidedTour's seen flag (AsyncStorage is localStorage on web): set, so Home shows without the tour.
       await page.evaluate(() => localStorage.setItem('tour-seen', '1'))
@@ -286,7 +273,7 @@ const stripeShots = [...new Set(steps.filter((s) => s.shot!.startsWith('stripe:'
 // In manifest order, so the onboarding screens are walked in the order the app shows them.
 const appShots = [...new Set(steps.filter((s) => s.shot!.startsWith('app')).map((s) => s.shot!))]
 
-const session = calculatorOnly ? null : await botSession()
+const session = calculatorOnly ? null : await signInBot()
 const stripeReady = !!session && stripeShots.length > 0 && await hasStripeCustomer(String((session.user as { id: string }).id))
 if (session && stripeShots.length && !stripeReady) console.log('Skipping Stripe pages: the test account has no stripe_customer_id yet')
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
@@ -345,8 +332,7 @@ for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
   if (session) {
     // Same browser as the calculator walk, so Home picks up the plan it just
     // made, as it would for a person signing up.
-    // The site's own storageKey (lib/supabase.ts).
-    await page.evaluate(([key, value]) => localStorage.setItem(key, value), ['fire-dashboard-auth', JSON.stringify(session)])
+    await page.evaluate(([key, value]) => localStorage.setItem(key, value), [SITE_AUTH_KEY, JSON.stringify(session)])
     for (const { shot, click } of userShots) {
       if (shotDevice(shot!, device, click) !== device) continue
       try {
@@ -357,7 +343,7 @@ for (const device of Object.keys(SHOT_VIEWPORTS) as ShotDevice[]) {
         for (const name of click ?? []) {
           // Visible only: the computer sidebar's buttons and the phone-size tabs share labels.
           const pattern = new RegExp(name)
-          await page.getByRole('button', { name: pattern }).or(page.getByRole('tab', { name: pattern })).filter({ visible: true }).first().click()
+          await page.getByRole('button', { name: pattern }).or(page.getByRole('tab', { name: pattern })).or(page.getByRole('radio', { name: pattern })).filter({ visible: true }).first().click()
           await settle(page)
         }
         await shoot(shot!, click)

@@ -13,6 +13,7 @@ export const metadata: Metadata = {
     'Which US states are best for FIRE? Compare annual living costs and spending-based retirement targets.',
   robots: { index: true, follow: true },
   alternates: { canonical: 'https://www.untilfire.com/fire-number/best-states' },
+  twitter: { card: 'summary_large_image', images: ['/api/og/ranking/best-states'] },
   openGraph: {
     title: 'Best States for FIRE | UntilFire',
     description: 'Compare US states by living costs and spending-based retirement targets.',
@@ -61,9 +62,9 @@ export default function BestStatesPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
         *, *::before, *::after { box-sizing: border-box; }
-        body { background: var(--uf-surface); color: var(--uf-ink); font-family: 'Manrope', sans-serif; margin: 0; }
+        body { background: var(--uf-surface); color: var(--uf-ink); font-family: 'Inter', sans-serif; margin: 0; }
         a { color: inherit; }
         .score-badge { display: inline-block; background: var(--uf-green-100); color: var(--uf-green-900); padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 12px; }
         .state-card { transition: transform 0.15s, box-shadow 0.15s; }
@@ -262,4 +263,3 @@ export default function BestStatesPage() {
     </>
   )
 }
-

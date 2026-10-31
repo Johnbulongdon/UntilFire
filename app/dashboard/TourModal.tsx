@@ -6,7 +6,7 @@ const TOUR_SLIDES = [
   { tabKey: null,              emoji: "🔥", title: "Welcome to UntilFire",  description: "A 30-second look around. Use the arrows or tap a dot to jump." },
   { tabKey: "overview",        emoji: "🏠", title: "Home",                  description: "Your freedom date, progress toward your FIRE number, and the one move that helps most right now." },
   { tabKey: "cashflow",        emoji: "💳", title: "Money",                 description: "Transactions, a calendar of payments, categories and budgets; Net Worth, Debts and Insights for the bigger picture." },
-  { tabKey: "fire-calculator", emoji: "📅", title: "Plan",                  description: "Your freedom date and the assumptions behind it, plus Goals, Contributions, Explore, Citizenship and Learn." },
+  { tabKey: "fire-calculator", emoji: "📅", title: "Plan",                  description: "Your freedom date and the assumptions behind it, plus What if, Goals, Contributions, Explore and Learn." },
   { tabKey: "profile",         emoji: "⚙️", title: "Profile",               description: "Your account, currency, Pro subscription, household and FIRE type." },
 ]
 
@@ -60,7 +60,7 @@ export default function TourModal({ onClose }: { onClose: () => void }) {
           style={{
             width: i === step ? 14 : 6, height: 6,
             borderRadius: 99,
-            background: i === step ? '#059669' : '#E2E8F0',
+            background: i === step ? '#151719' : '#E2E8F0',
             transition: 'all 0.2s',
             cursor: 'pointer',
             flexShrink: 0,
@@ -87,7 +87,7 @@ export default function TourModal({ onClose }: { onClose: () => void }) {
           width: rect.width + 8,
           height: rect.height + 8,
           borderRadius: 10,
-          boxShadow: '0 0 0 9999px rgba(15,23,42,0.65), 0 0 0 3px #059669',
+          boxShadow: '0 0 0 9999px rgba(15,23,42,0.65), 0 0 0 3px #17684B',
           zIndex: 291,
           pointerEvents: 'none',
         }} />
@@ -109,7 +109,7 @@ export default function TourModal({ onClose }: { onClose: () => void }) {
             display: 'flex', flexDirection: 'column',
           }}>
             <div style={{ fontSize: 48, textAlign: 'center', marginBottom: 16 }}>{slide.emoji}</div>
-            <h2 style={{ fontFamily: 'Manrope, sans-serif', fontSize: 22, fontWeight: 800, color: '#19181E', textAlign: 'center', margin: '0 0 12px', letterSpacing: '-0.02em' }}>
+            <h2 style={{ fontFamily: 'Inter, sans-serif', fontSize: 22, fontWeight: 800, color: '#19181E', textAlign: 'center', margin: '0 0 12px', letterSpacing: '-0.02em' }}>
               {slide.title}
             </h2>
             <p style={{ fontSize: 15, color: '#64748B', lineHeight: 1.7, textAlign: 'center', margin: '0 0 24px' }}>
@@ -120,7 +120,7 @@ export default function TourModal({ onClose }: { onClose: () => void }) {
             </div>
             <button
               onClick={() => setStep(1)}
-              style={{ padding: '12px 0', borderRadius: 10, border: 'none', background: '#059669', color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit' }}
+              style={{ padding: '12px 0', borderRadius: 10, border: 'none', background: '#151719', color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit' }}
             >
               Start Tour →
             </button>
@@ -159,7 +159,7 @@ export default function TourModal({ onClose }: { onClose: () => void }) {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <span style={{ fontSize: 20 }}>{slide.emoji}</span>
-            <h3 style={{ fontFamily: 'Manrope, sans-serif', fontSize: 15, fontWeight: 800, color: '#19181E', margin: 0 }}>
+            <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: 15, fontWeight: 800, color: '#19181E', margin: 0 }}>
               {slide.title}
             </h3>
           </div>
@@ -179,7 +179,7 @@ export default function TourModal({ onClose }: { onClose: () => void }) {
             </button>
             <button
               onClick={() => isLast ? onClose() : setStep(s => s + 1)}
-              style={{ flex: 2, padding: '8px 0', borderRadius: 8, border: 'none', background: '#059669', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+              style={{ flex: 2, padding: '8px 0', borderRadius: 8, border: 'none', background: '#151719', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
             >
               {isLast ? 'Get started →' : 'Next →'}
             </button>

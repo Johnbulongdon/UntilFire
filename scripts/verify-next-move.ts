@@ -1,7 +1,7 @@
 // Home's next move and the website's Today list (D-89): the order of moves, and Today's keys and counted days.
 import assert from "node:assert/strict";
 import { pickNextMove } from "../lib/next-move.ts";
-import { monthCount, webTodayItems } from "../lib/today-web.ts";
+import { monthCount, quietDayToMark, webTodayItems } from "../lib/today-web.ts";
 
 const fmt = (n: number) => `$${Math.round(n)}`;
 const base = { categories: [], hasBudget: true, ladder: null, fallback: null, fmt, snoozed: () => false };
@@ -24,12 +24,18 @@ assert.equal(ladder?.split?.length, 2);
 assert.equal(pickNextMove({ ...base, fallback: { label: "Spend less", deltaYears: 0 } }), null);
 assert.equal(pickNextMove({ ...base, fallback: { label: "Spend less", deltaYears: 0.5 } })?.payoff, "6 months sooner");
 
-// Today: sorted spends drop out, the closing item is always last, and a finished day counts once.
+// Today: sorted spends drop out, safe to spend is shown rather than asked (D-108), and a finished day counts once.
 const now = new Date(2026, 9, 18, 15);
-const row = (id: string, tags: string[] = []) => ({ id, date: "2026-10-17", description: "Shop", usd: 20, category: "food", tags, transaction_type: "expense" });
-const list = webTodayItems({ rows: [row("1"), row("2", ["need"])], bills: [], progress: { done: [], acks: [] }, perDay: 40, now });
-assert.deepEqual(list.items.map((i) => i.key), ["need:1", "day:2026-10-18"]);
-assert.equal(webTodayItems({ rows: [], bills: [], progress: { done: [], acks: ["day:2026-10-18"] }, perDay: 40, now }).items.length, 0);
+const row = (id: string, tags: string[] = [], description = "TARGET 1234", usd = 64) => ({ id, date: "2026-10-17", description, usd, category: "shopping", tags, transaction_type: "expense" });
+const list = webTodayItems({ rows: [row("1"), row("2", ["need"]), row("3", [], "Trader Joe's"), row("4", [], "TARGET 1234", 9)], bills: [], progress: { done: [], acks: [] }, now });
+assert.deepEqual(list.items.map((i) => i.key), ["need:1"], "only a mixed shop of $20 or more is asked about (D-106); no closing item");
+assert.equal(webTodayItems({ rows: [row("1")], bills: [], progress: { done: [], acks: [] }, shopRules: { target: {} }, now }).items.length, 0, "an answered shop isn't asked again");
+assert.equal(webTodayItems({ rows: [], bills: [], progress: { done: [], acks: [] }, sorted: 12, now }).items[0].key, "sorted");
+assert.equal(webTodayItems({ rows: [], bills: [], progress: { done: [], acks: ["sorted"] }, sorted: 12, now }).items.length, 0, "the sorted card shows once");
+// A quiet day counts once it is opened, and only once.
+assert.equal(quietDayToMark([], 0, now), "2026-10-18", "nothing to answer: today is marked");
+assert.equal(quietDayToMark(["2026-10-18"], 0, now), null, "already counted");
+assert.equal(quietDayToMark([], 1, now), null, "something still to answer");
 assert.deepEqual(monthCount(["2026-09-30", "2026-10-01", "2026-10-17"], now), { done: 2, of: 18 });
 
 console.log("Next move and Today checks passed.");

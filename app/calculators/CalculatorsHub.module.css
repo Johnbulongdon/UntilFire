@@ -15,7 +15,7 @@
 .card {
   position: relative; display: grid; gap: var(--uf-s1);
   padding: var(--uf-s4) var(--uf-s7) var(--uf-s4) var(--uf-s4);
-  background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: 14px;
+  background: var(--uf-card); border: 1px solid var(--uf-border); border-radius: var(--uf-r-card);
   color: var(--uf-ink); text-decoration: none;
   transition: border-color 0.15s ease, transform 0.15s ease;
 }

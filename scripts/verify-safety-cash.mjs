@@ -1,3 +1,4 @@
+import { connectedDebt, connectedBalance } from "../lib/account-currency.ts";
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
@@ -13,7 +14,7 @@ const names=['calcProjection','projectionInputs','effectiveBalances','effectiveD
 let code=readFileSync('lib/fire/retirement-location.ts','utf8').replace(/^export /gm,'');
 ast.forEachChild(n=>{if(ts.isFunctionDeclaration(n)&&names.includes(n.name?.text))code+='\n'+n.getText(ast)});
 const web={};
-vm.runInNewContext(ts.transpileModule(code+'\nexports.run=calcProjection;exports.inputs=projectionInputs;', {compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{exports:web,...cash,freedomDebt,TAX_ESTIMATES_AVAILABLE,REAL_RETURN:.069,Date,Math});
+vm.runInNewContext(ts.transpileModule(code+'\nexports.run=calcProjection;exports.inputs=projectionInputs;', {compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{exports:web,connectedDebt,connectedBalance,...cash,freedomDebt,TAX_ESTIMATES_AVAILABLE,REAL_RETURN:.069,Date,Math});
 function load(file,mocks){const exports={};vm.runInNewContext(ts.transpileModule(readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{exports,Math,Date,require:id=>{assert.ok(id in mocks,id);return mocks[id]}});return exports;}
 const mobile=load('mobile/src/lib/projection.ts',{'@engine/freedom-cash.ts':cash,'@engine/release-gates.ts':{TAX_ESTIMATES_AVAILABLE},'@/engine':{REAL_RETURN:.069}});
 const native=load('mobile/src/state/freedom.ts',{'react':{},'@/engine':{CITIES:[],engineMortgages:()=>[],freedomDebt,retirementLocationMonthlySpend:()=>undefined,moveBeforeFreedomChange:()=>null},'@engine/freedom-cash.ts':cash,'@/lib/balances':{isMortgageAccount:()=>false},'@/lib/budget-split':{spendingBasis:d=>({monthly:Object.values(d.budget).reduce((a,b)=>a+b,0)})},'@/lib/projection':mobile,'@/state/account':{},'@/state/plan':{}});
@@ -41,7 +42,7 @@ for(const run of [web.run,mobile.calcProjection]){
  const spent=run({...base,change:{startYear:0,endYear:1,annualIncome:0}});
  assert.equal(spent.data[1].Cash,0,'cash can fund a shortfall, never also stays permanently reserved');
  assert.equal(spent.data[1].Taxable,19800,'cash is drawn before investments');
- const heavy=run({...base,cashSavings:300000,taxable:0,years:30});
+ const heavy=run({...base,cashSavings:299999,taxable:0,years:30});
  assert.equal(heavy.fireYear,null,'cash-only money below target never compounds at equity return');
  const added=run({...base,annualIncome:48000,years:50,cashSavings:0});
  const safer=run({...base,annualIncome:48000,years:50,cashSavings:10000});

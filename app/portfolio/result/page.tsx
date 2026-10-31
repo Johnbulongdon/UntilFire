@@ -1,8 +1,9 @@
+import Logo from '@/app/components/Logo'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { decodeHoldings, normalizeHoldings, encodeHoldings } from '@/lib/portfolio/parse'
 import { analyzePortfolio } from '@/lib/portfolio/rules'
-import { buildDonutSegments, GRADE_COLORS } from '@/lib/portfolio/chart'
+import { buildDonutSegments } from '@/lib/portfolio/chart'
 import { getFund } from '@/lib/funds/metadata'
 import { fetchDailyPrices } from '@/lib/market/stooq'
 import { computeMetrics, encodeSeries, type PortfolioMetrics } from '@/lib/portfolio/metrics'
@@ -14,14 +15,14 @@ interface Props {
   searchParams: Promise<{ h?: string }>
 }
 
-const BG = '#08080e'
-const CARD = '#111118'
-const BORDER = '#23232d'
-const MUTED = '#8a8a99'
-const TEAL = '#22d3a5'
-const ORANGE = '#f97316'
+const BG = 'var(--uf-ground)'
+const CARD = 'var(--uf-card)'
+const BORDER = 'var(--uf-border)'
+const MUTED = 'var(--uf-ink-2)'
+const TEAL = 'var(--uf-green)'
+const ORANGE = 'var(--uf-neg)'
 
-const NOTE_COLORS: Record<string, string> = { good: TEAL, warn: '#fbbf24', bad: ORANGE }
+const NOTE_COLORS: Record<string, string> = { good: "var(--uf-pos)", warn: 'var(--uf-warn)', bad: ORANGE }
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const { h = '' } = await searchParams
@@ -80,7 +81,7 @@ export default async function ResultPage({ searchParams }: Props) {
     fetchMetrics(holdings),
   ])
 
-  const gradeColor = GRADE_COLORS[verdict.grade]
+  const gradeColor = verdict.grade === "A" || verdict.grade === "B" ? "var(--uf-pos)" : verdict.grade === "C" ? "var(--uf-warn)" : "var(--uf-neg)"
   const R = 80
   const C = 2 * Math.PI * R
   const segments = buildDonutSegments(holdings, C)
@@ -114,8 +115,7 @@ export default async function ResultPage({ searchParams }: Props) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
           <Link href="/portfolio" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-            <span style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>Until</span>
-            <span style={{ fontSize: 22, fontWeight: 800, color: TEAL }}>Fire</span>
+            <Logo variant="auto" size={28} />
           </Link>
           <Link href="/portfolio" style={{ color: MUTED, fontSize: 15, textDecoration: 'none' }}>← Edit holdings</Link>
         </div>
@@ -160,7 +160,7 @@ export default async function ResultPage({ searchParams }: Props) {
             {verdict.notes.map((n, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'flex-start', marginBottom: 14 }}>
                 <div style={{ width: 10, height: 10, borderRadius: '50%', background: NOTE_COLORS[n.kind] ?? MUTED, marginTop: 7, flexShrink: 0 }} />
-                <span style={{ marginLeft: 14, color: '#d6d6e0', fontSize: 16, lineHeight: 1.4 }}>{n.text}</span>
+                <span style={{ marginLeft: 14, color: 'var(--uf-ink-2)', fontSize: 16, lineHeight: 1.4 }}>{n.text}</span>
               </div>
             ))}
           </div>
@@ -177,7 +177,7 @@ export default async function ResultPage({ searchParams }: Props) {
                 <span style={{ color: TEAL, fontWeight: 700 }}>
                   Portfolio {metrics.totalReturn > 0 ? '+' : ''}{metrics.totalReturn}%
                 </span>
-                <span style={{ color: '#94a3b8', fontWeight: 600 }}>
+                <span style={{ color: 'var(--uf-chart-axis)', fontWeight: 600 }}>
                   S&amp;P 500 {metrics.benchmarkReturn > 0 ? '+' : ''}{metrics.benchmarkReturn}%
                 </span>
               </div>
@@ -189,7 +189,7 @@ export default async function ResultPage({ searchParams }: Props) {
               <line x1={0} y1={chartPaths.baselineY} x2={680} y2={chartPaths.baselineY}
                 stroke={BORDER} strokeWidth={1} strokeDasharray="4 4" />
               {/* Benchmark (S&P 500) — muted grey */}
-              <polyline points={chartPaths.benchmarkPoints} fill="none" stroke="#94a3b8" strokeWidth={2} strokeLinejoin="round" />
+              <polyline points={chartPaths.benchmarkPoints} fill="none" stroke="var(--uf-chart-axis)" strokeWidth={2} strokeLinejoin="round" />
               {/* Portfolio — teal */}
               <polyline points={chartPaths.portfolioPoints} fill="none" stroke={TEAL} strokeWidth={2.5} strokeLinejoin="round" />
               {/* End labels */}
@@ -240,7 +240,7 @@ function PerfMetric({ label, value, highlight }: { label: string; value: string;
   return (
     <div style={{ background: BG, border: `1px solid ${BORDER}`, borderRadius: 12, padding: '12px 14px' }}>
       <div style={{ color: MUTED, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 800, marginTop: 4, color: highlight ? TEAL : '#fff' }}>{value}</div>
+      <div style={{ fontSize: 20, fontWeight: 800, marginTop: 4, color: highlight ? TEAL : 'var(--uf-ink)' }}>{value}</div>
     </div>
   )
 }
@@ -248,9 +248,9 @@ function PerfMetric({ label, value, highlight }: { label: string; value: string;
 const pageStyle: React.CSSProperties = {
   minHeight: '100vh',
   background: BG,
-  color: '#fff',
+  color: 'var(--uf-ink)',
   display: 'flex',
   justifyContent: 'center',
   padding: '64px 24px',
-  fontFamily: "'Manrope', system-ui, sans-serif",
+  fontFamily: "'Inter', system-ui, sans-serif",
 }

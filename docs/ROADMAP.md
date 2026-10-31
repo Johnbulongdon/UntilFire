@@ -1,4 +1,92 @@
 # UntilFire — Product Roadmap
+
+## Current priorities
+
+**Last updated:** 27 October 2026 (Asia/Shanghai). **Owner:** John.
+**Goal:** A trustworthy financial-clarity experience people return to and will pay
+for, working toward **$3k MRR**. Positioning: see [CONTEXT.md](CONTEXT.md).
+
+This is the shared task queue for every agent (D-110). Now has **at most three**
+priorities, not three tasks per agent. Queued items are remembered, not permission
+to start unrelated work. Status here describes evidence, not live verification.
+
+### Now — three active priorities, in order
+
+| ID | Priority | Status / owner | Done when | Blocker / next action |
+| --- | --- | --- | --- | --- |
+| N1 | Roll out the approved positioning | In review; Claude — branch `claude/project-thread-yhurmt`, 29 October | Homepage, metadata, social preview and email footer match D-109; affected mobile/desktop layouts checked. Review video/teaser wording too. | Repo guidance merged in PR #316. Homepage and social image changed with Next Horizon (PR #323). Remaining old slogan in search/social titles and descriptions, structured data, web app manifest, email footer and demo video script replaced 29 October (John: "update slogan everywhere"). Google Play listing text lives outside the repo and still needs John to update it in Play Console. |
+| N2 | Verify the complete first-use journey | In review; Codex — [PR #322](https://github.com/Johnbulongdon/UntilFire/pull/322), 27 October | Onboarding → useful first result → signup → bank connection → dashboard checked; numbers agree, saved state survives reload, next action is clear; failures recorded and critical ones resolved. | PR #319 is merged. Refund/account-save repair [PR #320](https://github.com/Johnbulongdon/UntilFire/pull/320) remains in review with its migration unapplied. Financial repairs [PR #321](https://github.com/Johnbulongdon/UntilFire/pull/321) merged as 5b5d3e3; GitHub reports successful website deployment and the live dashboard bundle contains the new bridge guard. The financial merge also published a successful phone preview update. Current subtask: align the welcome actions (X4), verified and in review in PR #322. Full live journey QA remains pending. Bank connection stays optional before first value. |
+| N3 | Test with five target users | Planned; John recruits, agent supports | Five busy early-career target users observed; comprehension, useful moment, friction and expected reason to return recorded privately, with anonymized conclusions here. | Recruit while N1/N2 progress; do not expose users to known critical flow failures. Ask permission before any outreach. |
+
+29 October: John asked for all website interaction-audit fixes ("fix all"); handled as a reliability interrupt within N2 because a failed plan load could overwrite saved data. In review on branch `claude/project-thread-x6thrn`; audit in project files `untilfire/web-interaction-audit-2026-10-29/`. No fourth Now item is created.
+
+29 October: John asked for the city pages to match Next Horizon (mock approved in thread, "go"). Handled within N1 on branch `claude/project-thread-yhurmt`: single city pages, the city share image (previously 404) and geo-arbitrage pages. Ranking and state share images had the same non-route file problem; fixed with the website audit (branch `claude/project-thread-jpmkcz`, PR #330).
+
+29 October: John asked for the 50/30/20 starting budget (D-106 follow-up; mock approved, "build"). Website only, In review on branch `claude/project-thread-v7mf9g`; outside Now/Next as a John-requested feature, no Now item displaced.
+
+27 October: John authorized these reproduced persistence repairs within N2. They take precedence over N1 runtime copy until reviewed; N1 remains Ready and N3 remains Planned. No fourth Now item is created.
+
+Reliability, financial correctness, security and billing blockers may interrupt
+this order. Record the reason and which Now item is displaced; do not silently
+create a fourth active priority. Existing authorized work is not canceled by this
+queue: reconcile its scope and dependencies before starting overlapping changes.
+
+30 October: John selected landing-page option 2 (centered hero and connected product example), with a dedicated wrapping directory-badge area. N1 design follow-up, Codex, [PR #331](https://github.com/Johnbulongdon/UntilFire/pull/331) on `codex/landing-connected-preview`; production build and local desktop/phone design QA passed (see design-qa.md). Review http://127.0.0.1:4203/ before merge. Preserve onboarding, metadata and directory links. Follow-up: remove the landing FAQ/article appendage and end with grouped calculator, city-guide, Learn/account and legal navigation as John requested. John subsequently approved the connected closing/footer and continuous review rail, requested removal of its visible controls/dots, and explicitly authorized build and merge. D-118 records scope; genuine review content is still pending and the public review list remains empty.
+
+### Next — ordered follow-ups
+
+| ID | Task | Start condition / done when |
+| --- | --- | --- |
+| X4 | Align the Android welcome-screen sign-in button | In review; Codex — [PR #322](https://github.com/Johnbulongdon/UntilFire/pull/322), explicitly authorized 27 October within N2. The welcome route requested the compact Button variant for I already have an account. Removed only that prop: both actions now stretch to the same width, use a 56-point face, 18-point radius and 17-point label, while secondary styling and navigation remain intact. Actual component output, phone types and changed-file lint passed. Review/merge and physical-device screenshot verification pending. |
+| X1 | Fix the biggest repeated user obstacle | After N3 supplies evidence; prioritize observed friction, then verify the fix with affected users. |
+| X2 | Check actual return behavior | Follow up about a week after each session and around payday; record whether users returned, what triggered it and why others did not. Payday is a hypothesis, not a new feature requirement. Use existing retention analytics where sufficient. |
+| X3 | Verify paid conversion, then expand acquisition | Verify checkout, subscription activation and entitlement persistence before relying on paid conversion. Resolve critical billing failures immediately under N2; broad promotion waits for first-use reliability and evidence of repeat value. |
+
+### Later — remembered, not active commitments
+
+- **Conditional growth:** Product Hunt, Reddit/X, Show HN, partnerships and referral
+  experiments. Existing evidence and plans remain below; recheck readiness before launch.
+- **Product depth:** stronger deterministic next-move guidance, contribution email,
+  scenarios and supported location research, only where user evidence warrants it.
+- **Deferred expansion:** extra planning tools, extra onboarding questions, an AI
+  advice layer and broad promotion. Revisit after the first-use/return tests.
+- **Existing backlog:** the detailed phase sections below retain prior ideas,
+  implementation notes and constraints. They are a reference, not another active
+  queue; unchecked does not mean absent. Review current code before promoting an item.
+
+### Updating this queue
+
+- Before starting, fetch latest main, read Now/Next/Later, inspect open PRs, and
+  identify the task ID, owner and scope. Record an in-progress PR link when available.
+- Update status, blocker/next action and the date in the same PR as the work.
+  Use Planned, Ready, In progress, Blocked, In review, or Completed; include evidence.
+  A completed implementation with an unmerged PR stays In review.
+- Promote from Next when a Now slot opens and the work is within John's authorized
+  scope. Record priority changes and their reason; material direction changes go
+  in [DECISIONS.md](DECISIONS.md). Never infer merge/deployment authority from the queue.
+- Move completed items into the dated record below with a PR/evidence link and
+  update [CHANGELOG.md](../CHANGELOG.md). Keep deferred/rejected items with a short
+  reason. Nothing is silently deleted; retain detailed historical plans below.
+- Keep respondent identities, finances, raw quotes and research notes private.
+  The public repo stores only anonymized conclusions and task status.
+
+### Completed / disposition record
+
+- **27 October 2026 — Completed:** positioning decision and historical slogan
+  recorded; [PR #316](https://github.com/Johnbulongdon/UntilFire/pull/316) merged
+  as `2a83202`. Runtime copy rollout is N1, not complete.
+- **27 October 2026 — Deferred:** broad promotion and new feature expansion until
+  evidence from the existing first-use and return experience supports them.
+
+---
+
+## Detailed roadmap and historical planning
+
+The sections below preserve previous plans and checkmarks. **Now / Next / Later
+above owns current execution order**, including where an older heading says
+“Current Focus” or “Next sprint.” Old metrics, launch dates and verification
+claims need refreshing; none of them automatically overrides this queue.
+
 ## October 22, 2026 — City savings benchmark follow-up
 
 - [ ] Add typical savings by city to the savings-pace experience once a reliable, comparable source is verified. Research coverage, median versus average, city versus metro boundaries, data year, household versus individual units, and before-tax versus take-home definitions. Label estimates and broader geographic fallbacks explicitly. A resident percentile requires a savings distribution; never infer it from an average or from unrelated income and spending datasets. Until suitable data is available, keep the user's own savings percentage and money left to spend; do not display invented local benchmarks. This is a research and implementation to-do, not approval to publish an unsupported comparison.
@@ -25,11 +113,20 @@ checklists below are historical planning context, not new approval to execute.
 
 ---
 
+## Positioning rollout — October 27, 2026
+
+Decision/history recording is complete (PR #316). Remaining runtime copy work is
+tracked once as **N1** above; comprehension testing belongs to **N3**.
+
 ## Product Direction
 
-**Positioning:** Personal finance that sets you free.
+**Positioning:** See beyond your balance. Open up your life.
 
-UntilFire starts with your freedom date, then walks with you toward it: what matters, what to do this month, and how each move brings work optionality closer. Free, no login.
+See your whole financial picture, understand your choices, and build toward the life you want.
+
+Founder-approved working copy, 27 October 2026 (D-109); comprehension is not yet validated.
+
+UntilFire connects everyday financial clarity with the life a user wants. A freedom date makes the future tangible, with ongoing guidance: what matters, what to do this month, and how each move brings work optionality closer. Free, no login.
 
 **Core differentiator:** UntilFire does it with you. Most finance tools either hand you a number and leave you alone, or hand you a model you have to interpret yourself. UntilFire should be the path in between: a clear next move, tracked progress, and guidance that keeps working with you toward financial freedom. Since D-73 (October 2026) that continuity is daily: a short Today list of one-tap items so people stay on top of their money without opening every page. Completed days are counted, never streaked.
 
@@ -219,8 +316,8 @@ UntilFire's active goal is to reach **$3k monthly recurring revenue**. Roadmap w
 
 ### Product Hunt Launch Assets
 
-- [ ] Product Hunt tagline: "Personal finance that sets you free."
-- [ ] Product Hunt short description: "UntilFire starts with your freedom date, then gives you a plan to bring work optionality closer. Free, no login."
+- [ ] Product Hunt tagline: "See beyond your balance. Open up your life." (D-109; replaces the former slogan recorded in the decision log).
+- [ ] Product Hunt short description: "See your whole financial picture, understand your choices, and build toward the life you want."
 - [ ] Maker first comment: personal story + why FIRE tools need to guide the path, not just hand over a number — good tools do not only show the answer, they help you get there.
 - [ ] 20–40 second demo GIF/video: enter inputs → get freedom date → see plan.
 - [ ] 3–5 screenshots: hero, calculator step, result, monthly move/plan, dashboard continuity. Avoid making city/tax comparison the hero screenshot.
@@ -479,3 +576,47 @@ John has chosen the next product direction:
 - Native mobile app — web-first until the funnel and retention are proven
 - Heavy budgeting-app parity — UntilFire should show how money choices affect freedom and what to do next, not become another generic budgeting tool
 - Login-first onboarding — conflicts with the free/no-login first value promise
+
+29 October — N2 subtask: John approved the complete Next Horizon rebrand across public web, onboarding, app, native and admin. In review; Codex — [PR #323](https://github.com/Johnbulongdon/UntilFire/pull/323), branch `codex/next-horizon-rebrand`. Reviewed surfaces and automated checks pass; authenticated admin visual review and physical-phone/store-build verification remain the next release checks. Logo exports and current contract: `public/brand/`, `docs/design/design-system.md`. Typical city savings remains a research to-do. No production release claimed; native assets require a store build.
+
+29 October N2 follow-up — Codex: lighter category palette B selected and implemented on the rebrand branch; mapping preserves legacy category hue families. Standalone high-resolution payday C remains a design review, pending John’s choice. No change to payday calculations or release status.
+
+29 October N2 refinement — John approved payday C without a bottom slider. Codex implemented the real web and phone cards with above-chart details, per-bill selection and direct chart inspection. Shared same-day/empty/shortfall checks pass; browser/phone verification is in progress. No production or phone release authorized.
+
+29 October N2 verification update — category B / payday C: web production build, types, changed-file lint, iOS/Android/web export and focused financial/presentation regressions passed. Real component desktop/390px, direct mouse drag, keyboard, shortfall and empty states checked with fictional data. Physical device touch QA remains pending; changes are local on the review branch, not released.
+
+29 October N2 browser follow-up — Codex: interactive example plan, directional question transitions, selection/press/focus feedback, stable section transitions, Money loading placeholders and live savings feedback implemented locally. Exact decimal slider restoration fixed during QA. Landing/onboarding and Home/Money/Plan/Profile fit at 390px; no signed-in financial data changed. See docs/design/design-qa.md for evidence and limits. Native pace precision parity, physical-touch/Safari/screen-reader checks remain follow-ups. No release authorized.
+
+29 October N2 browser verification completed — final production build and focused regressions passed; loaded landing/onboarding at 390px and 1280px, signed-in four main sections at 390px, input focus, exact decimal undo and Plan disclosure checked. Review evidence in docs/design/design-qa.md. Changes are local on the review branch and have not yet been committed/pushed to PR323. Safari, physical touch and screen-reader coverage remain pending.
+
+### October 29 onboarding feedback follow-up
+- Implemented locally: whole-number improvement control, today-dollar target, hidden Skip, corrected city selection/currency conversion, visible year grid and shorter reveal, sign-in recovery.
+- Keep improvement in the journey until a definite removal decision.
+- Before release: fresh Google sign-in on the canonical production origin and physical-device QA; existing local signed-in session was verified read-only.
+
+### N2 — marked calendar follow-up, 29 October
+Owner: Codex. Implemented locally under the existing rebrand review (PR #323), not yet pushed or released. Replace both browser calendar presentations with selected B. Calendar date/recurrence/selection/refund tests pass; desktop and narrow browser checks in progress. Native app calendar styling remains outside this browser-only change; financial engines are unchanged.
+
+N2 release update — 29 October, Codex: John authorized website publication of PR #323 plus the accumulated approved refinements. Calendar repair removes bank-history markers and preserves scheduled occurrence dates, with regression coverage added to Financial consistency CI. Full release validation and production deployment verification in progress; no separate database migration or store submission.
+
+30 October landing follow-up within N1: selected conversion options 1/2 implemented, option 3 rotating layout scaffold verified locally; actual approved testimonials and portraits pending. Normal/public landing hides an empty story list; explicit localhost-only preview uses labeled placeholders. Options 4/5 excluded. No publication authorized or performed.
+
+Landing review-rail follow-up: approved compact mock implemented as continuous looping cards; local desktop, phone swipe, reduced motion and seam navigation verified on e2d1f36. Actual testimonial content remains pending; demo profiles are local-only and labeled. Marketing/promotion scope awaits clarification of the user's wording; no external outreach or posting performed.
+
+30 October — N1 landing refinement, Codex, [PR #332](https://github.com/Johnbulongdon/UntilFire/pull/332), `codex/landing-polish`, In review: preserve opening copy; tighten phone hero; clarify slider interaction; show bank-connection plan comparison; improve small controls; quiet directory badges. Baseline f2da67c (merged PR #331). Build, changed-component lint, SEO/start-action checks and desktop/phone visual review passed; docs/design/landing-polish/verification.md records evidence. No production change yet.
+
+30 October — N1, John approved the interactive city globe and requested merge and shipment with the landing refinements (PR #332). Codex implementing on codex/landing-polish from f2da67c; D-120 records the final scope. Validation and final release checks in progress.
+
+30 October — N1 globe automatic rotation follow-up, Codex, codex/globe-auto-spin. Baseline origin/main 16d8904. Implementation and production-build verification in progress; no unrelated open PR overlap found.
+
+31 October — N1 web style consistency, Codex, codex/web-style-consistency. Baseline latest pushed origin/main 4ec5eea. Remaining legacy public, portfolio/export, admin, budget/import and utility surfaces updated; validation and visual review in progress. No overlap with open product/security/native PRs; no merge or publication yet.
+
+N1 web style follow-up: [draft PR #335](https://github.com/Johnbulongdon/UntilFire/pull/335), implementation bf27c01. Build/type/lint and focused guards passed; public browser screenshots verified. Awaiting signed-in visual review, then merge authorization.
+
+31 October N1 PR #335: signed-in Home/Money/Plan/Profile light/dark and phone Home inspected; import/guided budget screens inspected without saving. Corrected Explore/referral dark pastel contrast and pill dialog buttons. Final build passed. Admin visual review blocked by access denial; no auth changes.
+
+31 October N1 payday card polish, Codex, codex/payday-card-polish, baseline main 7b63c78. Actual component updated and Before/After fixture preview available at port 4208. Focused lint, payday and free-to-spend guards passed; final build/review in progress. No merge or deployment yet.
+
+N1 payday polish is In review: [PR #336](https://github.com/Johnbulongdon/UntilFire/pull/336), implementation 4346376. Build/type/lint and chart/cash guards passed; browser before/after and edge-state checks recorded. Awaiting design review; not merged or deployed.
+
+31 October N1/N2 payday refinement — Codex, PR #336: John approved the simplified ledger mock and authorized build/ship. D-124 supersedes the chart polish. Shared everyday-cost estimate, optional visit-only zero cushion, Home Today synchronization and matching phone card implemented. In review until checked and merged; deployment and phone channel promotion tracked separately.

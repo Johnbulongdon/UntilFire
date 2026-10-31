@@ -63,7 +63,7 @@ function Ring({ done, total, size = 40 }: { done: number; total: number; size?: 
 
 /**
  * Get set up (Oct 2026): the five steps that make the freedom date and Until
- * payday your own, in a box in the corner of Home. Ticks itself from your
+ * payday your own, docked in Home under the next move (D-108). Ticks itself from your
  * data (lib/setup-steps), folds to a pill, shows what each step changed, turns
  * bank findings into one-tap confirms, celebrates once, then is gone for good.
  */
@@ -101,7 +101,8 @@ export default function SetupChecklist({ userId, facts, freedomYear, untilPayday
     setMounted(true);
     setFinished(read(SETUP_FINISHED_KEY) === "1");
     const f = read(SETUP_FOLDED_KEY);
-    setFolded(f != null ? f === "1" : window.matchMedia("(max-width: 900px)").matches);
+    // Folded unless opened: it sits in Home's flow now, under the next move (D-108).
+    setFolded(f != null ? f === "1" : true);
     try { setDismissed(JSON.parse(read(DISMISSED_KEY) || "[]")); } catch { /* none */ }
     try { snapshot.current = JSON.parse(read(SETUP_SNAPSHOT_KEY) || "null"); } catch { snapshot.current = null; }
     const t = setTimeout(() => setSettled(true), SETTLE_MS);
@@ -209,7 +210,7 @@ export default function SetupChecklist({ userId, facts, freedomYear, untilPayday
             <h2 className="uf-t-h2" style={{ margin: 0 }}>You&rsquo;re set up</h2>
             {freedomYear != null && <>
               <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 6 }}>Your freedom date</div>
-              {/* The freedom date's Fraunces exception (design system). */}
+              {/* The freedom date's Inter exception (design system). */}
               <div style={{ fontFamily: "var(--uf-font-display)", fontWeight: 700, fontSize: 44, letterSpacing: "-0.02em", lineHeight: 1.1, margin: "4px 0 6px" }}>{freedomYear}</div>
             </>}
             <Button variant="primary" fullWidth onClick={finish} style={{ marginTop: 12 }}>Nice</Button>
@@ -314,21 +315,17 @@ export default function SetupChecklist({ userId, facts, freedomYear, untilPayday
 function SetupStyles() {
   return (
     <style>{`
-      .uf-setup-dock { position: fixed; right: 24px; bottom: 80px; z-index: 150; display: flex; justify-content: flex-end; pointer-events: none; }
-      .uf-setup-dock > * { pointer-events: auto; }
-      .uf-setup-box { width: 340px; max-height: calc(100vh - 120px); overflow-y: auto; background: var(--uf-card); color: var(--uf-ink);
-        border: 1px solid var(--uf-border); border-radius: 20px; padding: 18px 18px 12px; box-shadow: var(--uf-e3, 0 18px 50px rgba(0,0,0,.18)); }
-      .uf-setup-pill { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 16px 8px 10px; border-radius: 16px; cursor: pointer;
-        background: var(--uf-card); color: var(--uf-ink); border: 1px solid var(--uf-border); font: inherit; font-size: 15px; box-shadow: var(--uf-e3, 0 18px 50px rgba(0,0,0,.18)); }
+      .uf-setup-dock { display: block; }
+      .uf-setup-box { background: var(--uf-card); color: var(--uf-ink);
+        border: 1px solid var(--uf-border); border-radius: 20px; padding: 18px 18px 12px; box-shadow: var(--uf-e1); }
+      .uf-setup-pill { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 8px 16px 8px 10px; border-radius: 16px; cursor: pointer;
+        background: var(--uf-card); color: var(--uf-ink); border: 1px solid var(--uf-border); font: inherit; font-size: 15px; text-align: left; box-shadow: var(--uf-e1); }
+      .uf-setup-pill > :nth-child(3) { margin-left: auto; }
       .uf-setup-fold { width: 36px; height: 36px; border-radius: 10px; border: none; background: transparent; color: var(--uf-ink-3); cursor: pointer;
         display: flex; align-items: center; justify-content: center; }
       .uf-setup-fold:hover { background: var(--uf-surface); }
       .uf-setup-pill:focus-visible, .uf-setup-fold:focus-visible, .uf-setup-check:focus-visible { outline: 2px solid var(--uf-green); outline-offset: 2px; }
       .uf-setup-check { width: 20px; height: 20px; margin: 0; flex-shrink: 0; accent-color: var(--uf-green); cursor: pointer; }
-      @media (max-width: 900px) {
-        .uf-setup-dock { right: 12px; left: 12px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
-        .uf-setup-box { width: 100%; max-width: 380px; max-height: calc(100vh - 180px); }
-      }
     `}</style>
   );
 }

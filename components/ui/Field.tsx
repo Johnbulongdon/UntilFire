@@ -6,7 +6,7 @@ import React from "react";
  * A labelled input. Label, control, optional hint or error.
  *
  * Set `numeric` on anything holding a figure — it switches the control to
- * DM Mono with tabular numerals so decimals line up in a column. In a finance
+ * Inter with tabular numerals so decimals line up in a column. In a finance
  * product that's legibility, not decoration.
  *
  * See docs/design/design-system.md.

@@ -23,7 +23,7 @@ export default function UnsubscribePage() {
   }, []);
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#08080e", color: "#fff", fontFamily: "system-ui, -apple-system, sans-serif", padding: 24, textAlign: "center" }}>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--uf-ground)", color: "var(--uf-ink)", fontFamily: "var(--uf-font)", padding: 24, textAlign: "center" }}>
       <div style={{ maxWidth: 380 }}>
         {status === "pending" && <p>Unsubscribing&hellip;</p>}
         {status === "done" && (

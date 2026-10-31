@@ -504,12 +504,7 @@ export default function ExpectedPaymentsTab({
   const ladder = useMemo(() => (facts ? ladderViewFromPlan(plan, { ...facts, expectedItems: calendarItems }) : null),
     [plan, facts, calendarItems]);
   const cash = ladder?.available ?? null;
-  // What was recorded on past days, for the day panel: read-only, since
-  // recording belongs to Transactions (D-64).
-  const recorded = useMemo(() => history.map((t) => ({
-    iso: t.date.slice(0, 10), label: t.description || (t.transaction_type === "income" ? "Income" : "Payment"),
-    amount: Math.abs(toUSD(t.amount, t.currency, displayRates)), income: t.transaction_type === "income", category: t.category,
-  })), [history, displayRates]);
+  const scheduledItems=useMemo(()=>payments.filter(p=>p.due_date).map(p=>({description:p.description,amountUSD:toUSD(p.amount,p.currency,displayRates),type:p.transaction_type,dueDate:p.due_date.slice(0,10),recurrence:p.recurrence,category:p.category,completed:isDone(p)})),[payments,displayRates]);
   const categoryEmoji = (category: string | null | undefined, income: boolean) =>
     [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES, ...customCats].find((c) => c.key === category)?.emoji ?? (income ? "💵" : "🧾");
   const completed = payments.filter(isDone).sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""));
@@ -720,7 +715,7 @@ export default function ExpectedPaymentsTab({
             ...(ladder?.efAccounts ?? []).map((a) => ({ name: a.label, balance: a.balance, reserve: true }))]}
           safe={cash?.free ?? 0} done={cash?.done ?? null}
           onMarkDone={onMarkDone} selected={selected} onSelect={(iso) => { if (showForm) closeForm(); setSelected(iso); }}
-          recorded={recorded} addForm={showForm ? formNode : null} onAdd={(iso) => openAddForm(iso)}
+          scheduledItems={scheduledItems} addForm={showForm ? formNode : null} onAdd={(iso) => openAddForm(iso)}
           onOpenTransactions={onOpenTransactions} emojiFor={categoryEmoji}
           fmt={formatAmount} compact={(usd) => formatUSDInCurrency(usd, displayCurrency, displayRates, { compact: true })} />
       )}

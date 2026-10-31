@@ -11,7 +11,7 @@ export const metadata = {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  'FIRE Basics': '#059669',
+  'FIRE Basics': '#17684B',
   'Planning': '#0ea5e9',
   'Tax & Accounts': '#8b5cf6',
   'Risk & Strategy': '#f97316',
@@ -43,11 +43,11 @@ export default function ArticlesPage() {
             return (
               <article key={article.slug} className="uf-hub-card">
                 <div className="uf-hub-card-meta" style={{ justifyContent: 'flex-start', flexWrap: 'wrap' }}>
-                  <span style={{ color: CATEGORY_COLORS[article.category] ?? '#059669' }}>
+                  <span style={{ color: CATEGORY_COLORS[article.category] ?? '#17684B' }}>
                     {article.category}
                   </span>
                   <span>{article.readTime}</span>
-                  <span style={{ color: '#064E3B' }}>Best for: {stage.label}</span>
+                  <span style={{ color: '#151719' }}>Best for: {stage.label}</span>
                 </div>
                 <h2>{article.title}</h2>
                 <p>{article.description}</p>

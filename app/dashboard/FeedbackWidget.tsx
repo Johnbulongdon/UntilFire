@@ -14,7 +14,7 @@ const TYPE_OPTIONS: { key: FeedbackType; label: string }[] = [
 
 export default function FeedbackWidget() {
   const [open, setOpen] = useState(false);
-  // On phones the top bar opens this; the floating button would cover rows (D-54).
+  // The top bar (phones) and the sidebar (desktop) open this (D-54).
   useEffect(() => {
     const show = () => setOpen(true);
     window.addEventListener("uf:feedback", show);
@@ -98,44 +98,8 @@ export default function FeedbackWidget() {
 
   return (
     <>
-      <style>{`
-        .uf-feedback-btn { transition: transform 0.15s, box-shadow 0.15s; }
-        .uf-feedback-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(6,78,59,0.35) !important; }
-        @media(max-width: 900px) { .uf-feedback-btn { display: none !important; } }
-      `}</style>
-
-      {/* Floating button */}
-      <button
-        className="uf-feedback-btn"
-        onClick={() => setOpen(true)}
-        aria-label="Send feedback"
-        style={{
-          position: "fixed",
-          bottom: 24,
-          right: 24,
-          zIndex: 200,
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "10px 18px",
-          background: "#064E3B",
-          color: "#fff",
-          border: "none",
-          borderRadius: 999,
-          fontSize: 13,
-          fontWeight: 700,
-          cursor: "pointer",
-          boxShadow: "0 4px 16px rgba(6,78,59,0.25)",
-          fontFamily: "inherit",
-          letterSpacing: "-0.1px",
-        }}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
-        <span className="uf-feedback-label">Feedback</span>
-      </button>
-
+      {/* Opened from the top bar on phones and the sidebar on desktop; a
+          floating button covered amounts at the right edge of lists. */}
       {/* Backdrop + modal */}
       {open && (
         <div
@@ -164,8 +128,8 @@ export default function FeedbackWidget() {
             {/* Header */}
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#059669", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 4 }}>UntilFire</div>
-                <h2 style={{ fontSize: 19, fontWeight: 800, color: "#064E3B", margin: 0, letterSpacing: "-0.3px" }}>Send feedback</h2>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#17684B", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 4 }}>UntilFire</div>
+                <h2 style={{ fontSize: 19, fontWeight: 800, color: "#151719", margin: 0, letterSpacing: "-0.3px" }}>Send feedback</h2>
               </div>
               <button
                 onClick={handleClose}
@@ -182,13 +146,13 @@ export default function FeedbackWidget() {
               /* Success state */
               <div style={{ textAlign: "center", padding: "16px 0 8px" }}>
                 <div style={{ fontSize: 40, marginBottom: 14 }}>🎉</div>
-                <div style={{ fontSize: 17, fontWeight: 800, color: "#064E3B", marginBottom: 8 }}>Thanks for your feedback!</div>
+                <div style={{ fontSize: 17, fontWeight: 800, color: "#151719", marginBottom: 8 }}>Thanks for your feedback!</div>
                 <div style={{ fontSize: 14, color: "#64748B", marginBottom: 24, lineHeight: 1.6 }}>
                   We read every submission and use it to make UntilFire better.
                 </div>
                 <button
                   onClick={handleClose}
-                  style={{ padding: "10px 24px", background: "#059669", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                  style={{ padding: "10px 24px", background: "#151719", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                 >
                   Close
                 </button>
@@ -207,9 +171,9 @@ export default function FeedbackWidget() {
                           padding: "6px 14px",
                           borderRadius: 999,
                           border: "1.5px solid",
-                          borderColor: type === opt.key ? "#059669" : "#E2E8F0",
+                          borderColor: type === opt.key ? "#17684B" : "#E2E8F0",
                           background: type === opt.key ? "#ECFDF5" : "#fff",
-                          color: type === opt.key ? "#065F46" : "#64748B",
+                          color: type === opt.key ? "#151719" : "#64748B",
                           fontSize: 13,
                           fontWeight: 600,
                           cursor: "pointer",
@@ -272,7 +236,7 @@ export default function FeedbackWidget() {
                   style={{
                     width: "100%",
                     padding: "11px 0",
-                    background: !message.trim() || status === "sending" ? "#E2E8F0" : "#059669",
+                    background: !message.trim() || status === "sending" ? "#E2E8F0" : "#151719",
                     color: !message.trim() || status === "sending" ? "#9ca3af" : "#fff",
                     border: "none",
                     borderRadius: 8,

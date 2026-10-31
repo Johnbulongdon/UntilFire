@@ -14,15 +14,20 @@ export default function CityGuideStart({ city, slug, explorer }: { city: City; s
   return <div className="city-guide-start">
     <section className="city-guide-hero">
       <h1>What would it take to retire in {city.name}?</h1>
-      <p className="city-guide-muted">Estimated FIRE portfolio for the city’s spending baseline</p>
-      <div className="city-guide-number">{formatMoney(city.col * 25)} <span>USD</span></div>
-      <div className="city-guide-facts"><div><strong>{formatMoney(city.col / 12)} / month</strong><span>Spending baseline · USD</span></div><div><strong>25× annual spending</strong><span>Planning guideline, not a guarantee</span></div></div>
+      <div className="city-guide-freedom">
+        <span className="city-guide-label">Freedom number · USD</span>
+        <div className="city-guide-number">{formatMoney(city.col * 25)}</div>
+        <span className="city-guide-sub">25× the city’s yearly spending</span>
+      </div>
+      <div className="city-guide-facts">
+        <div><i aria-hidden="true">🏠</i><strong>{formatMoney(city.col / 12)}</strong><span>Monthly spending</span></div>
+        <div><i aria-hidden="true">📊</i><strong>{range ? `${formatMoney(range.low, { style: 'compact' })}${range.capped ? '+' : `–${formatMoney(range.high, { style: 'compact' })}`}` : formatMoney(city.col, { style: 'compact' })}</strong><span>{range ? 'Yearly range' : 'Yearly spending'}</span></div>
+      </div>
       <p className="city-guide-note">{us ? `Data reviewed ${US_CITY_COST_DATA_UPDATED}.` : 'Illustrative USD comparison baseline, not a local-currency household budget.'} {range && `Annual spending range: ${formatMoney(range.low)}${range.capped ? ' or more' : `–${formatMoney(range.high)}`}.`} <a href="#city-guide-sources">Sources & assumptions</a></p>
     </section>
     <section className="city-guide-product" aria-labelledby="city-plan-heading">
-      <h2 id="city-plan-heading">The city number is a starting point.<br />Your plan is personal.</h2>
-      <p>See how your savings and spending shape your path to making work optional.</p>
-      <ol className="city-guide-steps"><li>Your starting point</li><li>Your timeline</li><li>Your progress</li></ol>
+      <h2 id="city-plan-heading">That’s the city. Now see your own path.</h2>
+      <ol className="city-guide-steps"><li>Start</li><li>Timeline</li><li>Progress</li></ol>
       <CityPlanLink cityKey={city.key} cityName={cityName} slug={slug} />
       <p className="city-guide-note">Explore your timeline first. Create an account when you want to save your plan.</p>
     </section>

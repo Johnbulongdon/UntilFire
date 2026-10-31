@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 
-const BORDER = '#23232d'
-const TEAL = '#22d3a5'
-const BG = '#08080e'
+const BORDER = 'var(--uf-border)'
+const TEAL = 'var(--uf-green)'
+const BG = 'var(--uf-ground)'
 
 export default function ShareButtons({
   shareSlug,
@@ -68,11 +68,11 @@ export default function ShareButtons({
 
 const primaryBtn: React.CSSProperties = {
   background: TEAL,
-  color: BG,
+  color: "var(--uf-card)",
   fontWeight: 800,
   fontSize: 15,
   padding: '12px 22px',
-  borderRadius: 10,
+  borderRadius: "var(--uf-r-pill)",
   border: 'none',
   cursor: 'pointer',
   textDecoration: 'none',
@@ -80,11 +80,11 @@ const primaryBtn: React.CSSProperties = {
 
 const ghostBtn: React.CSSProperties = {
   background: 'transparent',
-  color: '#d6d6e0',
+  color: 'var(--uf-ink-2)',
   fontWeight: 600,
   fontSize: 15,
   padding: '12px 22px',
-  borderRadius: 10,
+  borderRadius: "var(--uf-r-pill)",
   border: `1px solid ${BORDER}`,
   cursor: 'pointer',
   textDecoration: 'none',

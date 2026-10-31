@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui";
 import { moneyMono } from "./MoneyCards";
 
-export type DayLine = { label: string; amount: number; income: boolean; category?: string | null; repeats?: boolean };
+export type DayLine = { label: string; amount: number; income: boolean; category?: string | null; repeats?: boolean; status?: string };
 
 /**
  * One day of the Calendar (D-64), beside the month on a computer and as a
@@ -12,7 +12,7 @@ export type DayLine = { label: string; amount: number; income: boolean; category
  * what is expected, the cash left at its end, and adds an upcoming payment
  * in place, with the month still in view.
  */
-export default function CalendarDayPanel({ iso, todayIso, lines, cash, invest, addForm, onAdd, onClose, onOpenTransactions, emojiFor, fmt, sheet }: {
+export default function CalendarDayPanel({ iso, todayIso, lines, cash, invest, addForm, onAdd, onClose, onOpenTransactions, emojiFor, fmt, sheet, scheduled = false }: {
   iso: string;
   todayIso: string;
   lines: DayLine[];
@@ -29,6 +29,7 @@ export default function CalendarDayPanel({ iso, todayIso, lines, cash, invest, a
   fmt: (usd: number) => string;
   /** A phone's bottom sheet rather than a side panel. */
   sheet?: boolean;
+  scheduled?: boolean;
 }) {
   const past = iso < todayIso;
   const title = new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
@@ -43,7 +44,7 @@ export default function CalendarDayPanel({ iso, todayIso, lines, cash, invest, a
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
         <div>
           <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700 }}>
-            {past ? "Recorded" : iso === todayIso ? "Today" : "Expected"}
+            {scheduled ? "Scheduled" : past ? "Recorded" : iso === todayIso ? "Today" : "Expected"}
           </span>
           <div className="uf-t-h3" style={{ margin: 0 }}>{title}</div>
         </div>
@@ -60,7 +61,7 @@ export default function CalendarDayPanel({ iso, todayIso, lines, cash, invest, a
 
       <div>
         {lines.length === 0 && (
-          <p className="uf-t-small" style={{ color: "var(--uf-ink-3)", margin: "6px 0" }}>{past ? "Nothing recorded." : "Nothing expected."}</p>
+          <p className="uf-t-small" style={{ color: "var(--uf-ink-3)", margin: "6px 0" }}>{scheduled ? "No bills or payday scheduled." : past ? "Nothing recorded." : "Nothing expected."}</p>
         )}
         {lines.map((l, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderTop: i ? "1px solid var(--uf-border)" : undefined }}>
@@ -68,7 +69,7 @@ export default function CalendarDayPanel({ iso, todayIso, lines, cash, invest, a
               background: l.income ? "color-mix(in srgb, var(--uf-pos-ink) 14%, var(--uf-card))" : "var(--uf-surface)" }}>{emojiFor(l.category, l.income)}</span>
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: "block", fontWeight: 700, fontSize: 14, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.label}</span>
-              {!past && <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>{l.repeats ? "Repeats" : "One-off"}</span>}
+              {(scheduled || !past) && <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>{[l.status,l.repeats ? "Repeats" : "One-off"].filter(Boolean).join(" · ")}</span>}
             </span>
             <span style={{ ...moneyMono, fontSize: 14, color: l.income ? "var(--uf-pos-ink)" : "var(--uf-ink)" }}>{l.income ? "+" : "−"}{fmt(l.amount)}</span>
           </div>

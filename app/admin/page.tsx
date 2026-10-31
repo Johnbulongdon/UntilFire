@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import styles from "./Admin.module.css";
+import Logo from "@/app/components/Logo";
 import OverviewTab from "./OverviewTab";
 import UsersTab from "./UsersTab";
 import EmailsTab from "./EmailsTab";
@@ -46,12 +48,13 @@ export default function AdminPage() {
   if (status === "denied") return <Centered>You don&apos;t have access to this page.</Centered>;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F8FAFC", fontFamily: "Manrope, system-ui, -apple-system, sans-serif" }}>
+    <div className={styles.root} style={{ minHeight: "100vh", background: "var(--uf-ground)", fontFamily: "Inter, system-ui, -apple-system, sans-serif" }}>
       <div style={{ maxWidth: tab === "journeys" ? 1600 : 1100, margin: "0 auto", padding: "32px 24px 80px" }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "#19181E", margin: "0 0 4px" }}>UntilFire Admin</h1>
-        <p style={{ color: "#64748B", fontSize: 14, margin: "0 0 24px" }}>Operations, users, and email &mdash; internal only.</p>
+        <div style={{ marginBottom: 24 }}><Logo variant="auto" size={30}/></div>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-ink)", margin: "0 0 4px" }}>UntilFire Admin</h1>
+        <p style={{ color: "var(--uf-ink-2)", fontSize: 14, margin: "0 0 24px" }}>Operations, users, and email &mdash; internal only.</p>
 
-        <nav style={{ display: "flex", gap: 6, marginBottom: 24, borderBottom: "1px solid #E2E8F0", flexWrap: "wrap" }}>
+        <nav style={{ display: "flex", gap: 6, marginBottom: 24, borderBottom: "1px solid var(--uf-border)", flexWrap: "wrap" }}>
           {([
             { key: "overview" as const, label: "Overview" },
             { key: "users" as const, label: "Users" },
@@ -66,13 +69,15 @@ export default function AdminPage() {
           ]).map((t) => (
             <button
               key={t.key}
+              aria-current={tab === t.key ? "page" : undefined}
               onClick={() => setTab(t.key)}
               style={{
                 padding: "10px 16px",
-                background: "none",
+                background: tab === t.key ? "var(--uf-green)" : "var(--uf-card)",
                 border: "none",
-                borderBottom: tab === t.key ? "2px solid #059669" : "2px solid transparent",
-                color: tab === t.key ? "#059669" : "#64748B",
+                borderRadius: "var(--uf-r-pill)",
+                minHeight: 44,
+                color: tab === t.key ? "var(--uf-card)" : "var(--uf-ink-2)",
                 fontWeight: 700,
                 fontSize: 14,
                 cursor: "pointer",
@@ -101,7 +106,7 @@ export default function AdminPage() {
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Manrope, system-ui, -apple-system, sans-serif", color: "#64748B" }}>
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Inter, system-ui, -apple-system, sans-serif", color: "var(--uf-ink-2)" }}>
       {children}
     </div>
   );

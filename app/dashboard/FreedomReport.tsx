@@ -36,9 +36,9 @@ export type ReportData = {
   notIncluded: string[];
 };
 
-const C = { card: "#FFFDFA", s2: "#F3EBDF", b: "#EADCC8", ink: "#2A2117", ink2: "#6B5C48", ink3: "#9A8A73", green: "#12856A", teal: "#0E9C86", blue: "#2a78d6", pen: "#c58a4a", pos: "#DDF1EA" };
+const C = { card: "#FFFFFF", s2: "#EEE9FA", b: "#E7E5ED", ink: "#151719", ink2: "#5C6170", ink3: "#686D7C", green: "#151719", teal: "#151719", blue: "#7865B5", pen: "#815A16", pos: "#E3F7EF" };
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono), ui-monospace, monospace", fontVariantNumeric: "tabular-nums" };
-const serif = "var(--uf-font-display), Fraunces, Georgia, serif";
+const serif = "var(--uf-font-display), Inter, sans-serif";
 const h2: React.CSSProperties = { font: `600 16px ${serif}`, margin: "0 0 8px", color: C.ink };
 const sec: React.CSSProperties = { borderTop: `1px solid ${C.b}`, paddingTop: 14 };
 const sub: React.CSSProperties = { color: C.ink3, fontSize: 11.5, margin: "6px 0 0" };
@@ -221,7 +221,7 @@ export default function FreedomReport({ d, money, compact, onClose, onExport }: 
         <button type="button" role="radio" aria-checked={!branded} onClick={() => setBranded(false)} style={pill(!branded)}>No branding</button>
       </div>}
       <button type="button" onClick={format === "page" ? () => { onExport?.("page", branded); window.print(); } : format === "reddit" ? copy : download}
-        style={{ marginLeft: "auto", padding: "9px 16px", borderRadius: 12, border: 0, cursor: "pointer", fontWeight: 700, background: "var(--uf-green)", color: "#fff" }}>
+        style={{ marginLeft: "auto", padding: "9px 16px", borderRadius: 12, border: 0, cursor: "pointer", fontWeight: 700, background: "var(--uf-green)", color: "var(--uf-card)" }}>
         {format === "page" ? "Save as PDF" : format === "reddit" ? (copied ? "Copied ✓" : "Copy as Markdown") : "Download PNG"}</button>
     </div>
     {format === "page" && <ReportPage d={d} branded={branded} money={money} compact={compact} />}

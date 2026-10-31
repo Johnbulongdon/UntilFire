@@ -45,7 +45,7 @@ export default function City() {
   return (
     <QuestionScreen
       step={2}
-      steps={9}
+      steps={10}
       title="Where do you live?"
       noScroll
       cta="Continue"
