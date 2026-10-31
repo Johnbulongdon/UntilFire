@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — phone entry QOL
+
+- Protect unfinished transaction/bill edits with Keep editing / Discard; keep the form on failed saves and exit once after success.
+- Add Next field and Done above the pinned Save action, with Android/iOS keyboard avoidance.
+- Remember Activity filters/search/position within the current account, respecting explicit category/month links and ignoring hidden-list scroll resets.
+
+
 ## 2026-10-31 — Coloured transaction amounts
 
 - Transactions list: income amounts are green with +, spending is soft red with −, and transfers are blue with ⇄ instead of a minus (a transfer only moves money between your own accounts).
