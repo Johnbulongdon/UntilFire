@@ -22,6 +22,8 @@ Black sunrise and winding path, paired with the outlined Inter UntilFire wordmar
 
 Pastels group content. They do not replace positive, warning or negative financial meanings. Use black text on pastel cards in either theme. Dark mode uses charcoal surfaces, readable light ink and the same accents. Legacy `green` and `teal` token names remain compatibility aliases; they no longer mandate those hues.
 
+Transaction amounts (31 October 2026): income uses `--uf-pos-ink` with +, spending uses `--uf-neg-ink` with −, and transfers use `--uf-move-ink` (blue, #2F5DA8 light / #9FC3F2 dark) with ⇄, because a transfer moves money between the user's own accounts and is neither in nor out. Each pairs colour with a sign so meaning never depends on colour alone; all pass 6:1 on cards in both themes.
+
 ## Category fills — lighter palette B
 
 Approved 29 October: blue `#B9D9F7`, peach `#FFD4B8`, mint `#BCE9DA`, yellow `#FFE58A`, pink `#F4CEE3`, lime `#CDE6AE`, lilac `#D9CEF3`, rose `#F7C6CB`, neutral `#DED8CD`. Shared source: `lib/categories.ts`, used by web and phone. Use readable theme ink for labels; category fills are not text colors. Keep semantic loss/shortfall ink and patterns. Legacy saved hues map to their matching pastel family at display time without changing stored financial data.

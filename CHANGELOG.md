@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-31 — Coloured transaction amounts
+
+- Website Transactions list: income amounts are green with +, spending is soft red with −, and transfers are blue with ⇄ instead of a minus (a transfer only moves money between your own accounts).
+- Income green was hard to read in dark mode; all three colours now read clearly in light and dark.
+
 ## 2026-10-31 — Simpler bank-file import
 
 - The website's "Import bank transactions" window is now a few short screens instead of one long form: pick a file, see "84 found" with three real sample rows, then one button to add them. The six column boxes, the "flip signs" checkbox, the raw table and the month-totals boxes are gone from the main screen.
