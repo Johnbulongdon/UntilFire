@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-31 — Until payday stops counting paid bills
+
+- Home's Until payday (and Budget, Free to spend) no longer counts an overdue bill as owed when a payment with the bill's name and amount (within 15%) landed from a week before its due date to today. Google One paid on 25 Oct and 中国移动 paid on 31 Oct were still being taken off. The phone already did this (mobile lib/bills `unpaid`); the website now uses the same rule (`paidByName` in lib/spend-forecast).
+
 ## 2026-10-31 — Check categories, one card per shop
 
 - The Transactions "Review suggestions" popup is now "Check categories" in the Next Horizon style. One rounded card per shop instead of one row per payment: 17 McDonald's payments are one card with "Approve 17". Each card has the category icon, "N payments · total", a tap-to-change category chip, a Need | Want switch, Skip and a black Approve pill.

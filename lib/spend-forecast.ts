@@ -317,6 +317,27 @@ export function unlinkedBillPayments(txs: BillTx[], listed: Bill[], declined: (t
   }
   return out;
 }
+/**
+ * Payments that already paid an overdue bill under its own name, the phone's
+ * rule (mobile lib/bills `unpaid`): an expense named like the bill, within 15%
+ * of it, from a week before the due date to today. Category is not checked:
+ * "Google One" lands in Entertainment, the bill in Subscriptions. Without a
+ * confirmed bank name nothing moved the bill on, so Home counted October's
+ * Google One and 中国移动 as still owed after they were paid. One payment per
+ * bill, and only for a due date that has passed, so past months already
+ * behind the stored due date never roll it forward again.
+ */
+export function paidByName(txs: BillTx[], listed: Bill[], todayIso: string): Map<string, Bill> {
+  const out = new Map<string, Bill>();
+  for (const b of listed) {
+    if (!b.id || b.due > todayIso || b.usd <= 0) continue;
+    const from = shiftDay(b.due, -7);
+    const t = txs.find((t) => !out.has(t.id) && t.date >= from && t.date <= todayIso
+      && namesMatch(b, t.description) && Math.abs(t.usd - b.usd) <= 0.15 * b.usd);
+    if (t) out.set(t.id, b);
+  }
+  return out;
+}
 const shiftDay = (iso: string, n: number) => {
   const [y, m, d] = iso.split("-").map(Number);
   return isoDay(new Date(y, m - 1, d + n));
