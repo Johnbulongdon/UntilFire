@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-10-31 — Transactions audit fixes
+
+- A card bill payment or a likely copy no longer adds to Transactions totals while its question waits; it shows faded with "Not counted yet" (D-130). Card copies of Alipay/WeChat buys are now caught before the card's rate is learned (10% band).
+- Refunds saved as income ("退款 京东") are tagged "↩ Refund" and left out of Income and Saved.
+- Yuan paid through a dollar card counts at the rate the card charged once five card copies show it, not the market rate (about 7% apart for John).
+- Currencies the live rate feed lacks (dong, Taiwan dollar, dirham, riyal, naira, Pakistani rupee) were counted 1-to-1 as dollars; the feed now adds to the backup rates instead of replacing them (dashboard, Transactions, Reports, Categories). Transactions uses the dashboard's one rate list.
+- "Today", "Yesterday" and a new transaction's date use your own day, not UTC (in China they were a day behind until 8 am).
+- Dark mode: the Transactions title and the add/edit form's selected states are readable. Phones: Income and Transfers filters wrap instead of being cut off.
+- The chart opens the page; the review bar, bank and savings cards follow it. One Import button (in the Add bar). Rows drop the file name (it shows on hover) and the bin shows on hover; on touch screens swipe or "Delete transaction" in the edit form deletes. Day lines show spending only. Transfers show ⇄ and "Transfer"; source pills read "HSBC HK", not a file name; the list card uses the 24px card corner.
+
 ## 2026-10-31 — Until payday stops counting paid bills
 
 - Possible duplicates at the same shop (two 美团 ¥22.90 on one day) now show both payments as a Delete / Keep pair with their times and files, like card copies, instead of one lone row.

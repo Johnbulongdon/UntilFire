@@ -104,7 +104,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
   useEffect(() => {
     fetch("https://api.frankfurter.app/latest?from=USD")
       .then(r => r.json())
-      .then(d => { if (d.rates) setRates(d.rates); else setRatesFallback(true); })
+      .then(d => { if (d.rates) setRates({ ...FALLBACK_RATES, ...d.rates }); else setRatesFallback(true); })
       .catch(() => setRatesFallback(true));
 
     supabase.auth.getSession().then(({ data: { session } }) => {

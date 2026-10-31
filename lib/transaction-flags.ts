@@ -85,6 +85,28 @@ function densest(values: number[]): number {
   return best.reduce((s, x) => s + x, 0) / best.length;
 }
 
+const learnedRates = (ratios: Map<string, number[]>) =>
+  new Map([...ratios].filter(([, r]) => r.length >= 5).map(([k, r]) => [k, densest(r)]));
+
+/**
+ * The rate the person's card actually charged, per currency, learned from
+ * card copies of wallet buys (5+ pairs): "CNY" → 6.6 yuan a dollar when the
+ * feed says 7.1. Totals then count yuan at what really left the card (Oct
+ * 2026 audit). Only for a card in US dollars; empty when nothing is learned.
+ */
+export function cardRates<T extends TwinTx & { id: string }>(rows: T[], toUSD: (amount: number, currency: string) => number): Record<string, number> {
+  const ratios = new Map<string, number[]>();
+  for (const card of rows) {
+    if (card.currency !== "USD" || !isWalletCharge(card.description ?? "") || !(card.amount >= 1)) continue;
+    if (/\b[A-Z]{3}\s?[\d,]+\.\d{2}\b/.test(card.description ?? "")) continue;
+    for (const other of rows) {
+      if (walletTwinScore(card, other, toUSD, 0.2) === null) continue;
+      ratios.set(other.currency, [...(ratios.get(other.currency) ?? []), other.amount / card.amount]);
+    }
+  }
+  return Object.fromEntries(learnedRates(ratios));
+}
+
 export function walletTwins<T extends TwinTx & { id: string }>(cards: T[], all: T[], toUSD: (amount: number, currency: string) => number): Map<string, T> {
   const wide: { card: T; other: T; score: number }[] = [];
   for (const card of cards) {
@@ -101,12 +123,15 @@ export function walletTwins<T extends TwinTx & { id: string }>(cards: T[], all: 
     if (printed(card) || !(card.amount >= 1)) continue; // cents rounding skews tiny ones
     ratios.set(key(card, other), [...(ratios.get(key(card, other)) ?? []), other.amount / card.amount]);
   }
-  const rate = new Map([...ratios].filter(([, r]) => r.length >= 5).map(([k, r]) => [k, densest(r)]));
+  const rate = learnedRates(ratios);
   const pairs: { card: T; other: T; score: number }[] = [];
   for (const p of wide) {
     const r = rate.get(key(p.card, p.other));
     if (printed(p.card) || r === undefined) {
-      const score = walletTwinScore(p.card, p.other, toUSD);
+      // No learned rate yet (under 5 pairs): the card's rate can sit about 7%
+      // from the market feed, so a 5% band missed most first copies. 10% is
+      // the band import already uses (Oct 2026 audit).
+      const score = walletTwinScore(p.card, p.other, toUSD, printed(p.card) ? 0.05 : 0.1);
       if (score !== null) pairs.push({ ...p, score });
       continue;
     }
@@ -191,3 +216,27 @@ export function findFlags(inView: FlagTx[], history: FlagTx[], toUSD: (amount: n
   }
   return out;
 }
+
+/**
+ * Rows left out of totals while their question waits (D-130): a card bill
+ * payment (the purchases on the card are the spending) and a likely copy
+ * (the other row already counts). Answering "No, it's spending" or "Keep
+ * both" stores an ok: tag, and the row counts again. "Large" and "bill"
+ * rows still count: they are real spending either way.
+ */
+export function pendingUncounted(flags: Map<string, FlagKind>): Set<string> {
+  const out = new Set<string>();
+  for (const [id, kind] of flags) if (kind === "card_payment" || kind === "duplicate") out.add(id);
+  return out;
+}
+
+// "退款 京东", "Amazon refund", "REVERSAL": money back, saved as income.
+const REFUND = /退款|退货|\brefund(ed)?\b|\breversal\b|\bchargeback\b/i;
+/**
+ * An income row that is money back on a purchase (Oct 2026 audit). It is not
+ * earnings, so it stays out of Income and the savings rate. Spending is not
+ * reduced either: the refund cannot be tied to its purchase here (the
+ * purchase's own refund field does that).
+ */
+export const looksLikeRefund = (t: { transaction_type: string; description?: string | null }) =>
+  t.transaction_type === "income" && REFUND.test(t.description ?? "");

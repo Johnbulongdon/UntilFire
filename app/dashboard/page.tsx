@@ -5706,7 +5706,7 @@ export default function Dashboard() {
   useEffect(() => {
     fetch("https://api.frankfurter.app/latest?from=USD")
       .then(r => r.json())
-      .then(d => { if (d.rates) setRates(d.rates); setRatesStatus(d.rates ? "live" : "failed"); })
+      .then(d => { if (d.rates) setRates({ ...FALLBACK_RATES, ...d.rates }); setRatesStatus(d.rates ? "live" : "failed"); })
       .catch(() => setRatesStatus("failed"));
 
     supabase.auth.getSession().then(({ data: { session } }) => {
