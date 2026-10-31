@@ -3,6 +3,8 @@
 ## 2026-10-31 — Duplicate buttons answer at once
 
 - Tapping "Delete card copy", "Keep both" or "Delete all card copies" fades the row straight away and the button reads "Deleting…", before the save finishes. The toast with Undo follows. A row that could not be deleted comes back after five seconds.
+- After a delete, the pair stays in place for six seconds as a green "✓ Deleted" line (struck-through card copy, "kept" wallet row), so it is clear it worked.
+- Card copies are now matched at the card's own exchange rate, learned from the pairs (median), not the market feed: John's card charged about 6.6 yuan a dollar while the feed said about 7.1, so the 5% band caught only about a third of them. Import widens its band to 10% for the same reason.
 
 ## 2026-10-31 — Card copies of Alipay and WeChat purchases
 

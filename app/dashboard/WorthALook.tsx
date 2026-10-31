@@ -55,10 +55,24 @@ export default function WorthALook({ flags, notes, rows, fmt, toUSD, displayCurr
     return () => clearTimeout(t);
   }, [leaving]);
   const leave = (ids: string[]) => setLeaving((prev) => new Set([...prev, ...ids]));
+  // Deleted pairs stay in place for a few seconds as a green "Deleted" line,
+  // so the person sees the delete worked instead of a row just vanishing.
+  const [gone, setGone] = useState<Map<string, { row: Row; twin: Row }>>(new Map());
+  useEffect(() => {
+    if (!gone.size) return;
+    const t = setTimeout(() => setGone(new Map()), 6000);
+    return () => clearTimeout(t);
+  }, [gone]);
+  const markGone = (ids: string[]) => setGone((prev) => {
+    const next = new Map(prev);
+    for (const id of ids) { const row = rows.find((r) => r.id === id), twin = twins?.get(id); if (row && twin) next.set(id, { row, twin }); }
+    return next;
+  });
   const counts = FLAG_ORDER.map((k) => ({ k, n: [...flags.values()].filter((v) => v === k).length })).filter((c) => c.n > 0);
-  if (!counts.length) return null;
-  const listed = open ? rows.filter((r) => flags.get(r.id) === open).sort((a, b) => b.date.localeCompare(a.date)) : [];
-  const copies = open === "duplicate" && twins ? listed.filter((r) => twins.has(r.id)) : [];
+  if (!counts.length && !gone.size) return null;
+  const doneRows = open === "duplicate" ? [...gone.values()].filter(({ row }) => !flags.has(row.id)).map(({ row }) => row) : [];
+  const listed = open ? [...rows.filter((r) => flags.get(r.id) === open), ...doneRows].sort((a, b) => b.date.localeCompare(a.date) || a.id.localeCompare(b.id)) : [];
+  const copies = open === "duplicate" && twins ? listed.filter((r) => twins.has(r.id) && flags.has(r.id)) : [];
   const btn = (primary: boolean): React.CSSProperties => ({
     border: primary ? "none" : "1px solid var(--uf-border-2)", borderRadius: 999, padding: "6px 12px", cursor: "pointer", font: "inherit", fontSize: 13, fontWeight: 700,
     background: primary ? "var(--uf-green)" : "var(--uf-card)", color: primary ? "var(--uf-card)" : "var(--uf-ink-2)", whiteSpace: "nowrap",
@@ -83,12 +97,21 @@ export default function WorthALook({ flags, notes, rows, fmt, toUSD, displayCurr
             </span>
             {copies.length > 1 && onDeleteCopies && (
               <button type="button" style={{ ...btn(true), background: "var(--uf-ink)" }} disabled={leaving.size > 0}
-                onClick={() => { const ids = copies.map((r) => r.id); leave(ids); onDeleteCopies(ids); }}>
+                onClick={() => { const ids = copies.map((r) => r.id); leave(ids); markGone(ids); onDeleteCopies(ids); }}>
                 {copies.every((r) => leaving.has(r.id)) ? `Deleting ${copies.length}…` : `Delete all ${copies.length} card copies`}
               </button>
             )}
           </div>
-          {listed.map((r, i) => twins?.has(r.id) && open === "duplicate" ? (
+          {listed.map((r, i) => open === "duplicate" && !flags.has(r.id) && gone.has(r.id) ? (
+            <div key={r.id} role="status" style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderTop: i ? "1px solid var(--uf-border)" : "none", background: "var(--uf-mint)" }}>
+              <span aria-hidden style={{ color: "var(--uf-pos-ink)", fontWeight: 800 }}>✓</span>
+              <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <b style={{ color: "var(--uf-pos-ink)" }}>Deleted</b>{" "}
+                <span style={{ textDecoration: "line-through", color: "var(--uf-ink-3)" }}>{r.description} {formatMoney(r.amount, { currency: r.currency, decimals: 2 })}</span>
+                <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}> · kept {gone.get(r.id)!.twin.description}</span>
+              </span>
+            </div>
+          ) : twins?.has(r.id) && open === "duplicate" ? (
             <div key={r.id} aria-busy={leaving.has(r.id)} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 16px", borderTop: i ? "1px solid var(--uf-border)" : "none",
               opacity: leaving.has(r.id) ? 0.35 : 1, transform: leaving.has(r.id) ? "translateX(12px)" : "none", transition: "opacity var(--uf-dur-2, 220ms), transform var(--uf-dur-2, 220ms)" }}>
               <div style={{ flex: 1, minWidth: 220, display: "grid", gap: 6 }}>
@@ -97,7 +120,7 @@ export default function WorthALook({ flags, notes, rows, fmt, toUSD, displayCurr
               </div>
               <span style={{ display: "flex", gap: 6 }}>
                 <button type="button" style={{ ...btn(true), background: "var(--uf-ink)" }} disabled={leaving.has(r.id)}
-                  onClick={() => { leave([r.id]); onYes(r, "duplicate"); }}>{leaving.has(r.id) ? "Deleting…" : "Delete card copy"}</button>
+                  onClick={() => { leave([r.id]); markGone([r.id]); onYes(r, "duplicate"); }}>{leaving.has(r.id) ? "Deleting…" : "Delete card copy"}</button>
                 <button type="button" style={btn(false)} disabled={leaving.has(r.id)} onClick={() => { leave([r.id]); onNo(r, "duplicate"); }}>Keep both</button>
               </span>
             </div>

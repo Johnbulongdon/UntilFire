@@ -386,7 +386,8 @@ async function findDuplicates(parsed: ParsedImportTransaction[], rates: Record<s
       if (claimed.has(raw.id)) return false;
       const e = { ...raw, amount: Number(raw.amount) };
       // A card line for an Alipay/WeChat purchase against the wallet's own row, either way round.
-      if (walletTwinScore(row, e, usd) !== null || walletTwinScore(e, row, usd) !== null) return true;
+      // 10%: a card's rate can sit 7% from the market feed (6.6 vs 7.1 yuan, Oct 2026).
+      if (walletTwinScore(row, e, usd, 0.1) !== null || walletTwinScore(e, row, usd, 0.1) !== null) return true;
       if (!isWithinDateTolerance(e.date, row.date)) return false;
       if (e.currency === row.currency && amountsClose(e.amount, row.amount)) return true;
       if (rowForeign && e.currency === rowForeign.currency && amountsClose(e.amount, rowForeign.amount)) return true;
