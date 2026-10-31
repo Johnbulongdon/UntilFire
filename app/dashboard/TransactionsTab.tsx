@@ -12,7 +12,7 @@ import type { ScheduledCalendarItem } from "@/lib/marked-calendar";
 import SpendCard, { type CatDisplay } from "./SpendCard";
 import ReviewPill from "./ReviewPill";
 import WorthALook from "./WorthALook";
-import { findFlags, type FlagKind, isSystemTag, okTag, walletTwins } from "@/lib/transaction-flags";
+import { findFlags, type FlagKind, cardRates, isSystemTag, looksLikeRefund, okTag, pendingUncounted, walletTwins } from "@/lib/transaction-flags";
 import { rangeFor, type RangePreset } from "@/lib/spend-range";
 import { type Bill, guessBillCategory, mergeBills, presumePaid, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
 import type { FreeToSpend } from "@/lib/free-to-spend";
@@ -57,11 +57,16 @@ const toUSD = (amount: number, currency: string, rates: Record<string, number>):
 const netAmt = (t: { amount: number; refund_amount: number }) =>
   Math.max(0, t.amount - (t.refund_amount || 0));
 
+// The person's own calendar day, not UTC's: in China, toISOString() still
+// says yesterday until 8 am, so "Today" and a new row's date were a day off.
+const localYmd = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
 function dayLabel(ymd: string, todayYmd: string): string {
   if (ymd === todayYmd) return "Today";
-  const y = new Date(todayYmd);
+  const y = new Date(todayYmd + "T00:00:00");
   y.setDate(y.getDate() - 1);
-  const yesterdayYmd = y.toISOString().split("T")[0];
+  const yesterdayYmd = localYmd(y);
   if (ymd === yesterdayYmd) return "Yesterday";
   const d = new Date(ymd + "T00:00:00");
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -96,7 +101,8 @@ function sourceLabel(t: { source?: string | null; source_file?: string | null })
   if (/微信|wechat|weixin/i.test(f)) return "WeChat Pay";
   if (/ether\.?fi/i.test(f)) return "ether.fi";
   // Otherwise the file's name without dates, numbers or extension.
-  const name = f.replace(/\.[a-z0-9]+$/i, "").replace(/[_\-\s(（]*\d[\d\-_)）]*.*$/, "").trim();
+  const name = f.replace(/\.[a-z0-9]+$/i, "").replace(/[_\-\s(（]*\d[\d\-_)）]*.*$/, "")
+    .replace(/[_]+/g, " ").replace(/\b(statement|transactions?|export|history|csv)\b/gi, "").replace(/\s+/g, " ").trim();
   return name || "Imported file";
 }
 
@@ -131,7 +137,7 @@ const EMPTY_DRAFT = (): DraftTransaction => ({
   currency: "USD",
   description: "",
   notes: "",
-  date: new Date().toISOString().split("T")[0],
+  date: localYmd(),
   time: "",
   category: "",
   sub_category: "",
@@ -196,7 +202,7 @@ function ProjectInput({
           <button
             type="button"
             onClick={commit}
-            style={{ background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 8, padding: "0 14px", fontSize: 12, fontWeight: 700, color: "#151719", cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit" }}
+            style={{ background: "var(--uf-mint)", border: "1px solid var(--uf-border)", borderRadius: 8, padding: "0 14px", fontSize: 12, fontWeight: 700, color: "var(--uf-ink)", cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit" }}
           >
             + Add
           </button>
@@ -241,6 +247,7 @@ function QuickAddForm({
   onSave,
   editing,
   onCancelEdit,
+  onDelete,
   existingTags,
   allExpenseCats,
   allSubCats,
@@ -258,6 +265,8 @@ function QuickAddForm({
   onSave: (keepOpen: boolean) => void;
   editing: boolean;
   onCancelEdit: () => void;
+  /** Delete the row being edited: the row's own bin is hidden on touch screens. */
+  onDelete?: () => void;
   existingTags: string[];
   allExpenseCats: { key: string; label: string; code: string; color: string; emoji?: string }[];
   allSubCats: Record<string, string[]>;
@@ -363,8 +372,8 @@ function QuickAddForm({
               key={t}
               onClick={() => setDraft((d) => ({ ...d, transaction_type: t, category: t === "income" ? "salary" : "", sub_category: "", aiSuggestion: null }))}
               style={{
-                background: draft.transaction_type === t ? (t === "income" ? "#ECFDF5" : t === "transfer" ? "#F3F4F6" : "var(--uf-card)") : "transparent",
-                color: draft.transaction_type === t ? (t === "income" ? "#151719" : t === "transfer" ? "#6B7280" : "var(--uf-text)") : "var(--uf-text-2)",
+                background: draft.transaction_type === t ? (t === "income" ? "var(--uf-mint)" : t === "transfer" ? "#F3F4F6" : "var(--uf-card)") : "transparent",
+                color: draft.transaction_type === t ? (t === "income" ? "var(--uf-ink)" : t === "transfer" ? "#6B7280" : "var(--uf-text)") : "var(--uf-text-2)",
                 border: "none", borderRadius: 999, padding: "5px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer",
                 boxShadow: draft.transaction_type === t && t === "expense" ? "0 1px 2px rgba(0,0,0,0.06)" : "none",
               }}
@@ -419,7 +428,7 @@ function QuickAddForm({
               background: (showDescription || !!draft.description) ? "#EEE9FA" : "var(--uf-surface-2)",
               border: `1px solid ${(showDescription || !!draft.description) ? "#D9CEF3" : "var(--uf-border)"}`,
               borderRadius: 999, padding: "5px 10px",
-              fontSize: 11, fontWeight: 700, color: (showDescription || !!draft.description) ? "#151719" : "var(--uf-text-2)",
+              fontSize: 11, fontWeight: 700, color: (showDescription || !!draft.description) ? "var(--uf-ink)" : "var(--uf-text-2)",
               cursor: "pointer", fontFamily: "inherit",
             }}
           >
@@ -433,7 +442,7 @@ function QuickAddForm({
               background: (showNotes || !!draft.notes) ? "#EEE9FA" : "var(--uf-surface-2)",
               border: `1px solid ${(showNotes || !!draft.notes) ? "#D9CEF3" : "var(--uf-border)"}`,
               borderRadius: 999, padding: "5px 10px",
-              fontSize: 11, fontWeight: 700, color: (showNotes || !!draft.notes) ? "#151719" : "var(--uf-text-2)",
+              fontSize: 11, fontWeight: 700, color: (showNotes || !!draft.notes) ? "var(--uf-ink)" : "var(--uf-text-2)",
               cursor: "pointer", fontFamily: "inherit",
             }}
           >
@@ -488,7 +497,7 @@ function QuickAddForm({
             style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               background: "linear-gradient(95deg, rgba(32,212,191,0.12), rgba(98,250,227,0.12))",
-              border: "1px solid #6EE7B7", color: "#151719",
+              border: "1px solid var(--uf-border)", color: "var(--uf-ink)",
               borderRadius: 999, padding: "6px 12px 6px 10px",
               fontSize: 12, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start",
             }}
@@ -505,7 +514,7 @@ function QuickAddForm({
             <input
               type="date"
               value={draft.date}
-              max={new Date().toISOString().split("T")[0]}
+              max={localYmd()}
               onChange={(e) => setField("date", e.target.value)}
               style={{ border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 10px", fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
             />
@@ -535,8 +544,8 @@ function QuickAddForm({
                     type="button"
                     onClick={() => { setField("category", c.key); setField("sub_category", ""); setShowSubForm(false); }}
                     style={{
-                      background: isSelected ? "#ECFDF5" : "transparent",
-                      border: `1px solid ${isSelected ? "#151719" : "var(--uf-border)"}`,
+                      background: isSelected ? "var(--uf-mint)" : "transparent",
+                      border: `1px solid ${isSelected ? "var(--uf-ink)" : "var(--uf-border)"}`,
                       borderRadius: 8, padding: "8px 4px 6px",
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                       cursor: "pointer", transition: "all 0.12s",
@@ -547,7 +556,7 @@ function QuickAddForm({
                       <span style={{ position: "absolute", top: 4, right: 4, width: 6, height: 6, borderRadius: "50%", background: "#FFD4B8", flexShrink: 0 }} title="Custom category" />
                     )}
                     <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.emoji}</div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#151719" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2 }}>{c.label}</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "var(--uf-ink)" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2 }}>{c.label}</span>
                   </button>
                 );
               })}
@@ -596,7 +605,7 @@ function QuickAddForm({
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 4 }}>
                   {emojiPalette.map((em) => (
                     <button key={em} type="button" onClick={() => setNewCatEmoji(newCatEmoji === em ? "" : em)}
-                      style={{ width: 28, height: 28, background: newCatEmoji === em ? "#DCFCE7" : "transparent", border: `1.5px solid ${newCatEmoji === em ? "#151719" : "var(--uf-border)"}`, borderRadius: 5, cursor: "pointer", fontSize: 15, lineHeight: 1 }}>
+                      style={{ width: 28, height: 28, background: newCatEmoji === em ? "var(--uf-mint)" : "transparent", border: `1.5px solid ${newCatEmoji === em ? "var(--uf-ink)" : "var(--uf-border)"}`, borderRadius: 5, cursor: "pointer", fontSize: 15, lineHeight: 1 }}>
                       {em}
                     </button>
                   ))}
@@ -613,7 +622,7 @@ function QuickAddForm({
                       setField("category", key); setField("sub_category", "");
                       setShowCatForm(false); setNewCatLabel(""); setNewCatColor(colorPalette[0]); setNewCatEmoji("");
                     }}
-                    style={{ flex: 1, background: "#151719", color: "#fff", border: "none", borderRadius: 6, padding: "7px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                    style={{ flex: 1, background: "var(--uf-ink)", color: "var(--uf-card)", border: "none", borderRadius: 6, padding: "7px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                   >
                     Add
                   </button>
@@ -643,11 +652,11 @@ function QuickAddForm({
                   <button key={sc} type="button"
                     onClick={() => setField("sub_category", isSelected ? "" : sc)}
                     style={{
-                      background: isSelected ? "#ECFDF5" : "var(--uf-surface-2)",
-                      border: `1px solid ${isSelected ? "#151719" : "transparent"}`,
+                      background: isSelected ? "var(--uf-mint)" : "var(--uf-surface-2)",
+                      border: `1px solid ${isSelected ? "var(--uf-ink)" : "transparent"}`,
                       borderRadius: 999, padding: "5px 12px",
                       fontSize: 12, fontWeight: 600,
-                      color: isSelected ? "#151719" : "var(--uf-text-2)",
+                      color: isSelected ? "var(--uf-ink)" : "var(--uf-text-2)",
                       cursor: "pointer", fontFamily: "inherit",
                     }}>
                     {sc}
@@ -741,7 +750,7 @@ function QuickAddForm({
                 border: `1px solid ${(showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#D9CEF3" : "var(--uf-border)"}`,
                 borderRadius: 999, padding: "5px 10px",
                 fontSize: 11, fontWeight: 700,
-                color: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#151719" : "var(--uf-text-2)",
+                color: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "var(--uf-ink)" : "var(--uf-text-2)",
                 cursor: "pointer", fontFamily: "inherit",
               }}
             >
@@ -800,7 +809,7 @@ function QuickAddForm({
             {draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").map((tag) => (
-                  <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#ECFDF5", border: "1px solid #6EE7B7", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "#151719" }}>
+                  <span key={tag} style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "var(--uf-mint)", border: "1px solid var(--uf-border)", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 600, color: "var(--uf-ink)" }}>
                     #{tag}
                     <button
                       type="button"
@@ -832,15 +841,15 @@ function QuickAddForm({
                     type="button"
                     onClick={() => setField("category", c.key)}
                     style={{
-                      background: isSelected ? "#ECFDF5" : "transparent",
-                      border: `1px solid ${isSelected ? "#151719" : "var(--uf-border)"}`,
+                      background: isSelected ? "var(--uf-mint)" : "transparent",
+                      border: `1px solid ${isSelected ? "var(--uf-ink)" : "var(--uf-border)"}`,
                       borderRadius: 8, padding: "8px 4px 6px",
                       display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
                       cursor: "pointer",
                     }}
                   >
                     <div style={{ background: c.color, borderRadius: "50%", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.emoji}</div>
-                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "#151719" : "var(--uf-text-2)", textAlign: "center" }}>{c.label}</span>
+                    <span style={{ fontSize: 10, fontWeight: 600, color: isSelected ? "var(--uf-ink)" : "var(--uf-text-2)", textAlign: "center" }}>{c.label}</span>
                   </button>
                 );
               })}
@@ -860,12 +869,12 @@ function QuickAddForm({
                 onClick={() => setSaveAndAddAnother((v) => !v)}
                 style={{
                   display: "inline-block", width: 32, height: 18,
-                  background: saveAndAddAnother ? "#151719" : "#CBD5E1",
+                  background: saveAndAddAnother ? "var(--uf-ink)" : "#CBD5E1",
                   borderRadius: 999, position: "relative", cursor: "pointer", transition: "background 0.12s", flexShrink: 0,
                 }}
               >
                 <span style={{
-                  position: "absolute", width: 14, height: 14, background: "#fff", borderRadius: "50%",
+                  position: "absolute", width: 14, height: 14, background: "var(--uf-card)", borderRadius: "50%",
                   top: 2, left: saveAndAddAnother ? 16 : 2, transition: "left 0.14s",
                   boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
                 }} />
@@ -893,6 +902,12 @@ function QuickAddForm({
         >
           {saving ? "Saving…" : editing ? "Save changes" : "Save transaction"}
         </button>
+        {editing && onDelete && (
+          <button type="button" onClick={onDelete}
+            style={{ marginTop: 8, background: "transparent", color: "var(--uf-neg-ink)", border: "1px solid var(--uf-border)", borderRadius: 999, padding: "10px 16px", fontSize: 14, fontWeight: 700, width: "100%", cursor: "pointer", fontFamily: "inherit" }}>
+            Delete transaction
+          </button>
+        )}
       </div>
 
       {/* Always shown via drawer — tighten the drawer sheet for mobile safe areas */}
@@ -922,6 +937,7 @@ function TransactionList({
   catCustomizations,
   expenseCategories,
   categoryNeeds = {},
+  uncounted,
 }: {
   transactions: Transaction[];
   editingId: string | null;
@@ -935,11 +951,23 @@ function TransactionList({
   expenseCategories: CustomCategory[];
   /** The person's need/want per category, so every expense shows what it counts as (D-106). */
   categoryNeeds?: NeedOverrides;
+  /** Rows waiting on a "card payment?" or "duplicate?" answer: listed, not added up (D-130). */
+  uncounted?: Set<string>;
 }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "expense" | "income" | "transfer">("all");
-  const [tagFilter, setTagFilter] = useState<"all" | "need" | "want" | "work">("all");
+  const [tagFilter, setTagFilter] = useState<"all" | "need" | "want">("all");
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const clearFilters = () => { setFilter("all"); setTagFilter("all"); setSourceFilter("all"); };
+  const TYPE_WORD = { expense: "Expenses", income: "Income", transfer: "Transfers" } as const;
+  const TAG_WORD = { need: "Need", want: "Want" } as const;
+  const active: [string, () => void][] = [
+    ...(filter !== "all" ? [[TYPE_WORD[filter], () => setFilter("all")] as [string, () => void]] : []),
+    ...(tagFilter !== "all" ? [[TAG_WORD[tagFilter], () => setTagFilter("all")] as [string, () => void]] : []),
+    ...(sourceFilter !== "all" ? [[sourceFilter, () => setSourceFilter("all")] as [string, () => void]] : []),
+  ];
+  const activeCount = active.length;
   const sources = useMemo(() => {
     const n = new Map<string, number>();
     for (const t of transactions) n.set(sourceLabel(t), (n.get(sourceLabel(t)) ?? 0) + 1);
@@ -961,13 +989,12 @@ function TransactionList({
     window.addEventListener("scroll", onScroll, true);
     return () => { document.removeEventListener("mousedown", handler); window.removeEventListener("scroll", onScroll, true); };
   }, [catPickerTxId]);
-  const todayYmd = new Date().toISOString().split("T")[0];
+  const todayYmd = localYmd();
   const allCategories = useMemo(() => [...expenseCategories, ...INCOME_CATEGORIES], [expenseCategories]);
 
   const filtered = useMemo(() => {
     return transactions.filter((t) => {
       if (filter !== "all" && t.transaction_type !== filter) return false;
-      if (tagFilter === "work" && !(t.tags || []).includes("work")) return false;
       if (sourceFilter !== "all" && sourceLabel(t) !== sourceFilter) return false;
       // Need or want is what the row counts as, sorted for you or tagged (D-106).
       if ((tagFilter === "need" || tagFilter === "want") && (t.transaction_type !== "expense" || transactionNeed(t, categoryNeeds) !== tagFilter)) return false;
@@ -987,17 +1014,18 @@ function TransactionList({
   // What the rows on screen add up to, so a filter (a tag, a search, the
   // work chip) answers "how much was that" without leaving the list. The
   // range's own totals and the review count live in the summary above.
+  const counts = useCallback((t: Transaction) => t.transaction_type === "expense" && !uncounted?.has(t.id), [uncounted]);
   const shownSpent = useMemo(() => filtered
-    .filter((t) => t.transaction_type === "expense")
-    .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0), [filtered, rates]);
+    .filter(counts)
+    .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0), [filtered, rates, counts]);
   const monthSpent = useMemo(() => {
     const out: Record<string, number> = {};
-    for (const t of filtered) if (t.transaction_type === "expense") {
+    for (const t of filtered) if (counts(t)) {
       const m = t.date.slice(0, 7);
       out[m] = (out[m] ?? 0) + toUSD(netAmt(t), t.currency, rates);
     }
     return out;
-  }, [filtered, rates]);
+  }, [filtered, rates, counts]);
 
   const groups = useMemo(() => {
     const byDate: Record<string, Transaction[]> = {};
@@ -1009,93 +1037,80 @@ function TransactionList({
   }, [filtered]);
 
   return (
-    <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", height: "calc(100vh - 48px)" }}>
-      {/* List header */}
+    <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-card)", overflow: "hidden", boxShadow: "var(--uf-e1)", display: "flex", flexDirection: "column", height: "calc(100vh - 48px)" }}>
+      {/* List header: title, search and one Filter button. The filters live in
+          a panel, so the list is not buried under rows of pills (John, 31 Oct 2026). */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid var(--uf-border)", gap: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#151719", letterSpacing: "-0.2px" }}>Transactions</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-ink)", letterSpacing: "-0.2px" }}>Transactions</span>
           <span style={{ fontSize: 12, color: "var(--uf-text-3)", fontWeight: 600, marginLeft: 8 }}>{filtered.length}</span>
           {shownSpent > 0 && (
             <span style={{ fontSize: 12, color: "var(--uf-text-2)", fontWeight: 600, marginLeft: 12, fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" }}>
-              −{formatAmount(shownSpent)}
+              <span style={{ fontFamily: "var(--uf-font-sans, inherit)", fontWeight: 500, color: "var(--uf-text-3)", marginRight: 4 }}>Expenses</span>{formatAmount(shownSpent)}
             </span>
           )}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {/* Search */}
-          <div style={{ position: "relative" }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 240px", justifyContent: "flex-end", maxWidth: 420 }}>
+          <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--uf-ink-3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
               <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
             </svg>
-            <input
-              type="text"
-              placeholder="Search…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ background: "var(--uf-surface-2)", border: "1px solid transparent", borderRadius: 999, padding: "6px 12px 6px 30px", fontSize: 13, color: "var(--uf-text)", width: 180, outline: "none", fontFamily: "inherit" }}
-            />
+            <input type="text" placeholder="Search…" aria-label="Search transactions" value={search} onChange={(e) => setSearch(e.target.value)}
+              style={{ background: "var(--uf-surface-2)", border: "1px solid transparent", borderRadius: 999, padding: "8px 12px 8px 32px", fontSize: 13, color: "var(--uf-text)", width: "100%", outline: "none", fontFamily: "inherit" }} />
           </div>
-          {/* Filter pills */}
-          {(["all", "expense", "income", "transfer"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              style={{
-                background: filter === f ? "#ECFDF5" : "var(--uf-surface-2)",
-                border: `1px solid ${filter === f ? "#E3F7EF" : "transparent"}`,
-                borderRadius: 999, padding: "6px 14px",
-                fontSize: 12, fontWeight: 600,
-                color: filter === f ? "#151719" : "var(--uf-text-2)",
-                cursor: "pointer", fontFamily: "inherit",
-              }}
-            >
-              {f === "all" ? "All" : f === "expense" ? "Expenses" : f === "income" ? "Income" : "Transfers"}
-            </button>
-          ))}
+          <button type="button" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((v) => !v)}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0, borderRadius: 999, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+              border: "1px solid var(--uf-border)", background: filtersOpen ? "var(--uf-ink)" : "var(--uf-card)", color: filtersOpen ? "var(--uf-card)" : "var(--uf-ink)" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden><path d="M4 6h16M7 12h10M10 18h4" /></svg>
+            Filter
+            {activeCount > 0 && (
+              <span style={{ minWidth: 18, height: 18, borderRadius: 999, background: "var(--uf-yellow)", color: "var(--uf-on-accent)", fontSize: 11, display: "inline-grid", placeItems: "center", padding: "0 5px" }}>{activeCount}</span>
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Tag filter row */}
-      <div style={{ display: "flex", gap: 6, padding: "8px 18px", borderBottom: "1px solid var(--uf-border)", flexWrap: "wrap" }}>
-        {(["all", "need", "want", "work"] as const).map((tag) => (
-          <button
-            key={tag}
-            onClick={() => setTagFilter(tag)}
-            style={{
-              background: tagFilter === tag
-                ? tag === "need" ? "#BCE9DA" : tag === "want" ? "#FFD4B8" : tag === "work" ? "#D9CEF3" : "#FFE58A"
-                : "var(--uf-surface-2)",
-              border: `1px solid ${tagFilter === tag
-                ? tag === "need" ? "#BCE9DA" : tag === "want" ? "#FFD4B8" : tag === "work" ? "#D9CEF3" : "#E3F7EF"
-                : "transparent"}`,
-              borderRadius: 999, padding: "4px 12px",
-              fontSize: 11, fontWeight: 600,
-              color: tagFilter === tag
-                ? "#151719"
-                : "var(--uf-text-2)",
-              cursor: "pointer", fontFamily: "inherit",
-            }}
-          >
-            {tag === "all" ? "All tags" : tag === "need" ? "✓ Need" : tag === "want" ? "✦ Want" : "💼 Work"}
-          </button>
-        ))}
-        {/* Source: which wallet, bank or file the rows came from, as pills like the tags. */}
-        {sources.length > 1 && (
-          <div role="group" aria-label="Source" style={{ display: "flex", gap: 6, flexWrap: "wrap", width: "100%" }}>
-            {[["all", 0] as [string, number], ...sources].map(([label, n]) => (
-              <button key={label} type="button" aria-pressed={sourceFilter === label} onClick={() => setSourceFilter(label)}
-                style={{
-                  background: sourceFilter === label ? "#FFE58A" : "var(--uf-surface-2)",
-                  border: `1px solid ${sourceFilter === label ? "#FFE58A" : "transparent"}`,
-                  borderRadius: 999, padding: "4px 12px", fontSize: 11, fontWeight: 600,
-                  color: sourceFilter === label ? "#151719" : "var(--uf-text-2)", cursor: "pointer", fontFamily: "inherit",
-                }}>
-                {label === "all" ? "All sources" : <>{label} <span style={{ opacity: 0.6, fontVariantNumeric: "tabular-nums" }}>{n}</span></>}
-              </button>
-            ))}
+      {/* The panel: one short group per question, each a single row. */}
+      {filtersOpen && (
+        <div style={{ display: "grid", gap: 14, padding: "14px 18px 16px", borderBottom: "1px solid var(--uf-border)", background: "var(--uf-surface)" }}>
+          {([
+            ["Show", [["all", "All"], ["expense", "Expenses"], ["income", "Income"], ["transfer", "Transfers"]], filter, (v: string) => setFilter(v as typeof filter)],
+            ["Tag", [["all", "Any"], ["need", "✓ Need"], ["want", "✦ Want"]], tagFilter, (v: string) => setTagFilter(v as typeof tagFilter)],
+            ...(sources.length > 1 ? [["From", [["all", "Anywhere"], ...sources.map(([l, n]) => [l, `${l} ${n}`])], sourceFilter, setSourceFilter]] : []),
+          ] as [string, [string, string][], string, (v: string) => void][]).map(([label, options, value, set]) => (
+            <div key={label} role="group" aria-label={label} style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+              <span className="uf-t-small" style={{ width: 44, flexShrink: 0, color: "var(--uf-ink-3)", fontWeight: 600 }}>{label}</span>
+              <div style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", minWidth: 0, paddingBottom: 2 }}>
+                {options.map(([v, text]) => (
+                  <button key={v} type="button" aria-pressed={value === v} onClick={() => set(v)}
+                    style={{ flexShrink: 0, whiteSpace: "nowrap", borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", border: "1px solid transparent",
+                      background: value === v ? "var(--uf-ink)" : "var(--uf-card)", color: value === v ? "var(--uf-card)" : "var(--uf-text-2)" }}>
+                    {text}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            {activeCount > 0 && (
+              <button type="button" onClick={clearFilters} style={{ border: "none", background: "transparent", color: "var(--uf-ink-2)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "6px 10px" }}>Clear</button>
+            )}
+            <button type="button" onClick={() => setFiltersOpen(false)} style={{ border: "none", borderRadius: 999, background: "var(--uf-ink)", color: "var(--uf-card)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: "6px 16px" }}>Done</button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* What is on, as one row of chips; ✕ takes one off. Hidden when nothing is picked. */}
+      {!filtersOpen && activeCount > 0 && (
+        <div style={{ display: "flex", gap: 6, padding: "8px 18px", borderBottom: "1px solid var(--uf-border)", overflowX: "auto", scrollbarWidth: "none" }}>
+          {active.map(([text, off]) => (
+            <button key={text} type="button" onClick={off} aria-label={`Remove filter ${text}`}
+              style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", border: "none", background: "var(--uf-yellow)", color: "var(--uf-on-accent)" }}>
+              {text} <span aria-hidden>✕</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Scrollable list */}
       <div style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
@@ -1106,11 +1121,11 @@ function TransactionList({
                 <path d="M5 17 9 13l3 3 7-7" /><path d="M14 6h5v5" />
               </svg>
             </div>
-            {search || tagFilter !== "all" || sourceFilter !== "all" ? (
+            {search || filter !== "all" || tagFilter !== "all" || sourceFilter !== "all" ? (
               <>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "var(--uf-text)" }}>No matches</div>
-                <div style={{ fontSize: 13, color: "var(--uf-text-2)", maxWidth: 260 }}>Try clearing the search or tag filter.</div>
-                <button onClick={() => { setSearch(""); setTagFilter("all"); setSourceFilter("all"); }} style={{ background: "#151719", color: "#fff", border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Clear filters</button>
+                <div style={{ fontSize: 13, color: "var(--uf-text-2)", maxWidth: 260 }}>Nothing matches these filters.</div>
+                <button onClick={() => { setSearch(""); clearFilters(); }} style={{ background: "var(--uf-ink)", color: "var(--uf-card)", border: "none", borderRadius: 999, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Clear filters</button>
               </>
             ) : (
               <>
@@ -1123,7 +1138,8 @@ function TransactionList({
           groups.map(([date, txns], gi) => {
             const month = date.slice(0, 7);
             const newMonth = Object.keys(monthSpent).length > 1 && (gi === 0 || groups[gi - 1][0].slice(0, 7) !== month);
-            const dayNet = txns.reduce((s, t) => { const usd = toUSD(t.transaction_type === "expense" ? netAmt(t) : t.amount, t.currency, rates); return s + (t.transaction_type === "income" ? usd : t.transaction_type === "expense" ? -usd : 0); }, 0);
+            // Spending only, like the month line: a payday netted against coffee read oddly ("+$3,163").
+            const daySpent = txns.filter(counts).reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
             return (
               <div key={date}>
                 {newMonth && (
@@ -1139,9 +1155,9 @@ function TransactionList({
                 )}
                 <div style={{ padding: "14px 20px 6px", display: "flex", alignItems: "baseline", justifyContent: "space-between", fontSize: 10, fontWeight: 700, letterSpacing: "1.1px", textTransform: "uppercase", color: "var(--uf-text-3)" }}>
                   <span>{dayLabel(date, todayYmd)}</span>
-                  <span style={{ color: "var(--uf-text-2)", fontVariantNumeric: "tabular-nums" }}>
-                    {dayNet > 0 ? "+" : dayNet < 0 ? "−" : ""}{formatAmount(Math.abs(dayNet))}
-                  </span>
+                  {daySpent > 0 && (
+                    <span style={{ color: "var(--uf-text-2)", fontVariantNumeric: "tabular-nums" }}>−{formatAmount(daySpent)}</span>
+                  )}
                 </div>
                 {txns
                   .slice()
@@ -1152,10 +1168,11 @@ function TransactionList({
                     const isEditing = editingId === tx.id;
                     const wasJustAdded = justAddedId === tx.id;
                     const baseDisplay = { color: cat?.color || "#6b7280", emoji: (cat as {emoji?: string})?.emoji || "📦" };
-                    const { color: chipColor, emoji: chipEmoji } = resolveDisplay(baseDisplay, catCustomizations, tx.category);
+                    const isTransfer = tx.transaction_type === "transfer";
+                    // A transfer has no category: it shows as moving money, in the transfer blue.
+                    const { color: chipColor, emoji: chipEmoji } = isTransfer ? { color: "var(--uf-blue)", emoji: "⇄" } : resolveDisplay(baseDisplay, catCustomizations, tx.category);
                     const txTags = tx.tags || [];
                     const needOrWant = transactionNeed(tx, categoryNeeds);
-                    const isWorkCost = txTags.includes("work");
                     const displayTags = txTags.filter((t) => t !== "need" && t !== "want" && t !== "work" && !isSystemTag(t)).slice(0, 2);
                     // Null for most rows — only Plaid, an import that carried
                     // one, or a hand-typed time produces a time to show.
@@ -1175,6 +1192,8 @@ function TransactionList({
                           </div>
                         )}
                       <div
+                        className="tx-row"
+                        title={tx.source_file ? `Imported from ${tx.source_file}` : undefined}
                         onClick={() => { if (swipedId === tx.id) { setSwipedId(null); return; } onEdit(tx); }}
                         style={{
                           display: "grid", gridTemplateColumns: "36px 1fr auto 28px",
@@ -1231,11 +1250,11 @@ function TransactionList({
                                     key={c.key}
                                     data-cat-picker
                                     onClick={(e) => { e.stopPropagation(); onCategoryChange(tx, c.key); setCatPickerTxId(null); }}
-                                    style={{ background: isCurrent ? "#ECFDF5" : "transparent", border: `1px solid ${isCurrent ? "#151719" : "var(--uf-border)"}`, borderRadius: 8, padding: "7px 3px 5px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer", transition: "all 0.1s" }}
+                                    style={{ background: isCurrent ? "var(--uf-mint)" : "transparent", border: `1px solid ${isCurrent ? "var(--uf-ink)" : "var(--uf-border)"}`, borderRadius: 8, padding: "7px 3px 5px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, cursor: "pointer", transition: "all 0.1s" }}
                                     title={c.label}
                                   >
                                     <div style={{ width: 26, height: 26, borderRadius: "50%", background: cColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>{cEmoji}</div>
-                                    <span style={{ fontSize: 9, fontWeight: 600, color: isCurrent ? "#151719" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{c.label}</span>
+                                    <span style={{ fontSize: 9, fontWeight: 600, color: isCurrent ? "var(--uf-ink)" : "var(--uf-text-2)", textAlign: "center", lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{c.label}</span>
                                   </button>
                                 );
                               })}
@@ -1251,7 +1270,7 @@ function TransactionList({
                             {txTime && (
                               <span style={{ fontSize: 11.5, color: "var(--uf-text-3)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{txTime} ·</span>
                             )}
-                            <span style={{ fontSize: 11.5, color: "var(--uf-text-3)" }}>{cat?.label || tx.category}</span>
+                            <span style={{ fontSize: 11.5, color: "var(--uf-text-3)" }}>{isTransfer ? "Transfer" : cat?.label || tx.category}</span>
                             {tx.sub_category && <span style={{ fontSize: 11, color: "var(--uf-text-2)" }}>· {tx.sub_category}</span>}
                             {tx.transaction_type === "expense" && needOrWant && (
                               <span
@@ -1265,29 +1284,9 @@ function TransactionList({
                                 {needOrWant === "need" ? "Need" : "Want"}
                               </span>
                             )}
-                            {tx.transaction_type === "expense" && isWorkCost && (
-                              <span
-                                style={{
-                                  background: "#EEE9FA",
-                                  color: "#151719",
-                                  border: "none", borderRadius: 999, padding: "1px 8px",
-                                  fontSize: 10, fontWeight: 700, flexShrink: 0,
-                                }}
-                              >
-                                💼 work
-                              </span>
-                            )}
                             {displayTags.map((t) => (
                               <span key={t} style={{ background: "var(--uf-surface-2)", color: "var(--uf-text-2)", borderRadius: 999, padding: "1px 8px", fontSize: 10.5, fontWeight: 600 }}>#{t}</span>
                             ))}
-                            {tx.source_file && (
-                              <span
-                                title={`Imported from ${tx.source_file}`}
-                                style={{ fontSize: 10.5, color: "var(--uf-text-3)", display: "inline-flex", alignItems: "center", gap: 3, maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flexShrink: 1 }}
-                              >
-                                📎 {tx.source_file}
-                              </span>
-                            )}
                           </div>
                         </div>
 
@@ -1305,18 +1304,24 @@ function TransactionList({
                               )}
                             </>
                           ) : (
-                            <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "var(--uf-pos-ink)" : tx.transaction_type === "transfer" ? "var(--uf-move-ink)" : "var(--uf-neg-ink)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: isIncome ? "var(--uf-pos-ink)" : tx.transaction_type === "transfer" ? "var(--uf-move-ink)" : "var(--uf-neg-ink)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", opacity: uncounted?.has(tx.id) ? 0.5 : 1 }}>
                               {isIncome ? "+" : tx.transaction_type === "transfer" ? <span aria-label="Transfer">⇄ </span> : "−"}{txMoney(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
                             </div>
+                          )}
+                          {looksLikeRefund(tx) && (
+                            <span title="Money back, so it is not counted as income" style={{ fontSize: 10.5, fontWeight: 700, color: "var(--uf-ink-2)", background: "var(--uf-surface-2)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>↩ Refund</span>
+                          )}
+                          {uncounted?.has(tx.id) && (
+                            <span title="Waiting on your answer in Worth a look" style={{ fontSize: 10.5, fontWeight: 700, color: "var(--uf-warn-ink)", background: "var(--uf-warn-bg)", borderRadius: 999, padding: "1px 7px", whiteSpace: "nowrap" }}>Not counted yet</span>
                           )}
                         </div>
 
                         {/* Delete */}
                         <button
                           onClick={(e) => { e.stopPropagation(); onDelete(tx); }}
-                          style={{ width: 28, height: 28, borderRadius: "50%", background: "transparent", border: "none", color: "var(--uf-text-3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", opacity: 0.35, transition: "opacity 0.12s, background 0.12s" }}
+                          style={{ width: 28, height: 28, borderRadius: "50%", background: "transparent", border: "none", color: "var(--uf-text-3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "opacity 0.12s, background 0.12s" }}
                           className="tx-delete-btn"
-                          aria-label="delete"
+                          aria-label={`Delete ${tx.description}`}
                         >
                           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" />
@@ -1333,8 +1338,13 @@ function TransactionList({
       </div>
 
       <style>{`
-        div:hover > .tx-delete-btn, tr:hover .tx-delete-btn { opacity: 1 !important; }
-        [data-row]:hover .tx-delete-btn { opacity: 1; }
+        /* The bin shows on hover or keyboard focus; on touch screens a swipe deletes, so it is not drawn. */
+        .tx-delete-btn { opacity: 0; }
+        .tx-row:hover .tx-delete-btn, .tx-delete-btn:focus-visible { opacity: 1; }
+        @media (hover: none) {
+          .tx-delete-btn { display: none !important; }
+          .tx-row { grid-template-columns: 36px 1fr auto !important; }
+        }
       `}</style>
     </div>
   );
@@ -1702,8 +1712,18 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [bankStatus, setBankStatus] = useState<BankStatus | null>(null);
   const [banksOpen, setBanksOpen] = useState(false);
-  const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
-  const [, setRatesFallback] = useState(false);
+  // One rate list for the whole page: the dashboard's live rates, the same
+  // ones used to show amounts in the display currency (Oct 2026 audit: a
+  // second fetch here could disagree with them).
+  const marketRates = displayRates;
+  // Yuan bought through Alipay or WeChat on a dollar card count at the rate
+  // the card actually charged, once five card copies teach it (Oct 2026
+  // audit: 6.6 a dollar against the feed's 7.1, so yuan showed 7% low).
+  const rates = useMemo(() => {
+    const market = (amount: number, currency: string) => toUSD(amount, currency, marketRates);
+    const learned = cardRates(transactions.filter((t) => t.transaction_type === "expense"), market);
+    return Object.keys(learned).length ? { ...marketRates, ...learned } : marketRates;
+  }, [transactions, marketRates]);
 
   // Custom categories / sub-categories (persisted in localStorage)
   const [catCustomizations, setCatCustomizations] = useState<CatCustomizations>(loadCatCustomizations);
@@ -1763,11 +1783,6 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   }, [defaultCurrency]);
 
   useEffect(() => {
-    fetch("https://api.frankfurter.app/latest?from=USD")
-      .then((r) => r.json())
-      .then((d) => { if (d.rates) setRates(d.rates); else setRatesFallback(true); })
-      .catch(() => setRatesFallback(true));
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) return;
       fetchAllPages<Transaction>((from, to) => supabase
@@ -1861,9 +1876,6 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const calendarItems=useMemo<ScheduledCalendarItem[]>(()=>expected.filter(r=>(r.transaction_type==='income'||r.transaction_type==='expense')&&r.due_date).map(r=>({description:r.description??(r.transaction_type==='income'?'Income':'Bill'),amountUSD:usd(Number(r.amount)||0,r.currency??'USD'),type:r.transaction_type as 'income'|'expense',dueDate:r.due_date.slice(0,10),category:r.category,completed:!!r.completed_at&&(r.recurrence??'none')==='none',recurrence: (['weekly','biweekly','monthly','quarterly','annual'].includes(r.recurrence??'')?r.recurrence:'none') as Recurrence})),[expected,usd]);
   const expenseCatDisplay = useMemo(() => catDisplay(allExpenseCats), [catDisplay, allExpenseCats]);
   const incomeCatDisplay = useMemo(() => catDisplay(INCOME_CATEGORIES), [catDisplay]);
-  const spentThisMonth = useMemo(() => transactions
-    .filter((t) => t.transaction_type === "expense" && t.date.startsWith(currentMonth))
-    .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0), [transactions, currentMonth, rates]);
   const reviewCounts = useMemo(() => {
     const expenses = monthTxns.filter((t) => t.transaction_type === "expense");
     // Filed once it has a category; need or want comes from the category (lib/needs, D-86), as on the phone.
@@ -2098,6 +2110,19 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     twins.forEach((_, id) => f.set(id, "duplicate"));
     return f;
   }, [monthTxns, transactions, usd, billAsks, twins]);
+  // Card bill payments and likely copies stay out of every total on this
+  // page until the person answers (D-130), across all months, so a past
+  // month's chart and the "usual" bands are not doubled either.
+  const uncounted = useMemo(() => {
+    const f = findFlags(transactions, transactions, usd);
+    twins.forEach((_, id) => f.set(id, "duplicate"));
+    return pendingUncounted(f);
+  }, [transactions, usd, twins]);
+  // Refunds saved as income are not earnings, so Income and Saved leave them out.
+  const counted = useMemo(() => transactions.filter((t) => !uncounted.has(t.id) && !looksLikeRefund(t)), [transactions, uncounted]);
+  const spentThisMonth = useMemo(() => counted
+    .filter((t) => t.transaction_type === "expense" && t.date.startsWith(currentMonth))
+    .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0), [counted, currentMonth, rates]);
   // A linked bill whose payment has arrived is marked paid on its own: a
   // repeat moves to its next date, a one-off is completed. The update is
   // conditional on the due date it read, so two open tabs cannot roll it twice.
@@ -2258,22 +2283,11 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       }}>
         <SpendRangePill preset={rangePreset} endMonth={rangeEnd} currentMonth={currentMonth}
           onChange={(p, end) => { setRange(p, end); setSelectedDay(null); trackTxRangeChanged({ preset: p, months: rangeFor(p, end).months.length }); }} />
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
-          <button onClick={() => setShowImport(true)} className="uf-t-small" style={{ padding: "6px 12px", borderRadius: 999, border: "1px solid var(--uf-border)", background: "var(--uf-card)", color: "var(--uf-ink-2)", fontWeight: 600, cursor: "pointer" }}>
-            ↑ Import
-          </button>
-        </div>
+        {/* Import lives once, in the floating Add bar (Oct 2026 audit). */}
       </div>
 
       <div style={{ display: "grid", gap: 16, marginBottom: 20 }}>
-        <ReviewPill filed={reviewCounts.filed} need={reviewCounts.need} busy={isClassifying}
-          fmt={fmtDisplay} spentThisMonth={spentThisMonth}
-          free={freeToSpend && range.months.includes(currentMonth) ? { amount: freeToSpend.free, untilIso: freeToSpend.payday.iso } : null}
-          onReview={() => { trackTxReviewOpened({ needCount: reviewCounts.need, months: range.months.length }); handleAiClassify(); }}
-          bank={bankStatus} banksOpen={banksOpen} onToggleBanks={() => setBanksOpen((v) => !v)} />
-        <PlaidConnect onTransactionsImported={() => setRefreshKey((k) => k + 1)} onUpgradeClick={onUpgradeClick}
-          collapsed={!banksOpen} onStatus={setBankStatus} />
-        <SpendCard transactions={transactions} range={range} today={today} toUSD={usd} fmt={fmtDisplay}
+        <SpendCard transactions={counted} range={range} today={today} toUSD={usd} fmt={fmtDisplay}
           expenseCats={expenseCatDisplay} incomeCats={incomeCatDisplay}
           selectedCategories={selectedCategories} onToggleCategory={toggleCategory}
           onClearFilters={() => { setSelectedCategories([]); setSelectedDay(null); }}
@@ -2284,6 +2298,14 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         <WorthALook flags={flags} notes={billNotes} rows={transactions} fmt={fmtDisplay} toUSD={usd} displayCurrency={displayCurrency}
           twins={twins} onDeleteCopies={deleteCopies}
           onYes={(r, k) => resolveFlag(r, k, true)} onNo={(r, k) => resolveFlag(r, k, false)} />
+        {/* Money first: the chart opens the page, the review and bank rows follow (Oct 2026 audit). */}
+        <ReviewPill filed={reviewCounts.filed} need={reviewCounts.need} busy={isClassifying}
+          fmt={fmtDisplay} spentThisMonth={spentThisMonth}
+          free={freeToSpend && range.months.includes(currentMonth) ? { amount: freeToSpend.free, untilIso: freeToSpend.payday.iso } : null}
+          onReview={() => { trackTxReviewOpened({ needCount: reviewCounts.need, months: range.months.length }); handleAiClassify(); }}
+          bank={bankStatus} banksOpen={banksOpen} onToggleBanks={() => setBanksOpen((v) => !v)} />
+        <PlaidConnect onTransactionsImported={() => setRefreshKey((k) => k + 1)} onUpgradeClick={onUpgradeClick}
+          collapsed={!banksOpen} onStatus={setBankStatus} />
       </div>
 
       <TransactionList
@@ -2298,6 +2320,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         catCustomizations={catCustomizations}
         expenseCategories={allExpenseCats}
         categoryNeeds={categoryNeeds}
+        uncounted={uncounted}
       />
       {/* Room for the floating Add bar, so the last row is never under it. */}
       <div aria-hidden style={{ height: 72 }} />
@@ -2313,6 +2336,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           onSave={handleSave}
           editing={!!editingId}
           onCancelEdit={handleCancelEdit}
+          onDelete={() => { const tx = transactions.find((t) => t.id === editingId); if (tx) { setDrawerOpen(false); handleDelete(tx); } }}
           existingTags={existingTags}
           allExpenseCats={allExpenseCats}
           allSubCats={allSubCats}
@@ -2367,7 +2391,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           onImported={() => setRefreshKey((k) => k + 1)}
           defaultCurrency={defaultCurrency}
           preferredCurrencies={preferredCurrencies}
-          rates={rates}
+          rates={marketRates}
           formatAmount={fmtDisplay}
           displayCurrency={displayCurrency}
         />

@@ -4,7 +4,7 @@
  * Run: npm run test:transaction-flags
  */
 import assert from "node:assert/strict";
-import { findFlags, type FlagTx, okTag, walletTwins } from "../lib/transaction-flags.ts";
+import { findFlags, type FlagTx, okTag, pendingUncounted, walletTwins, cardRates, looksLikeRefund } from "../lib/transaction-flags.ts";
 
 let n = 0;
 const ok = (name: string, fn: () => void) => { fn(); n++; console.log(`✓ ${name}`); };
@@ -51,7 +51,7 @@ ok("a card line for an Alipay purchase matches the wallet's own row in yuan", ()
   assert.equal(f.has(gaode.id), false, "the wallet row, with its time and real name, is kept");
   assert.equal(findFlags([card("Alp Qrcode4019", 0.28), cny("零食有鸣", 1.9)], [], fx).size, 1, "cents rounding on tiny amounts still matches");
   assert.equal(findFlags([card("Claude.ai", 20), cny("美团", 132.2)], [], fx).size, 0, "a card line not paid through a wallet is left alone");
-  assert.equal(findFlags([card("Alp Meituan", 3.47), cny("美团", 26)], [], fx).size, 0, "amounts more than 5% apart are different purchases");
+  assert.equal(findFlags([card("Alp Meituan", 3.47), cny("美团", 26)], [], fx).size, 0, "amounts more than 10% apart are different purchases");
   assert.equal(findFlags([card("Alp Meituan", 3.47, "2026-09-20"), cny("美团", 22.9, "2026-09-24")], [], fx).size, 0, "more than two days apart is a different purchase");
   const two = [card("Alp Meituan", 2.21), card("Alipay Meituan", 2.21)], one = cny("美团", 14.6);
   assert.equal(findFlags([...two, one], [], fx).size, 1, "one wallet row answers for one card line");
@@ -78,8 +78,27 @@ ok("the card's own rate is learned when the market rate is off", () => {
   add(4.17, 27.6, "2026-09-27"); add(2.77, 18.3, "2026-09-26"); add(0.9, 6, "2026-09-25");
   const twins = walletTwins(rows, rows, market);
   assert.equal(twins.size, 6, "all six copies pair at the card's 6.6");
+  assert.ok(Math.abs(cardRates(rows, market).CNY - 6.61) < 0.05, "the card's yuan rate is learned for totals");
+  assert.deepEqual(cardRates(rows.slice(0, 4), market), {}, "fewer than five pairs teach nothing");
   const odd = [tx("Alp Meituan", 3.47, "2026-09-20"), { ...tx("美团", 24.5, "2026-09-20"), currency: "CNY" }];
   assert.equal(walletTwins([...rows, ...odd], [...rows, ...odd], market).size, 6, "7% off the learned rate is a different purchase");
+});
+ok("a first card copy matches before the card's rate is learned", () => {
+  // Audit, 31 Oct 2026: the feed says 7.1, the card charged 6.6 (7% off), and
+  // with fewer than five pairs nothing is learned yet.
+  const market = (a: number, c: string) => (c === "CNY" ? a / 7.1 : a);
+  const copy = tx("Alipay Amap Taxi", 8.35, "2026-10-31"), wallet = { ...tx("高德打车", 55.16, "2026-10-31"), currency: "CNY" };
+  assert.equal(walletTwins([copy, wallet], [copy, wallet], market).get(copy.id)?.id, wallet.id);
+});
+ok("card payments and copies wait outside the totals; large rows still count", () => {
+  const flags = new Map([["a", "card_payment"], ["b", "duplicate"], ["c", "large"], ["d", "bill"]] as const);
+  assert.deepEqual([...pendingUncounted(new Map(flags))].sort(), ["a", "b"]);
+});
+ok("money back saved as income is a refund, not earnings", () => {
+  assert.equal(looksLikeRefund({ transaction_type: "income", description: "退款 京东" }), true);
+  assert.equal(looksLikeRefund({ transaction_type: "income", description: "Amazon Refund" }), true);
+  assert.equal(looksLikeRefund({ transaction_type: "income", description: "Salary" }), false);
+  assert.equal(looksLikeRefund({ transaction_type: "expense", description: "refund fee" }), false);
 });
 ok("different amounts are not duplicates", () => {
   assert.equal(findFlags([tx("Uber", 18), tx("Uber", 22)], [], usd).size, 0);

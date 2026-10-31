@@ -369,7 +369,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
             gap: 16,
             background: "var(--uf-surface)",
             border: "1px solid var(--uf-border)",
-            borderRadius: 12,
+            borderRadius: "var(--uf-r-card)",
             padding: "14px 18px",
             flexWrap: "wrap",
           }}
