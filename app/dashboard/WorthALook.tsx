@@ -65,9 +65,19 @@ export default function WorthALook({ flags, notes, rows, fmt, toUSD, displayCurr
   }, [gone]);
   const markGone = (ids: string[]) => setGone((prev) => {
     const next = new Map(prev);
-    for (const id of ids) { const row = rows.find((r) => r.id === id), twin = twins?.get(id); if (row && twin) next.set(id, { row, twin }); }
+    for (const id of ids) { const row = rows.find((r) => r.id === id), twin = pairs.get(id); if (row && twin) next.set(id, { row, twin }); }
     return next;
   });
+  // Same shop, same amount, close dates: show the earlier payment too, so the
+  // pair is visible like a card copy is (John, 31 Oct 2026).
+  const pairs = new Map(twins ?? []);
+  for (const r of rows) {
+    if (flags.get(r.id) !== "duplicate" || pairs.has(r.id)) continue;
+    const day = Date.parse(r.date.slice(0, 10));
+    const twin = rows.find((o) => o.id !== r.id && o.description === r.description && o.amount === r.amount && o.currency === r.currency
+      && Math.abs(Date.parse(o.date.slice(0, 10)) - day) <= 2 * 864e5 && (o.date < r.date || (o.date === r.date && o.id < r.id)));
+    if (twin) pairs.set(r.id, twin);
+  }
   const counts = FLAG_ORDER.map((k) => ({ k, n: [...flags.values()].filter((v) => v === k).length })).filter((c) => c.n > 0);
   if (!counts.length && !gone.size) return null;
   const doneRows = open === "duplicate" ? [...gone.values()].filter(({ row }) => !flags.has(row.id)).map(({ row }) => row) : [];
@@ -111,16 +121,16 @@ export default function WorthALook({ flags, notes, rows, fmt, toUSD, displayCurr
                 <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}> · kept {gone.get(r.id)!.twin.description}</span>
               </span>
             </div>
-          ) : twins?.has(r.id) && open === "duplicate" ? (
+          ) : pairs.has(r.id) && open === "duplicate" ? (
             <div key={r.id} aria-busy={leaving.has(r.id)} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 16px", borderTop: i ? "1px solid var(--uf-border)" : "none",
               opacity: leaving.has(r.id) ? 0.35 : 1, transform: leaving.has(r.id) ? "translateX(12px)" : "none", transition: "opacity var(--uf-dur-2, 220ms), transform var(--uf-dur-2, 220ms)" }}>
               <div style={{ flex: 1, minWidth: 220, display: "grid", gap: 6 }}>
                 <PairLine tag="Delete" row={r} />
-                <PairLine tag="Keep" row={twins.get(r.id)!} />
+                <PairLine tag="Keep" row={pairs.get(r.id)!} />
               </div>
               <span style={{ display: "flex", gap: 6 }}>
                 <button type="button" style={{ ...btn(true), background: "var(--uf-ink)" }} disabled={leaving.has(r.id)}
-                  onClick={() => { leave([r.id]); markGone([r.id]); onYes(r, "duplicate"); }}>{leaving.has(r.id) ? "Deleting…" : "Delete card copy"}</button>
+                  onClick={() => { leave([r.id]); markGone([r.id]); onYes(r, "duplicate"); }}>{leaving.has(r.id) ? "Deleting…" : twins?.has(r.id) ? "Delete card copy" : "Delete this one"}</button>
                 <button type="button" style={btn(false)} disabled={leaving.has(r.id)} onClick={() => { leave([r.id]); onNo(r, "duplicate"); }}>Keep both</button>
               </span>
             </div>
