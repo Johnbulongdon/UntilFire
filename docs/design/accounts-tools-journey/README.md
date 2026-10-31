@@ -55,4 +55,4 @@ These sources establish broad product descriptions, not approval of commercial r
 
 ## Referral-copy refinement — 1 November
 
-Removed the prominent referral-label block. One readable “Paid referral link · [beneficiary]” label remains immediately below the outbound button. FTC staff guidance explicitly identifies paid link beside an affiliate link as an adequate disclosure of its nature. No tracking-only claim or exclusive-user-reward claim is introduced without verified provider terms. Confirmed user offers can lead the content once available. FTC guidance checked: https://www.ftc.gov/business-guidance/resources/ftcs-endorsement-guides-what-people-are-asking .
+John selected neutral attribution for the review mock: UntilFire referral link, or the inviter’s named referral link. No paid-link claim, payout certainty or unique-user-reward claim is made. Provider terms and any applicable live disclosure remain a production review requirement under D-81; the mock label is not a compliance determination.

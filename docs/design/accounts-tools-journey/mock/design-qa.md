@@ -40,4 +40,4 @@ Production API/attribution/persistence, native bank handoff, provider programme 
 
 Final status correction: retained whether an account was existing or newly opened after setup completion, so an existing account is never relabelled as newly opened. Rechecked the completed Plan state after the fix.
 
-Referral-copy follow-up: replaced the large label/card with one 12px compensation disclosure immediately under the CTA. No unsupported unique-reward or tracking-only copy. Rechecked the UntilFire and inviter examples at phone width; required disclosure remains visible beside the action.
+Referral-copy follow-up: replaced the large label/card with one 12px neutral attribution label immediately under the CTA: UntilFire referral link or the inviter’s named referral link. No paid-link claim, unsupported unique reward or tracking-only claim. Programme-specific live disclosure review remains outside this prototype.
