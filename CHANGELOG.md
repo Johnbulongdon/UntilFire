@@ -2,7 +2,7 @@
 
 ## 2026-10-31 — Filter transactions by source
 
-- Transactions has a "Source" dropdown next to the tag filters: Alipay, WeChat Pay, ether.fi, Linked bank, Typed in, or the imported file's name, each with its count. Shown when there is more than one source.
+- Transactions has a row of "Source" pills under the tag filters (pills, not a dropdown, to match the tags): Alipay, WeChat Pay, ether.fi, Linked bank, Typed in, or the imported file's name, each with its count. Shown when there is more than one source.
 
 ## 2026-10-31 — Duplicate buttons answer at once
 

@@ -36,7 +36,7 @@ import { useCustomCategories } from "@/lib/useCustomCategories";
 import { combineDateAndTime, formatTime, timeInputValue } from "@/lib/transaction-time";
 import { buildMerchantMemory, merchantKey, suggestFromHistory } from "@/lib/merchant-memory";
 import { transactionNeed, type NeedOverrides } from "@/lib/needs";
-import { SegmentedControl, Select } from "@/components/ui";
+import { SegmentedControl } from "@/components/ui";
 import { readMerchantRules } from "@/lib/merchant-rules";
 import { trackTxFlagResolved, trackTxRangeChanged, trackTxReviewOpened } from "@/lib/analytics";
 
@@ -1079,14 +1079,21 @@ function TransactionList({
             {tag === "all" ? "All tags" : tag === "need" ? "✓ Need" : tag === "want" ? "✦ Want" : "💼 Work"}
           </button>
         ))}
-        {/* Source: which wallet, bank or file the rows came from. */}
+        {/* Source: which wallet, bank or file the rows came from, as pills like the tags. */}
         {sources.length > 1 && (
-          <Select aria-label="Source" value={sourceFilter} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSourceFilter(e.target.value)}
-            style={{ marginLeft: "auto", width: "auto", padding: "4px 12px", fontSize: 11, fontWeight: 600, borderRadius: 999,
-              background: sourceFilter !== "all" ? "#FFE58A" : undefined, color: sourceFilter !== "all" ? "#151719" : undefined }}>
-            <option value="all">All sources</option>
-            {sources.map(([label, n]) => <option key={label} value={label}>{label} · {n}</option>)}
-          </Select>
+          <div role="group" aria-label="Source" style={{ display: "flex", gap: 6, flexWrap: "wrap", width: "100%" }}>
+            {[["all", 0] as [string, number], ...sources].map(([label, n]) => (
+              <button key={label} type="button" aria-pressed={sourceFilter === label} onClick={() => setSourceFilter(label)}
+                style={{
+                  background: sourceFilter === label ? "#FFE58A" : "var(--uf-surface-2)",
+                  border: `1px solid ${sourceFilter === label ? "#FFE58A" : "transparent"}`,
+                  borderRadius: 999, padding: "4px 12px", fontSize: 11, fontWeight: 600,
+                  color: sourceFilter === label ? "#151719" : "var(--uf-text-2)", cursor: "pointer", fontFamily: "inherit",
+                }}>
+                {label === "all" ? "All sources" : <>{label} <span style={{ opacity: 0.6, fontVariantNumeric: "tabular-nums" }}>{n}</span></>}
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
