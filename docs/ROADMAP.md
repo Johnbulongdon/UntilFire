@@ -614,3 +614,5 @@ Landing review-rail follow-up: approved compact mock implemented as continuous l
 N1 web style follow-up: [draft PR #335](https://github.com/Johnbulongdon/UntilFire/pull/335), implementation bf27c01. Build/type/lint and focused guards passed; public browser screenshots verified. Awaiting signed-in visual review, then merge authorization.
 
 31 October N1 PR #335: signed-in Home/Money/Plan/Profile light/dark and phone Home inspected; import/guided budget screens inspected without saving. Corrected Explore/referral dark pastel contrast and pill dialog buttons. Final build passed. Admin visual review blocked by access denial; no auth changes.
+
+31 October N1 payday card polish, Codex, codex/payday-card-polish, baseline main 7b63c78. Actual component updated and Before/After fixture preview available at port 4208. Focused lint, payday and free-to-spend guards passed; final build/review in progress. No merge or deployment yet.

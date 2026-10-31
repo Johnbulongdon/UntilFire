@@ -1687,3 +1687,5 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 ### Web style consistency
 - Carry Next Horizon into Explore cards, referrals, portfolio and report exports, Learn/calculator cards, admin surfaces and navigation, budget/import dialogs and unsubscribe. Keep semantic states and financial behavior.
 - Keep Log in visible beside Get started in desktop and phone public headers.
+
+- Refine the web Until payday card with mint/white panels, clearer balance/payday hierarchy and aligned bill rows while preserving all forecast calculations and selection controls.

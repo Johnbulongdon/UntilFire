@@ -3503,3 +3503,6 @@ John requested automatic rotation after reviewing the shipped globe. Use a gentl
 John requested all web pages match the approved Next Horizon style. Extend the existing shared palette, logo and card/control system to remaining legacy Explore, referral, portfolio, export/report, admin and utility screens. Printed/social exports retain a fixed light palette; interactive pages use theme tokens. Preserve income/loss/warning meanings, all projections, data, imports, routes and authorization checks. This task is web presentation; native release is separate.
 
 Header clarification: Log in is a visible secondary pill beside Get started on public pages, including narrow layouts. Signed-in visitors retain Dashboard.
+
+### D-123 — Refine the actual Until payday card (31 October 2026)
+John requested a better-looking Until payday screen and explicitly chose the actual app. Use mint, white forecast panel, yellow payday marker/date pill, strong final balance and aligned bill rows. Preserve D-90 amounts, actual date spacing, individual same-day selection, above-line readout, keyboard/Previous/Next controls, shortfall label/zero reference and the separate Money calendar. No financial data or native release changes.
