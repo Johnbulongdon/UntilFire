@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native'
 
 import { BankBridge } from '@/components/BankBridge'
 import { Button } from '@/components/Button'
-import { Icon } from '@/components/Icon'
+import { FeatureTile, MONEY_FEATURES } from '@/components/FeatureTile'
 import { TransactionRow } from '@/components/TransactionRow'
 import { haptic } from '@/lib/haptics'
 
@@ -18,7 +18,7 @@ import { reviewCounts } from '@/lib/review'
 import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { freedomFor, usePlan } from '@/state/plan'
-import { TAB_COLOR, tabInk } from '@/theme/colors'
+import { tabInk } from '@/theme/colors'
 import { splitBudget } from '@/lib/budget-split'
 
 /**
@@ -70,44 +70,14 @@ function Headline({ data }: { data: AccountData }) {
   )
 }
 
-type SymbolName = Parameters<typeof Icon>[0]['name']
-const TILES: { label: string; icon: SymbolName; fallback: string; to: string }[] = [
-  // Review took Add's place (Oct 2026): Home and Activity both add, and Review left Home's actions.
-  { label: 'Review', icon: 'checklist', fallback: '✓', to: '/review' },
-  { label: 'Activity', icon: 'list.bullet', fallback: '≡', to: '/money/transactions' },
-  { label: 'Budget', icon: 'chart.pie.fill', fallback: '◔', to: '/money/budget' },
-  { label: 'Calendar', icon: 'calendar', fallback: '▦', to: '/money/calendar' },
-  { label: 'Net worth', icon: 'building.columns.fill', fallback: '▥', to: '/money/net-worth' },
-  { label: 'Income', icon: 'arrow.down.circle.fill', fallback: '↓', to: '/money/income' },
-  { label: 'Insights', icon: 'lightbulb.fill', fallback: '!', to: '/money/insights' },
-]
-
-/** Every Money page as a chunky icon tile, four to a row. */
+/** Money's destinations retain their routes and review count. */
 function Tiles() {
   const { data } = useAccount()
   const toReview = data ? reviewCounts(data.transactions).need : 0
-  return (
-    <View className="flex-row flex-wrap" style={{ rowGap: 18 }}>
-      {TILES.map(t => (
-        <Pressable key={t.label} accessibilityRole="button" accessibilityLabel={t.label} onPress={() => { haptic.press(); router.push(t.to as never) }} style={{ width: '25%', alignItems: 'center', gap: 6 }}>
-          {({ pressed }) => (
-            <>
-              <View style={{ width: 62, height: 62, borderRadius: 20, backgroundColor: TAB_COLOR.money, alignItems: 'center', justifyContent: 'center',
-                borderBottomWidth: pressed ? 0 : 4, borderBottomColor: 'rgba(0,0,0,0.28)', marginTop: pressed ? 4 : 0 }}>
-                <Icon name={t.icon} fallback={t.fallback} size={26} color="#FFFFFF" />
-                {t.to === '/review' && toReview > 0 && (
-                  <View accessibilityLabel={`${toReview} to review`} style={{ position: 'absolute', top: -6, right: -6, minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: TAB_COLOR.money }} className="font-mono text-[12px] font-bold">{toReview > 99 ? '99+' : toReview}</Text>
-                  </View>
-                )}
-              </View>
-              <Text className="text-[13px] font-bold text-ink">{t.label}</Text>
-            </>
-          )}
-        </Pressable>
-      ))}
-    </View>
-  )
+  return <View className="flex-row flex-wrap" style={{ rowGap: 18 }}>
+    {MONEY_FEATURES.map(t => <FeatureTile key={t.to} feature={t} compact count={t.to === '/review' ? toReview : 0}
+      onPress={() => { haptic.press(); router.push(t.to as never) }} />)}
+  </View>
 }
 
 /** The five most recent transactions, then the way to all of them. */
@@ -146,7 +116,7 @@ function SignedOutMoney() {
       {monthsSooner != null && monthsSooner > 0 && (
         <Card soft>
           <Text className="text-[15px] leading-6 text-ink">
-            Every <Text className="font-mono text-[15px]">$100</Text> a month you don't spend brings your freedom date about{' '}
+            Every <Text className="font-mono text-[15px]">$100</Text> a month you don&apos;t spend brings your freedom date about{' '}
             <Text className="font-bold text-teal-deep">{monthsSooner} {monthsSooner === 1 ? 'month' : 'months'} closer</Text>.
           </Text>
         </Card>

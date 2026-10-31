@@ -1,7 +1,7 @@
 import { router } from 'expo-router'
 import { Button } from '@/components/Button'
 import { useState } from 'react'
-import { ActivityIndicator, Alert, Pressable, View } from 'react-native'
+import { Alert, View } from 'react-native'
 
 import { DetailScreen } from '@/components/DetailScreen'
 import { Card, Label, ProgressTrack } from '@/components/Screen'
@@ -9,7 +9,7 @@ import { Text } from '@/components/Text'
 import { compactMoney, money } from '@/lib/format'
 import { reportHtml, shareReport } from '@/lib/freedom-report'
 import { haptic } from '@/lib/haptics'
-import { colors, TAB_COLOR } from '@/theme/colors'
+import { brand } from '@/theme/colors'
 import { useAccount } from '@/state/account'
 import { project, useFreedom } from '@/state/freedom'
 import { spendingBasis } from '@/lib/budget-split'
@@ -177,11 +177,11 @@ function SavingSplit() {
   const takeHomeSaving = s.toInvest * 12
   const taxFree = Math.min(takeHomeSaving, plan.taxFreeAnnual ?? 0)
   const rows = [
-    { label: 'Your goals', value: toGoals, color: TAB_COLOR.plan },
-    { label: 'Pension, before tax', value: plan.pensionAnnual ?? 0, color: '#c58a4a' },
-    { label: 'Employer adds', value: plan.employerAnnual ?? 0, color: '#0E9C86' },
-    { label: 'Roth IRA, first', value: taxFree, color: '#6b5bd2' },
-    { label: 'Taxable, the rest', value: Math.max(0, takeHomeSaving - taxFree), color: '#2a78d6' },
+    { label: 'Your goals', value: toGoals, color: brand.yellow },
+    { label: 'Pension, before tax', value: plan.pensionAnnual ?? 0, color: brand.pink },
+    { label: 'Employer adds', value: plan.employerAnnual ?? 0, color: brand.mint },
+    { label: 'Roth IRA, first', value: taxFree, color: brand.lilac },
+    { label: 'Taxable, the rest', value: Math.max(0, takeHomeSaving - taxFree), color: brand.blue },
   ].filter(r => r.value > 0)
   const total = rows.reduce((s, r) => s + r.value, 0)
   if (total <= 0) return null

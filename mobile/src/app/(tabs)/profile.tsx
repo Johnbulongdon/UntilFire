@@ -27,7 +27,7 @@ import { supabase } from '@/lib/supabase'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
 import { usePlan } from '@/state/plan'
-import { colors, TAB_COLOR, tabInk } from '@/theme/colors'
+import { brand, colors, tabInk } from '@/theme/colors'
 
 const GOAL_LABEL = { 'retire-early': 'Retire early', 'financial-freedom': 'Financial freedom', exploring: 'Just exploring' } as const
 
@@ -78,7 +78,7 @@ export default function Profile() {
       {/* The type comes only from the finished quiz; until then, ask for it (and name the free month when it's still on offer). */}
       <Pressable accessibilityRole="button" accessibilityLabel={quiz ? `Your FIRE type: ${quiz.name}. Retake the quiz` : `Find your FIRE type. Take the 8-question quiz${rewardOpen ? ' and get 1 month of Pro free' : ''}`}
         onPress={() => { haptic.tick(); router.push('/fire-quiz') }} className="flex-row items-center gap-4 active:opacity-70">
-        <View style={{ width: 72, height: 72, borderRadius: 20, backgroundColor: TAB_COLOR.profile, alignItems: 'center', justifyContent: 'center' }}>
+        <View style={{ width: 72, height: 72, borderRadius: 20, backgroundColor: brand.lilac, alignItems: 'center', justifyContent: 'center' }}>
           <Text className="text-[36px]">{quiz ? getTypeMeta(quiz.code).emoji : '🧬'}</Text>
         </View>
         <View className="flex-1">
@@ -137,7 +137,7 @@ export default function Profile() {
             <RowIcon name="bell.fill" fallback="!" />
             <View className="flex-1 pr-3">
               <Text className="text-[15px] text-ink">Today reminder</Text>
-              <Text className="text-[12px] text-ink-3">9pm on days you haven't finished</Text>
+              <Text className="text-[12px] text-ink-3">9pm on days you haven&apos;t finished</Text>
             </View>
             <Switch accessibilityLabel="Today reminder" value={todayOn} trackColor={{ true: colors.green, false: colors.border2 }}
               onValueChange={async on => {
@@ -213,7 +213,7 @@ export default function Profile() {
       )}
 
       <Pressable accessibilityRole="button" accessibilityLabel={`Version ${versionLabel()}, see what's new`} hitSlop={8} onPress={() => { haptic.tick(); router.push('/update-log') }} className="items-center py-2">
-        <Text className="font-mono text-[12px] text-ink-3">Version {versionLabel()} · What's new</Text>
+        <Text className="font-mono text-[12px] text-ink-3">Version {versionLabel()} · What&apos;s new</Text>
       </Pressable>
     </Screen>
   )

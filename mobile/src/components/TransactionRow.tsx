@@ -1,3 +1,4 @@
+import { brand } from '@/theme/colors'
 import { router } from 'expo-router'
 import { useRef } from 'react'
 import { Pressable, View } from 'react-native'
@@ -46,8 +47,8 @@ export function TransactionRow({ t, first, selecting, selected, onToggle, onLong
           {selected ? <Text className="text-[13px] font-bold text-white">✓</Text> : null}
         </View>
       )}
-      <View className="h-10 w-10 items-center justify-center rounded-control" style={{ backgroundColor: `${cat.color}22` }}>
-        <CategoryGlyph cat={cat} size={22} />
+      <View className="h-10 w-10 items-center justify-center rounded-control" style={{ backgroundColor: cat.color }}>
+        <CategoryGlyph cat={cat} size={22} color={brand.deep} />
       </View>
       <View className="flex-1">
         <Text private numberOfLines={1} className="text-[15px] font-semibold text-ink">{t.description || cat.label}</Text>

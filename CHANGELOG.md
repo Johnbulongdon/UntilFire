@@ -1,10 +1,24 @@
 # Changelog
 
+## Unreleased — native pastel surfaces
+
+- Add lighter multicolour tool tiles to Money and Plan, coloured settings wells to Profile, and distinct summary chip colours.
+- Flatten heavy tile edges and fix dark-mode Plan icons and step numbers; preserve routes, primary actions and financial calculations.
+
+
 ## 2026-10-31 — ether.fi card statements import
 
 - Website PDF import now reads card statements that print signed dollar amounts with a reference ID (ether.fi): spending comes in as spending, refunds as money back, in the statement's own currency (USD), with no "flip signs" step.
 - Handles "Sept" and dates whose year wraps onto the next line, keeps location/crypto detail lines out of the merchant name, and stops before "Pending transactions" so charges aren't counted twice.
 - PDF row rules moved to lib/pdf-statement.ts with made-up test rows (`npm run test:pdf-statement`); older card and savings layouts read the same.
+
+
+## Unreleased — mobile welcome product preview
+
+- Replace the large welcome logo tile with the selected example-plan artwork, clearer headline and equally wide start/sign-in actions.
+- Keep the existing journey and sign-in recovery; short coordinated entrance respects reduced motion and small screens can scroll.
+- Defer the welcome A/B test; no feature flags, new events or native runtime changes.
+
 
 ## 2026-10-31 — October update email pictures
 
@@ -1707,3 +1721,8 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 - Keep Log in visible beside Get started in desktop and phone public headers.
 
 - Refine the web Until payday card with mint/white panels, clearer balance/payday hierarchy and aligned bill rows while preserving all forecast calculations and selection controls.
+
+## Android 0.2.1 — store build preparation
+- Package the approved new icon, splash, fonts and app styling in a native Android release.
+- Fix SDK57 splash configuration and the audio module's missing asset peer; keep signing/app identity unchanged.
+- Submit through the existing alpha/draft Google Play profile after the cloud build succeeds.
