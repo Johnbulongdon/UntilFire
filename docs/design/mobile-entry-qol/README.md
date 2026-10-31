@@ -20,3 +20,5 @@
 - Final mobile TypeScript, focused lint and Android/iOS/web bundle checks are recorded in the PR. Temporary entry-qa, entry-guard-qa and activity-qa routes and console instrumentation are excluded from committed source and final export.
 
 Limits: browser checks do not simulate a real software keyboard or Android hardware Back/iOS swipe dismissal. These, large text, screen reader focus, real-account save failure and data-changing edits need device/test-account acceptance. No customer data was changed for QA. Drafts are protected from navigation, not persisted across an OS force quit. No merge or phone publication is claimed by this implementation task.
+
+Final review: reconciled latest pushed main 8766518 before PR publication, preserving the newer web import/duplicate work. Mobile TypeScript, changed-file lint, regression script and Android/iOS/web exports passed; final Android export is repeated after reconciliation. Temporary test routes and diagnostic strings are absent from the final web bundle. No merge or phone release performed.
