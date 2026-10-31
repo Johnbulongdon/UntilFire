@@ -22,6 +22,7 @@ import DE from "country-flag-icons/string/3x2/DE";
 import DK from "country-flag-icons/string/3x2/DK";
 import EE from "country-flag-icons/string/3x2/EE";
 import EG from "country-flag-icons/string/3x2/EG";
+import EU from "country-flag-icons/string/3x2/EU";
 import ES from "country-flag-icons/string/3x2/ES";
 import FI from "country-flag-icons/string/3x2/FI";
 import FR from "country-flag-icons/string/3x2/FR";
@@ -54,6 +55,7 @@ import NZ from "country-flag-icons/string/3x2/NZ";
 import PA from "country-flag-icons/string/3x2/PA";
 import PE from "country-flag-icons/string/3x2/PE";
 import PH from "country-flag-icons/string/3x2/PH";
+import PK from "country-flag-icons/string/3x2/PK";
 import PL from "country-flag-icons/string/3x2/PL";
 import PT from "country-flag-icons/string/3x2/PT";
 import QA from "country-flag-icons/string/3x2/QA";
@@ -71,19 +73,24 @@ import UY from "country-flag-icons/string/3x2/UY";
 import VN from "country-flag-icons/string/3x2/VN";
 import ZA from "country-flag-icons/string/3x2/ZA";
 
-const SVG: Record<string, string> = { AE, AR, AT, AU, BE, BG, BR, CA, CH, CL, CN, CO, CR, CZ, DE, DK, EE, EG, ES, FI, FR, GB, GE, GH, GR, HK, HR, HU, ID, IE, IL, IN, IT, JP, KE, KH, KR, LT, LV, MA, MO, MX, MY, NG, NL, NO, NZ, PA, PE, PH, PL, PT, QA, RO, RS, SA, SE, SG, SI, TH, TR, TW, US, UY, VN, ZA };
+const SVG: Record<string, string> = { AE, AR, AT, AU, BE, BG, BR, CA, CH, CL, CN, CO, CR, CZ, DE, DK, EE, EG, ES, EU, FI, FR, GB, GE, GH, GR, HK, HR, HU, ID, IE, IL, IN, IT, JP, KE, KH, KR, LT, LV, MA, MO, MX, MY, NG, NL, NO, NZ, PA, PE, PH, PK, PL, PT, QA, RO, RS, SA, SE, SG, SI, TH, TR, TW, US, UY, VN, ZA };
 
 /** "🇵🇹" → "PT". */
 const codeOf = (emoji: string) => [...emoji].map(ch => ch.codePointAt(0)!).filter(cp => cp >= 0x1f1e6 && cp <= 0x1f1ff).map(cp => String.fromCharCode(cp - 0x1f1e6 + 65)).join("");
 
 /** The flag as an SVG data URI, for places a span can't go (inside an <svg>); null for non-flag emoji. */
 export function flagUri(emoji: string): string | null {
-  const svg = SVG[codeOf(emoji)];
+  return flagUriForCode(codeOf(emoji));
+}
+
+/** Same, from a two-letter code ("US", "EU"). */
+export function flagUriForCode(code: string): string | null {
+  const svg = SVG[code];
   return svg ? `data:image/svg+xml;utf8,${encodeURIComponent(svg)}` : null;
 }
 
-export default function Flag({ emoji, size = 14 }: { emoji: string; size?: number }) {
-  const uri = flagUri(emoji);
+export default function Flag({ emoji, code, size = 14 }: { emoji?: string; code?: string; size?: number }) {
+  const uri = code ? flagUriForCode(code) : emoji ? flagUri(emoji) : null;
   if (!uri) return null;
   return <span aria-hidden style={{ display: "inline-block", flexShrink: 0, width: Math.round(size * 1.5), height: size, verticalAlign: "-2px", borderRadius: 2,
     boxShadow: "0 0 0 0.5px #0003", background: `center / cover no-repeat url("${uri}")` }} />;

@@ -1,30 +1,26 @@
 "use client";
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { fetchAllPages } from "@/lib/supabase-pages";
-import { CURRENCY_NAMES, SUPPORTED_CURRENCIES } from "@/lib/currency";
+import { CURRENCY_FLAG, CURRENCY_NAMES, SUPPORTED_CURRENCIES } from "@/lib/currency";
+import { ALL_CATEGORIES, loadCatCustomizations, resolveDisplay, type CatCustomizations } from "@/lib/categories";
+import { Button, Icon, Select } from "@/components/ui";
+import type { IconName } from "@/components/ui";
+import Flag from "@/app/components/Flag";
 import type { CellValue } from "read-excel-file/browser";
 import { formatMoney } from "@/lib/money";
 import { combineDateAndTime, timeFromCell } from "@/lib/transaction-time";
 import { PDF_STOP_MARKERS, parseStatementLines } from "@/lib/pdf-statement";
 
-type Step = "upload" | "map" | "review" | "importing" | "done";
-
-type Transaction = {
-  date: string;
-  amount: number;
-  refund_amount?: number;
-  currency: string;
-  transaction_type: "expense" | "income" | "transfer";
-};
+// One idea per screen: pick a file, check it (with side screens for
+// currency, duplicates and columns), then the saving progress and the result.
+type Step = "upload" | "check" | "currency" | "dupes" | "columns" | "importing" | "failed" | "done";
 
 type Props = {
   onClose: () => void;
   onImported: (count: number) => void;
   defaultCurrency?: string;
   preferredCurrencies?: string[];
-  transactions?: Transaction[];
-  viewMonth?: string;
   rates?: Record<string, number>;
   formatAmount?: (value: number) => string;
   displayCurrency?: string;
@@ -44,7 +40,7 @@ type ParsedImportTransaction = {
 type DuplicateFlag = {
   rowIndex: number;
   row: ParsedImportTransaction;
-  existing: { id: string; date: string; amount: number; category: string };
+  existing: { id: string; date: string; amount: number; currency: string; description: string | null };
 };
 
 // Some banks (e.g. WeChat Pay) prepend title/metadata rows before the real header row.
@@ -352,13 +348,123 @@ function amountsClose(a: number, b: number): boolean {
   return Math.abs(a - b) <= DUPLICATE_AMOUNT_TOLERANCE;
 }
 
+
+type DupeExisting = { id: string; date: string; amount: number; currency: string; description: string | null };
+
+// Find rows in this file that look like ones already saved: within a couple
+// of days, and the same amount (directly, or through a foreign amount printed
+// in either row's description).
+async function findDuplicates(parsed: ParsedImportTransaction[]): Promise<DuplicateFlag[]> {
+  const dates = parsed.map((r) => r.date).filter(Boolean);
+  if (dates.length === 0) return [];
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return [];
+  const minDate = dates.reduce((a, b) => (a < b ? a : b));
+  const maxDate = dates.reduce((a, b) => (a > b ? a : b));
+  // Widen the query window so date-shifted duplicates (a card statement
+  // posts a day or two after the underlying wallet transaction) are still
+  // fetched as candidates.
+  const { data: existing } = await fetchAllPages((from, to) => supabase
+    .from("expenses")
+    .select("id, date, amount, category, currency, description")
+    .eq("user_id", session.user.id)
+    .gte("date", shiftDate(minDate, -DUPLICATE_DATE_TOLERANCE_DAYS))
+    .lte("date", shiftDate(maxDate, DUPLICATE_DATE_TOLERANCE_DAYS))
+    .order("id")
+    .range(from, to));
+
+  const flags: DuplicateFlag[] = [];
+  for (let i = 0; i < parsed.length; i++) {
+    const row = parsed[i];
+    const rowForeign = extractEmbeddedForeignAmount(row.description);
+    const match = (existing as DupeExisting[] | null)?.find((e) => {
+      if (!isWithinDateTolerance(e.date, row.date)) return false;
+      if (e.currency === row.currency && amountsClose(Number(e.amount), row.amount)) return true;
+      if (rowForeign && e.currency === rowForeign.currency && amountsClose(Number(e.amount), rowForeign.amount)) return true;
+      const existingForeign = extractEmbeddedForeignAmount(e.description ?? "");
+      return !!existingForeign && existingForeign.currency === row.currency && amountsClose(existingForeign.amount, row.amount);
+    });
+    if (match) flags.push({ rowIndex: i, row, existing: { ...match, amount: Number(match.amount) } });
+  }
+  return flags;
+}
+
+const TRANSFER_DISPLAY = { emoji: "↔️", color: "#ded8cd", label: "Moved" };
+
+function categoryDisplay(key: string, type: ParsedImportTransaction["transaction_type"], customs: CatCustomizations) {
+  if (type === "transfer") return TRANSFER_DISPLAY;
+  const def = ALL_CATEGORIES.find((c) => c.key === key) ?? ALL_CATEGORIES.find((c) => c.key === "other")!;
+  return { ...resolveDisplay(def, customs, def.key), label: def.label };
+}
+
+const shortDate = (iso: string) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return new Date(y, m - 1, d).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+};
+
+const signedAmount = (t: { amount: number; currency: string; transaction_type: string }) => {
+  const money = formatMoney(t.amount, { currency: t.currency, decimals: 2 });
+  return t.transaction_type === "expense" ? `−${money}` : t.transaction_type === "income" ? `+${money}` : money;
+};
+
+const TYPE_WORD = { expense: "expense", income: "income", transfer: "moved" } as const;
+
+// ─── Small pieces, one look across every screen ─────────────────────────────
+const panel: React.CSSProperties = { background: "var(--uf-surface)", borderRadius: "var(--uf-r-card)" };
+const plainButton: React.CSSProperties = { font: "inherit", background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0 };
+const iconButton: React.CSSProperties = {
+  ...plainButton, width: 44, height: 44, borderRadius: 14, background: "var(--uf-surface)",
+  display: "grid", placeItems: "center", color: "var(--uf-ink-2)", fontSize: 20, lineHeight: 1, flexShrink: 0,
+};
+
+function Header({ title, onBack, onClose }: { title: string; onBack?: () => void; onClose: () => void }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      {onBack && <button type="button" onClick={onBack} aria-label="Back" style={iconButton}>‹</button>}
+      <h2 id="import-title" className="uf-t-h3" style={{ margin: 0, flex: 1, textAlign: onBack ? "center" : "left" }}>{title}</h2>
+      <button type="button" onClick={onClose} aria-label="Close" style={iconButton}>×</button>
+    </div>
+  );
+}
+
+function Note({ tone, icon, title, children, action }: {
+  tone: "info" | "warn" | "neg"; icon: IconName; title?: string; children?: React.ReactNode; action?: React.ReactNode;
+}) {
+  const bg = tone === "neg" ? "var(--uf-neg-bg)" : tone === "warn" ? "var(--uf-warn-bg)" : "var(--uf-surface)";
+  const ink = tone === "neg" ? "var(--uf-neg)" : tone === "warn" ? "var(--uf-warn)" : "var(--uf-ink-2)";
+  return (
+    <div role={tone === "neg" ? "alert" : undefined} style={{ background: bg, borderRadius: 20, padding: 16, display: "flex", gap: 12, alignItems: "center" }}>
+      <span style={{ color: ink }}><Icon name={icon} size={22} /></span>
+      <div className="uf-t-body" style={{ flex: 1, color: "var(--uf-ink-2)", lineHeight: 1.45 }}>
+        {title && <div style={{ fontWeight: 700, color: tone === "neg" ? "var(--uf-neg)" : "var(--uf-ink)" }}>{title}</div>}
+        {children}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function CategoryTile({ emoji, color }: { emoji: string; color: string }) {
+  return <span aria-hidden style={{ width: 36, height: 36, borderRadius: 12, background: color, display: "grid", placeItems: "center", fontSize: 17, flexShrink: 0 }}>{emoji}</span>;
+}
+
+function Switch({ on, onChange, label }: { on: boolean; onChange: () => void; label: string }) {
+  return (
+    <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={onChange}
+      style={{ ...plainButton, width: 48, height: 28, borderRadius: 999, flexShrink: 0, position: "relative",
+        background: on ? "var(--uf-ink)" : "var(--uf-surface-2)", transition: "background var(--uf-dur-1, 150ms)" }}>
+      <span style={{ position: "absolute", top: 3, left: on ? 23 : 3, width: 22, height: 22, borderRadius: "50%",
+        background: on ? "var(--uf-card)" : "var(--uf-card)", boxShadow: "0 1px 2px rgba(0,0,0,.25)", transition: "left var(--uf-dur-1, 150ms)" }} />
+    </button>
+  );
+}
+
 export default function CsvImportModal({
   onClose,
   onImported,
   defaultCurrency = "USD",
   preferredCurrencies = [],
-  transactions = [],
-  viewMonth = "",
   rates = {},
   formatAmount,
   displayCurrency = defaultCurrency,
@@ -376,14 +482,15 @@ export default function CsvImportModal({
   const [flipSigns, setFlipSigns] = useState(false);
   const [progress, setProgress] = useState(0);
   const [total, setTotal] = useState(0);
-  const [importedCount, setImportedCount] = useState(0);
-  const [skippedCount, setSkippedCount] = useState(0);
-  const [error, setError] = useState("");
-  const [duplicateFlags, setDuplicateFlags] = useState<DuplicateFlag[]>([]);
-  const [skipIndices, setSkipIndices] = useState<Set<number>>(new Set());
+  const [error, setError] = useState<{ title: string; body?: string } | null>(null);
+  const [duplicates, setDuplicates] = useState<DuplicateFlag[] | null>(null);
+  const [keep, setKeep] = useState<Set<number>>(new Set());
+  const [dupeRun, setDupeRun] = useState(0);
+  const [result, setResult] = useState<{ added: number; skipped: number; spent: number; income: number } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [customs] = useState<CatCustomizations>(() => (typeof window === "undefined" ? {} : loadCatCustomizations()));
 
   const processFile = useCallback(async (file: File) => {
     const name = file.name.toLowerCase();
@@ -393,7 +500,7 @@ export default function CsvImportModal({
     const isPdf = name.endsWith(".pdf") || file.type === "application/pdf";
     const isCsv = name.endsWith(".csv") || file.type === "text/csv";
     if (!isCsv && !isExcel && !isPdf) {
-      setError("Please upload a .csv, .xlsx, or .pdf file.");
+      setError({ title: "Please use a CSV, Excel or PDF file." });
       return;
     }
     try {
@@ -402,7 +509,7 @@ export default function CsvImportModal({
       if (isPdf) {
         ({ headers: h, rows: r } = await parsePDF(file));
         if (r.length === 0) {
-          setError("Couldn't find any transactions in this PDF. It may be a scanned image, or a statement layout we don't recognize yet — try exporting as CSV or Excel instead.");
+          setError({ title: "We couldn’t read this PDF.", body: "It may be a scanned picture. Try a CSV or Excel file from your bank." });
           return;
         }
       } else if (isExcel) {
@@ -420,7 +527,7 @@ export default function CsvImportModal({
         ({ headers: h, rows: r } = parseCSV(text));
       }
       if (h.length < 2) {
-        setError("Couldn't parse this file. Make sure it has headers.");
+        setError({ title: "We couldn’t find the columns in this file.", body: "Try exporting it again from your bank." });
         return;
       }
       const auto = autoDetectColumns(h);
@@ -443,10 +550,10 @@ export default function CsvImportModal({
       setColType(auto.type);
       setImportCurrency(detectedCurrency);
       setFlipSigns(false);
-      setError("");
-      setStep("map");
+      setError(null);
+      setStep("check");
     } catch {
-      setError("Failed to read file. Please try again.");
+      setError({ title: "We couldn’t read this file.", body: "Please try again." });
     }
   }, [defaultCurrency]);
 
@@ -457,7 +564,7 @@ export default function CsvImportModal({
     if (file) processFile(file);
   }, [processFile]);
 
-  const buildParsedTransactions = useCallback((): ParsedImportTransaction[] => {
+  const parsedTransactions = useMemo((): ParsedImportTransaction[] => {
     if (!colDate || !colDesc || !colAmount) return [];
     const dateIdx = headers.indexOf(colDate);
     const descIdx = headers.indexOf(colDesc);
@@ -512,72 +619,39 @@ export default function CsvImportModal({
     return parsed;
   }, [colAmount, colCurrency, colDate, colDesc, colNotes, colType, flipSigns, headers, importCurrency, rows]);
 
-  const parsedTransactions = buildParsedTransactions();
-  const sampleTransaction = parsedTransactions[0] ?? null;
-  const touchedMonths = [...new Set(parsedTransactions.map((t) => t.date.slice(0, 7)).filter(Boolean))].length;
+  // Look for rows already saved whenever what we'd add changes, and again
+  // after a failed save (dupeRun) so rows that did land are skipped next time.
+  useEffect(() => {
+    if (parsedTransactions.length === 0) { setDuplicates([]); return; }
+    let live = true;
+    setDuplicates(null);
+    findDuplicates(parsedTransactions).then((flags) => {
+      if (!live) return;
+      setDuplicates(flags);
+      setKeep(new Set());
+    }).catch(() => { if (live) setDuplicates([]); });
+    return () => { live = false; };
+  }, [parsedTransactions, dupeRun]);
 
-  const previewRows = (() => {
-    if (!colDate || !colDesc || !colAmount) return [];
-    const di = headers.indexOf(colDate);
-    const ni = headers.indexOf(colDesc);
-    const ai = headers.indexOf(colAmount);
-    return rows.map((r: string[]) => ({
-      date: r[di] ?? "",
-      desc: r[ni] ?? "",
-      amount: r[ai] ?? "",
-    }));
-  })();
+  const skip = useMemo(() => new Set((duplicates ?? []).map((d) => d.rowIndex).filter((i) => !keep.has(i))), [duplicates, keep]);
+  const toAdd = parsedTransactions.filter((_, i) => !skip.has(i));
+  const columnsReady = !!colDate && !!colDesc && !!colAmount;
+  const canAdd = columnsReady && duplicates !== null && toAdd.length > 0;
 
-  const previewMonthKey = sampleTransaction?.date.slice(0, 7) || parsedTransactions[0]?.date.slice(0, 7) || viewMonth;
+  const display = (usd: number) => formatAmount ? formatAmount(usd) : formatMoney(usd, { currency: displayCurrency, decimals: 0 });
 
-  const monthLabel = (() => {
-    if (!previewMonthKey) return "this month";
-    const [y, m] = previewMonthKey.split("-").map(Number);
-    if (!y || !m) return "this month";
-    return new Date(y, m - 1, 1).toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  })();
-
-  const previewAmount = (value: number) => {
-    if (formatAmount) return formatAmount(value);
-    return formatMoney(value, { currency: displayCurrency, decimals: 2 });
-  };
-
-  const currencyOptions = Array.from(new Set([
-    defaultCurrency,
-    ...preferredCurrencies,
-    ...SUPPORTED_CURRENCIES,
-  ])).filter(Boolean);
-
-  const currentMonthTxns = previewMonthKey ? transactions.filter((t) => t.date.startsWith(previewMonthKey)) : [];
-  const importedMonthTxns = previewMonthKey ? parsedTransactions.filter((t) => t.date.startsWith(previewMonthKey)) : [];
-  const currentIncome = currentMonthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-  const currentExpenses = currentMonthTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(Math.max(0, t.amount - (t.refund_amount || 0)), t.currency, rates), 0);
-  const importedIncome = importedMonthTxns.filter((t) => t.transaction_type === "income").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-  const importedExpenses = importedMonthTxns.filter((t) => t.transaction_type === "expense").reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-  const projectedIncome = currentIncome + importedIncome;
-  const projectedExpenses = currentExpenses + importedExpenses;
-  const projectedNet = projectedIncome - projectedExpenses;
-
-  const handleImport = useCallback(async (skip: Set<number> = new Set()) => {
-    const parsed = buildParsedTransactions();
-    const toInsert = parsed.filter((_, i) => !skip.has(i));
+  const handleImport = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-
-    if (parsed.length === 0) {
-      setError("No valid rows found. Check that Date, Description, and Amount columns are correct.");
-      setStep("map");
-      return;
-    }
-
-    setTotal(toInsert.length);
+    if (!session || toAdd.length === 0) return;
+    setError(null);
+    setTotal(toAdd.length);
     setProgress(0);
     setStep("importing");
 
     const BATCH = 50;
     let inserted = 0;
-    for (let i = 0; i < toInsert.length; i += BATCH) {
-      const batch = toInsert.slice(i, i + BATCH).map((tx) => ({
+    for (let i = 0; i < toAdd.length; i += BATCH) {
+      const batch = toAdd.slice(i, i + BATCH).map((tx) => ({
         user_id: session.user.id,
         date: tx.date,
         occurred_at: tx.occurred_at,
@@ -594,457 +668,330 @@ export default function CsvImportModal({
       }));
       const { error: dbErr } = await supabase.from("expenses").insert(batch);
       if (dbErr) {
-        setError("Import failed: " + dbErr.message);
-        setStep("map");
+        if (inserted > 0) onImported(inserted);
+        setStep("failed");
         return;
       }
       inserted += batch.length;
       setProgress(inserted);
     }
 
-    setImportedCount(inserted);
-    setSkippedCount(skip.size);
+    const sum = (type: string) => toAdd.filter((t) => t.transaction_type === type).reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
+    setResult({ added: inserted, skipped: skip.size, spent: sum("expense"), income: sum("income") });
     setStep("done");
     onImported(inserted);
-  }, [buildParsedTransactions, onImported, fileName]);
+  }, [toAdd, skip, fileName, onImported, rates]);
 
-  const handleCheckDuplicates = useCallback(async () => {
-    const parsed = buildParsedTransactions();
-    const dates = parsed.map((r) => r.date).filter(Boolean);
-    if (dates.length === 0) {
-      handleImport(new Set());
-      return;
-    }
-    const minDate = dates.reduce((a, b) => (a < b ? a : b));
-    const maxDate = dates.reduce((a, b) => (a > b ? a : b));
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { handleImport(new Set()); return; }
+  const chooseAnother = () => { setStep("upload"); setError(null); setDuplicates(null); };
+  const retry = () => { setDupeRun((n) => n + 1); setStep("check"); };
 
-    // Widen the query window so date-shifted duplicates (a card statement
-    // posts a day or two after the underlying wallet transaction) are still
-    // fetched as candidates.
-    const queryMinDate = shiftDate(minDate, -DUPLICATE_DATE_TOLERANCE_DAYS);
-    const queryMaxDate = shiftDate(maxDate, DUPLICATE_DATE_TOLERANCE_DAYS);
+  const currencyOptions = Array.from(new Set([defaultCurrency, ...preferredCurrencies, ...SUPPORTED_CURRENCIES])).filter(Boolean);
+  const dates = parsedTransactions.map((t) => t.date).sort();
+  const sample = parsedTransactions.slice(0, 3);
 
-    const { data: existing } = await fetchAllPages((from, to) => supabase
-      .from("expenses")
-      .select("id, date, amount, category, currency, description")
-      .eq("user_id", session.user.id)
-      .gte("date", queryMinDate)
-      .lte("date", queryMaxDate)
-      .order("id")
-      .range(from, to));
+  const foundCard = (
+    <div style={{ background: "var(--uf-mint)", borderRadius: "var(--uf-r-card)", padding: 20 }}>
+      <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.1, fontVariantNumeric: "tabular-nums" }}>
+        {parsedTransactions.length} found
+      </div>
+      <div className="uf-t-body" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", color: "var(--uf-ink-2)", marginTop: 6 }}>
+        {dates.length > 0 && <span>{shortDate(dates[0])} – {shortDate(dates[dates.length - 1])}</span>}
+        <button type="button" onClick={() => setStep("currency")} disabled={step === "importing"}
+          aria-label={`Currency: ${CURRENCY_NAMES[importCurrency] ?? importCurrency}. Change`}
+          style={{ ...plainButton, display: "inline-flex", alignItems: "center", gap: 6, background: "var(--uf-card)", color: "var(--uf-ink)",
+            fontWeight: 600, fontSize: 13, padding: "6px 10px 6px 8px", borderRadius: 999, minHeight: 32 }}>
+          <Flag code={CURRENCY_FLAG[importCurrency]} size={12} />
+          {CURRENCY_NAMES[importCurrency] ?? importCurrency}
+          <span aria-hidden style={{ color: "var(--uf-ink-3)" }}>▾</span>
+        </button>
+      </div>
+    </div>
+  );
 
-    const flags: DuplicateFlag[] = [];
-    for (let i = 0; i < parsed.length; i++) {
-      const row = parsed[i];
-      const rowForeign = extractEmbeddedForeignAmount(row.description);
-      const match = existing?.find((e) => {
-        if (!isWithinDateTolerance(e.date, row.date)) return false;
-        // Same currency, same amount - today's exact match, unchanged.
-        if (e.currency === row.currency && amountsClose(Number(e.amount), row.amount)) return true;
-        // This row's embedded original-currency amount (e.g. "CNY 28.90" on a
-        // converted card charge) matches the existing row's native amount.
-        if (rowForeign && e.currency === rowForeign.currency && amountsClose(Number(e.amount), rowForeign.amount)) return true;
-        // The existing row's own description embeds a foreign amount that
-        // matches this row's native currency/amount (import order reversed).
-        const existingForeign = extractEmbeddedForeignAmount(e.description ?? "");
-        if (existingForeign && existingForeign.currency === row.currency && amountsClose(existingForeign.amount, row.amount)) return true;
-        return false;
-      });
-      if (match) flags.push({ rowIndex: i, row, existing: match });
-    }
+  const sampleList = sample.length > 0 && (
+    <ul style={{ ...panel, listStyle: "none", margin: 0, padding: "6px 18px" }} aria-label="First rows from your file">
+      {sample.map((t, i) => {
+        const cat = categoryDisplay(t.category, t.transaction_type, customs);
+        return (
+          <li key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderTop: i ? "1px solid var(--uf-border)" : undefined }}>
+            <CategoryTile emoji={cat.emoji} color={cat.color} />
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.description}</div>
+              <div className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>{cat.label} · {shortDate(t.date)}</div>
+            </div>
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <div style={{ fontSize: 15, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: t.transaction_type === "income" ? "var(--uf-pos)" : "var(--uf-ink)" }}>{signedAmount(t)}</div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--uf-ink-3)" }}>{TYPE_WORD[t.transaction_type]}</div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
 
-    if (flags.length > 0) {
-      setDuplicateFlags(flags);
-      setSkipIndices(new Set(flags.map((f) => f.rowIndex)));
-      setStep("review");
-    } else {
-      handleImport(new Set());
-    }
-  }, [buildParsedTransactions, handleImport]);
-
-  const inputStyle: React.CSSProperties = {
-    width: "100%", padding: "8px 10px", borderRadius: 8,
-    border: "1px solid var(--uf-border)", background: "var(--uf-surface)", color: "var(--uf-ink)",
-    fontSize: 13, fontFamily: "Inter, sans-serif",
-  };
-
-  const selectStyle: React.CSSProperties = {
-    ...inputStyle,
-    colorScheme: "dark",
-  };
-
-  const selectOptionStyle: React.CSSProperties = {
-    backgroundColor: "var(--uf-surface)",
-    color: "var(--uf-ink)",
-    fontFamily: "Inter, sans-serif",
-  };
-
-  const placeholderOptionStyle: React.CSSProperties = {
-    ...selectOptionStyle,
-    color: "var(--uf-ink-3)",
-  };
-
-  const labelStyle: React.CSSProperties = {
-    display: "block", fontSize: 12, fontWeight: 600, color: "var(--uf-ink-2)", marginBottom: 6,
-  };
+  const dupeCount = duplicates?.length ?? 0;
+  const keptCount = keep.size;
 
   return (
     <div
       onClick={onClose}
       style={{
-        position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
+        position: "fixed", inset: 0, background: "rgba(21,23,25,0.55)",
         display: "flex", alignItems: "center", justifyContent: "center",
         zIndex: 300, padding: 16,
       }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="import-title"
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
         style={{
-          background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-modal)",
-          padding: 32, width: "100%", maxWidth: 520,
-          maxHeight: "90dvh", overflowY: "auto",
-          fontFamily: "Inter, sans-serif",
+          background: "var(--uf-card)", borderRadius: "var(--uf-r-modal)",
+          padding: "clamp(20px, 5vw, 28px)", width: "100%", maxWidth: 480,
+          maxHeight: "90dvh", overflowY: "auto", color: "var(--uf-ink)",
+          display: "flex", flexDirection: "column", gap: 16,
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-ink)", fontFamily: "Inter, sans-serif" }}>
-              Import bank transactions
-            </div>
-            {step === "upload" && <div style={{ fontSize: 13, color: "var(--uf-ink-3)", marginTop: 4 }}>Upload a CSV, Excel, or PDF statement from your bank</div>}
-            {step === "map" && <div style={{ fontSize: 13, color: "var(--uf-ink-3)", marginTop: 4 }}>Map the columns and check the live import preview below</div>}
-            {step === "review" && <div style={{ fontSize: 13, color: "var(--uf-ink-3)", marginTop: 4 }}>Review possible duplicates before importing</div>}
-          </div>
-          <button onClick={onClose} style={{ minHeight: 44, minWidth: 44, background: "none", border: "none", color: "var(--uf-ink-3)", cursor: "pointer", fontSize: 20, lineHeight: 1, padding: 4 }}>×</button>
-        </div>
-
         {step === "upload" && (
-          <div
-            onDrop={handleDrop}
-            onDragOver={(e: React.DragEvent) => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onClick={() => fileRef.current?.click()}
-            style={{
-              border: `2px dashed ${dragging ? "#17684B" : "var(--uf-border)"}`,
-              borderRadius: 14, padding: "48px 32px", textAlign: "center",
-              cursor: "pointer", transition: "border-color 0.15s",
-              background: dragging ? "rgba(5,150,105,0.05)" : "transparent",
-            }}
-          >
-            <div style={{ fontSize: 36, marginBottom: 12 }}>📂</div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--uf-ink)", marginBottom: 6 }}>
-              Drop your CSV, Excel, or PDF statement here or click to browse
+          <>
+            <Header title="Add bank history" onClose={onClose} />
+            <div
+              onDrop={handleDrop}
+              onDragOver={(e: React.DragEvent) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              style={{
+                background: "var(--uf-lilac)", borderRadius: "var(--uf-r-card)", padding: "32px 20px", textAlign: "center",
+                border: `2px dashed ${dragging ? "var(--uf-ink)" : "color-mix(in srgb, var(--uf-ink) 18%, transparent)"}`,
+              }}
+            >
+              <span style={{ width: 56, height: 56, borderRadius: 18, background: "var(--uf-card)", display: "grid", placeItems: "center", margin: "0 auto 14px" }}>
+                <Icon name="upload" size={26} strokeWidth={2} />
+              </span>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>Drop your bank file here</div>
+              <div className="uf-t-body" style={{ color: "var(--uf-ink-2)", margin: "4px 0 12px" }}>or</div>
+              <Button variant="primary" size="lg" onClick={() => fileRef.current?.click()} style={{ minWidth: 180 }}>Choose file</Button>
+              <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 16 }}>
+                {["CSV", "Excel", "PDF"].map((k) => (
+                  <span key={k} style={{ fontSize: 12, fontWeight: 700, padding: "6px 12px", borderRadius: 999, background: "var(--uf-card)", color: "var(--uf-ink-2)" }}>{k}</span>
+                ))}
+              </div>
+              <input
+                ref={fileRef}
+                type="file"
+                aria-label="Bank file"
+                accept=".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,.pdf,application/pdf"
+                style={{ display: "none" }}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) processFile(f); }}
+              />
             </div>
-            <div style={{ fontSize: 13, color: "var(--uf-ink-3)" }}>
-              Export from your bank as CSV, Excel (.xlsx), or a PDF statement, then upload it here
-            </div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".csv,text/csv,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,.pdf,application/pdf"
-              style={{ display: "none" }}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => { const f = e.target.files?.[0]; if (f) processFile(f); }}
-            />
-          </div>
+            {error
+              ? <Note tone="neg" icon="critical" title={error.title}>{error.body}</Note>
+              : <Note tone="info" icon="info" title="Where do I find it?">In your bank app, look for “Export” or “Statements”.</Note>}
+          </>
         )}
 
-        {step === "map" && (
+        {(step === "check" || step === "importing" || step === "failed") && (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-              {[
-                { label: "Date column *", val: colDate, set: setColDate },
-                { label: "Description column *", val: colDesc, set: setColDesc },
-                { label: "Amount column *", val: colAmount, set: setColAmount },
-                { label: "Notes column", val: colNotes, set: setColNotes },
-                { label: "Income/Expense column", val: colType, set: setColType },
-                { label: "Currency column", val: colCurrency, set: setColCurrency },
-              ].map(({ label, val, set }) => (
-                <div key={label} style={{ gridColumn: label.startsWith("Amount") ? "1 / -1" : undefined }}>
-                  <label style={labelStyle}>{label}</label>
-                  <select value={val} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set(e.target.value)} style={selectStyle}>
-                    <option value="" style={placeholderOptionStyle}>— select —</option>
-                    {headers.map((h: string) => <option key={h} value={h} style={selectOptionStyle}>{h}</option>)}
-                  </select>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ marginBottom: 20 }}>
-              <label style={labelStyle}>Currency for imported amounts</label>
-              <select value={importCurrency} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setImportCurrency(e.target.value)} style={selectStyle}>
-                {currencyOptions.map((currency) => (
-                  <option key={currency} value={currency} style={selectOptionStyle}>{currency} — {CURRENCY_NAMES[currency] ?? currency}</option>
-                ))}
-              </select>
-              <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 8 }}>
-                {colCurrency
-                  ? "Rows use the mapped currency column when present. This selection is the fallback if a row is blank or unclear."
-                  : "Used when there is no separate currency column. We auto-detect when the file makes it obvious, and you can override it here."}
-              </div>
-            </div>
-
-            <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: "var(--uf-ink-2)", marginBottom: 20, cursor: "pointer" }}>
-              <input
-                type="checkbox"
-                checked={flipSigns}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFlipSigns(e.target.checked)}
-                style={{ width: 15, height: 15, accentColor: "#17684B" }}
-              />
-              My bank shows expenses as positive numbers (flip signs)
-            </label>
-
-            {previewRows.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--uf-ink-3)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em" }}>Raw file sample ({previewRows.length} rows)</div>
-                <div style={{ border: "1px solid var(--uf-border)", borderRadius: 10, overflow: "hidden" }}>
-                  <div style={{ maxHeight: 260, overflowY: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                      <thead>
-                        <tr style={{ background: "var(--uf-surface)" }}>
-                          {["Date", "Description", "Amount"].map((h) => (
-                            <th key={h} style={{ padding: "8px 12px", textAlign: "left", color: "var(--uf-ink-3)", fontWeight: 600, borderBottom: "1px solid var(--uf-border)", position: "sticky", top: 0, background: "var(--uf-surface)" }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {previewRows.map((r: { date: string; desc: string; amount: string }, i: number) => (
-                          <tr key={i} style={{ borderBottom: i < previewRows.length - 1 ? "1px solid var(--uf-surface)" : undefined }}>
-                            <td style={{ padding: "8px 12px", color: "var(--uf-ink-2)" }}>{r.date}</td>
-                            <td style={{ padding: "8px 12px", color: "var(--uf-ink)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.desc}</td>
-                            <td style={{ padding: "8px 12px", color: "var(--uf-ink)", whiteSpace: "nowrap" }}>{r.amount}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+            <Header title="Looks good?" onClose={onClose} />
+            {foundCard}
+            {step !== "failed" && sampleList}
+            {step === "check" && !colType && (
+              <div>
+                <div id="sign-q" style={{ fontSize: 15, fontWeight: 700, marginBottom: 10 }}>Are expenses shown as expenses?</div>
+                <div role="radiogroup" aria-labelledby="sign-q" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", background: "var(--uf-surface)", borderRadius: 999, padding: 4 }}>
+                  {[{ v: false, l: "✓ Yes" }, { v: true, l: "⇄ No, swap" }].map(({ v, l }) => {
+                    const on = flipSigns === v;
+                    return (
+                      <button key={l} type="button" role="radio" aria-checked={on} onClick={() => setFlipSigns(v)}
+                        style={{ ...plainButton, minHeight: 40, borderRadius: 999, fontSize: 14, fontWeight: 600,
+                          background: on ? "var(--uf-card)" : "transparent", color: on ? "var(--uf-ink)" : "var(--uf-ink-2)",
+                          boxShadow: on ? "0 1px 3px rgba(0,0,0,.12)" : "none" }}>{l}</button>
+                    );
+                  })}
                 </div>
               </div>
             )}
+            {step === "check" && dupeCount > 0 && (
+              <Note tone="warn" icon="warning"
+                title={`${dupeCount} ${dupeCount === 1 ? "is" : "are"} already here.`}
+                action={<button type="button" onClick={() => setStep("dupes")} style={{ ...plainButton, fontWeight: 700, textDecoration: "underline", color: "var(--uf-ink)", minHeight: 44, padding: "0 4px" }}>See</button>}>
+                {keptCount > 0 ? `Keeping ${keptCount}, skipping ${dupeCount - keptCount}.` : dupeCount === 1 ? "We’ll skip it." : "We’ll skip them."}
+              </Note>
+            )}
+            {step === "check" && columnsReady && parsedTransactions.length === 0 && (
+              <Note tone="neg" icon="critical" title="No rows we can use.">Check the columns below.</Note>
+            )}
+            {step === "failed" && (
+              <Note tone="neg" icon="critical" title={progress > 0 ? `Stopped after ${progress} of ${total}.` : "Nothing was added."}>
+                Check your internet and try again.{progress > 0 && ` We won’t add the first ${progress} twice.`}
+              </Note>
+            )}
 
-            <div style={{ display: "grid", gap: 16, marginBottom: 20 }}>
-              <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-ink-3)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Import summary</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)", marginBottom: 4 }}>Transactions</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-ink)" }}>{parsedTransactions.length}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)", marginBottom: 4 }}>Months touched</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: "var(--uf-ink)" }}>{touchedMonths}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)", marginBottom: 4 }}>Sign mode</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: flipSigns ? "var(--uf-warn)" : "var(--uf-pos)" }}>{flipSigns ? "Flipped" : "Original"}</div>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)", marginBottom: 4 }}>Currency</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-ink-2)" }}>{colCurrency ? `${importCurrency} fallback` : importCurrency}</div>
-                  </div>
+            {step === "check" && (
+              <Button variant="primary" size="lg" fullWidth disabled={!canAdd} onClick={handleImport}>
+                {duplicates === null ? "Checking…" : `Add ${toAdd.length} transaction${toAdd.length === 1 ? "" : "s"}`}
+              </Button>
+            )}
+            {step === "importing" && (
+              <>
+                <Button variant="primary" size="lg" fullWidth disabled aria-live="polite" style={{ opacity: 1, cursor: "progress" }}>Adding {progress} of {total}…</Button>
+                <div role="progressbar" aria-label="Adding transactions" aria-valuemin={0} aria-valuemax={total} aria-valuenow={progress}
+                  style={{ height: 6, borderRadius: 999, background: "var(--uf-surface)", overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${total ? (progress / total) * 100 : 0}%`, background: "var(--uf-ink)", transition: "width 200ms" }} />
                 </div>
-              </div>
+              </>
+            )}
+            {step === "failed" && <Button variant="primary" size="lg" fullWidth onClick={retry}>Try again</Button>}
 
-              <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-ink-3)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>Example transaction</div>
-                {sampleTransaction ? (
-                  <div style={{ display: "grid", gap: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--uf-ink-2)", fontSize: 12 }}>Date</span><span style={{ color: "var(--uf-ink)", fontSize: 13, fontWeight: 600 }}>{sampleTransaction.date}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--uf-ink-2)", fontSize: 12 }}>Description</span><span style={{ color: "var(--uf-ink)", fontSize: 13, fontWeight: 600, textAlign: "right" }}>{sampleTransaction.description}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--uf-ink-2)", fontSize: 12 }}>Type</span><span style={{ color: sampleTransaction.transaction_type === "income" ? "var(--uf-pos)" : "var(--uf-neg)", fontSize: 13, fontWeight: 700, textTransform: "capitalize" }}>{sampleTransaction.transaction_type}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--uf-ink-2)", fontSize: 12 }}>Currency</span><span style={{ color: "var(--uf-ink-2)", fontSize: 13 }}>{sampleTransaction.currency}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--uf-ink-2)", fontSize: 12 }}>Amount stored</span><span style={{ color: "var(--uf-ink)", fontSize: 13, fontWeight: 700 }}>{formatMoney(sampleTransaction.amount, { currency: sampleTransaction.currency, decimals: 2 })}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}><span style={{ color: "var(--uf-ink-2)", fontSize: 12 }}>Category guess</span><span style={{ color: "var(--uf-ink-2)", fontSize: 13 }}>{sampleTransaction.category}</span></div>
-                  </div>
-                ) : (
-                  <div style={{ color: "var(--uf-ink-2)", fontSize: 13 }}>No valid example row found.</div>
-                )}
-              </div>
-
-              <div style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 14, padding: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-ink-3)", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>{monthLabel} if accepted</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginBottom: 12 }}>
-                  <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: 12 }}>
-                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)", marginBottom: 4 }}>Income</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-pos)" }}>{previewAmount(projectedIncome)}</div>
-                    <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 4 }}>Now {previewAmount(currentIncome)} · adding {previewAmount(importedIncome)}</div>
-                  </div>
-                  <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: 12 }}>
-                    <div style={{ fontSize: 11, color: "var(--uf-ink-2)", marginBottom: 4 }}>Expenses</div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: "var(--uf-ink)" }}>{previewAmount(projectedExpenses)}</div>
-                    <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 4 }}>Now {previewAmount(currentExpenses)} · adding {previewAmount(importedExpenses)}</div>
-                  </div>
-                </div>
-                <div style={{ background: projectedNet >= 0 ? "rgba(5,150,105,0.12)" : "rgba(239,68,68,0.12)", border: `1px solid ${projectedNet >= 0 ? "rgba(5,150,105,0.3)" : "rgba(239,68,68,0.3)"}`, borderRadius: 12, padding: 12 }}>
-                  <div style={{ fontSize: 11, color: "var(--uf-ink-2)", marginBottom: 4 }}>Projected net after import</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: projectedNet >= 0 ? "var(--uf-pos)" : "var(--uf-neg)" }}>{projectedNet >= 0 ? "+" : ""}{previewAmount(projectedNet)}</div>
-                  <div style={{ fontSize: 12, color: "var(--uf-ink-2)", marginTop: 4 }}>
-                    {importedMonthTxns.length > 0
-                      ? `${importedMonthTxns.length} imported transaction${importedMonthTxns.length === 1 ? "" : "s"} land in ${monthLabel}.`
-                      : `None of these imported transactions land in ${monthLabel}.`}
-                  </div>
-                  {touchedMonths > 1 && importedMonthTxns.length > 0 && (
-                    <div style={{ fontSize: 12, color: "var(--uf-ink-3)", marginTop: 6 }}>
-                      Showing {monthLabel} because this preview example lands there. This file touches {touchedMonths} months in total.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <button
-                onClick={() => setStep("upload")}
-                style={{ minHeight: 44, minWidth: 44,
-                  width: "100%", padding: "12px 0", borderRadius: "var(--uf-r-pill)", border: "1px solid var(--uf-border-2)",
-                  background: "transparent", color: "var(--uf-ink-2)", fontSize: 14, fontWeight: 700, cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                }}
-              >
+            {step !== "importing" && (
+              <button type="button" onClick={chooseAnother} style={{ ...plainButton, alignSelf: "center", minHeight: 44, fontSize: 14, fontWeight: 600, color: "var(--uf-ink-2)", textDecoration: "underline" }}>
                 Choose another file
               </button>
-              <button
-                onClick={handleCheckDuplicates}
-                disabled={!colDate || !colDesc || !colAmount || parsedTransactions.length === 0}
-                style={{ minHeight: 44, minWidth: 44,
-                  width: "100%", padding: "12px 0", borderRadius: "var(--uf-r-pill)", border: "none",
-                  background: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "var(--uf-surface)" : "#151719",
-                  color: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "var(--uf-ink-3)" : "#fff",
-                  fontSize: 14, fontWeight: 700, cursor: (!colDate || !colDesc || !colAmount || parsedTransactions.length === 0) ? "not-allowed" : "pointer",
-                  fontFamily: "Inter, sans-serif",
-                }}
-              >
-                Import {parsedTransactions.length} transactions
+            )}
+            {step === "check" && (
+              <button type="button" onClick={() => setStep("columns")} style={{ ...plainButton, minHeight: 44, display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14, color: "var(--uf-ink-2)", padding: "0 4px" }}>
+                <span>Wrong columns? Fix them</span><span aria-hidden>›</span>
               </button>
-            </div>
+            )}
           </>
         )}
 
-        {step === "review" && (
+        {step === "currency" && (
           <>
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-warn)", marginBottom: 6 }}>
-                {duplicateFlags.length} possible duplicate{duplicateFlags.length !== 1 ? "s" : ""} found
-              </div>
-              <div style={{ fontSize: 13, color: "var(--uf-ink-2)" }}>
-                These rows may already exist. Uncheck any you still want to import.
-              </div>
-            </div>
-
-            <div style={{ border: "1px solid var(--uf-border)", borderRadius: 10, overflow: "hidden", marginBottom: 20 }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-                <thead>
-                  <tr style={{ background: "var(--uf-surface)" }}>
-                    {["Skip", "Date", "Description", "Amount", "Category"].map((h) => (
-                      <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: "var(--uf-ink-3)", fontWeight: 600, borderBottom: "1px solid var(--uf-border)", whiteSpace: "nowrap" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {duplicateFlags.map(({ rowIndex, row }) => {
-                    const checked = skipIndices.has(rowIndex);
-                    return (
-                      <tr key={rowIndex} style={{ borderBottom: "1px solid var(--uf-surface)", background: checked ? "rgba(251,191,36,0.04)" : undefined }}>
-                        <td style={{ padding: "8px 10px" }}>
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() =>
-                              setSkipIndices((prev) => {
-                                const next = new Set(prev);
-                                if (next.has(rowIndex)) next.delete(rowIndex);
-                                else next.add(rowIndex);
-                                return next;
-                              })
-                            }
-                            style={{ accentColor: "var(--uf-warn)", width: 14, height: 14 }}
-                          />
-                        </td>
-                        <td style={{ padding: "8px 10px", color: "var(--uf-ink-2)", whiteSpace: "nowrap" }}>{row.date}</td>
-                        <td style={{ padding: "8px 10px", color: "var(--uf-ink)", maxWidth: 140, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.description}</td>
-                        <td style={{ padding: "8px 10px", color: "var(--uf-ink)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
-                          {formatMoney(row.amount, { currency: row.currency, decimals: 2 })}
-                        </td>
-                        <td style={{ padding: "8px 10px", color: "var(--uf-ink-2)" }}>{row.category}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <button
-                onClick={() => handleImport(new Set())}
-                style={{ minHeight: 44, minWidth: 44,
-                  width: "100%", padding: "12px 0", borderRadius: "var(--uf-r-pill)",
-                  border: "1px solid var(--uf-border-2)", background: "transparent",
-                  color: "var(--uf-ink-2)", fontSize: 13, fontWeight: 700, cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                }}
-              >
-                Import all anyway
-              </button>
-              <button
-                onClick={() => handleImport(skipIndices)}
-                style={{ minHeight: 44, minWidth: 44,
-                  width: "100%", padding: "12px 0", borderRadius: "var(--uf-r-pill)", border: "none",
-                  background: "#151719", color: "#fff",
-                  fontSize: 13, fontWeight: 700, cursor: "pointer",
-                  fontFamily: "Inter, sans-serif",
-                }}
-              >
-                Skip checked &amp; continue →
-              </button>
+            <Header title="Currency" onBack={() => setStep("check")} onClose={onClose} />
+            <p className="uf-t-body" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
+              {colCurrency ? "Your file has a currency column. This is only used when a row leaves it blank." : "We guessed this from your file. Only change it if that’s wrong."}
+            </p>
+            <div role="radiogroup" aria-label="Currency" style={{ ...panel, padding: "4px 16px", maxHeight: 360, overflowY: "auto" }}>
+              {currencyOptions.map((c, i) => {
+                const on = c === importCurrency;
+                return (
+                  <button key={c} type="button" role="radio" aria-checked={on} onClick={() => { setImportCurrency(c); setStep("check"); }}
+                    style={{ ...plainButton, width: "100%", display: "flex", alignItems: "center", gap: 12, minHeight: 48, fontSize: 15,
+                      borderTop: i ? "1px solid var(--uf-border)" : undefined }}>
+                    <Flag code={CURRENCY_FLAG[c]} size={16} />
+                    <span style={{ fontWeight: 700, width: 44, textAlign: "left" }}>{c}</span>
+                    <span style={{ color: "var(--uf-ink-2)", flex: 1, textAlign: "left" }}>{CURRENCY_NAMES[c] ?? c}</span>
+                    {on && <Icon name="positive" size={18} strokeWidth={2.4} />}
+                  </button>
+                );
+              })}
             </div>
           </>
         )}
 
-        {step === "importing" && (
-          <div style={{ textAlign: "center", padding: "32px 0" }}>
-            <div style={{ fontSize: 32, marginBottom: 16 }}>⏳</div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: "var(--uf-ink)", marginBottom: 8 }}>
-              Importing transactions…
-            </div>
-            <div style={{ fontSize: 13, color: "var(--uf-ink-3)", marginBottom: 20 }}>
-              {progress} / {total}
-            </div>
-            <div style={{ height: 6, background: "var(--uf-border)", borderRadius: 99, overflow: "hidden" }}>
-              <div style={{ height: "100%", background: "#151719", borderRadius: 99, width: `${total > 0 ? (progress / total) * 100 : 0}%`, transition: "width 0.2s" }} />
-            </div>
-          </div>
+        {step === "dupes" && (
+          <>
+            <Header title="Already here?" onBack={() => setStep("check")} onClose={onClose} />
+            <p className="uf-t-body" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
+              Left is from your file. Right is already in UntilFire. <Mark on>Yellow</Mark> means different.
+            </p>
+            {(duplicates ?? []).map(({ rowIndex, row, existing }) => {
+              const nameDiff = row.description.trim().toLowerCase() !== (existing.description ?? "").trim().toLowerCase();
+              const dateDiff = row.date !== existing.date;
+              const amountDiff = row.currency !== existing.currency || !amountsClose(row.amount, existing.amount);
+              const kept = keep.has(rowIndex);
+              const note = !nameDiff && !dateDiff && !amountDiff ? "Looks the same"
+                : dateDiff && !nameDiff && !amountDiff ? "A day or two apart"
+                : nameDiff && !dateDiff && !amountDiff ? "Same amount and day"
+                : "Close match";
+              return (
+                <div key={rowIndex} style={{ ...panel, padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    <DupeSide tag="From file" name={row.description} date={row.date} amount={formatMoney(row.amount, { currency: row.currency, decimals: 2 })} diff={{ name: nameDiff, date: dateDiff, amount: amountDiff }} />
+                    <DupeSide tag="Already have" name={existing.description || "No name"} date={existing.date} amount={formatMoney(existing.amount, { currency: existing.currency, decimals: 2 })} diff={{ name: nameDiff, date: dateDiff, amount: amountDiff }} />
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                    <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>{note}</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600 }}>
+                      Keep both
+                      <Switch on={kept} label={`Keep both: ${row.description}, ${shortDate(row.date)}`} onChange={() => setKeep((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(rowIndex)) next.delete(rowIndex); else next.add(rowIndex);
+                        return next;
+                      })} />
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+            <Button variant="primary" size="lg" fullWidth onClick={() => setStep("check")}>Done</Button>
+          </>
         )}
 
-        {step === "done" && (
-          <div style={{ textAlign: "center", padding: "24px 0" }}>
-            <div style={{ fontSize: 40, marginBottom: 16 }}>✅</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: "var(--uf-ink)", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>
-              {importedCount} transaction{importedCount !== 1 ? "s" : ""} imported
-              {skippedCount > 0 ? `, ${skippedCount} duplicate${skippedCount !== 1 ? "s" : ""} skipped` : ""}
+        {step === "columns" && (
+          <>
+            <Header title="Fix columns" onBack={() => setStep("check")} onClose={onClose} />
+            <p className="uf-t-body" style={{ margin: 0, color: "var(--uf-ink-2)" }}>Pick which column in your file holds each thing.</p>
+            <div style={{ ...panel, padding: "4px 16px" }}>
+              {[
+                { label: "Date", val: colDate, set: setColDate },
+                { label: "Name", val: colDesc, set: setColDesc },
+                { label: "Amount", val: colAmount, set: setColAmount },
+                { label: "Income or expense", val: colType, set: setColType, optional: true },
+                { label: "Currency", val: colCurrency, set: setColCurrency, optional: true },
+                { label: "Notes", val: colNotes, set: setColNotes, optional: true },
+              ].map(({ label, val, set, optional }, i) => (
+                <label key={label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, minHeight: 56, fontSize: 14,
+                  borderTop: i ? "1px solid var(--uf-border)" : undefined }}>
+                  <span>{label}{optional && <span style={{ fontSize: 12, color: "var(--uf-ink-3)", marginLeft: 6 }}>optional</span>}</span>
+                  <Select value={val} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => set(e.target.value)} style={{ maxWidth: "55%", padding: "8px 12px", fontSize: 13, fontWeight: 600 }}>
+                    <option value="">{optional ? "None" : "Choose…"}</option>
+                    {headers.map((h) => <option key={h} value={h}>{h}</option>)}
+                  </Select>
+                </label>
+              ))}
             </div>
-            <div style={{ fontSize: 13, color: "var(--uf-ink-3)", marginBottom: 28 }}>
-              Categories were auto-detected. Tap any transaction to adjust.
-            </div>
-            <button
-              onClick={onClose}
-              style={{ minHeight: 44, minWidth: 44,
-                padding: "10px 28px", borderRadius: "var(--uf-r-pill)", border: "none",
-                background: "#151719", color: "#fff", fontSize: 14, fontWeight: 700,
-                cursor: "pointer", fontFamily: "Inter, sans-serif",
-              }}
-            >
-              Done
-            </button>
-          </div>
+            <Button variant="primary" size="lg" fullWidth onClick={() => setStep("check")}>Done</Button>
+          </>
         )}
 
-        {error && (
-          <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, fontSize: 13, color: "var(--uf-neg)" }}>
-            {error}
-          </div>
+        {step === "done" && result && (
+          <>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button type="button" onClick={onClose} aria-label="Close" style={iconButton}>×</button>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <span style={{ width: 72, height: 72, borderRadius: 24, background: "var(--uf-mint)", color: "var(--uf-pos)", display: "grid", placeItems: "center", margin: "0 auto 16px" }}>
+                <Icon name="positive" size={34} strokeWidth={2.6} />
+              </span>
+              <h2 id="import-title" style={{ margin: 0, fontSize: 28, fontWeight: 800 }}>{result.added} added</h2>
+              {result.skipped > 0 && <div className="uf-t-body" style={{ color: "var(--uf-ink-2)", marginTop: 4 }}>{result.skipped} skipped, already here</div>}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div style={{ ...panel, borderRadius: 20, padding: 16 }}>
+                <div className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Expenses</div>
+                <div style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{display(result.spent)}</div>
+              </div>
+              <div style={{ ...panel, borderRadius: 20, padding: 16 }}>
+                <div className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Income</div>
+                <div style={{ fontSize: 18, fontWeight: 700, fontVariantNumeric: "tabular-nums", color: "var(--uf-pos)" }}>+{display(result.income)}</div>
+              </div>
+            </div>
+            <Note tone="info" icon="info">Categories are our guess. Tap one to change it.</Note>
+            <Button variant="primary" size="lg" fullWidth onClick={onClose}>See transactions</Button>
+          </>
         )}
       </div>
+    </div>
+  );
+}
+
+function Mark({ on, children }: { on: boolean; children: React.ReactNode }) {
+  if (!on) return <>{children}</>;
+  return <mark style={{ background: "var(--uf-yellow)", color: "#151719", borderRadius: 6, padding: "0 4px" }}>{children}</mark>;
+}
+
+function DupeSide({ tag, name, date, amount, diff }: {
+  tag: string; name: string; date: string; amount: string; diff: { name: boolean; date: boolean; amount: boolean };
+}) {
+  return (
+    <div style={{ minWidth: 0, background: "var(--uf-card)", borderRadius: 16, padding: 12 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: "var(--uf-ink-3)", marginBottom: 6 }}>{tag}</div>
+      <div style={{ fontSize: 14, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={name}><Mark on={diff.name}>{name}</Mark></div>
+      <div className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}><Mark on={diff.date}>{shortDate(date)}</Mark></div>
+      <div style={{ fontSize: 15, fontWeight: 700, marginTop: 6, fontVariantNumeric: "tabular-nums" }}><Mark on={diff.amount}>{amount}</Mark></div>
     </div>
   );
 }

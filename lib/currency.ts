@@ -22,6 +22,14 @@ export const CURRENCY_NAMES: Record<string, string> = {
   PKR: "Pakistani Rupee",
 };
 
+/** The flag shown beside each currency: a two-letter code for app/components/Flag. */
+export const CURRENCY_FLAG: Record<string, string> = {
+  USD: "US", EUR: "EU", GBP: "GB", JPY: "JP", CNY: "CN", AUD: "AU", CAD: "CA", SGD: "SG", HKD: "HK",
+  CHF: "CH", NZD: "NZ", SEK: "SE", NOK: "NO", DKK: "DK", KRW: "KR", INR: "IN", THB: "TH", MYR: "MY",
+  IDR: "ID", PHP: "PH", VND: "VN", TWD: "TW", MXN: "MX", BRL: "BR", ZAR: "ZA", AED: "AE", SAR: "SA",
+  TRY: "TR", PLN: "PL", CZK: "CZ", HUF: "HU", ILS: "IL", NGN: "NG", PKR: "PK",
+};
+
 export const FALLBACK_RATES: Record<string, number> = {
   EUR: 0.92,    GBP: 0.79,    JPY: 149.5,   CNY: 7.27,
   AUD: 1.56,    CAD: 1.36,    SGD: 1.34,    HKD: 7.78,

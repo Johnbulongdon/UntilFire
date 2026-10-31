@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-31 — Simpler bank-file import
+
+- The website's "Import bank transactions" window is now a few short screens instead of one long form: pick a file, see "84 found" with three real sample rows, then one button to add them. The six column boxes, the "flip signs" checkbox, the raw table and the month-totals boxes are gone from the main screen.
+- Currency is a small flag button on the found card (guessed from the file, as before); the column boxes sit behind "Wrong columns? Fix them". The spending question is one Yes / No, swap choice, hidden when the file already says which rows are income.
+- Rows already in UntilFire are compared side by side, with differences marked, and each has a "Keep both" switch. They are still skipped by default.
+- Saving shows a progress bar; a failed save says how many were added and "Try again" checks for duplicates again so those rows aren't added twice. The Done screen (which never showed before, because the window closed) now shows the count, expenses and income.
+- The Transactions button reads "Import" (it also takes Excel and PDF). Flags gain EU and Pakistan. Parsing, currency guessing, duplicate rules and saved rows are unchanged.
+
 ## Unreleased — native pastel surfaces
 
 - Add lighter multicolour tool tiles to Money and Plan, coloured settings wells to Profile, and distinct summary chip colours.
