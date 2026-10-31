@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-31 — Duplicate buttons answer at once
+
+- Tapping "Delete card copy", "Keep both" or "Delete all card copies" fades the row straight away and the button reads "Deleting…", before the save finishes. The toast with Undo follows. A row that could not be deleted comes back after five seconds.
+
 ## 2026-10-31 — Card copies of Alipay and WeChat purchases
 
 - A card statement line for something paid through Alipay or WeChat Pay ("Alipay Amap Taxi −$8.35") is now recognised as the same purchase as the wallet's own row ("高德打车 −¥55.16"), even though the currency and name differ.

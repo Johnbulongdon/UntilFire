@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { InfoTip } from "@/components/ui";
 import { formatMoney } from "@/lib/money";
 import { FLAG_ORDER, type FlagKind } from "@/lib/transaction-flags";
@@ -46,6 +46,15 @@ export default function WorthALook({ flags, notes, rows, fmt, toUSD, displayCurr
   twins?: Map<string, Row>; onDeleteCopies?: (ids: string[]) => void;
 }) {
   const [open, setOpen] = useState<FlagKind | null>(null);
+  // Rows on their way out: they fade at once, so a tap answers before the
+  // save does. A row the save could not delete comes back after a few seconds.
+  const [leaving, setLeaving] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!leaving.size) return;
+    const t = setTimeout(() => setLeaving(new Set()), 5000);
+    return () => clearTimeout(t);
+  }, [leaving]);
+  const leave = (ids: string[]) => setLeaving((prev) => new Set([...prev, ...ids]));
   const counts = FLAG_ORDER.map((k) => ({ k, n: [...flags.values()].filter((v) => v === k).length })).filter((c) => c.n > 0);
   if (!counts.length) return null;
   const listed = open ? rows.filter((r) => flags.get(r.id) === open).sort((a, b) => b.date.localeCompare(a.date)) : [];
@@ -73,20 +82,23 @@ export default function WorthALook({ flags, notes, rows, fmt, toUSD, displayCurr
               {COPY[open].label}<InfoTip label={`About ${COPY[open].label.toLowerCase()}`}>{COPY[open].tip}</InfoTip>
             </span>
             {copies.length > 1 && onDeleteCopies && (
-              <button type="button" style={{ ...btn(true), background: "var(--uf-ink)" }} onClick={() => onDeleteCopies(copies.map((r) => r.id))}>
-                Delete all {copies.length} card copies
+              <button type="button" style={{ ...btn(true), background: "var(--uf-ink)" }} disabled={leaving.size > 0}
+                onClick={() => { const ids = copies.map((r) => r.id); leave(ids); onDeleteCopies(ids); }}>
+                {copies.every((r) => leaving.has(r.id)) ? `Deleting ${copies.length}…` : `Delete all ${copies.length} card copies`}
               </button>
             )}
           </div>
           {listed.map((r, i) => twins?.has(r.id) && open === "duplicate" ? (
-            <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 16px", borderTop: i ? "1px solid var(--uf-border)" : "none" }}>
+            <div key={r.id} aria-busy={leaving.has(r.id)} style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", padding: "10px 16px", borderTop: i ? "1px solid var(--uf-border)" : "none",
+              opacity: leaving.has(r.id) ? 0.35 : 1, transform: leaving.has(r.id) ? "translateX(12px)" : "none", transition: "opacity var(--uf-dur-2, 220ms), transform var(--uf-dur-2, 220ms)" }}>
               <div style={{ flex: 1, minWidth: 220, display: "grid", gap: 6 }}>
                 <PairLine tag="Delete" row={r} />
                 <PairLine tag="Keep" row={twins.get(r.id)!} />
               </div>
               <span style={{ display: "flex", gap: 6 }}>
-                <button type="button" style={{ ...btn(true), background: "var(--uf-ink)" }} onClick={() => onYes(r, "duplicate")}>Delete card copy</button>
-                <button type="button" style={btn(false)} onClick={() => onNo(r, "duplicate")}>Keep both</button>
+                <button type="button" style={{ ...btn(true), background: "var(--uf-ink)" }} disabled={leaving.has(r.id)}
+                  onClick={() => { leave([r.id]); onYes(r, "duplicate"); }}>{leaving.has(r.id) ? "Deleting…" : "Delete card copy"}</button>
+                <button type="button" style={btn(false)} disabled={leaving.has(r.id)} onClick={() => { leave([r.id]); onNo(r, "duplicate"); }}>Keep both</button>
               </span>
             </div>
           ) : (
