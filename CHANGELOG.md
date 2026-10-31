@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-31 — ether.fi card statements import
+
+- Website PDF import now reads card statements that print signed dollar amounts with a reference ID (ether.fi): spending comes in as spending, refunds as money back, in the statement's own currency (USD), with no "flip signs" step.
+- Handles "Sept" and dates whose year wraps onto the next line, keeps location/crypto detail lines out of the merchant name, and stops before "Pending transactions" so charges aren't counted twice.
+- PDF row rules moved to lib/pdf-statement.ts with made-up test rows (`npm run test:pdf-statement`); older card and savings layouts read the same.
+
 ## 2026-10-31 — October update email pictures
 
 - Add the October monthly update email's banner and four feature previews (new look, Until payday, Today, Where could you retire?) under public/email/october/, so the admin draft "Monthly update — October 2026" can load them. No app behaviour change.

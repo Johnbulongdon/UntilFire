@@ -68,6 +68,7 @@
     "test:apple-subscriptions": "node --experimental-strip-types --no-warnings scripts/verify-apple-subscriptions.ts",
     "test:account-deletion": "node --experimental-strip-types --no-warnings scripts/verify-account-deletion.ts",
     "test:csv-import": "node --experimental-strip-types --no-warnings scripts/verify-csv-import.ts",
+    "test:pdf-statement": "node --experimental-strip-types --no-warnings scripts/verify-pdf-statement.ts",
     "test:mortgages": "node --experimental-strip-types --no-warnings scripts/verify-mortgages.ts",
     "test:net-worth-compare": "node --experimental-strip-types --no-warnings scripts/verify-net-worth-compare.mjs",
     "test:freedom-share": "node --experimental-strip-types --no-warnings scripts/verify-freedom-share.ts",
