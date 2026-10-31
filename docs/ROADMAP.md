@@ -620,3 +620,8 @@ N1 web style follow-up: [draft PR #335](https://github.com/Johnbulongdon/UntilFi
 N1 payday polish is In review: [PR #336](https://github.com/Johnbulongdon/UntilFire/pull/336), implementation 4346376. Build/type/lint and chart/cash guards passed; browser before/after and edge-state checks recorded. Awaiting design review; not merged or deployed.
 
 31 October N1/N2 payday refinement — Codex, PR #336: John approved the simplified ledger mock and authorized build/ship. D-124 supersedes the chart polish. Shared everyday-cost estimate, optional visit-only zero cushion, Home Today synchronization and matching phone card implemented. In review until checked and merged; deployment and phone channel promotion tracked separately.
+
+31 October N1/N2 mobile welcome — Codex, codex/mobile-welcome-product-preview,
+baseline origin/main cd78930. Original option 3 selected; implementation and local
+verification in progress. Preserve auth/onboarding paths; A/B experiment deferred.
+No merge, OTA promotion or store submission requested in this change.

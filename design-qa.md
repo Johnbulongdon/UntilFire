@@ -26,3 +26,6 @@ LANDING_STORIES remains empty until genuine quotes and permitted attribution are
 Generated assets: connected-horizon.webp is the approved decorative backdrop; testimonial-demo-portraits.webp contains generated fictional portraits used only by the labeled local design preview. Existing brand/logo-horizontal.svg is reused.
 
 This report verifies the implementation locally. GitHub PR/CI and deployment status record merge/publication separately.
+## Mobile welcome follow-up — 31 October 2026
+
+Scoped verification and limitations: [mobile welcome QA](docs/design/mobile-welcome/design-qa.md). Original option 3 implemented; browser navigation and native bundle checks passed. Physical-device acceptance and release remain pending. Earlier landing verification above is preserved.

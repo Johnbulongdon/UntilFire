@@ -3513,3 +3513,16 @@ John requested a better-looking Until payday screen and explicitly chose the act
 **Decision:** Home shows spending cash less unpaid bills/card obligations and estimated everyday costs through the next repeating payday. Use the shared non-bill historical daily median when available (three complete spending months), otherwise the saved monthly category budget with repeating bills removed per category, spread across actual calendar days. Missing history and budget is unknown, never a zero-cost estimate. History covers normal spending, not just Needs. No automatic savings or investment reservation; emergency savings remain outside spending cash under existing account-role rules.
 **UI:** One amount, compact breakdown, three upcoming payments and a separate Money destination. No chart or purchase calculator. Everyday estimate can be adjusted; optional cushion starts at zero and stays collapsed. Adjustments are explicitly visit-only, reset on account/day/payday changes and never overwrite budgets. Today on Home uses the same adjusted remainder per day. Phone uses the same shared forecast helper and layout meaning. Money's existing budget-limit views are separate and unchanged.
 **Trade-offs:** Forecasts are estimates, not purchase guarantees; no invented city/category values or automatic savings target. Detailed category estimate chips from the mock are omitted until a trustworthy per-category forecast exists. No financial database writes or migration required. Physical-device checks and phone release eligibility are separate release evidence.
+
+### D-125 — Product-led mobile welcome, experiment deferred (31 October 2026)
+**Status:** Approved for implementation; release pending.
+**Decision:** John chose the original third welcome mock: Make room for more life,
+with yellow freedom-date and mint Until payday example panels, the approved logo,
+and equally wide Get started / I already have an account actions. Replace the large
+logo tile without changing first-use questions, sign-in recovery, or account data.
+Keep example figures visibly illustrative and accessible, retain short copy, and
+respect reduced motion and larger text. See docs/design/mobile-welcome/README.md.
+**Deferred:** A/B testing this design against the later pastel landscape. Low volume
+and uncertainty about meaningful welcome-screen impact mean no experiment or flags
+are installed now. Revisit activation to first reveal, sign-in reliability and an
+adequate sample before claiming a winner. No conversion improvement is assumed.

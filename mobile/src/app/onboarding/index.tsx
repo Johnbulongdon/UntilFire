@@ -1,13 +1,6 @@
 import { router } from 'expo-router'
 import { useEffect, useRef } from 'react'
-import { Image, View } from 'react-native'
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated'
-import { SafeAreaView } from 'react-native-safe-area-context'
-
-import { colors } from '@/theme/colors'
-import { Button } from '@/components/Button'
-import { Sunny } from '@/components/Sunny'
-import { Text } from '@/components/Text'
+import { WelcomeScreen } from '@/components/WelcomeScreen'
 import { haptic } from '@/lib/haptics'
 import { useAccount, type AccountData } from '@/state/account'
 import { useAuth } from '@/state/auth'
@@ -25,12 +18,7 @@ function planFromAccount(d: AccountData): Plan | null {
   }
 }
 
-/**
- * Welcome (V2): the wordmark (without the logo's own sun, so there is one sun),
- * Sunny coming up, one punchline. Both buttons sign in first (account first,
- * Oct 16 2026); a set-up account goes straight to Home, a new one answers the
- * questions next.
- */
+/** Welcome presentation; existing plan recovery and navigation stay in this route. */
 export default function Welcome() {
   const { session } = useAuth()
   const { data } = useAccount()
@@ -54,34 +42,8 @@ export default function Welcome() {
     router.push('/sign-in')
   }
 
-  // A soft tap as the sun rises.
-  useEffect(() => {
-    const t = setTimeout(haptic.tick, 900)
-    return () => clearTimeout(t)
-  }, [])
-
-  return (
-    <SafeAreaView className="flex-1 bg-ground">
-      <View className="flex-1 justify-between px-6 pb-4 pt-6">
-        <Animated.View entering={FadeIn.duration(300)} style={{ alignItems: 'center', marginTop: 24 }}>
-          <Image source={colors.ink === '#151719' ? require('../../../assets/brand-logo.png') : require('../../../assets/brand-logo-white.png')} resizeMode="contain" style={{width:160,height:32}} accessibilityLabel="UntilFire"/>
-        </Animated.View>
-
-        <Animated.View entering={FadeIn.delay(120).duration(900)}>
-          <View style={{alignItems:'center',padding:44,borderRadius:32,backgroundColor:'#FFE58A'}}><Sunny onAccent mood="rise" size={190}/></View>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(250).duration(700)}>
-          <Text className="font-display text-[42px] font-bold leading-[48px] tracking-tight text-ink">
-            Find the year work becomes optional.
-          </Text>
-        </Animated.View>
-
-        <Animated.View entering={FadeInDown.delay(400).duration(600)}>
-          <Button label="Get started" onPress={()=>{haptic.tick();router.push('/onboarding/goal')}} />
-          <Button kind="quiet" style={{ marginTop: 10 }} label="I already have an account" onPress={start} />
-        </Animated.View>
-      </View>
-    </SafeAreaView>
-  )
+  return <WelcomeScreen
+    onGetStarted={() => { haptic.tick(); router.push('/onboarding/goal') }}
+    onSignIn={start}
+  />
 }
