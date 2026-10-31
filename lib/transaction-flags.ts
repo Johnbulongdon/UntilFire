@@ -63,6 +63,29 @@ export function walletTwinScore(card: TwinTx, other: TwinTx, toUSD: (amount: num
 }
 
 /**
+ * Card copies of wallet purchases: card row id → the wallet row it copies.
+ * `cards` are the rows that may be copies; `all` the rows they may copy.
+ * Closest pairs first; each row pairs once.
+ */
+export function walletTwins<T extends TwinTx & { id: string }>(cards: T[], all: T[], toUSD: (amount: number, currency: string) => number): Map<string, T> {
+  const pairs: { card: T; other: T; score: number }[] = [];
+  for (const card of cards) {
+    if (!isWalletCharge(card.description ?? "")) continue;
+    for (const other of all) {
+      const score = walletTwinScore(card, other, toUSD);
+      if (score !== null) pairs.push({ card, other, score });
+    }
+  }
+  const out = new Map<string, T>(), used = new Set<string>();
+  for (const { card, other } of pairs.sort((a, b) => a.score - b.score)) {
+    if (used.has(card.id) || used.has(other.id)) continue;
+    used.add(card.id); used.add(other.id);
+    out.set(card.id, other);
+  }
+  return out;
+}
+
+/**
  * Flags for the rows in view. `history` is everything the person has, which
  * gives each merchant its usual size. One flag per row, in FLAG_ORDER.
  */
@@ -106,21 +129,8 @@ export function findFlags(inView: FlagTx[], history: FlagTx[], toUSD: (amount: n
 
   // Wallet purchases on a card statement: the card row is flagged, so
   // confirming keeps the wallet's row, which has the time, the shop's own
-  // name and the amount actually paid. Closest pairs first; each row once.
-  const pairs: { card: FlagTx; other: FlagTx; score: number }[] = [];
-  for (const card of expenses) {
-    if (out.has(card.id) || ok(card, "duplicate") || !isWalletCharge(card.description ?? "")) continue;
-    for (const other of expenses) {
-      const score = walletTwinScore(card, other, toUSD);
-      if (score !== null) pairs.push({ card, other, score });
-    }
-  }
-  const paired = new Set<string>();
-  for (const { card, other } of pairs.sort((a, b) => a.score - b.score)) {
-    if (paired.has(card.id) || paired.has(other.id)) continue;
-    paired.add(card.id); paired.add(other.id);
-    out.set(card.id, "duplicate");
-  }
+  // name and the amount actually paid.
+  for (const id of walletTwins(expenses.filter((t) => !out.has(t.id) && !ok(t, "duplicate")), expenses, toUSD).keys()) out.set(id, "duplicate");
 
   // Large: against this merchant's own history when it has one, else the person's top 5%.
   const usd = (t: FlagTx) => toUSD(netAmount(t), t.currency);

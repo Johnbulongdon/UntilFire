@@ -4,7 +4,7 @@
  * Run: npm run test:transaction-flags
  */
 import assert from "node:assert/strict";
-import { findFlags, type FlagTx, okTag } from "../lib/transaction-flags.ts";
+import { findFlags, type FlagTx, okTag, walletTwins } from "../lib/transaction-flags.ts";
 
 let n = 0;
 const ok = (name: string, fn: () => void) => { fn(); n++; console.log(`✓ ${name}`); };
@@ -58,6 +58,15 @@ ok("a card line for an Alipay purchase matches the wallet's own row in yuan", ()
   const hkd = card("Alipay*Taobao Shanghai CN CNY 59.32 *EXCHANGE RATE: 1.18560", 70.33, "2026-08-10", "HKD");
   assert.equal(findFlags([hkd, cny("淘宝闪购", 59.32, "2026-08-09")], [], fx).get(hkd.id), "duplicate", "a printed yuan amount matches exactly");
   assert.equal(findFlags([hkd, cny("淘宝闪购", 60.5, "2026-08-09")], [], fx).size, 0, "a printed yuan amount that differs is not a match");
+});
+ok("each card copy knows the wallet row it copies", () => {
+  const fx = (a: number, c: string) => (c === "CNY" ? a / 6.61 : a);
+  const meal = { ...tx("美团", 22.9, "2026-09-30"), currency: "CNY" }, taxi = { ...tx("高德打车", 55.16, "2026-09-30"), currency: "CNY" };
+  const a = tx("Alipay Meituan", 3.47, "2026-09-30"), b = tx("Alipay Amap Taxi", 8.35, "2026-09-30");
+  const twins = walletTwins([a, b, meal, taxi], [a, b, meal, taxi], fx);
+  assert.equal(twins.get(a.id)?.id, meal.id);
+  assert.equal(twins.get(b.id)?.id, taxi.id);
+  assert.equal(twins.size, 2);
 });
 ok("different amounts are not duplicates", () => {
   assert.equal(findFlags([tx("Uber", 18), tx("Uber", 22)], [], usd).size, 0);

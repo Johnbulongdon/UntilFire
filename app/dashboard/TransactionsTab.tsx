@@ -12,7 +12,7 @@ import type { ScheduledCalendarItem } from "@/lib/marked-calendar";
 import SpendCard, { type CatDisplay } from "./SpendCard";
 import ReviewPill from "./ReviewPill";
 import WorthALook from "./WorthALook";
-import { findFlags, type FlagKind, isSystemTag, okTag } from "@/lib/transaction-flags";
+import { findFlags, type FlagKind, isSystemTag, okTag, walletTwins } from "@/lib/transaction-flags";
 import { rangeFor, type RangePreset } from "@/lib/spend-range";
 import { type Bill, guessBillCategory, mergeBills, presumePaid, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
 import type { FreeToSpend } from "@/lib/free-to-spend";
@@ -1308,7 +1308,7 @@ function Toast({
   toast,
   onUndo,
 }: {
-  toast: { msg: string; undoId?: string; _removed?: Transaction; isError?: boolean } | null;
+  toast: { msg: string; undoId?: string; _removed?: Transaction; _removedMany?: Transaction[]; isError?: boolean } | null;
   onUndo: () => void;
 }) {
   const isErr = toast?.isError;
@@ -1664,7 +1664,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   const [alwaysShop, setAlwaysShop] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ msg: string; undoId?: string; _removed?: Transaction; isError?: boolean } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; undoId?: string; _removed?: Transaction; _removedMany?: Transaction[]; isError?: boolean } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fmtDisplay = useCallback(
@@ -1795,10 +1795,11 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     [transactions]
   );
 
-  const showToast = useCallback((msg: string, undoId?: string, removed?: Transaction, isError?: boolean) => {
+  const showToast = useCallback((msg: string, undoId?: string, removed?: Transaction, isError?: boolean, removedMany?: Transaction[]) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast({ msg, undoId, _removed: removed, isError });
-    toastTimer.current = setTimeout(() => setToast(null), undoId ? 6000 : 3200);
+    setToast({ msg, undoId, _removed: removed, _removedMany: removedMany, isError });
+    // A bulk delete keeps its Undo up longer: it is a bigger thing to take back.
+    toastTimer.current = setTimeout(() => setToast(null), removedMany ? 12000 : undoId ? 6000 : 3200);
   }, []);
 
   const applyClassifications = useCallback(async (toApply: { tx: Transaction; suggestion: "need" | "want"; filing?: { category: string; sub_category: string | null } }[]) => {
@@ -2003,11 +2004,18 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       .map((t) => ({ id: t.id, date: t.date.slice(0, 10), usd: usd(netAmt(t), t.currency), description: t.description ?? "", category: t.category })),
     listedBills, (t) => !!transactions.find((x) => x.id === t.id)?.tags?.includes(okTag("bill"))),
   [monthTxns, listedBills, transactions, usd]);
+  // Card copies of Alipay/WeChat purchases, across every month, so they can
+  // be cleared in one go: card row id → the wallet row it copies.
+  const twins = useMemo(() => {
+    const expenses = transactions.filter((t) => t.transaction_type === "expense");
+    return walletTwins(expenses.filter((t) => !t.tags?.includes(okTag("duplicate"))), expenses, usd);
+  }, [transactions, usd]);
   const flags = useMemo(() => {
     const f = findFlags(monthTxns, transactions, usd);
     billAsks.forEach((_, id) => { if (!f.has(id)) f.set(id, "bill"); });
+    twins.forEach((_, id) => f.set(id, "duplicate"));
     return f;
-  }, [monthTxns, transactions, usd, billAsks]);
+  }, [monthTxns, transactions, usd, billAsks, twins]);
   // A linked bill whose payment has arrived is marked paid on its own: a
   // repeat moves to its next date, a one-off is completed. The update is
   // conditional on the due date it read, so two open tabs cannot roll it twice.
@@ -2051,6 +2059,26 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   }, [transactions, showToast, billAsks]);
   const handleDeleteRef = useRef<((tx: Transaction) => Promise<void>) | null>(null);
 
+  // "Delete all card copies": one tap, with Undo putting every row back.
+  const deleteCopies = useCallback(async (ids: string[]) => {
+    const rows = transactions.filter((t) => ids.includes(t.id));
+    if (!rows.length) return;
+    trackTxFlagResolved({ flag: "duplicate", confirmed: true });
+    for (let i = 0; i < rows.length; i += 200) {
+      const chunk = rows.slice(i, i + 200).map((t) => t.id);
+      const { error } = await supabase.from("expenses").delete().in("id", chunk);
+      if (error) {
+        const gone = new Set(rows.slice(0, i).map((t) => t.id));
+        setTransactions((prev) => prev.filter((t) => !gone.has(t.id)));
+        showToast(i ? `Deleted ${i}, then it stopped — try again` : "Couldn't delete them — try again", undefined, undefined, true);
+        return;
+      }
+    }
+    const gone = new Set(rows.map((t) => t.id));
+    setTransactions((prev) => prev.filter((t) => !gone.has(t.id)));
+    showToast(`Deleted ${rows.length} card ${rows.length === 1 ? "copy" : "copies"}`, "undo:many", undefined, false, rows);
+  }, [transactions, showToast]);
+
   const handleCategoryChange = useCallback(async (tx: Transaction, category: string) => {
     const { error } = await supabase.from("expenses").update({ category }).eq("id", tx.id);
     if (error) { showToast("Couldn't change the category. Try again.", undefined, undefined, true); return; }
@@ -2072,7 +2100,14 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 
   const handleUndo = useCallback(() => {
     if (!toast) return;
-    if (toast._removed) {
+    if (toast._removedMany) {
+      const rows = toast._removedMany;
+      setToast(null);
+      supabase.from("expenses").insert(rows).select().then(({ data, error }) => {
+        if (!error && data) setTransactions((prev) => [...(data as Transaction[]), ...prev]);
+        else showToast("Couldn't put them back — import the card file again", undefined, undefined, true);
+      });
+    } else if (toast._removed) {
       // Re-insert: only update UI state after DB confirms success
       supabase.from("expenses")
         .insert({ ...toast._removed })
@@ -2164,7 +2199,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           onZoomMonth={(m) => { setRange(1, m); setSelectedDay(null); }}
           palette={COLOR_PALETTE} onColor={handleCategoryColor}
           budgets={budgets} expectedIncome={expectedIncome} bills={bills} calendarItems={calendarItems} compact={n=>formatUSDInCurrency(n,displayCurrency,displayRates,{compact:true})} periodLabel={rangePreset === 1 && rangeEnd === currentMonth ? "This month" : rangeLabel(rangePreset, rangeEnd)} />
-        <WorthALook flags={flags} notes={billNotes} rows={monthTxns} fmt={fmtDisplay} toUSD={usd} displayCurrency={displayCurrency}
+        <WorthALook flags={flags} notes={billNotes} rows={transactions} fmt={fmtDisplay} toUSD={usd} displayCurrency={displayCurrency}
+          twins={twins} onDeleteCopies={deleteCopies}
           onYes={(r, k) => resolveFlag(r, k, true)} onNo={(r, k) => resolveFlag(r, k, false)} />
       </div>
 
