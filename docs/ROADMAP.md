@@ -616,3 +616,5 @@ N1 web style follow-up: [draft PR #335](https://github.com/Johnbulongdon/UntilFi
 31 October N1 PR #335: signed-in Home/Money/Plan/Profile light/dark and phone Home inspected; import/guided budget screens inspected without saving. Corrected Explore/referral dark pastel contrast and pill dialog buttons. Final build passed. Admin visual review blocked by access denial; no auth changes.
 
 31 October N1 payday card polish, Codex, codex/payday-card-polish, baseline main 7b63c78. Actual component updated and Before/After fixture preview available at port 4208. Focused lint, payday and free-to-spend guards passed; final build/review in progress. No merge or deployment yet.
+
+N1 payday polish is In review: [PR #336](https://github.com/Johnbulongdon/UntilFire/pull/336), implementation 4346376. Build/type/lint and chart/cash guards passed; browser before/after and edge-state checks recorded. Awaiting design review; not merged or deployed.
