@@ -68,6 +68,19 @@ ok("each card copy knows the wallet row it copies", () => {
   assert.equal(twins.get(b.id)?.id, taxi.id);
   assert.equal(twins.size, 2);
 });
+ok("the card's own rate is learned when the market rate is off", () => {
+  const market = (a: number, c: string) => (c === "CNY" ? a / 7.1 : a); // the feed says 7.1, the card charged 6.6
+  const rows: FlagTx[] = [];
+  const add = (usdAmt: number, cny: number, day: string) => {
+    rows.push(tx("Alp Meituan", usdAmt, day), { ...tx("美团", cny, day), currency: "CNY" });
+  };
+  add(8.35, 55.16, "2026-09-30"); add(3.47, 22.9, "2026-09-29"); add(2.21, 14.6, "2026-09-28");
+  add(4.17, 27.6, "2026-09-27"); add(2.77, 18.3, "2026-09-26"); add(0.9, 6, "2026-09-25");
+  const twins = walletTwins(rows, rows, market);
+  assert.equal(twins.size, 6, "all six copies pair at the card's 6.6");
+  const odd = [tx("Alp Meituan", 3.47, "2026-09-20"), { ...tx("美团", 24.5, "2026-09-20"), currency: "CNY" }];
+  assert.equal(walletTwins([...rows, ...odd], [...rows, ...odd], market).size, 6, "7% off the learned rate is a different purchase");
+});
 ok("different amounts are not duplicates", () => {
   assert.equal(findFlags([tx("Uber", 18), tx("Uber", 22)], [], usd).size, 0);
 });
