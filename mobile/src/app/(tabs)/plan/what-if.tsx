@@ -17,7 +17,6 @@ import { toUSD, useAccount } from '@/state/account'
 import { useLivePlan } from '@/state/live-plan'
 import { project, useFreedom } from '@/state/freedom'
 import { freedomFor, type Plan as PlanData } from '@/state/plan'
-import { TAB_COLOR } from '@/theme/colors'
 import { colors } from '@/theme/colors'
 
 /** "3 years sooner", "Same as today" — the freedom-date delta, in teal when it's good news. */
@@ -94,7 +93,7 @@ export default function WhatIf() {
           return (
             <Bouncy key={m.label} accessibilityRole="button" onPress={() => { haptic.select(); setSpending(m.spending); setIncome(m.income) }}>
               <View className="flex-row items-center gap-3 rounded-card border border-border bg-card px-4 py-3.5">
-                <Icon name={m.icon} size={26} color={TAB_COLOR.plan} />
+                <Icon name={m.icon} size={26} color={colors.ink} />
                 <View className="flex-1">
                   <Text className="text-[15px] font-semibold text-ink">{m.label}</Text>
                   {m.note ? <Text className="text-[12px] text-ink-3">{m.note}</Text> : null}

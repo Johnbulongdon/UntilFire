@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased — native pastel surfaces
+
+- Add lighter multicolour tool tiles to Money and Plan, coloured settings wells to Profile, and distinct summary chip colours.
+- Flatten heavy tile edges and fix dark-mode Plan icons and step numbers; preserve routes, primary actions and financial calculations.
+
+
 ## 2026-10-31 — ether.fi card statements import
 
 - Website PDF import now reads card statements that print signed dollar amounts with a reference ID (ether.fi): spending comes in as spending, refunds as money back, in the statement's own currency (USD), with no "flip signs" step.

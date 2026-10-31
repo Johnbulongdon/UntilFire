@@ -10,7 +10,7 @@ import { splitBudget } from '@/lib/budget-split'
 import { monthCount, todayItems } from '@/lib/today'
 import { useAccount } from '@/state/account'
 import { useFreedom } from '@/state/freedom'
-import { TAB_COLOR, type TabKey } from '@/theme/colors'
+import { brand, TAB_COLOR, type TabKey } from '@/theme/colors'
 
 import { useTourAnchor, useTourShowing } from './tour-anchors'
 import { Icon } from './Icon'
@@ -23,19 +23,18 @@ type SymbolName = Parameters<typeof Icon>[0]['name']
  * Freedom date, what's left of this month's budget, and months of safety. Each
  * opens the page behind it. Chips without data stay hidden.
  */
-export function TopBar({ tab }: { tab: TabKey }) {
+export function TopBar({ tab: _tab }: { tab: TabKey }) {
   const { data } = useAccount()
   const f = useFreedom()
-  const tint = TAB_COLOR[tab]
   const split = useMemo(() => (data ? splitBudget(data) : null), [data])
   const left = split && split.everydayBudget > 0 ? split.left : null
   const safety = useMemo(() => (data ? safetyMonths(data) : null), [data])
   const date = f?.year == null ? null : f.date ? f.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : String(f.year)
   return (
     <View className="flex-row items-center gap-2 px-5 pb-2 pt-1">
-      {date && <Chip tint={tint} icon="sunrise.fill" fallback="☀" label={date} a11y={`Free in ${date}`} onPress={() => router.push('/plan/freedom')} />}
-      {left != null && <Chip tint={tint} icon="creditcard.fill" fallback="$" label={`${compactMoney(Math.abs(left))} ${left < 0 ? 'over' : 'left'}`} a11y={`Budget: ${compactMoney(Math.abs(left))} ${left < 0 ? 'over' : 'left'} this month`} onPress={() => router.push('/money/budget')} />}
-      {safety != null && <Chip tint={tint} icon="shield.lefthalf.filled" fallback="◆" label={`${safety.toFixed(1)} mo`} a11y={`Safety: ${safety.toFixed(1)} months of essentials`} onPress={() => router.push('/money/net-worth')} />}
+      {date && <Chip tint={brand.yellow} icon="sunrise.fill" fallback="☀" label={date} a11y={`Free in ${date}`} onPress={() => router.push('/plan/freedom')} />}
+      {left != null && <Chip tint={brand.blue} icon="creditcard.fill" fallback="$" label={`${compactMoney(Math.abs(left))} ${left < 0 ? 'over' : 'left'}`} a11y={`Budget: ${compactMoney(Math.abs(left))} ${left < 0 ? 'over' : 'left'} this month`} onPress={() => router.push('/money/budget')} />}
+      {safety != null && <Chip tint={brand.mint} icon="shield.lefthalf.filled" fallback="◆" label={`${safety.toFixed(1)} mo`} a11y={`Safety: ${safety.toFixed(1)} months of essentials`} onPress={() => router.push('/money/net-worth')} />}
     </View>
   )
 }
@@ -45,8 +44,8 @@ function Chip({ tint, icon, fallback, label, a11y, onPress }: { tint: string; ic
     <Pressable accessibilityRole="button" accessibilityLabel={a11y} onPress={() => { haptic.tick(); onPress() }}>
       {({ pressed }) => (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: tint, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6, opacity: pressed ? 0.8 : 1 }}>
-          <Icon name={icon} fallback={fallback} size={13} color="#FFFFFF" />
-          <Text style={{ color: '#FFFFFF' }} className="font-mono text-[13px] font-semibold">{label}</Text>
+          <Icon name={icon} fallback={fallback} size={13} color={brand.deep} />
+          <Text style={{ color: brand.deep }} className="font-mono text-[13px] font-semibold">{label}</Text>
         </View>
       )}
     </Pressable>
