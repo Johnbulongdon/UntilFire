@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-10-31 — Card copies of Alipay and WeChat purchases
+
+- A card statement line for something paid through Alipay or WeChat Pay ("Alipay Amap Taxi −$8.35") is now recognised as the same purchase as the wallet's own row ("高德打车 −¥55.16"), even though the currency and name differ.
+- Match rule: the card line starts with Alp/Alipay/Weixin/WeChat, the two rows are within two days, and the amounts agree within 5% after converting (or exactly, when the card line prints the yuan amount). Each row pairs once, closest first.
+- "Worth a look" on Transactions (website and phone, shared rule) flags the card copy, so confirming keeps the wallet row with its time and real shop name. Importing a file skips these copies too, and a saved row now answers for only one file row.
+- The duplicate list shows each card copy above the wallet row it matches (Delete / Keep, with time and file), and covers every month, not just the one in view. "Delete all N card copies" clears them in one tap, with a 12-second Undo that puts every row back.
+
 ## 2026-10-31 — Coloured transaction amounts
 
 - Transactions list: income amounts are green with +, spending is soft red with −, and transfers are blue with ⇄ instead of a minus (a transfer only moves money between your own accounts).
