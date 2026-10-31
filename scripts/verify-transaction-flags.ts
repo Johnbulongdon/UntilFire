@@ -103,4 +103,22 @@ ok("income and transfers are never flagged", () => {
   assert.equal(findFlags([t], [], usd).size, 0);
 });
 
+ok("a few card rows among many meals still learn the card's rate", () => {
+  // John's 16 Oct 2026 rows after most copies were deleted: the median of every
+  // nearby ratio sat near 6.5 and paired $4.54 with the wrong ¥29.90.
+  const r = (id: string, date: string, amount: number, currency: string, description: string) => ({ ...tx(description, amount, date), id, currency });
+  const rows = [
+    r("c1", "2026-10-13", 4.08, "USD", "Alipay*McDonalds"), r("c2", "2026-10-14", 4.53, "USD", "ALP*Taobao"),
+    r("c3", "2026-10-16", 4.54, "USD", "Alipay*ApplianceRental"), r("c4", "2026-10-16", 3.93, "USD", "ALP*McDonalds"),
+    r("c5", "2026-10-19", 4.99, "USD", "ALP*Taobao"),
+    r("w1", "2026-10-13", 26.9, "CNY", "麦当劳"), r("w2", "2026-10-13", 26.7, "CNY", "淘宝闪购"), r("w3", "2026-10-14", 29.9, "CNY", "淘宝闪购"),
+    r("w4", "2026-10-14", 23.9, "CNY", "麦当劳"), r("w5", "2026-10-15", 23.9, "CNY", "美团"), r("w6", "2026-10-16", 30, "CNY", "蜂充"),
+    r("w7", "2026-10-16", 24.9, "CNY", "美团"), r("w8", "2026-10-16", 25.9, "CNY", "麦当劳"), r("w9", "2026-10-17", 24.9, "CNY", "麦当劳"),
+    r("w10", "2026-10-18", 28.4, "CNY", "淘宝闪购"), r("w11", "2026-10-19", 32.9, "CNY", "淘宝闪购"), r("w12", "2026-10-19", 23.9, "CNY", "麦当劳"),
+  ];
+  const twins = walletTwins(rows, rows, (a, c) => (c === "CNY" ? a / 6.6 : a));
+  assert.equal(twins.get("c3")?.description, "蜂充");
+  assert.equal(twins.get("c2")?.amount, 29.9);
+});
+
 console.log(`Transaction flags ok: ${n} checks.`);
