@@ -1,5 +1,10 @@
 # Changelog
 
+## In review — 2026-10-31 directory badge audit
+
+- Propose removing Toolfio and LaunchesHQ reciprocal badges after repeated listing/search checks. Preserve 16 verified partners and two inconclusive partners, including both awards. Evidence recorded; no production removal before merge.
+
+
 ## 2026-10-31 — October update email pictures
 
 - Add the October monthly update email's banner and four feature previews (new look, Until payday, Today, Where could you retire?) under public/email/october/, so the admin draft "Monthly update — October 2026" can load them. No app behaviour change.

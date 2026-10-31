@@ -85,12 +85,6 @@ const badges: {
     rel: "dofollow",
   },
   {
-    name: "Toolfio",
-    href: "https://toolfio.com",
-    src: "https://toolfio.com/toolfio-dark-badge.png",
-    rel: "dofollow",
-  },
-  {
     name: "First Look",
     href: "https://firstlook.tools/product/untilfire",
     src: "https://firstlook.tools/badge/badge_transparent.svg",
