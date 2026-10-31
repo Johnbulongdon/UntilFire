@@ -70,9 +70,21 @@ export function walletTwinScore(card: TwinTx, other: TwinTx, toUSD: (amount: num
  * The card's own rate is learned from the rows (Oct 2026): John's card
  * charged 6.6 yuan a dollar while the market feed said about 7.1, so a 5%
  * band around the feed missed two thirds of the copies. Candidates are found
- * with a wide band, the usual rate between each pair of currencies is their
- * median, and a pair counts when it sits within 3% of that rate.
+ * with a wide band, the usual rate between each pair of currencies is the
+ * tightest cluster of their ratios, and a pair counts within 3% of it. Not
+ * the median: once most copies are deleted, neighbouring meals outnumber the
+ * real twins and drag a median off (Oct 2026, 蜂充 ¥30 vs $4.54 missed).
  */
+/** Mean of the largest group of values within 1% of one value. */
+function densest(values: number[]): number {
+  let best: number[] = [];
+  for (const v of values) {
+    const near = values.filter((x) => Math.abs(x - v) <= 0.01 * v);
+    if (near.length > best.length) best = near;
+  }
+  return best.reduce((s, x) => s + x, 0) / best.length;
+}
+
 export function walletTwins<T extends TwinTx & { id: string }>(cards: T[], all: T[], toUSD: (amount: number, currency: string) => number): Map<string, T> {
   const wide: { card: T; other: T; score: number }[] = [];
   for (const card of cards) {
@@ -89,7 +101,7 @@ export function walletTwins<T extends TwinTx & { id: string }>(cards: T[], all: 
     if (printed(card) || !(card.amount >= 1)) continue; // cents rounding skews tiny ones
     ratios.set(key(card, other), [...(ratios.get(key(card, other)) ?? []), other.amount / card.amount]);
   }
-  const rate = new Map([...ratios].filter(([, r]) => r.length >= 5).map(([k, r]) => [k, median(r)]));
+  const rate = new Map([...ratios].filter(([, r]) => r.length >= 5).map(([k, r]) => [k, densest(r)]));
   const pairs: { card: T; other: T; score: number }[] = [];
   for (const p of wide) {
     const r = rate.get(key(p.card, p.other));
