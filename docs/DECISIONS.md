@@ -3541,3 +3541,8 @@ adequate sample before claiming a winner. No conversion improvement is assumed.
 ### D-128 — Phone entry protection and Activity continuity (31 October 2026)
 **Status:** Approved for implementation; review and release pending.
 **Decision:** John approved QOL items 1–3: protect unfinished transactions/bills on navigation, add accessible numeric-entry Next/Done with reachable Save, and remember Activity filters/position on return. Keep UI state visit-only and account-scoped; explicit category/month links win. Busy writes cannot be dismissed; failures keep edits, successful writes exit without discard confirmation. No offline write queue or draft persistence is introduced. See docs/design/mobile-entry-qol/README.md for verification and device limits.
+
+### D-129 — Until payday's everyday estimate uses the last 30 days (31 October 2026)
+**Status:** Approved by John, PR #353.
+**Decision:** The everyday spending on Home's Until payday card (web and phone, lib/payday-spending `recentRate`) comes from the last 30 days, not the middle of the last six months. Bills, the Travel category and any single payment over 15% of those 30 days are left out, because a trip or a vet bill can't be predicted. With under 30 days of history or under 10 payments in the window, the six-month rate (D-31) stands in, then the budget.
+**Why:** John's six-month middle was $28/day while September and October ran about $12/day, so the card said −$164 when the next two weeks would really cost about $170. The six-month rule was slow to see a real cut-back, and trips and vet bills pushed it up.
