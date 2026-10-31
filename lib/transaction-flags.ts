@@ -9,7 +9,9 @@
  *                  sources (a bank and a CSV overlapping). Buying the same
  *                  coffee two days running is not a duplicate. A row
  *                  typed in by hand matches the bank's copy on amount
- *                  alone, within three days.
+ *                  alone, within three days. A card line for an Alipay or
+ *                  WeChat Pay purchase ("Alp Meituan  $3.47") matches the
+ *                  wallet's own row ("美团  ¥22.90") across currencies.
  *   large        — far above what this merchant usually costs, or, for a
  *                  new merchant, among the person's largest expenses.
  *
@@ -29,6 +31,36 @@ export const isSystemTag = (tag: string) => tag.startsWith("ok:") || tag.startsW
 const LARGE_FLOOR_USD = 250;
 
 const dayNumber = (date: string) => Math.floor(Date.parse(`${date.slice(0, 10)}T00:00:00Z`) / 86_400_000);
+
+// A card statement line for something paid through Alipay or WeChat Pay:
+// "Alp Meituan", "ALP*Walmart", "Alipay Amap Taxi", "Weixin Panduo Platform".
+const WALLET_CHARGE = /^\s*(alp\b|alp\*|alipay|weixin|wechat|wxpay|tenpay)/i;
+export const isWalletCharge = (description: string) => WALLET_CHARGE.test(description);
+
+type TwinTx = { date: string; amount: number; currency: string; description?: string | null };
+
+/**
+ * The card's copy of a wallet purchase (Oct 2026). A card statement shows
+ * "Alp Meituan −$3.47" and the Alipay export shows "美团 −¥22.90" for the
+ * same meal: other currency, other name. They match within two days when the
+ * card line's printed foreign amount ("CNY 22.90") is the same, or, with none
+ * printed, when the converted amounts are within 5% (card rates and fees).
+ * Returns a closeness score (lower is closer), or null when not a pair.
+ */
+export function walletTwinScore(card: TwinTx, other: TwinTx, toUSD: (amount: number, currency: string) => number): number | null {
+  if (card.currency === other.currency) return null;
+  if (!isWalletCharge(card.description ?? "") || isWalletCharge(other.description ?? "")) return null;
+  const days = Math.abs(dayNumber(card.date) - dayNumber(other.date));
+  if (!(days <= 2)) return null;
+  const printed = (card.description ?? "").match(/\b([A-Z]{3})\s?([\d,]+\.\d{2})\b/);
+  if (printed && printed[1] === other.currency) {
+    return Math.abs(parseFloat(printed[2].replace(/,/g, "")) - other.amount) <= 0.02 ? days * 0.01 : null;
+  }
+  const a = toUSD(card.amount, card.currency), b = toUSD(other.amount, other.currency);
+  const gap = Math.abs(a - b), size = Math.max(a, b);
+  if (!(gap <= Math.max(0.05 * size, 0.02))) return null;
+  return gap / Math.max(size, 0.01) + days * 0.01;
+}
 
 /**
  * Flags for the rows in view. `history` is everything the person has, which
@@ -70,6 +102,24 @@ export function findFlags(inView: FlagTx[], history: FlagTx[], toUSD: (amount: n
     const twin = expenses.find((b) => fromBank(b) && !claimed.has(b.id) && b.currency === t.currency
       && Math.abs(b.amount - t.amount) < 0.005 && Math.abs(dayNumber(b.date) - dayNumber(t.date)) <= 3);
     if (twin) { claimed.add(twin.id); out.set(t.id, "duplicate"); }
+  }
+
+  // Wallet purchases on a card statement: the card row is flagged, so
+  // confirming keeps the wallet's row, which has the time, the shop's own
+  // name and the amount actually paid. Closest pairs first; each row once.
+  const pairs: { card: FlagTx; other: FlagTx; score: number }[] = [];
+  for (const card of expenses) {
+    if (out.has(card.id) || ok(card, "duplicate") || !isWalletCharge(card.description ?? "")) continue;
+    for (const other of expenses) {
+      const score = walletTwinScore(card, other, toUSD);
+      if (score !== null) pairs.push({ card, other, score });
+    }
+  }
+  const paired = new Set<string>();
+  for (const { card, other } of pairs.sort((a, b) => a.score - b.score)) {
+    if (paired.has(card.id) || paired.has(other.id)) continue;
+    paired.add(card.id); paired.add(other.id);
+    out.set(card.id, "duplicate");
   }
 
   // Large: against this merchant's own history when it has one, else the person's top 5%.

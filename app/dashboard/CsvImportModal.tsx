@@ -11,6 +11,7 @@ import type { CellValue } from "read-excel-file/browser";
 import { formatMoney } from "@/lib/money";
 import { combineDateAndTime, timeFromCell } from "@/lib/transaction-time";
 import { PDF_STOP_MARKERS, parseStatementLines } from "@/lib/pdf-statement";
+import { walletTwinScore } from "@/lib/transaction-flags";
 
 // One idea per screen: pick a file, check it (with side screens for
 // currency, duplicates and columns), then the saving progress and the result.
@@ -352,9 +353,9 @@ function amountsClose(a: number, b: number): boolean {
 type DupeExisting = { id: string; date: string; amount: number; currency: string; description: string | null };
 
 // Find rows in this file that look like ones already saved: within a couple
-// of days, and the same amount (directly, or through a foreign amount printed
-// in either row's description).
-async function findDuplicates(parsed: ParsedImportTransaction[]): Promise<DuplicateFlag[]> {
+// of days, and the same amount (directly, through a foreign amount printed
+// in either row's description, or a wallet purchase's card copy converted).
+async function findDuplicates(parsed: ParsedImportTransaction[], rates: Record<string, number>): Promise<DuplicateFlag[]> {
   const dates = parsed.map((r) => r.date).filter(Boolean);
   if (dates.length === 0) return [];
   const { data: { session } } = await supabase.auth.getSession();
@@ -374,17 +375,25 @@ async function findDuplicates(parsed: ParsedImportTransaction[]): Promise<Duplic
     .range(from, to));
 
   const flags: DuplicateFlag[] = [];
+  const usd = (amount: number, currency: string) => toUSD(amount, currency, rates);
+  // Each saved row answers for one file row, so two identical purchases in
+  // the file are not both skipped against a single saved one.
+  const claimed = new Set<string>();
   for (let i = 0; i < parsed.length; i++) {
     const row = parsed[i];
     const rowForeign = extractEmbeddedForeignAmount(row.description);
-    const match = (existing as DupeExisting[] | null)?.find((e) => {
+    const match = (existing as DupeExisting[] | null)?.find((raw) => {
+      if (claimed.has(raw.id)) return false;
+      const e = { ...raw, amount: Number(raw.amount) };
+      // A card line for an Alipay/WeChat purchase against the wallet's own row, either way round.
+      if (walletTwinScore(row, e, usd) !== null || walletTwinScore(e, row, usd) !== null) return true;
       if (!isWithinDateTolerance(e.date, row.date)) return false;
-      if (e.currency === row.currency && amountsClose(Number(e.amount), row.amount)) return true;
-      if (rowForeign && e.currency === rowForeign.currency && amountsClose(Number(e.amount), rowForeign.amount)) return true;
+      if (e.currency === row.currency && amountsClose(e.amount, row.amount)) return true;
+      if (rowForeign && e.currency === rowForeign.currency && amountsClose(e.amount, rowForeign.amount)) return true;
       const existingForeign = extractEmbeddedForeignAmount(e.description ?? "");
       return !!existingForeign && existingForeign.currency === row.currency && amountsClose(existingForeign.amount, row.amount);
     });
-    if (match) flags.push({ rowIndex: i, row, existing: { ...match, amount: Number(match.amount) } });
+    if (match) { claimed.add(match.id); flags.push({ rowIndex: i, row, existing: { ...match, amount: Number(match.amount) } }); }
   }
   return flags;
 }
@@ -619,13 +628,16 @@ export default function CsvImportModal({
     return parsed;
   }, [colAmount, colCurrency, colDate, colDesc, colNotes, colType, flipSigns, headers, importCurrency, rows]);
 
+  // Read through a ref: the default `{}` is a new object every render.
+  const ratesRef = useRef(rates);
+  ratesRef.current = rates;
   // Look for rows already saved whenever what we'd add changes, and again
   // after a failed save (dupeRun) so rows that did land are skipped next time.
   useEffect(() => {
     if (parsedTransactions.length === 0) { setDuplicates([]); return; }
     let live = true;
     setDuplicates(null);
-    findDuplicates(parsedTransactions).then((flags) => {
+    findDuplicates(parsedTransactions, ratesRef.current).then((flags) => {
       if (!live) return;
       setDuplicates(flags);
       setKeep(new Set());
