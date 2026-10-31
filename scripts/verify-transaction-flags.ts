@@ -4,7 +4,7 @@
  * Run: npm run test:transaction-flags
  */
 import assert from "node:assert/strict";
-import { findFlags, type FlagTx, okTag } from "../lib/transaction-flags.ts";
+import { findFlags, type FlagTx, okTag, walletTwins } from "../lib/transaction-flags.ts";
 
 let n = 0;
 const ok = (name: string, fn: () => void) => { fn(); n++; console.log(`✓ ${name}`); };
@@ -40,6 +40,46 @@ ok("a hand-typed row matches the bank's copy by amount, even under another name"
   assert.equal(findFlags([tx("Coffee", 6.5, "2026-09-14"), later], [], usd).size, 0, "more than three days apart is a different purchase");
   const two = [tx("Lunch", 12, "2026-09-14"), tx("Parking", 12, "2026-09-15")], one = { ...tx("CHIPOTLE", 12, "2026-09-15"), source: "plaid" };
   assert.equal([...findFlags([...two, one], [], usd).values()].length, 1, "one bank row answers for one typed row");
+});
+ok("a card line for an Alipay purchase matches the wallet's own row in yuan", () => {
+  const fx = (a: number, c: string) => (c === "CNY" ? a / 6.61 : c === "HKD" ? a / 7.8 : a);
+  const cny = (description: string, amount: number, date = "2026-09-30"): FlagTx => ({ ...tx(description, amount, date), currency: "CNY", source: "csv" });
+  const card = (description: string, amount: number, date = "2026-09-30", currency = "USD"): FlagTx => ({ ...tx(description, amount, date), currency, source: "csv" });
+  const taxi = card("Alipay Amap Taxi", 8.35), gaode = cny("高德打车", 55.16);
+  const f = findFlags([gaode, taxi], [], fx);
+  assert.equal(f.get(taxi.id), "duplicate", "the card copy is flagged");
+  assert.equal(f.has(gaode.id), false, "the wallet row, with its time and real name, is kept");
+  assert.equal(findFlags([card("Alp Qrcode4019", 0.28), cny("零食有鸣", 1.9)], [], fx).size, 1, "cents rounding on tiny amounts still matches");
+  assert.equal(findFlags([card("Claude.ai", 20), cny("美团", 132.2)], [], fx).size, 0, "a card line not paid through a wallet is left alone");
+  assert.equal(findFlags([card("Alp Meituan", 3.47), cny("美团", 26)], [], fx).size, 0, "amounts more than 5% apart are different purchases");
+  assert.equal(findFlags([card("Alp Meituan", 3.47, "2026-09-20"), cny("美团", 22.9, "2026-09-24")], [], fx).size, 0, "more than two days apart is a different purchase");
+  const two = [card("Alp Meituan", 2.21), card("Alipay Meituan", 2.21)], one = cny("美团", 14.6);
+  assert.equal(findFlags([...two, one], [], fx).size, 1, "one wallet row answers for one card line");
+  const hkd = card("Alipay*Taobao Shanghai CN CNY 59.32 *EXCHANGE RATE: 1.18560", 70.33, "2026-08-10", "HKD");
+  assert.equal(findFlags([hkd, cny("淘宝闪购", 59.32, "2026-08-09")], [], fx).get(hkd.id), "duplicate", "a printed yuan amount matches exactly");
+  assert.equal(findFlags([hkd, cny("淘宝闪购", 60.5, "2026-08-09")], [], fx).size, 0, "a printed yuan amount that differs is not a match");
+});
+ok("each card copy knows the wallet row it copies", () => {
+  const fx = (a: number, c: string) => (c === "CNY" ? a / 6.61 : a);
+  const meal = { ...tx("美团", 22.9, "2026-09-30"), currency: "CNY" }, taxi = { ...tx("高德打车", 55.16, "2026-09-30"), currency: "CNY" };
+  const a = tx("Alipay Meituan", 3.47, "2026-09-30"), b = tx("Alipay Amap Taxi", 8.35, "2026-09-30");
+  const twins = walletTwins([a, b, meal, taxi], [a, b, meal, taxi], fx);
+  assert.equal(twins.get(a.id)?.id, meal.id);
+  assert.equal(twins.get(b.id)?.id, taxi.id);
+  assert.equal(twins.size, 2);
+});
+ok("the card's own rate is learned when the market rate is off", () => {
+  const market = (a: number, c: string) => (c === "CNY" ? a / 7.1 : a); // the feed says 7.1, the card charged 6.6
+  const rows: FlagTx[] = [];
+  const add = (usdAmt: number, cny: number, day: string) => {
+    rows.push(tx("Alp Meituan", usdAmt, day), { ...tx("美团", cny, day), currency: "CNY" });
+  };
+  add(8.35, 55.16, "2026-09-30"); add(3.47, 22.9, "2026-09-29"); add(2.21, 14.6, "2026-09-28");
+  add(4.17, 27.6, "2026-09-27"); add(2.77, 18.3, "2026-09-26"); add(0.9, 6, "2026-09-25");
+  const twins = walletTwins(rows, rows, market);
+  assert.equal(twins.size, 6, "all six copies pair at the card's 6.6");
+  const odd = [tx("Alp Meituan", 3.47, "2026-09-20"), { ...tx("美团", 24.5, "2026-09-20"), currency: "CNY" }];
+  assert.equal(walletTwins([...rows, ...odd], [...rows, ...odd], market).size, 6, "7% off the learned rate is a different purchase");
 });
 ok("different amounts are not duplicates", () => {
   assert.equal(findFlags([tx("Uber", 18), tx("Uber", 22)], [], usd).size, 0);

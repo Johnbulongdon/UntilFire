@@ -29,4 +29,3 @@ assert.equal(readActivity('a','["housing","2026-08"]',defaults).offset,0,'invali
 readActivity(null,'[]',defaults)
 assert.deepEqual(readActivity('a','[]',defaults),defaults,'signed-out read clears the cache')
 console.log('Mobile entry dirty-field coverage and Activity restoration/isolation checks passed')
-

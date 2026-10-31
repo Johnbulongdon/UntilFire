@@ -7,6 +7,19 @@
 - Remember Activity filters/search/position within the current account, respecting explicit category/month links and ignoring hidden-list scroll resets.
 
 
+## 2026-10-31 — Duplicate buttons answer at once
+
+- Tapping "Delete card copy", "Keep both" or "Delete all card copies" fades the row straight away and the button reads "Deleting…", before the save finishes. The toast with Undo follows. A row that could not be deleted comes back after five seconds.
+- After a delete, the pair stays in place for six seconds as a green "✓ Deleted" line (struck-through card copy, "kept" wallet row), so it is clear it worked.
+- Card copies are now matched at the card's own exchange rate, learned from the pairs (median), not the market feed: John's card charged about 6.6 yuan a dollar while the feed said about 7.1, so the 5% band caught only about a third of them. Import widens its band to 10% for the same reason.
+
+## 2026-10-31 — Card copies of Alipay and WeChat purchases
+
+- A card statement line for something paid through Alipay or WeChat Pay ("Alipay Amap Taxi −$8.35") is now recognised as the same purchase as the wallet's own row ("高德打车 −¥55.16"), even though the currency and name differ.
+- Match rule: the card line starts with Alp/Alipay/Weixin/WeChat, the two rows are within two days, and the amounts agree within 5% after converting (or exactly, when the card line prints the yuan amount). Each row pairs once, closest first.
+- "Worth a look" on Transactions (website and phone, shared rule) flags the card copy, so confirming keeps the wallet row with its time and real shop name. Importing a file skips these copies too, and a saved row now answers for only one file row.
+- The duplicate list shows each card copy above the wallet row it matches (Delete / Keep, with time and file), and covers every month, not just the one in view. "Delete all N card copies" clears them in one tap, with a 12-second Undo that puts every row back.
+
 ## 2026-10-31 — Coloured transaction amounts
 
 - Transactions list: income amounts are green with +, spending is soft red with −, and transfers are blue with ⇄ instead of a minus (a transfer only moves money between your own accounts).
