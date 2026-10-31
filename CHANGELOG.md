@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-31 — Phone app on Expo SDK 58
+
+- The phone app moves from Expo SDK 57 to 58 (React Native 0.88, React 19.3), so it opens in the current Expo Go again. App version is now 0.3.0, which gives it a new update runtime: build 14 (0.2.0) keeps its current code and gets no SDK 58 updates. Phones get this only through a new store build (D-102).
+- Code changes for the new versions: React Native views are typed by their instance types (`ViewInstance`, `ScrollViewInstance`, `TextInputInstance`), and the Explore globe builds its Skia paths with `Skia.PathBuilder`, since Skia 2.14 paths are read-only.
+- Includes the PostHog replay plugin 2.12.7 (OkHttp 4.12.1, eMudhra certificate fix), folded in from #339 because it is also a native change.
+
 ## 2026-10-31 — October update email pictures
 
 - Add the October monthly update email's banner and four feature previews (new look, Until payday, Today, Where could you retire?) under public/email/october/, so the admin draft "Monthly update — October 2026" can load them. No app behaviour change.
