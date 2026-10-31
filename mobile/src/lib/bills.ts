@@ -1,3 +1,5 @@
+import { paydaySpending } from '@engine/payday-spending.ts'
+import type { Bill as ForecastBill } from '@engine/spend-forecast.ts'
 import { BILL_MATCH_TOLERANCE, expandExpected, isoDay, looksLikeCardPayment, type ExpectedItem, type ForecastEvent } from '@/engine'
 import { spentUSD, toUSD, type AccountData, type Bill, type Transaction } from '@/state/account'
 
@@ -61,7 +63,7 @@ export const today = () => isoDay(new Date())
  */
 export function freeUntilPayday(data: AccountData, now = new Date()) {
   const events = unpaid(upcoming(data.bills, 62, now), data.bills, data.transactions)
-  const payday = events.find(e => e.type === 'income' && e.counted)
+  const payday = events.find(e => e.type === 'income' && e.counted && !e.overdue && e.iso > isoDay(now) && data.bills.find(b=>b.id===e.billId)?.recurrence !== 'none')
   if (!payday) return null
   const before = events.filter(e => e.type === 'expense' && e.iso < payday.iso)
   const billsBefore = before.reduce((s, e) => s - e.amount, 0)
@@ -71,6 +73,10 @@ export function freeUntilPayday(data: AccountData, now = new Date()) {
   const cardsOwed = cardBill ? 0 : data.debts.cards
   const { spending } = cashByRole(data.plaidAccounts, data.spendToggles ?? {}, data.balances.cashSavings)
   if (spending == null) return null
-  const days = Math.max(1, Math.round((new Date(`${payday.iso}T00:00:00`).getTime() - now.getTime()) / 864e5))
-  return { free: spending - billsBefore - cardsOwed, spending, billsBefore, cardsOwed, payday, days, bills: before }
+  const end = new Date(payday.iso + 'T12:00:00')
+  const days = Math.max(1, Math.round((Date.UTC(end.getFullYear(),end.getMonth(),end.getDate()) - Date.UTC(now.getFullYear(),now.getMonth(),now.getDate())) / 864e5))
+  const forecastBills: ForecastBill[] = data.bills.filter(b=>b.transaction_type==='expense').map(b=>({description:b.description,category:b.category,usd:Math.abs(toUSD(b.amount,b.currency)),due:b.due_date,recurrence:b.recurrence as ForecastBill['recurrence']}))
+  const values = Object.entries(data.budget).filter(([k,v])=>!k.startsWith('_')&&Number.isFinite(v)&&v>0).map(([,v])=>v)
+  const everyday = paydaySpending({ today: now, days, rows: data.transactions.filter(t=>t.transaction_type==='expense').map(t=>({date:t.date.slice(0,10),usd:spentUSD(t),description:t.description??'',category:t.category??'other'})), bills:forecastBills, budget:data.budget, monthlyBudget:values.length?values.reduce((a,b)=>a+b,0):null })
+  return { free: spending - billsBefore - cardsOwed, spending, billsBefore, cardsOwed, payday, days, bills: before, everyday }
 }

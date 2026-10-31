@@ -85,7 +85,7 @@ export default function HomeBackdrop({ prefill }: { prefill: CalculatorPrefill |
               key: 'backdrop', title: 'Put $300 into your safety pot', payoff: 'A buffer before anything else', door: 'plan', tab: 'contributions', button: 'Open your plan',
               split: [{ label: 'Safety pot', amount: 300 }, { label: '401(k) match', amount: 250 }, { label: 'Invest', amount: 150 }],
             }} />
-            <UntilPaydayCard line={LINE} paydayIso="2026-11-01" billCount={4} billTotal={650} icon={(c) => ICONS[c ?? ''] ?? '💳'} fmt={fmt} onOpen={noop} />
+            <UntilPaydayCard everyday={650} line={LINE} paydayIso="2026-11-01" billCount={4} billTotal={650} icon={(c) => ICONS[c ?? ''] ?? '💳'} fmt={fmt} onOpen={noop} />
           </div>
           <GlanceRow netWorth={prefill?.portfolioBalance ?? 184200} invested={[]} safety={{ months: 4.2, target: 6 }} savingsRate={rate} fmt={fmt} onNetWorth={noop} onSafety={noop} onSavings={noop} />
         </div>

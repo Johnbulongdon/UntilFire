@@ -1,5 +1,13 @@
 # Changelog
 
+## 31 October 2026 — Until payday after everyday costs
+
+- Home now estimates cash left after bills, card payments and normal everyday costs, using spending history or the saved category budget without counting repeating bills twice.
+- Replace chart inspection with the approved mint summary, compact breakdown and three-row bill ledger linking to Money.
+- Add an editable estimate and optional collapsed cushion (zero by default); adjustments apply to the current visit and update Home Today. No automatic savings deduction or budget mutation.
+- Match the phone card and shared forecast rule; missing estimates remain visibly unknown.
+
+
 ## Unreleased — website audit follow-ups
 
 - Add a branded 404 page with "Find my freedom date" and "Explore cities", instead of the plain Next.js default.
@@ -1687,3 +1695,5 @@ Twelve `test:*` scripts failed on an untouched main. Each was traced with `git l
 ### Web style consistency
 - Carry Next Horizon into Explore cards, referrals, portfolio and report exports, Learn/calculator cards, admin surfaces and navigation, budget/import dialogs and unsubscribe. Keep semantic states and financial behavior.
 - Keep Log in visible beside Get started in desktop and phone public headers.
+
+- Refine the web Until payday card with mint/white panels, clearer balance/payday hierarchy and aligned bill rows while preserving all forecast calculations and selection controls.
