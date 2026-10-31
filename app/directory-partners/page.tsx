@@ -27,13 +27,6 @@ export default function DirectoryPartnersPage() {
               <img src="https://discoverly.tech/badge.svg" alt="Featured on Discoverly" width={200} height={54} style={{ maxWidth: "100%", height: "auto" }} />
             </a>
           </section>
-          <section style={{ background: "var(--uf-surface)", border: "1px solid var(--uf-border)", borderRadius: 24, padding: 24 }}>
-            <h2 style={{ fontSize: 20, margin: "0 0 24px" }}>LaunchesHQ</h2>
-            <a href="https://launcheshq.com" target="_blank" rel="noopener" data-launcheshq-badge="true" style={{ display: "inline-flex", maxWidth: "100%", borderRadius: 8 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="https://launcheshq.com/badges/launcheshq_badge_featured_on.svg" alt="Featured on LaunchesHQ" width={240} height={54} style={{ maxWidth: "100%", height: "auto" }} />
-            </a>
-          </section>
         </div>
       </div>
     </main>

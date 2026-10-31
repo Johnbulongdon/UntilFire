@@ -33,6 +33,8 @@ queue: reconcile its scope and dependencies before starting overlapping changes.
 
 30 October: John selected landing-page option 2 (centered hero and connected product example), with a dedicated wrapping directory-badge area. N1 design follow-up, Codex, [PR #331](https://github.com/Johnbulongdon/UntilFire/pull/331) on `codex/landing-connected-preview`; production build and local desktop/phone design QA passed (see design-qa.md). Review http://127.0.0.1:4203/ before merge. Preserve onboarding, metadata and directory links. Follow-up: remove the landing FAQ/article appendage and end with grouped calculator, city-guide, Learn/account and legal navigation as John requested. John subsequently approved the connected closing/footer and continuous review rail, requested removal of its visible controls/dots, and explicitly authorized build and merge. D-118 records scope; genuine review content is still pending and the public review list remains empty.
 
+31 October: **M1 — recurring directory-badge maintenance**, Codex, In review on `claude/codex-month-end-badges-2026-10-31`. Separately authorized maintenance; no Now priority displaced. All 20 destinations checked: 16 followed links, two inconclusive retained, two removal proposals. See [evidence](marketing/audits/2026-10-31-directory-badges.md). Merge/deployment await John; monthly monitoring continues.
+
 ### Next — ordered follow-ups
 
 | ID | Task | Start condition / done when |
