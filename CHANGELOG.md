@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-31 — Check categories, one card per shop
+
+- The Transactions "Review suggestions" popup is now "Check categories" in the Next Horizon style. One rounded card per shop instead of one row per payment: 17 McDonald's payments are one card with "Approve 17". Each card has the category icon, "N payments · total", a tap-to-change category chip, a Need | Want switch, Skip and a black Approve pill.
+- "See payments" lists the dates and amounts; ✕ moves one payment to its own card. "From your history" is a small "↻ Usual" tag.
+- Yellow "N left" badge and a progress bar at the top. After approving, a mint "Done · N from shop" line with Undo (puts the old category and tags back) stays for 8 seconds. Approve all sits in a bar at the bottom. On phones the popup is a bottom sheet with full-width buttons.
+
 ## 2026-10-31 — Filter transactions by source
 
 - Transactions has a row of "Source" pills under the tag filters (pills, not a dropdown, to match the tags): Alipay, WeChat Pay, ether.fi, Linked bank, Typed in, or the imported file's name, each with its count. Shown when there is more than one source.
