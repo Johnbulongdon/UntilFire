@@ -1,15 +1,17 @@
 import { router, useLocalSearchParams } from 'expo-router'
-import { useState } from 'react'
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native'
+import { useRef, useState } from 'react'
+import { Alert, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { LeaseCard } from '@/components/LeaseCard'
-import { PrimaryButton } from '@/components/PrimaryButton'
+import { EntryActions } from '@/components/EntryActions'
+import { entryChanged } from '@/lib/entry-state'
+import { useEntryGuard } from '@/lib/useEntryGuard'
 import { Text } from '@/components/Text'
 import { guessBillCategory, INCOME_CATEGORIES, isoDay, isRent, RECURRENCE_LABEL, SUB_CATEGORIES, type Recurrence } from '@/engine'
 import { currencySymbol, displayCurrency } from '@/lib/display-currency'
 import { haptic } from '@/lib/haptics'
-import { dayLabel, expenseCategories } from '@/lib/money-data'
+import { expenseCategories } from '@/lib/money-data'
 import { deleteBill, saveBill } from '@/lib/mutations'
 import { useAccount } from '@/state/account'
 import { useAuth } from '@/state/auth'
@@ -34,6 +36,12 @@ export default function BillSheet() {
   const [subCategory, setSubCategory] = useState<string | null>(existing?.sub_category ?? null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const initialFields = useRef({ type, amount, description, due, repeat, category, subCategory })
+  const { finish, dialog } = useEntryGuard(entryChanged(initialFields.current, { type, amount, description, due, repeat, category, subCategory }), busy)
+  const amountRef = useRef<TextInput>(null)
+  const descriptionRef = useRef<TextInput>(null)
+  const [focused, setFocused] = useState<string | null>(null)
+  const done = () => { Keyboard.dismiss(); amountRef.current?.blur(); descriptionRef.current?.blur(); setFocused(null) }
 
   // A bill is kept in its own currency, as on the website; a new one starts in yours.
   const currency = existing?.currency ?? displayCurrency()
@@ -59,7 +67,7 @@ export default function BillSheet() {
     if (problem) { setBusy(false); haptic.warn(); setError(problem); return }
     haptic.success()
     await refresh()
-    router.back()
+    finish()
   }
 
   const remove = () => {
@@ -71,23 +79,23 @@ export default function BillSheet() {
         setBusy(true)
         const problem = await deleteBill(existing.id)
         if (problem) { setBusy(false); setError(problem); return }
-        await refresh(); router.back()
+        await refresh(); finish()
       } },
     ])
   }
 
   return (
     <SafeAreaView className="flex-1 bg-ground">
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View className="flex-row items-center justify-between px-5 pt-2">
-          <Pressable accessibilityRole="button" hitSlop={12} onPress={() => { haptic.tick(); router.back() }}>
+          <Pressable accessibilityRole="button" hitSlop={12} disabled={busy} onPress={() => { haptic.tick(); router.back() }}>
             <Text className="text-[16px] font-semibold text-ink-2">Cancel</Text>
           </Pressable>
           <Text className="text-[16px] font-bold text-ink">{existing ? 'Edit' : 'New'} {type === 'income' ? 'payday' : 'bill'}</Text>
           <View style={{ width: 52 }} />
         </View>
 
-        <ScrollView contentContainerClassName="px-5 pb-6 pt-5" keyboardShouldPersistTaps="handled">
+        <ScrollView pointerEvents={busy ? 'none' : 'auto'} contentContainerClassName="px-5 pb-6 pt-5" keyboardShouldPersistTaps="handled">
           <View className="flex-row rounded-control bg-surface p-1">
             {(['expense', 'income'] as const).map(t => (
               <Pressable accessibilityRole="button" key={t} onPress={() => { haptic.select(); setType(t); setCategory('') }}
@@ -98,7 +106,12 @@ export default function BillSheet() {
           </View>
 
           <TextInput
+              editable={!busy}
+            ref={descriptionRef}
             accessibilityLabel="Name"
+            onFocus={() => setFocused('description')}
+            returnKeyType="next"
+            onSubmitEditing={() => amountRef.current?.focus()}
             className="mt-4 rounded-control border-2 border-border-2 bg-card px-4 py-3.5 text-[16px] text-ink"
             style={{ fontFamily: 'Manrope_500Medium' }}
             placeholder={type === 'income' ? 'e.g. Salary' : 'e.g. Rent, Netflix, Car insurance'}
@@ -115,7 +128,12 @@ export default function BillSheet() {
           <View className="mt-4 flex-row items-baseline justify-center">
             <Text className={`font-mono text-[40px] ${type === 'income' ? 'text-pos-ink' : 'text-ink'}`}>{currencySymbol(currency).trim()}</Text>
             <TextInput
+              editable={!busy}
+              ref={amountRef}
               accessibilityLabel="Amount"
+              onFocus={() => setFocused('amount')}
+              returnKeyType="done"
+              onSubmitEditing={done}
               className={`min-w-[110px] text-[40px] ${type === 'income' ? 'text-pos-ink' : 'text-ink'}`}
               style={{ fontFamily: 'DMMono_500Medium' }}
               keyboardType="decimal-pad"
@@ -165,17 +183,17 @@ export default function BillSheet() {
 
           {error ? <Text className="mt-4 text-[14px] text-neg-ink">{error}</Text> : null}
           {existing && (
-            <Pressable accessibilityRole="button" onPress={remove} className="mt-8 items-center py-2">
+            <Pressable accessibilityRole="button" disabled={busy} onPress={remove} className="mt-8 items-center py-2">
               <Text className="text-[15px] font-semibold text-neg-ink">Delete {type === 'income' ? 'payday' : 'bill'}</Text>
             </Pressable>
           )}
         </ScrollView>
 
-        <View className="px-5 pb-4">
-          {busy ? <View className="h-14 items-center justify-center"><ActivityIndicator color={colors.green} /></View>
-            : <PrimaryButton label={needsCategory && description && value > 0 ? 'Pick a category' : existing ? 'Save changes' : 'Add'} onPress={save} disabled={!canSave} />}
-        </View>
+        <EntryActions label={needsCategory && description && value > 0 ? 'Pick a category' : existing ? 'Save changes' : 'Add'} busy={busy} canSave={canSave} keyboardActive={focused !== null}
+          onNext={focused === 'description' ? () => amountRef.current?.focus() : undefined}
+          onDone={done} onSave={save} />
       </KeyboardAvoidingView>
+      {dialog}
     </SafeAreaView>
   )
 }

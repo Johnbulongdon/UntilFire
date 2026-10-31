@@ -33,3 +33,7 @@ Money/Plan/Profile component verification: [scope, checks and limits](docs/desig
 ## Mobile welcome follow-up — 31 October 2026
 
 Scoped verification and limitations: [mobile welcome QA](docs/design/mobile-welcome/design-qa.md). Original option 3 implemented; browser navigation and native bundle checks passed. Physical-device acceptance and release remain pending. Earlier landing verification above is preserved.
+
+## Phone entry QOL — 31 October 2026
+
+Actual entry routes and shared guard/Activity hooks checked without account writes. Scope and evidence: [phone entry QOL](docs/design/mobile-entry-qol/README.md). Physical keyboard/gesture/assistive-device acceptance remains pending. Earlier visual verification records above are preserved.

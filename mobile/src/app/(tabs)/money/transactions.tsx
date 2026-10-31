@@ -16,7 +16,9 @@ import { haptic } from '@/lib/haptics'
 import { byDay, categoryOf, dayLabel, expenseCategories, thisMonth } from '@/lib/money-data'
 import { setCategoryFor } from '@/lib/mutations'
 import { summarise } from '@/lib/spend-summary'
-import { useAccount } from '@/state/account'
+import { useAccount, type Transaction } from '@/state/account'
+import { useAuth } from '@/state/auth'
+import { useActivityView } from '@/lib/useActivityView'
 import { colors } from '@/theme/colors'
 import { WorthALook } from '@/components/WorthALook'
 import { ReviewBar } from '@/components/ReviewBar'
@@ -37,13 +39,22 @@ const rangeName = (months: string[]) => months.length === 1
 
 /** The website's Transactions: a range, a summary against your usual, search, a category filter and the list. */
 export default function Transactions() {
-  const { data, loading, refresh } = useAccount()
-  // Categories opens this on one category and month.
+  const { session } = useAuth()
   const params = useLocalSearchParams<{ category?: string; month?: string }>()
-  const [preset, setPreset] = useState<RangePreset>(1)
-  const [endMonth, setEndMonth] = useState(params.month && params.month <= thisMonth() ? params.month : thisMonth())
-  const [category, setCategory] = useState<string | null>(params.category ?? null)
-  const [query, setQuery] = useState('')
+  const category = typeof params.category === 'string' ? params.category : undefined
+  const month = typeof params.month === 'string' ? params.month : undefined
+  const context = JSON.stringify([category ?? null, month ?? null])
+  return <Activity key={(session?.user.id ?? 'signed-out') + context} owner={session?.user.id ?? null} context={context} initialCategory={category} initialMonth={month} />
+}
+
+function Activity({ owner, context, initialCategory, initialMonth }: {
+  owner: string | null; context: string; initialCategory?: string; initialMonth?: string
+}) {
+  const { data, loading, refresh } = useAccount()
+  const { preset, setPreset, endMonth, setEndMonth, category, setCategory, query, setQuery, list, onLayout, onContentSizeChange, onScroll, onScrollBeginDrag } = useActivityView<Transaction>(owner, context, {
+    preset: 1, endMonth: initialMonth && initialMonth <= thisMonth() ? initialMonth : thisMonth(),
+    category: initialCategory ?? null, query: '', offset: 0,
+  }, !!data)
   // Select mode: tick rows, then put them all in one category.
   const [selecting, setSelecting] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -184,6 +195,12 @@ export default function Transactions() {
         </View>
 
       <SectionList
+        ref={list}
+        onLayout={onLayout}
+        onContentSizeChange={onContentSizeChange}
+        onScrollBeginDrag={onScrollBeginDrag}
+        onScroll={onScroll}
+        scrollEventThrottle={32}
         sections={sections}
         keyExtractor={t => t.id}
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 96 }}
