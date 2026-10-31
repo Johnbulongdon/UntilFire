@@ -958,6 +958,16 @@ function TransactionList({
   const [filter, setFilter] = useState<"all" | "expense" | "income" | "transfer">("all");
   const [tagFilter, setTagFilter] = useState<"all" | "need" | "want" | "work">("all");
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const clearFilters = () => { setFilter("all"); setTagFilter("all"); setSourceFilter("all"); };
+  const TYPE_WORD = { expense: "Expenses", income: "Income", transfer: "Transfers" } as const;
+  const TAG_WORD = { need: "Need", want: "Want", work: "Work" } as const;
+  const active: [string, () => void][] = [
+    ...(filter !== "all" ? [[TYPE_WORD[filter], () => setFilter("all")] as [string, () => void]] : []),
+    ...(tagFilter !== "all" ? [[TAG_WORD[tagFilter], () => setTagFilter("all")] as [string, () => void]] : []),
+    ...(sourceFilter !== "all" ? [[sourceFilter, () => setSourceFilter("all")] as [string, () => void]] : []),
+  ];
+  const activeCount = active.length;
   const sources = useMemo(() => {
     const n = new Map<string, number>();
     for (const t of transactions) n.set(sourceLabel(t), (n.get(sourceLabel(t)) ?? 0) + 1);
@@ -1029,7 +1039,8 @@ function TransactionList({
 
   return (
     <div style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-card)", overflow: "hidden", boxShadow: "var(--uf-e1)", display: "flex", flexDirection: "column", height: "calc(100vh - 48px)" }}>
-      {/* List header */}
+      {/* List header: title, search and one Filter button. The filters live in
+          a panel, so the list is not buried under rows of pills (John, 31 Oct 2026). */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid var(--uf-border)", gap: 12, flexWrap: "wrap" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 0 }}>
           <span style={{ fontSize: 15, fontWeight: 700, color: "var(--uf-ink)", letterSpacing: "-0.2px" }}>Transactions</span>
@@ -1040,82 +1051,67 @@ function TransactionList({
             </span>
           )}
         </div>
-        {/* Wraps under the search on a phone, so Income and Transfers stay reachable. */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          {/* Search */}
-          <div style={{ position: "relative" }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 240px", justifyContent: "flex-end", maxWidth: 420 }}>
+          <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--uf-ink-3)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }}>
               <circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" />
             </svg>
-            <input
-              type="text"
-              placeholder="Search…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ background: "var(--uf-surface-2)", border: "1px solid transparent", borderRadius: 999, padding: "6px 12px 6px 30px", fontSize: 13, color: "var(--uf-text)", width: 180, outline: "none", fontFamily: "inherit" }}
-            />
+            <input type="text" placeholder="Search…" aria-label="Search transactions" value={search} onChange={(e) => setSearch(e.target.value)}
+              style={{ background: "var(--uf-surface-2)", border: "1px solid transparent", borderRadius: 999, padding: "8px 12px 8px 32px", fontSize: 13, color: "var(--uf-text)", width: "100%", outline: "none", fontFamily: "inherit" }} />
           </div>
-          {/* Filter pills */}
-          {(["all", "expense", "income", "transfer"] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              style={{
-                background: filter === f ? "var(--uf-ink)" : "var(--uf-surface-2)",
-                border: "1px solid transparent",
-                borderRadius: 999, padding: "6px 14px",
-                fontSize: 12, fontWeight: 600,
-                color: filter === f ? "var(--uf-card)" : "var(--uf-text-2)",
-                cursor: "pointer", fontFamily: "inherit",
-              }}
-            >
-              {f === "all" ? "All" : f === "expense" ? "Expenses" : f === "income" ? "Income" : "Transfers"}
-            </button>
-          ))}
+          <button type="button" aria-expanded={filtersOpen} onClick={() => setFiltersOpen((v) => !v)}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0, borderRadius: 999, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+              border: "1px solid var(--uf-border)", background: filtersOpen ? "var(--uf-ink)" : "var(--uf-card)", color: filtersOpen ? "var(--uf-card)" : "var(--uf-ink)" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden><path d="M4 6h16M7 12h10M10 18h4" /></svg>
+            Filter
+            {activeCount > 0 && (
+              <span style={{ minWidth: 18, height: 18, borderRadius: 999, background: "var(--uf-yellow)", color: "var(--uf-on-accent)", fontSize: 11, display: "inline-grid", placeItems: "center", padding: "0 5px" }}>{activeCount}</span>
+            )}
+          </button>
         </div>
       </div>
 
-      {/* Tag filter row */}
-      <div style={{ display: "flex", gap: 6, padding: "8px 18px", borderBottom: "1px solid var(--uf-border)", flexWrap: "wrap" }}>
-        {(["all", "need", "want", "work"] as const).map((tag) => (
-          <button
-            key={tag}
-            onClick={() => setTagFilter(tag)}
-            style={{
-              background: tagFilter === tag
-                ? tag === "need" ? "#BCE9DA" : tag === "want" ? "#FFD4B8" : tag === "work" ? "#D9CEF3" : "#FFE58A"
-                : "var(--uf-surface-2)",
-              border: `1px solid ${tagFilter === tag
-                ? tag === "need" ? "#BCE9DA" : tag === "want" ? "#FFD4B8" : tag === "work" ? "#D9CEF3" : "#E3F7EF"
-                : "transparent"}`,
-              borderRadius: 999, padding: "4px 12px",
-              fontSize: 11, fontWeight: 600,
-              color: tagFilter === tag
-                ? "#151719"
-                : "var(--uf-text-2)",
-              cursor: "pointer", fontFamily: "inherit",
-            }}
-          >
-            {tag === "all" ? "All tags" : tag === "need" ? "✓ Need" : tag === "want" ? "✦ Want" : "💼 Work"}
-          </button>
-        ))}
-        {/* Source: which wallet, bank or file the rows came from, as pills like the tags. */}
-        {sources.length > 1 && (
-          <div role="group" aria-label="Source" style={{ display: "flex", gap: 6, flexWrap: "wrap", width: "100%" }}>
-            {[["all", 0] as [string, number], ...sources].map(([label, n]) => (
-              <button key={label} type="button" aria-pressed={sourceFilter === label} onClick={() => setSourceFilter(label)}
-                style={{
-                  background: sourceFilter === label ? "#FFE58A" : "var(--uf-surface-2)",
-                  border: `1px solid ${sourceFilter === label ? "#FFE58A" : "transparent"}`,
-                  borderRadius: 999, padding: "4px 12px", fontSize: 11, fontWeight: 600,
-                  color: sourceFilter === label ? "#151719" : "var(--uf-text-2)", cursor: "pointer", fontFamily: "inherit",
-                }}>
-                {label === "all" ? "All sources" : <>{label} <span style={{ opacity: 0.6, fontVariantNumeric: "tabular-nums" }}>{n}</span></>}
-              </button>
-            ))}
+      {/* The panel: one short group per question, each a single row. */}
+      {filtersOpen && (
+        <div style={{ display: "grid", gap: 14, padding: "14px 18px 16px", borderBottom: "1px solid var(--uf-border)", background: "var(--uf-surface)" }}>
+          {([
+            ["Show", [["all", "All"], ["expense", "Expenses"], ["income", "Income"], ["transfer", "Transfers"]], filter, (v: string) => setFilter(v as typeof filter)],
+            ["Tag", [["all", "Any"], ["need", "✓ Need"], ["want", "✦ Want"], ["work", "💼 Work"]], tagFilter, (v: string) => setTagFilter(v as typeof tagFilter)],
+            ...(sources.length > 1 ? [["From", [["all", "Anywhere"], ...sources.map(([l, n]) => [l, `${l} ${n}`])], sourceFilter, setSourceFilter]] : []),
+          ] as [string, [string, string][], string, (v: string) => void][]).map(([label, options, value, set]) => (
+            <div key={label} role="group" aria-label={label} style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+              <span className="uf-t-small" style={{ width: 44, flexShrink: 0, color: "var(--uf-ink-3)", fontWeight: 600 }}>{label}</span>
+              <div style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", minWidth: 0, paddingBottom: 2 }}>
+                {options.map(([v, text]) => (
+                  <button key={v} type="button" aria-pressed={value === v} onClick={() => set(v)}
+                    style={{ flexShrink: 0, whiteSpace: "nowrap", borderRadius: 999, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", border: "1px solid transparent",
+                      background: value === v ? "var(--uf-ink)" : "var(--uf-card)", color: value === v ? "var(--uf-card)" : "var(--uf-text-2)" }}>
+                    {text}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+            {activeCount > 0 && (
+              <button type="button" onClick={clearFilters} style={{ border: "none", background: "transparent", color: "var(--uf-ink-2)", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "6px 10px" }}>Clear</button>
+            )}
+            <button type="button" onClick={() => setFiltersOpen(false)} style={{ border: "none", borderRadius: 999, background: "var(--uf-ink)", color: "var(--uf-card)", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: "6px 16px" }}>Done</button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* What is on, as one row of chips; ✕ takes one off. Hidden when nothing is picked. */}
+      {!filtersOpen && activeCount > 0 && (
+        <div style={{ display: "flex", gap: 6, padding: "8px 18px", borderBottom: "1px solid var(--uf-border)", overflowX: "auto", scrollbarWidth: "none" }}>
+          {active.map(([text, off]) => (
+            <button key={text} type="button" onClick={off} aria-label={`Remove filter ${text}`}
+              style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", border: "none", background: "var(--uf-yellow)", color: "var(--uf-on-accent)" }}>
+              {text} <span aria-hidden>✕</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Scrollable list */}
       <div style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
@@ -1130,7 +1126,7 @@ function TransactionList({
               <>
                 <div style={{ fontWeight: 700, fontSize: 15, color: "var(--uf-text)" }}>No matches</div>
                 <div style={{ fontSize: 13, color: "var(--uf-text-2)", maxWidth: 260 }}>Nothing matches these filters.</div>
-                <button onClick={() => { setSearch(""); setFilter("all"); setTagFilter("all"); setSourceFilter("all"); }} style={{ background: "var(--uf-ink)", color: "var(--uf-card)", border: "none", borderRadius: 999, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Clear filters</button>
+                <button onClick={() => { setSearch(""); clearFilters(); }} style={{ background: "var(--uf-ink)", color: "var(--uf-card)", border: "none", borderRadius: 999, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>Clear filters</button>
               </>
             ) : (
               <>

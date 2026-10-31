@@ -8,6 +8,7 @@
 - Currencies the live rate feed lacks (dong, Taiwan dollar, dirham, riyal, naira, Pakistani rupee) were counted 1-to-1 as dollars; the feed now adds to the backup rates instead of replacing them (dashboard, Transactions, Reports, Categories). Transactions uses the dashboard's one rate list.
 - "Today", "Yesterday" and a new transaction's date use your own day, not UTC (in China they were a day behind until 8 am).
 - Dark mode: the Transactions title and the add/edit form's selected states are readable. Phones: Income and Transfers filters wrap instead of being cut off.
+- Filters: the three rows of pills (type, tag, source) are now one "Filter" button with a small panel (Show, Tag, From). What is on shows as one row of yellow chips with ✕, and a count on the button.
 - The chart opens the page; the review bar, bank and savings cards follow it. One Import button (in the Add bar). Rows drop the file name (it shows on hover) and the bin shows on hover; on touch screens swipe or "Delete transaction" in the edit form deletes. Day lines show spending only. Transfers show ⇄ and "Transfer"; source pills read "HSBC HK", not a file name; the list card uses the 24px card corner.
 
 ## 2026-10-31 — Until payday stops counting paid bills
