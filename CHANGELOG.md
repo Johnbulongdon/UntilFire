@@ -3,9 +3,9 @@
 ## 2026-11-01 — Budget chart lines
 
 - The Budget line on Money → Budget's spending chart is lilac instead of dark grey. In light mode it looked like the solid black "This month" line, so on the 1st it seemed this month was already drawn across the whole month. This month was only ever the dot on day 1.
-- Simpler chart (John's pick): your spending (solid to today, dotted forecast) against one line, the Budget when you have one, otherwise Past months. One pill sums it up: "On track for $2,698 · $3 under budget".
-- Prettier chart: soft fade under your spending, the budget as a light lilac zone, round-dot forecast, a glowing "today" dot, dashed gridlines, and the end-of-month amounts written at the right ($2,686 vs $2,300) so the gap reads without hovering.
-- Spending in categories without a budget moved into an ⓘ tip next to the pill. While the month runs it uses the forecast, like "On track for", so it explains why the spending line can end above the budget line (before, it read $0 on the 1st).
+- Simpler chart (John's pick): with a budget, the chart shows the budgeted categories against the Budget line; with no budget, against Past months. One pill sums it up ("On track for $2,297 · $3 under budget"), pink when over.
+- Style C (John's pick): the gap between where spending is heading and the budget is shaded pink (over) or mint (under). At the right edge, the spending and budget totals are joined by a bracket with an "$X over/under" pill, so the number never sits on the lines. Big bills (10%+ of the budget) get a small name tag at their step.
+- Spending in categories without a budget moved into an ⓘ tip next to the pill (forecast while the month runs). Before, "$3 under budget" sat next to a forecast line well above the budget line with nothing explaining the gap.
 
 ## 2026-11-01 — Free to spend pill on Budget
 

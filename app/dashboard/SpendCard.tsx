@@ -6,7 +6,7 @@ import type { ScheduledCalendarItem } from "@/lib/marked-calendar";
 import { Card, InfoTip } from "@/components/ui";
 import { trackTxViewChanged } from "@/lib/analytics";
 import { type DateRange, monthOf, netAmount, type RangeTx, usualToDay } from "@/lib/spend-range";
-import { type Bill, billCategory, billsOverBudget, budgetPath, daysOfMonths, dueByCategory, everydayRate, forecastPath, rateSoFar, type Typical, typicalForRange } from "@/lib/spend-forecast";
+import { type Bill, billCategory, billsOverBudget, budgetPath, daysOfMonths, dueByCategory, everydayRate, forecastPath, occurrences, rateSoFar, type Typical, typicalForRange } from "@/lib/spend-forecast";
 import { BarsView, CalendarView, calendarAllowed, type Daily, LineView } from "./SpendCharts";
 
 type Tx = RangeTx & { id: string };
@@ -166,9 +166,22 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
   const budgeted = useMemo(() => focus.filter((e) => budgetKeys.has(e.category)), [focus, budgetKeys]);
   const budgetedSoFar = budgeted.filter((e) => inRange(e.date)).reduce((s, e) => s + e.usd, 0);
   const budgetedRate = useMemo(() => everydayRate(budgeted, budgetBills, thisMonth), [budgeted, budgetBills, thisMonth]);
-  const vsBudget = budgetMonth == null ? null
-    : (running ? forecastPath(days, today, budgetedSoFar, budgetBills, budgetedRate ?? rateSoFar(budgeted, budgetBills, today, dayOfMonth)).at(-1)! : budgetedSoFar)
-      - budgetMonth * range.months.length;
+  const budgetedForecast = budgetMonth != null && running ? forecastPath(days, today, budgetedSoFar, budgetBills, budgetedRate ?? rateSoFar(budgeted, budgetBills, today, dayOfMonth)) : null;
+  const vsBudget = budgetMonth == null ? null : (budgetedForecast ? budgetedForecast.at(-1)! : budgetedSoFar) - budgetMonth * range.months.length;
+  // With a budget, the line chart shows the budgeted categories, so the gap
+  // between the spending line and the budget line is the "over/under budget"
+  // number (D-31: like with like). The rest is in the pill's info tip.
+  const chartDaily = useMemo(() => {
+    if (budgetMonth == null) return daily;
+    const m: Daily = new Map();
+    for (const e of budgeted) if (inRange(e.date)) m.set(e.date, (m.get(e.date) ?? 0) + e.usd);
+    return m;
+  }, [budgetMonth, daily, budgeted, range, today]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Big bills in a one-month view get a small name tag at their step.
+  const billTags = useMemo(() => budgetMonth == null || range.months.length !== 1 ? [] : budgetBills
+    .filter((b) => b.usd >= budgetMonth * 0.1)
+    .flatMap((b) => occurrences(b, range.start, range.end).map((d) => ({ day: Number(d.slice(8, 10)) - 1, label: (b.description || billCategory(b) || "Bill").slice(0, 12), usd: b.usd })))
+    .sort((a, b) => b.usd - a.usd).slice(0, 3), [budgetMonth, budgetBills, range]);
   // While the month runs, "On track for" is a forecast, so the not-budgeted
   // part is one too: the forecast less the budgeted forecast. Using spending
   // so far showed nothing on the 1st, and "$3 under budget" sat beside a
@@ -240,7 +253,7 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
             </div>
           </div>
         </div>
-        {shown === "line" && <LineView range={range} today={today} daily={daily} usualByDay={usualByDay} usualMonth={usualByDay?.[31] ?? null} budgetLine={budgetLine} billsOver={billsOver} vsBudget={vsBudget} unbudgeted={unbudgeted} forecast={forecastLine} periodLabel={periodLabel} fmt={fmt} />}
+        {shown === "line" && <LineView range={range} today={today} daily={chartDaily} usualByDay={usualByDay} usualMonth={usualByDay?.[31] ?? null} budgetLine={budgetLine} billsOver={billsOver} vsBudget={vsBudget} unbudgeted={unbudgeted} forecast={budgetedForecast ?? forecastLine} billTags={billTags} periodLabel={periodLabel} fmt={fmt} />}
         {shown === "bars" && <BarsView range={range} today={today} daily={daily} usualMonth={usualByDay?.[31] ?? null} budgetMonth={budgetMonth} fmt={fmt} valueLabel={mode === "spent" ? "Expenses" : "Income"} />}
         {shown === "cal" && <CalendarView range={range} today={today} daily={daily} fmt={fmt} selectedDay={selectedDay} onSelectDay={onSelectDay} onZoomMonth={onZoomMonth} events={calendarEvents} compact={compact} colorFor={category=>expenseCats.find(c=>c.key===category)?.color} />}
       </div>
