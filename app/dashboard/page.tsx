@@ -2369,7 +2369,6 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
           <Button variant="primary" onClick={() => setBudgetSetupOpen(true)} style={{ marginTop: 6 }}>
             Set up my budget
           </Button>
-          {editCategoriesButton}
         </div>}
 
         <div className="uf-card" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -2396,6 +2395,8 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
             )}
           </div>
         </div>
+        {/* Shown with or without the starter card, so categories can be edited before any budget. */}
+        {editCategoriesButton && <div>{editCategoriesButton}</div>}
         {guidedSetupModal}
       </div>
     );
