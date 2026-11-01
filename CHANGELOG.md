@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-01 — Free to spend pill on Budget
+
+- The "Free to spend" bar under the Budget chart is now a rounded mint pill. Early in the month, with no expenses yet, it stood alone as a square black box that looked like a broken button. Short after bills stays a warm warning pill.
+- Expenses and Free to spend are two separate pills that wrap on small phones, so the Expenses label no longer disappears or gets cut off.
+- The "to review" and Worth a look buttons use the ink token directly instead of the old green alias.
+
 ## 2026-11-01 — Accounts & tools and member provider referrals (in review)
 
 - Website and phone add curated account browsing/comparison, focused account setup and existing-account bypass; opening a provider never marks an account opened or moves money.
