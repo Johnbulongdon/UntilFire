@@ -95,8 +95,8 @@ const WEB_PLAN: JourneyStep[] = [
 
 /** TourModal, opened from the sidebar's Take a tour (computer size only). */
 const WEB_TOUR: JourneyStep[] = ['Welcome', 'Home', 'Money', 'Plan', 'Profile'].map((label, i) => ({
-  label: `Tour: ${label}`, action: i ? 'Tap Next' : 'Tap Start Tour', route: '/dashboard', shot: 'user:/dashboard',
-  click: ['Take a tour', ...(i ? ['Start Tour'] : []), ...Array(Math.max(0, i - 1)).fill('Next →')],
+  label: `Tour: ${label}`, action: i ? 'Tap Next' : 'Tap Start tour', route: '/dashboard', shot: 'user:/dashboard',
+  click: ['Take a tour', ...(i ? ['Start tour →'] : []), ...Array(Math.max(0, i - 1)).fill('Next →')],
 }))
 
 /** Phone tabs and pages, as each screen file names them. */
