@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-01 — Explore globe fills the page
+
+- On a computer, Plan → Explore (and the public /explore page) now gives the globe everything to the right of the sidebar, edge to edge. The filters, Your numbers and the city list float over it in a rounded panel on the right.
+- The arrow on the panel's left edge folds it away into the right edge, leaving a small "Cities" tab to bring it back. The browser remembers your choice. While the panel is open the globe centres in the space beside it, and "cities in view" only counts cities you can see.
+- Zoom buttons moved to the bottom left so the panel never covers them. Phones keep the stacked layout.
+
 ## 2026-11-01 — Budget chart lines
 
 - The Budget line on Money → Budget's spending chart is lilac instead of dark grey. In light mode it looked like the solid black "This month" line, so on the 1st it seemed this month was already drawn across the whole month. This month was only ever the dot on day 1.
