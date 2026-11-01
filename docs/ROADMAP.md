@@ -76,6 +76,10 @@ queue: reconcile its scope and dependencies before starting overlapping changes.
 
 ### Completed / disposition record
 
+- **1 November 2026 — Completed (pending merge):** buttons and popups style sync;
+  old teal/slate popups, browser confirms, public calculator pages and share
+  images moved to Next Horizon tokens. Findings and screenshots in project files
+  `untilfire/style-sync-audit-2026-11-01/`.
 - **27 October 2026 — Completed:** positioning decision and historical slogan
   recorded; [PR #316](https://github.com/Johnbulongdon/UntilFire/pull/316) merged
   as `2a83202`. Runtime copy rollout is N1, not complete.

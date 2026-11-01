@@ -40,14 +40,14 @@ export default async function SharePage({ searchParams }: Props) {
   return (
     <main style={{
       minHeight: '100vh',
-      background: '#F7F9FB',
+      background: 'var(--uf-ground)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       fontFamily: "'Inter', sans-serif",
       padding: '40px 24px',
-      color: '#19181E',
+      color: 'var(--uf-ink)',
     }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');`}</style>
 
@@ -59,31 +59,32 @@ export default async function SharePage({ searchParams }: Props) {
 
         {/* Card */}
         <div style={{
-          background: '#ffffff',
-          border: '1px solid #E2E8F0',
-          borderRadius: 20,
+          background: 'var(--uf-yellow)',
+          color: '#151719',
+          border: 'none',
+          borderRadius: 28,
           padding: '40px 32px 36px',
           boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.06)',
           marginBottom: 32,
         }}>
-          <p style={{ fontSize: 13, color: '#64748B', letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 6px', fontFamily: "'Inter', sans-serif" }}>
+          <p style={{ fontSize: 14, fontWeight: 700, color: '#151719', margin: '0 0 6px', fontFamily: "'Inter', sans-serif" }}>
             Freedom date
           </p>
           <h1 style={{ fontSize: 40, fontWeight: 800, margin: '0 0 4px', color: '#151719', letterSpacing: '-0.02em' }}>
             {safeCity}
           </h1>
-          <p style={{ fontSize: 56, fontWeight: 800, color: '#17684B', margin: '0 0 10px', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+          <p style={{ fontSize: 56, fontWeight: 800, color: '#151719', fontVariantNumeric: 'tabular-nums', margin: '0 0 10px', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
             around {year}
           </p>
           {yearsNum > 0 && (
-            <p style={{ fontSize: 16, color: '#64748B', margin: '0 0 0', fontFamily: "'Inter', sans-serif" }}>
+            <p style={{ fontSize: 16, color: '#3F434C', margin: '0 0 0', fontFamily: "'Inter', sans-serif" }}>
               {yearsNum} years away · work optional timeline
             </p>
           )}
         </div>
 
         {/* Divider */}
-        <p style={{ fontSize: 16, color: '#64748B', marginBottom: 20 }}>
+        <p style={{ fontSize: 16, color: 'var(--uf-ink-2)', marginBottom: 20 }}>
           What does your city look like?
         </p>
 
@@ -91,19 +92,19 @@ export default async function SharePage({ searchParams }: Props) {
           href="/"
           style={{
             display: 'inline-block',
-            background: '#151719',
-            color: '#ffffff',
+            background: 'var(--uf-ink)',
+            color: 'var(--uf-card)',
             fontWeight: 700,
             fontSize: 16,
             padding: '14px 36px',
-            borderRadius: 10,
+            borderRadius: 999,
             textDecoration: 'none',
             letterSpacing: '-0.01em',
           }}
         >
           Find your freedom date — free →
         </Link>
-        <p style={{ fontSize: 13, color: '#94A3B8', marginTop: 14, fontFamily: "'Inter', sans-serif" }}>
+        <p style={{ fontSize: 13, color: 'var(--uf-ink-3)', marginTop: 14, fontFamily: "'Inter', sans-serif" }}>
           No login required. Takes 60 seconds.
         </p>
       </div>

@@ -145,7 +145,7 @@ export default function Bills() {
 
       <View pointerEvents="box-none" style={{ position: 'absolute', right: 20, bottom: Platform.OS === 'ios' ? insets.bottom + 64 : 20 }}>
         <Bouncy accessibilityRole="button" accessibilityLabel="Add a bill or payday" onPress={() => { haptic.press(); router.push('/bill') }} scaleTo={0.9}>
-          <View className="h-14 w-14 items-center justify-center rounded-full bg-green" style={{ shadowColor: '#78501E', shadowOpacity: 0.2, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } }}>
+          <View className="h-14 w-14 items-center justify-center rounded-full bg-green" style={{ shadowColor: '#151719', shadowOpacity: 0.2, shadowRadius: 14, shadowOffset: { width: 0, height: 6 } }}>
             <Text className="text-[30px] leading-[32px] text-card">+</Text>
           </View>
         </Bouncy>

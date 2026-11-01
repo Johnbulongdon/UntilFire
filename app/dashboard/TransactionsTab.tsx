@@ -502,7 +502,7 @@ function QuickAddForm({
               fontSize: 12, fontWeight: 700, cursor: "pointer", alignSelf: "flex-start",
             }}
           >
-            <span style={{ color: "#20D4BF" }}>✦</span>
+            <span aria-hidden style={{ color: "var(--uf-ink)" }}>✦</span>
             Looks like {aiSuggestedCat?.label} — use it?
           </button>
         )}
@@ -685,7 +685,7 @@ function QuickAddForm({
                 <button
                   type="button"
                   onClick={() => setShowSubForm(true)}
-                  style={{ background: "none", border: "1px dashed #CBD5E1", borderRadius: 999, padding: "5px 12px", fontSize: 12, color: "var(--uf-text-3)", cursor: "pointer", fontFamily: "inherit" }}
+                  style={{ background: "none", border: "1px dashed var(--uf-border-2)", borderRadius: 999, padding: "5px 12px", fontSize: 12, color: "var(--uf-text-3)", cursor: "pointer", fontFamily: "inherit" }}
                 >
                   + Add
                 </button>
@@ -869,7 +869,7 @@ function QuickAddForm({
                 onClick={() => setSaveAndAddAnother((v) => !v)}
                 style={{
                   display: "inline-block", width: 32, height: 18,
-                  background: saveAndAddAnother ? "var(--uf-ink)" : "#CBD5E1",
+                  background: saveAndAddAnother ? "var(--uf-ink)" : "var(--uf-border-2)",
                   borderRadius: 999, position: "relative", cursor: "pointer", transition: "background 0.12s", flexShrink: 0,
                 }}
               >
@@ -1116,8 +1116,8 @@ function TransactionList({
       <div style={{ overflowY: "auto", flex: 1, minHeight: 0 }}>
         {groups.length === 0 ? (
           <div style={{ padding: "48px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}>
-            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "#ECFDF5", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#17684B" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <div style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--uf-mint)", color: "var(--uf-ink)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M5 17 9 13l3 3 7-7" /><path d="M14 6h5v5" />
               </svg>
             </div>
@@ -1184,7 +1184,7 @@ function TransactionList({
                         {swipedId === tx.id && (
                           <div
                             onClick={(e) => { e.stopPropagation(); onDelete(tx); setSwipedId(null); }}
-                            style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 72, background: "#DC2626", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 2 }}
+                            style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 72, background: "var(--uf-neg)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 2 }}
                           >
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" />
@@ -1294,7 +1294,7 @@ function TransactionList({
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
                           {tx.refund_amount > 0 ? (
                             <>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: tx.refund_amount >= tx.amount ? "#94A3B8" : "var(--uf-neg-ink)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", textDecoration: tx.refund_amount >= tx.amount ? "line-through" : "none" }}>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: tx.refund_amount >= tx.amount ? "var(--uf-ink-3)" : "var(--uf-neg-ink)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", textDecoration: tx.refund_amount >= tx.amount ? "line-through" : "none" }}>
                                 −{txMoney(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
                               </div>
                               {tx.refund_amount >= tx.amount ? (
@@ -1390,16 +1390,16 @@ function MobileBar({ onOpen, onImport }: { onOpen: () => void; onImport: () => v
       <button
         onClick={onOpen}
         aria-label="Add transaction"
-        style={{ flex: 1, background: "#151719", color: "#fff", border: "none", borderRadius: "999px 0 0 999px", padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
+        style={{ flex: 1, background: "var(--uf-ink)", color: "var(--uf-card)", border: "none", borderRadius: "999px 0 0 999px", padding: "12px 20px", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14" /></svg>
         Add
       </button>
-      <div style={{ width: 1, background: "rgba(255,255,255,0.2)", flexShrink: 0 }} />
+      <div style={{ width: 1, background: "var(--uf-card)", opacity: 0.25, flexShrink: 0 }} />
       <button
         onClick={onImport}
         aria-label="Import bank file"
-        style={{ background: "#151719", color: "#fff", border: "none", borderRadius: "0 999px 999px 0", padding: "12px 16px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
+        style={{ background: "var(--uf-ink)", color: "var(--uf-card)", border: "none", borderRadius: "0 999px 999px 0", padding: "12px 16px", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", boxShadow: "0 4px 10px rgba(6,78,59,0.35)", fontFamily: "inherit" }}
       >
         ↑ Import
       </button>

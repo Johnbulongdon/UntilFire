@@ -96,7 +96,7 @@ export function ReportPage({ d, branded, money, compact }: { d: ReportData; bran
         {kpi("Saving a year", money(d.savingTotal))}
         {kpi(d.gross ? "Of pay, with employer" : "Of take-home", d.savingPct !== null ? `${Math.round(d.savingPct * 100)}%` : "—")}
         {kpi("Spending today", money(d.spendingToday))}
-        {kpi(d.bridge ? `Bridge to ${d.bridge.accessAge}` : "Withdrawal rate", d.bridge ? <span style={{ color: d.bridge.ok ? C.green : "#b4532a" }}>{d.bridge.ok ? "✓ passes" : "short"}</span> : pct(d.withdrawalRate))}
+        {kpi(d.bridge ? `Bridge to ${d.bridge.accessAge}` : "Withdrawal rate", d.bridge ? <span style={{ color: d.bridge.ok ? C.green : C.pen }}>{d.bridge.ok ? "✓ passes" : "short"}</span> : pct(d.withdrawalRate))}
       </div>
     </div>
     <div className="uf-report-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 26, marginTop: 18 }}>
@@ -124,7 +124,7 @@ export function ReportPage({ d, branded, money, compact }: { d: ReportData; bran
         <div style={{ ...mono, ...sub, margin: 0, display: "flex", justifyContent: "space-between" }}><span>{compact(d.bridge.reachable)} any age</span><span>{compact(d.bridge.locked)} opens at {d.bridge.accessAge}</span></div>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 6 }}><tbody>
           <tr><td style={td}>Needed for {Math.ceil(d.bridge.years)} years until {d.bridge.accessAge}</td><td style={{ ...td, ...mono, textAlign: "right" }}>{money(d.bridge.needed)}</td></tr>
-          <tr><td style={td}>Reachable before then</td><td style={{ ...td, ...mono, textAlign: "right", color: d.bridge.ok ? C.green : "#b4532a", fontWeight: 700 }}>{money(d.bridge.reachable)}</td></tr>
+          <tr><td style={td}>Reachable before then</td><td style={{ ...td, ...mono, textAlign: "right", color: d.bridge.ok ? C.green : C.pen, fontWeight: 700 }}>{money(d.bridge.reachable)}</td></tr>
           <tr><td style={{ ...td, borderBottom: 0 }}>{d.bridge.ok ? "Room to spare" : "Short by"}</td><td style={{ ...td, borderBottom: 0, ...mono, textAlign: "right" }}>{money(Math.abs(d.bridge.reachable - d.bridge.needed))}</td></tr>
         </tbody></table>
         {d.bridge.ok && d.bridge.reachable - d.bridge.needed < d.bridge.needed * 0.1 && <p style={sub}>Thin margin: saving more into the {d.bridge.name} instead of reachable accounts would delay freedom.</p>}

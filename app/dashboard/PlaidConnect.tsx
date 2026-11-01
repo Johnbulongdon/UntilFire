@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { usePlaidLink } from "react-plaid-link";
 import { trackHysaEmptyStateCtaClicked } from "@/lib/analytics";
 import { isPro, supabase } from "@/lib/supabase";
-import { Button } from "@/components/ui";
+import { Button, ConfirmDialog } from "@/components/ui";
 import { BankLogo, MoneyList, MoneyRow } from "./MoneyCards";
 import BankWorking, { type BankFound } from "./BankWorking";
 
@@ -221,8 +221,10 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
     onTransactionsImported?.();
   };
 
+  const [confirmDisconnect, setConfirmDisconnect] = useState<{ id: string; name: string } | null>(null);
+  const askDisconnect = (itemId: string, name: string) => setConfirmDisconnect({ id: itemId, name });
+
   const handleDisconnect = async (itemId: string, name: string) => {
-    if (!confirm(`Disconnect ${name}? Your imported transactions will be kept.`)) return;
     setDisconnectingId(itemId);
     const session = await getSession();
     if (!session) {
@@ -256,10 +258,10 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
 
   const btnStyle = (variant: "primary" | "ghost"): React.CSSProperties => ({
     padding: variant === "primary" ? "9px 18px" : "7px 12px",
-    borderRadius: 8,
+    borderRadius: "var(--uf-r-pill)",
     border: variant === "primary" ? "none" : "1px solid var(--uf-border)",
-    background: variant === "primary" ? "#151719" : "var(--uf-card)",
-    color: variant === "primary" ? "#ffffff" : "var(--uf-text-2)",
+    background: variant === "primary" ? "var(--uf-ink)" : "var(--uf-card)",
+    color: variant === "primary" ? "var(--uf-card)" : "var(--uf-text-2)",
     fontSize: 13,
     fontWeight: 700,
     cursor: "pointer",
@@ -277,6 +279,16 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
         @keyframes plaid-slide-in { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
       `}</style>
 
+      <ConfirmDialog
+        open={!!confirmDisconnect}
+        title={`Disconnect ${confirmDisconnect?.name ?? "this bank"}?`}
+        body="Your imported transactions stay. New ones stop coming in."
+        confirmLabel="Disconnect"
+        danger
+        onConfirm={() => { const c = confirmDisconnect; setConfirmDisconnect(null); if (c) handleDisconnect(c.id, c.name); }}
+        onCancel={() => setConfirmDisconnect(null)}
+      />
+
       {working && <BankWorking name={working.name} result={working.result} onClose={() => setWorking(null)} />}
 
       {connectResult && (
@@ -288,10 +300,11 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
             zIndex: 9999,
             maxWidth: 360,
             padding: "14px 18px",
-            borderRadius: 12,
-            background: connectResult.added > 0 ? "#151719" : "#78350F",
-            color: "#ffffff",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+            borderRadius: "var(--uf-r-card)",
+            background: connectResult.added > 0 ? "var(--uf-mint)" : "var(--uf-warn-bg)",
+            color: connectResult.added > 0 ? "var(--uf-ink)" : "var(--uf-warn-ink)",
+            border: "1px solid var(--uf-border)",
+            boxShadow: "var(--uf-e2)",
             display: "flex",
             alignItems: "flex-start",
             gap: 12,
@@ -304,11 +317,11 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
               : `${connectResult.name} connected. No transactions found yet - tap Sync now, or check back in a few minutes.`}
           </span>
           <button
-            onClick={() => setConnectResult(null)}
+            aria-label="Close" onClick={() => setConnectResult(null)}
             style={{
               background: "none",
               border: "none",
-              color: "rgba(255,255,255,0.7)",
+              color: "inherit", opacity: 0.7,
               cursor: "pointer",
               fontSize: 18,
               padding: 0,
@@ -316,7 +329,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
               lineHeight: 1,
             }}
           >
-            x
+            ✕
           </button>
         </div>
       )}
@@ -330,10 +343,11 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
             zIndex: 9999,
             maxWidth: 360,
             padding: "14px 18px",
-            borderRadius: 12,
-            background: "#7F1D1D",
-            color: "#ffffff",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+            borderRadius: "var(--uf-r-card)",
+            background: "var(--uf-neg-bg)",
+            color: "var(--uf-neg-ink)",
+            border: "1px solid var(--uf-neg)",
+            boxShadow: "var(--uf-e2)",
             display: "flex",
             alignItems: "flex-start",
             gap: 12,
@@ -343,11 +357,11 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
           <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>!</span>
           <span style={{ fontSize: 13, lineHeight: 1.5, flex: 1 }}>{error}</span>
           <button
-            onClick={() => setError(null)}
+            aria-label="Close" onClick={() => setError(null)}
             style={{
               background: "none",
               border: "none",
-              color: "rgba(255,255,255,0.7)",
+              color: "inherit", opacity: 0.7,
               cursor: "pointer",
               fontSize: 18,
               padding: 0,
@@ -355,7 +369,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
               lineHeight: 1,
             }}
           >
-            x
+            ✕
           </button>
         </div>
       )}
@@ -393,7 +407,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                color: "#151719",
+                color: "var(--uf-ink)",
                 fontSize: 13,
                 fontWeight: 600,
               }}
@@ -403,8 +417,8 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                   display: "inline-block",
                   width: 14,
                   height: 14,
-                  border: "2px solid #D1FAE5",
-                  borderTopColor: "#151719",
+                  border: "2px solid var(--uf-border)",
+                  borderTopColor: "var(--uf-ink)",
                   borderRadius: "50%",
                   animation: "plaid-spin 0.8s linear infinite",
                 }}
@@ -472,7 +486,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                 after={open && (
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <Button variant="secondary" size="sm" onClick={() => handleSync(item.id)} disabled={isSyncing || isDisconnecting}>{isSyncing ? "Syncing…" : "Sync now"}</Button>
-                    <Button variant="danger" size="sm" onClick={() => handleDisconnect(item.id, item.institution_name)} disabled={isSyncing || isDisconnecting}>{isDisconnecting ? "Disconnecting…" : "Disconnect"}</Button>
+                    <Button variant="danger" size="sm" onClick={() => askDisconnect(item.id, item.institution_name)} disabled={isSyncing || isDisconnecting}>{isDisconnecting ? "Disconnecting…" : "Disconnect"}</Button>
                   </div>
                 )} />
             );
@@ -483,11 +497,11 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
       {items.length > 0 && !collapsed && layout === "tiles" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {importing && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#151719", fontSize: 13, fontWeight: 600 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--uf-ink)", fontSize: 13, fontWeight: 600 }}>
               <span
                 style={{
                   display: "inline-block", width: 14, height: 14,
-                  border: "2px solid #D1FAE5", borderTopColor: "#151719",
+                  border: "2px solid var(--uf-border)", borderTopColor: "var(--uf-ink)",
                   borderRadius: "50%", animation: "plaid-spin 0.8s linear infinite",
                 }}
               />
@@ -495,8 +509,8 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
             </div>
           )}
 
-          <div style={{ fontSize: 11, fontWeight: 800, color: "#151719", letterSpacing: "0.08em" }}>
-            CONNECTED BANKS
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-ink)" }}>
+            Connected banks
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
@@ -513,7 +527,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                   : result
                     ? "up to date"
                     : fmtSynced(item.last_synced_at);
-              const metaColor = isSyncing ? "#151719" : result && result.added > 0 ? "#17684B" : "#94A3B8";
+              const metaColor = isSyncing ? "var(--uf-ink)" : result && result.added > 0 ? "var(--uf-pos-ink)" : "var(--uf-ink-3)";
 
               const tileBody = (
                 <>
@@ -525,7 +539,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                       aria-label="Sync now"
                       style={{
                         width: 36, height: 36, borderRadius: 9, border: "none",
-                        background: "#151719", color: "#fff",
+                        background: "var(--uf-ink)", color: "var(--uf-card)",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 16, cursor: isSyncing || isDisconnecting ? "default" : "pointer",
                         animation: isSyncing ? "plaid-spin 0.8s linear infinite" : "none",
@@ -561,7 +575,7 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                   >
                     {item.institution_name}
                   </div>
-                  <div style={{ fontSize: 10, color: metaColor, fontWeight: metaColor === "#94A3B8" ? 400 : 700 }}>
+                  <div style={{ fontSize: 10, color: metaColor, fontWeight: metaColor === "var(--uf-ink-3)" ? 400 : 700 }}>
                     {metaText}
                   </div>
                 </>
@@ -591,18 +605,18 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                   style={{
                     width: 92, position: "relative",
                     display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                    background: "var(--uf-surface)", border: "1.5px solid #151719", borderRadius: 12,
+                    background: "var(--uf-surface)", border: "1.5px solid var(--uf-ink)", borderRadius: 12,
                     padding: "10px 8px", cursor: "pointer", textAlign: "center",
                   }}
                 >
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleDisconnect(item.id, item.institution_name); }}
+                    onClick={(e) => { e.stopPropagation(); askDisconnect(item.id, item.institution_name); }}
                     disabled={isSyncing || isDisconnecting}
                     title="Disconnect"
                     aria-label={`Disconnect ${item.institution_name}`}
                     style={{
                       position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%",
-                      border: "1px solid var(--uf-border)", background: "#fff", color: "#DC2626",
+                      border: "1px solid var(--uf-border)", background: "var(--uf-card)", color: "var(--uf-neg)",
                       fontSize: 11, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center",
                       cursor: isSyncing || isDisconnecting ? "default" : "pointer",
                     }}
@@ -621,12 +635,12 @@ export default function PlaidConnect({ onTransactionsImported, onUpgradeClick, c
                 width: 92,
                 display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
                 background: "var(--uf-card)", border: "1.5px dashed var(--uf-border)", borderRadius: 12,
-                padding: "10px 8px", cursor: "pointer", fontFamily: "inherit", color: "#151719",
+                padding: "10px 8px", cursor: "pointer", fontFamily: "inherit", color: "var(--uf-ink)",
               }}
             >
               <div
                 style={{
-                  width: 36, height: 36, borderRadius: 9, border: "1.5px dashed #151719",
+                  width: 36, height: 36, borderRadius: 9, border: "1.5px dashed var(--uf-ink)",
                   display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 300,
                 }}
               >

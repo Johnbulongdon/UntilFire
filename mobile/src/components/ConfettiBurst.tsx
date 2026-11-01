@@ -2,7 +2,8 @@ import { useEffect, useMemo } from 'react'
 import { StyleSheet, useWindowDimensions, View } from 'react-native'
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated'
 
-const COLORS = ['#F5A24F', '#0E9C86', '#3866C9', '#E2763A', '#7E4FAA', '#F2C14E', '#F27D61', '#5FDCC4']
+// Next Horizon: freedom yellow, ink and the four pastel card colours (a shade deeper so they show on white).
+const COLORS = ['#FFE58A', '#151719', '#F2C94C', '#9FD9C2', '#C3B5EE', '#9CC6F2', '#F2B3D4', '#FFE58A']
 
 /**
  * A one-off shower of confetti over the whole screen, for the biggest moment
