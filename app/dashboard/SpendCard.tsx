@@ -169,7 +169,13 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
   const vsBudget = budgetMonth == null ? null
     : (running ? forecastPath(days, today, budgetedSoFar, budgetBills, budgetedRate ?? rateSoFar(budgeted, budgetBills, today, dayOfMonth)).at(-1)! : budgetedSoFar)
       - budgetMonth * range.months.length;
-  const unbudgeted = budgetMonth == null || picked.size ? 0 : total - budgetedSoFar;
+  // While the month runs, "On track for" is a forecast, so the not-budgeted
+  // part is one too: the forecast less the budgeted forecast. Using spending
+  // so far showed nothing on the 1st, and "$3 under budget" sat beside a
+  // forecast line well above the budget line with nothing to explain the gap.
+  const unbudgeted = budgetMonth == null || picked.size ? 0
+    : running && forecastLine ? forecastLine.at(-1)! - (budgetMonth * range.months.length + vsBudget!)
+    : total - budgetedSoFar;
   // Bills still owed this month, per category, so "left" matches Free to spend.
   const due = useMemo(() => running && range.months.includes(thisMonth)
     ? dueByCategory(bills, `${thisMonth}-${String(new Date(Number(thisMonth.slice(0, 4)), Number(thisMonth.slice(5, 7)), 0).getDate()).padStart(2, "0")}`) : {},

@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-01 — Budget chart lines
+
+- The Budget line on Money → Budget's spending chart is lilac instead of dark grey. In light mode it looked like the solid black "This month" line, so on the 1st it seemed this month was already drawn across the whole month. This month was only ever the dot on day 1.
+- While the month runs, "+$X not budgeted" now uses the forecast, like "On track for". Before, it used spending so far, so on the 1st "$3 under budget" sat next to a forecast well above the budget line with nothing explaining the gap (bills and spending in categories without a budget).
+
 ## 2026-11-01 — Free to spend pill on Budget
 
 - The "Free to spend" bar under the Budget chart is now a rounded mint pill. Early in the month, with no expenses yet, it stood alone as a square black box that looked like a broken button. Short after bills stays a warm warning pill.

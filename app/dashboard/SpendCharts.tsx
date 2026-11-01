@@ -26,7 +26,7 @@ const monthShort = (ym: string) => { const [y, m] = ym.split("-").map(Number); r
 function ChartKey({ items }: { items: { mark: "line" | "dot" | "dash" | "thin" | "bar" | "barSoft"; label: string }[] }) {
   const swatch = (m: string) => m === "line" ? <i style={{ width: 16, height: 0, borderTop: "2.5px solid var(--uf-chart-1)" }} />
     : m === "dot" ? <i style={{ width: 16, height: 0, borderTop: "2.5px dotted var(--uf-chart-1)" }} />
-    : m === "thin" ? <i style={{ width: 16, height: 0, borderTop: "1.5px solid var(--uf-ink-2)" }} />
+    : m === "thin" ? <i style={{ width: 16, height: 0, borderTop: "2px solid var(--uf-chart-2)" }} />
     : m === "dash" ? <i style={{ width: 16, height: 0, borderTop: "2px dashed var(--uf-ink-3)" }} />
     : <i style={{ width: 10, height: 10, borderRadius: 2, background: m === "bar" ? "var(--uf-chart-1)" : "color-mix(in oklab, var(--uf-chart-1) 28%, var(--uf-card))" }} />;
   return (
@@ -104,7 +104,8 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLi
       aria-label={`${periodLabel}: ${fmt(mine.at(-1) ?? 0)}${gap != null ? `, ${fmt(Math.abs(gap))} ${gap >= 0 ? "more" : "less"} than past months by this day` : ""}${budgetTotal ? `, budget ${fmt(budgetTotal)}` : ""}`}>
       {budgetTotal != null && (
         <>
-          {budgetPath && <path d={path(budgetPath)} fill="none" stroke="var(--uf-ink-2)" strokeWidth={1.5} strokeLinejoin="round" />}
+          {/* Lilac, not grey: in light mode a dark grey budget line read as "This month" running across the whole month. */}
+          {budgetPath && <path d={path(budgetPath)} fill="none" stroke="var(--uf-chart-2)" strokeWidth={2} strokeLinejoin="round" />}
         </>
       )}
       {grid.map((v) => (
@@ -124,7 +125,7 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLi
           <line x1={x(hover)} x2={x(hover)} y1={8} y2={base} stroke="var(--uf-ink-3)" strokeWidth={1} />
           {hover <= end && <circle cx={x(hover)} cy={y(mine[hover])} r={4} fill="var(--uf-chart-1)" stroke="var(--uf-card)" strokeWidth={2} />}
           {usual && <circle cx={x(hover)} cy={y(usual[hover])} r={3} fill="var(--uf-card)" stroke="var(--uf-ink-3)" strokeWidth={1.5} />}
-          {budgetPath && <circle cx={x(hover)} cy={y(budgetPath[hover])} r={3} fill="var(--uf-card)" stroke="var(--uf-ink-2)" strokeWidth={1.5} />}
+          {budgetPath && <circle cx={x(hover)} cy={y(budgetPath[hover])} r={3} fill="var(--uf-card)" stroke="var(--uf-chart-2)" strokeWidth={1.5} />}
         </>
       )}
       {ticks.map((i) => i >= 0 && (
@@ -205,7 +206,7 @@ export function BarsView({ range, today, daily, usualMonth, budgetMonth, fmt, va
       )}
       {plan != null && (
         <>
-          <i style={{ position: "absolute", left: 0, right: 0, bottom: 20 + (plan / max) * 140, borderTop: "1.5px solid var(--uf-ink-2)" }} />
+          <i style={{ position: "absolute", left: 0, right: 0, bottom: 20 + (plan / max) * 140, borderTop: "2px solid var(--uf-chart-2)" }} />
           <span className="uf-t-small" style={{ ...mono, position: "absolute", right: 0, bottom: 24 + (plan / max) * 140, color: "var(--uf-ink-2)", background: "var(--uf-card)", paddingLeft: 4 }}>budget {fmt(plan)}</span>
         </>
       )}
