@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { InfoTip } from "@/components/ui";
 import MarkedMonth, { type MarkedEvent } from "./MarkedMonth";
 import { bucketFor, daysInMonth, type DateRange } from "@/lib/spend-range";
 
@@ -37,8 +38,9 @@ function ChartKey({ items }: { items: { mark: "line" | "dot" | "dash" | "thin" |
 }
 
 /**
- * Running total for the period against past months (how a typical month went
- * by each day) and the budget, with the forecast to the end of the period.
+ * Running total for the period, with the forecast to the end of the period,
+ * against one reference: the budget when there is one, otherwise past months
+ * (how a typical month went by each day). One pill sums it up.
  * The budget line and forecast are built from Upcoming bills in
  * lib/spend-forecast; this only draws them. `usualByDay[d]` is past months'
  * spend through day d.
@@ -58,7 +60,9 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLi
   }, [range]);
   let run = 0;
   const mine = all.filter((d) => d <= today).map((d) => (run += daily.get(d) ?? 0));
-  const usual = usualByDay && usualMonth != null
+  // One line to compare against (2026-11-01, John): the budget when there is
+  // one, otherwise past months. Both at once competed with each other.
+  const usual = !budgetLine && usualByDay && usualMonth != null
     ? all.map((d) => range.months.indexOf(d.slice(0, 7)) * usualMonth + usualByDay[Number(d.slice(8, 10))])
     : null;
   const budgetPath = budgetLine;
@@ -88,13 +92,16 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLi
   const day = (iso: string) => { const [yy, mm, dd] = iso.split("-").map(Number); return new Date(yy, mm - 1, dd).toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
   return (
     <div style={{ position: "relative" }}>
-    {(projected != null || vsBudget != null || gap != null || billsOver >= 1 || unbudgeted >= 1) && (
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-        {projected != null
-          ? chip(<>On track for {fmt(projected)}</>, true)
-          : gap != null && Math.abs(gap) >= 1 && chip(<>{gap >= 0 ? "▲" : "▼"} {fmt(Math.abs(gap))} vs past months</>, false)}
-        {vsBudget != null && Math.abs(vsBudget) >= 1 && chip(vsBudget > 0 ? <>{fmt(vsBudget)} over budget</> : <>{fmt(-vsBudget)} under budget</>, vsBudget > 0)}
-        {unbudgeted >= 1 && chip(<>+{fmt(unbudgeted)} not budgeted</>, false)}
+    {(projected != null || vsBudget != null || gap != null || billsOver >= 1) && (
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 6 }}>
+        {/* One pill: where the month is heading and how that sits against the budget. */}
+        {(() => {
+          const vs = vsBudget != null && Math.abs(vsBudget) >= 1 ? (vsBudget > 0 ? `${fmt(vsBudget)} over budget` : `${fmt(-vsBudget)} under budget`) : null;
+          const parts = [projected != null ? `On track for ${fmt(projected)}` : null, vs,
+            projected == null && vs == null && gap != null && Math.abs(gap) >= 1 ? `${gap >= 0 ? "▲" : "▼"} ${fmt(Math.abs(gap))} vs past months` : null].filter(Boolean);
+          return parts.length ? chip(<>{parts.join(" · ")}</>, true) : null;
+        })()}
+        {unbudgeted >= 1 && vsBudget != null && <InfoTip label="About under and over budget">Under or over budget counts only categories with a budget. {fmt(unbudgeted)} {projected != null ? "of the forecast is" : "went to"} bills and spending in categories without one, so the spending line can end above the budget line.</InfoTip>}
         {billsOver >= 1 && <span className="uf-t-small" style={{ ...mono, padding: "3px 8px", borderRadius: 999, background: "var(--uf-warn-bg)", color: "var(--uf-warn-ink)", fontWeight: 700 }}>
           <span aria-hidden>⚑ </span>Bills exceed budget by {fmt(billsOver)}</span>}
       </div>

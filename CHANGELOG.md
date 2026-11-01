@@ -3,7 +3,8 @@
 ## 2026-11-01 — Budget chart lines
 
 - The Budget line on Money → Budget's spending chart is lilac instead of dark grey. In light mode it looked like the solid black "This month" line, so on the 1st it seemed this month was already drawn across the whole month. This month was only ever the dot on day 1.
-- While the month runs, "+$X not budgeted" now uses the forecast, like "On track for". Before, it used spending so far, so on the 1st "$3 under budget" sat next to a forecast well above the budget line with nothing explaining the gap (bills and spending in categories without a budget).
+- Simpler chart (John's pick): your spending (solid to today, dotted forecast) against one line, the Budget when you have one, otherwise Past months. One pill sums it up: "On track for $2,698 · $3 under budget".
+- Spending in categories without a budget moved into an ⓘ tip next to the pill. While the month runs it uses the forecast, like "On track for", so it explains why the spending line can end above the budget line (before, it read $0 on the 1st).
 
 ## 2026-11-01 — Free to spend pill on Budget
 
