@@ -1,20 +1,37 @@
-/* Explore (D-58): the map on the left and the cards on the right on a computer; on a phone, controls, map, then cards. */
-.uf-explore { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px); grid-template-areas: "map head" "map cards"; grid-template-rows: auto 1fr; gap: 12px 20px; max-width: 1280px; margin: 0 auto; padding: 24px 20px 64px; color: var(--uf-ink); font-family: var(--uf-font-body, Inter), sans-serif; }
+/* Explore (D-58): on a computer the globe fills the page and the city panel floats over its right side,
+   folding into the right edge; on a phone, controls, map, then cards. */
+.uf-explore { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "map" "cards"; gap: 12px; padding: 12px 16px 48px; color: var(--uf-ink); font-family: var(--uf-font-body, Inter), sans-serif; }
+.uf-explore-panel { display: contents; }
+.uf-explore-fold { display: none; }
 .uf-explore-head { grid-area: head; display: grid; gap: 12px; align-content: start; min-width: 0; }
-.uf-explore-mapwrap { grid-area: map; position: sticky; top: 16px; align-self: start; min-width: 0; }
+.uf-explore-mapwrap { grid-area: map; min-width: 0; }
+.uf-explore-map { border-radius: 24px; }
+.uf-explore-zoom { position: absolute; right: 10px; bottom: 10px; display: grid; gap: 6px; z-index: 4; }
+.uf-explore-note { font-size: 12px; color: var(--uf-ink-2); margin: 8px 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .uf-explore-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .uf-explore-chips::-webkit-scrollbar { display: none; }
 .uf-explore-cards { grid-area: cards; display: grid; grid-auto-rows: max-content; gap: 10px; align-content: start; min-width: 0; }
 .uf-explore-action { font-size: 14px; font-weight: 700; padding: 10px 14px; border-radius: 12px; text-decoration: none; background: var(--uf-card); color: var(--uf-ink); border: 1px solid var(--uf-border); }
 .uf-explore-action-main { background: var(--uf-green); color: var(--uf-card); border-color: transparent; }
 .uf-explore :focus-visible { outline: 3px solid var(--uf-teal); outline-offset: 2px; }
-/* A computer: the page is the window's height; the cards scroll in their column, the globe stays put. */
+
+/* A computer: the page is the window's height, the globe is all of it, and only the cards scroll. */
 @media (min-width: 901px) {
-  .uf-explore { box-sizing: border-box; padding-bottom: 24px; overflow: hidden; }
-  .uf-explore-mapwrap { position: static; }
-  .uf-explore-cards { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 6px; scrollbar-width: thin; }
+  .uf-explore { display: block; position: relative; box-sizing: border-box; padding: 0; overflow: hidden; }
+  .uf-explore-mapwrap { position: absolute; inset: 0; }
+  .uf-explore-map { border-radius: 0; }
+  .uf-explore-zoom { right: auto; left: 16px; bottom: 16px; }
+  .uf-explore-note { position: absolute; left: 66px; bottom: 16px; margin: 0; max-width: calc(100% - 560px); padding: 6px 12px; border-radius: 99px; background: var(--uf-card); border: 1px solid var(--uf-border); pointer-events: none; }
+  /* 440px wide, 16px from the edges: PANEL_COVER in ExploreClient.tsx. */
+  .uf-explore-panel { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 12px; position: absolute; top: 16px; right: 16px; bottom: 16px; width: 440px; z-index: 5; box-sizing: border-box;
+    padding: 14px 8px 14px 14px; border-radius: 28px; background: var(--uf-bg); border: 1px solid var(--uf-border); box-shadow: 0 12px 32px rgba(21, 23, 25, 0.16);
+    transition: transform 240ms cubic-bezier(0.2, 0, 0, 1); }
+  .uf-explore-panel[data-open="false"] { transform: translateX(calc(100% + 16px)); box-shadow: none; }
+  .uf-explore-head { grid-area: auto; padding-right: 6px; }
+  .uf-explore-cards { grid-area: auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 6px; scrollbar-width: thin; }
+  /* The fold tab rides the panel's left edge, so it stays in view at the window's edge when folded. */
+  .uf-explore-fold { display: flex; align-items: center; gap: 6px; position: absolute; top: 18px; right: calc(100% + 8px); height: 40px; min-width: 40px; justify-content: center; padding: 0 10px; box-sizing: border-box;
+    border-radius: 14px; border: 1px solid var(--uf-border); background: var(--uf-card); color: var(--uf-ink); font: 700 13px var(--uf-font-body, Inter), sans-serif; cursor: pointer; box-shadow: 0 4px 12px rgba(21, 23, 25, 0.12); }
+  .uf-explore-panel[data-open="false"] .uf-explore-fold { background: var(--uf-ink); color: var(--uf-card); border-color: transparent; }
 }
-@media (max-width: 900px) {
-  .uf-explore { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "map" "cards"; grid-template-rows: auto; padding: 12px 16px 48px; }
-  .uf-explore-mapwrap { position: static; }
-}
+@media (min-width: 901px) and (prefers-reduced-motion: reduce) { .uf-explore-panel { transition: none; } }

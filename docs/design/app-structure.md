@@ -152,7 +152,9 @@ style cards. It sits beside the city pages, not in place of them: each city
 page stays the page that ranks, and a card links on to it (or to its country
 page when a city abroad has none). The map is drawn from outlines in
 `lib/geo/`, never map tiles. Your numbers and your stars stay in the
-browser.
+browser. On a computer the globe fills the whole content area and the
+controls and cards float over its right side in a panel that folds into the
+right edge (2026-11-01); on a phone they stack above and below the map.
 
 ## Deliberately decided
 

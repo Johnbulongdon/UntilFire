@@ -5,6 +5,11 @@
 - One Emergency savings total, a clear next amount/date and warnings before the plan. Calculations, settings and investment allocation are expandable; existing values and priority maths stay intact on web and phone.
 - The contribution threshold field now shows the same effective percentage as its ladder explanation.
 
+## 2026-11-01 — Explore globe fills the page
+
+- On a computer, Plan → Explore (and the public /explore page) now gives the globe everything to the right of the sidebar, edge to edge. The filters, Your numbers and the city list float over it in a rounded panel on the right.
+- The arrow on the panel's left edge folds it away into the right edge, leaving a small "Cities" tab to bring it back. The browser remembers your choice. While the panel is open the globe centres in the space beside it, and "cities in view" only counts cities you can see.
+- Zoom buttons moved to the bottom left so the panel never covers them. Phones keep the stacked layout.
 
 ## 2026-11-01 — Budget chart lines
 
