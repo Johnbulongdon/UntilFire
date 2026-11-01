@@ -36,7 +36,7 @@ import { useCustomCategories } from "@/lib/useCustomCategories";
 import { combineDateAndTime, formatTime, timeInputValue } from "@/lib/transaction-time";
 import { buildMerchantMemory, merchantKey, suggestFromHistory } from "@/lib/merchant-memory";
 import { transactionNeed, type NeedOverrides } from "@/lib/needs";
-import { Button, SegmentedControl } from "@/components/ui";
+import { Button, DateField, SegmentedControl } from "@/components/ui";
 import { readMerchantRules } from "@/lib/merchant-rules";
 import { trackTxFlagResolved, trackTxRangeChanged, trackTxReviewOpened } from "@/lib/analytics";
 
@@ -526,12 +526,12 @@ function QuickAddForm({
         <div style={{ display: "flex", gap: 8 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 2, minWidth: 0 }}>
             <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>Date</label>
-            <input
-              type="date"
+            <DateField
               value={draft.date}
               max={localYmd()}
-              onChange={(e) => setField("date", e.target.value)}
-              style={{ border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 10px", fontSize: 13, color: "var(--uf-text)", background: "var(--uf-card)", outline: "none", fontFamily: "inherit" }}
+              onChange={(v) => setField("date", v)}
+              aria-label="Date"
+              style={{ border: "1px solid var(--uf-border)", borderRadius: 8, padding: "9px 10px", fontSize: 13, background: "var(--uf-card)" }}
             />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 0 }}>

@@ -8,7 +8,7 @@ import { formatUSDInCurrency } from "@/lib/money";
 import { addRecurrence, isoDay } from "@/lib/cashflow-forecast";
 import ExpectedMonth from "./ExpectedMonth";
 import CalendarMonth from "./CalendarMonth";
-import { Button, InfoTip } from "@/components/ui";
+import { Button, DateField, InfoTip } from "@/components/ui";
 import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, Fig } from "./MoneyCards";
 import { ladderViewFromPlan, type AccountFacts } from "@/lib/contribution-ladder";
 import type { StoredPlan } from "@/lib/contribution";
@@ -585,7 +585,7 @@ export default function ExpectedPaymentsTab({
           <div style={{ display: "grid", gridTemplateColumns: inPanel ? "minmax(0, 1fr)" : "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
             <div>
               <label className="uf-t-small" style={labelStyle}>{formRecurrence === "none" ? "Due date" : "Next due"}</label>
-              <input type="date" value={formDueDate} onChange={e => setFormDueDate(e.target.value)} style={inputStyle} />
+              <DateField value={formDueDate} onChange={setFormDueDate} aria-label={formRecurrence === "none" ? "Due date" : "Next due"} style={inputStyle} />
             </div>
             <div>
               <label className="uf-t-small" style={labelStyle}>Type</label>
@@ -615,7 +615,7 @@ export default function ExpectedPaymentsTab({
             <div style={{ display: "grid", gridTemplateColumns: inPanel ? "minmax(0, 1fr)" : "repeat(3, minmax(0, 1fr))", gap: 12 }}>
               <div>
                 <label className="uf-t-small" style={labelStyle}>Lease ends</label>
-                <input type="date" value={formLeaseEnds} onChange={e => setFormLeaseEnds(e.target.value)} style={inputStyle} />
+                <DateField value={formLeaseEnds} onChange={setFormLeaseEnds} clearable placeholder="Not set" aria-label="Lease ends" style={inputStyle} />
               </div>
               <div>
                 <label className="uf-t-small" style={labelStyle}>Notice to give</label>

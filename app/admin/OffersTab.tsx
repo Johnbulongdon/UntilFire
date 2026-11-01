@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import ProviderLinkReviews from "./ProviderLinkReviews";
+import { DateField } from "@/components/ui";
 import { OFFER_KIND_LABEL, OFFER_KINDS, rateLabel, type OfferKind } from "@/lib/partner-offers";
 
 interface AdminOffer {
@@ -90,7 +91,7 @@ export default function OffersTab({ token }: { token: string }) {
           <label style={small}>Rate in basis points (420 = 4.20%)<input style={input} value={editing.rateBps ?? ""} onChange={set("rateBps")} inputMode="numeric" /></label>
           <label style={{ ...small, gridColumn: "1 / -1" }}>Why it fits (one sentence)<input style={input} value={editing.blurb} onChange={set("blurb")} /></label>
           <label style={small}>Bonus<input style={input} value={editing.bonusText ?? ""} onChange={set("bonusText")} placeholder="$300 bonus for a new account" /></label>
-          <label style={small}>Bonus ends on<input style={input} type="date" value={editing.bonusEndsOn ?? ""} onChange={set("bonusEndsOn")} /></label>
+          <label style={small}>Bonus ends on<DateField style={input} value={editing.bonusEndsOn ?? ""} clearable placeholder="No end date" onChange={(v) => setEditing((o) => (o ? { ...o, bonusEndsOn: v } : o))} /></label>
           <label style={small}>Provider domain<input style={input} value={editing.allowedDomain} onChange={set("allowedDomain")} placeholder="example.com" /></label>
           <label style={small}>UntilFire&apos;s referral link<input style={input} value={editing.url} onChange={set("url")} placeholder="https://example.com/r/untilfire" /></label>
           <label style={small}>Country (two-letter code)<input style={input} value={editing.country ?? "US"} onChange={set("country")} maxLength={2} /></label>

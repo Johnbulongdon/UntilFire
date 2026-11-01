@@ -84,7 +84,7 @@ import { isRent } from "@/lib/lease";
 import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
-import { Alert, Button, ICON_PATHS, Input, SegmentedControl } from "@/components/ui";
+import { Alert, Button, DateField, ICON_PATHS, Input, SegmentedControl } from "@/components/ui";
 import Flag, { flagUri } from "@/app/components/Flag";
 import { stampActive } from "@/lib/last-active";
 import { knownWithdrawalLimit, parseWithdrawalLimit, withdrawalsLeftLabel } from "@/lib/savings-limits";
@@ -3036,15 +3036,16 @@ function GoalsPageTab({ userId, monthlyExpenses }: { userId: string; monthlyExpe
             {/* Target date */}
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label style={{ fontSize: 11, fontWeight: 700, color: "var(--uf-text-muted)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Target Date (optional)</label>
-              <input
-                type="date"
+              <DateField
                 value={draft.target_date}
-                onChange={e => setDraft(d => ({ ...d, target_date: e.target.value }))}
+                onChange={v => setDraft(d => ({ ...d, target_date: v }))}
+                clearable
+                placeholder="No target date"
+                aria-label="Target date"
                 style={{
                   padding: "11px 14px",
                   background: "var(--uf-surface)", border: "1.5px solid var(--uf-border)",
-                  borderRadius: 10, fontSize: 14, color: "var(--uf-text)", fontFamily: "inherit",
-                  outline: "none",
+                  borderRadius: 10, fontSize: 14,
                 }}
               />
             </div>
