@@ -1,5 +1,6 @@
+import { useAppearance } from '@/state/appearance'
 import type { ReactNode } from 'react'
-import { useColorScheme, View, type ViewProps } from 'react-native'
+import { View, type ViewProps } from 'react-native'
 
 import { themeVars } from '@/theme/colors'
 
@@ -8,6 +9,6 @@ import { themeVars } from '@/theme/colors'
  * root view (on the web a portal leaves the page's CSS variables behind).
  */
 export function ThemeScope({ children, style, ...rest }: ViewProps & { children: ReactNode }) {
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light'
+  const { scheme } = useAppearance()
   return <View {...rest} style={[{ flex: 1 }, themeVars[scheme], style]}>{children}</View>
 }

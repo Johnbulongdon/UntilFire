@@ -1,5 +1,5 @@
 import { Redirect } from 'expo-router'
-import { useColorScheme } from 'react-native'
+import { useAppearance } from '@/state/appearance'
 import { NativeTabs } from 'expo-router/unstable-native-tabs'
 
 import { useAuth } from '@/state/auth'
@@ -11,7 +11,7 @@ export default function TabsLayout() {
   // Wait for the saved plan before deciding, so a cold start never flashes onboarding.
   const { plan, ready } = usePlan()
   const auth = useAuth()
-  useColorScheme() // re-renders the tab bar in the new theme's colours
+  useAppearance() // re-renders the tab bar in the new theme's colours
   if (!ready || !auth.ready) return null
   // Signed out (or never signed in): the welcome screen, with sign up and log in (Oct 16 2026).
   if (!plan || !auth.session) return <Redirect href="/onboarding" />

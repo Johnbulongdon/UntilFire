@@ -2,7 +2,7 @@ import { paydayRemainder } from '@engine/payday-spending.ts'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Redirect, router } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { Appearance, Pressable, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import Svg, { Circle, Line, Path } from 'react-native-svg'
 
 import { AccountSetupCard } from '@/components/AccountSetupCard'
@@ -183,7 +183,7 @@ function SavingsGap({ data }: { data: AccountData }) {
 }
 
 /** A soft panel that shows against the page in both themes (surface in light, card in dark). */
-const panel = () => (Appearance.getColorScheme() === 'dark' ? '#213F35' : '#E3F7EF')
+const panel = () => (colors.ground === '#151719' ? '#213F35' : '#E3F7EF')
 
 /**
  * Today on Home (D-108): what's left to answer, opening into the one-at-a-time

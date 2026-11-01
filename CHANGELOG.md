@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-02 — Phone appearance choice
+
+- Profile settings adds System, Light and Dark. The choice persists on the device and applies to screens, modals and navigation; System follows the phone.
+
+
 ## 2026-11-01 — Our own date picker
 
 - Every date box on the website (Calendar "Next due" and "Lease ends", a transaction's date, a goal's target date, admin offer end date) now opens UntilFire's own calendar instead of the browser's plain one. It matches light and dark mode, starts on Sunday like the Calendar, marks today in yellow and the chosen day in black, and has a Today button.
