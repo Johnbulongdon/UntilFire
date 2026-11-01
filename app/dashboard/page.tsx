@@ -30,7 +30,9 @@ import { billCategorySet } from "@/lib/bill-categories";
 import { everydayByDay, everydayLeft } from "@/lib/everyday-left";
 import { ladderViewFromPlan } from "@/lib/contribution-ladder";
 import { isSnoozed, pickNextMove, snooze } from "@/lib/next-move";
-import { budgetNeeds, inLastTwelve, transactionNeed, type NeedOverrides } from "@/lib/needs";
+import { budgetNeeds, categoryNeed, inLastTwelve, transactionNeed, withRowNeed, type Need, type NeedOverrides } from "@/lib/needs";
+import NeedsWantsDonut, { NEEDS_COLOR, WANTS_COLOR } from "./NeedsWantsDonut";
+import { saveProfile } from "./NeedsWantsPanel";
 import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
 import { freeToSpend, untilPayday, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
@@ -2231,7 +2233,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 }
 
 // ─── Budget Tracker Tab ───────────────────────────────────────────────────────
-function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], bills = [], onOpenUpcoming, spreadCategories = [], categoryNeeds = {} }: {
+function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], bills = [], onOpenUpcoming, spreadCategories = [], categoryNeeds = {}, onCategoryNeeds, manageStart = null, renderCategories }: {
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
   actuals: Record<string, number>;
@@ -2251,8 +2253,13 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   /** Categories judged over 12 months, set on the phone (FIRE profile spreadCategories). */
   spreadCategories?: string[];
   onOpenUpcoming?: () => void;
-  /** Need or want per category (FIRE profile), for the 50/30/20 starter. */
+  /** Need or want per category (FIRE profile), for the 50/30/20 starter and the two groups. */
   categoryNeeds?: NeedOverrides;
+  onCategoryNeeds?: (next: NeedOverrides) => void;
+  /** Open the category editor on arrival (Home's Needs & wants link). */
+  manageStart?: "categories" | "needs" | null;
+  /** The category editor (names, icons, sub-categories, Needs & wants), shown inside Budget (D-134). */
+  renderCategories?: (start: "categories" | "needs") => React.ReactNode;
 }) {
   const fmtMoney = (n: number) => fmt(n, displayCurrency, displayRates);
   const currencyPrefix = getCurrencySymbol(displayCurrency);
@@ -2269,11 +2276,25 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
 
   const [budgetSetupOpen, setBudgetSetupOpen] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [showEveryday, setShowEveryday] = useState(false);
   const [editAll, setEditAll] = useState(false);
   const [showHow, setShowHow] = useState(false);
   const [showMonth, setShowMonth] = useState(false);
+  const [manage, setManage] = useState<"categories" | "needs" | null>(manageStart);
+  const [openGroup, setOpenGroup] = useState<Need | null>(null);
+  const [needError, setNeedError] = useState("");
   const isEmpty = totalExp === 0;
+
+  // Moving a category between Needs and Wants saves to the FIRE profile, as Needs & wants does.
+  async function setNeed(key: string, need: Need) {
+    const before = categoryNeeds;
+    const next = withRowNeed(key, need, categoryNeeds);
+    onCategoryNeeds?.(next); setNeedError("");
+    const { data: { session } } = await supabase.auth.getSession();
+    const problem = session ? await saveProfile(session.user.id, { categoryNeeds: next }) : { message: "Please sign in again to save." };
+    if (problem) { onCategoryNeeds?.(before); setNeedError(problem.message); }
+  }
+
+  const editCategoriesButton = renderCategories && <Button variant="secondary" size="sm" onClick={() => setManage("categories")}>Edit categories</Button>;
 
   function suggestSlackCategories(excludeKey: string) {
     return activeCats
@@ -2327,6 +2348,15 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
     />
   );
 
+  if (manage && renderCategories) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <Button variant="ghost" size="sm" style={{ alignSelf: "flex-start" }} onClick={() => setManage(null)}>← Back to budget</Button>
+        {renderCategories(manage)}
+      </div>
+    );
+  }
+
   if (isEmpty) {
     return (
       <div className="uf-budget-grid">
@@ -2339,6 +2369,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
           <Button variant="primary" onClick={() => setBudgetSetupOpen(true)} style={{ marginTop: 6 }}>
             Set up my budget
           </Button>
+          {editCategoriesButton}
         </div>}
 
         <div className="uf-card" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
@@ -2395,7 +2426,6 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
     return budget > 0 && (spentOf(c.key) + dueOf(c.key) > budget || headingOver(c.key));
   }).sort((x, y) => (spentOf(y.key) + dueOf(y.key) - (expenses[y.key] || 0)) - (spentOf(x.key) + dueOf(x.key) - (expenses[x.key] || 0)));
   const billGroup = activeCats.filter((c) => billCats.has(c.key) && !attention.includes(c));
-  const everyday = activeCats.filter((c) => !billCats.has(c.key) && !attention.includes(c));
   const sum = (cs: typeof activeCats, f: (k: string) => number) => cs.reduce((t, c) => t + f(c.key), 0);
   const billSpent = sum(activeCats.filter((c) => billCats.has(c.key)), (k) => spentOf(k) + dueOf(k));
   /* The one "left" (D-86), the same as the phone's: everyday budget less
@@ -2460,11 +2490,40 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
               <div style={{ width: 160 }}>
                 <NumberInput value={budget} onChange={v => setExpenses({ ...expenses, [cat.key]: v })} prefix={currencyPrefix} currency={displayCurrency} rates={displayRates} />
               </div>
+              <SegmentedControl size="sm" label={`${cat.label} counts as`} value={categoryNeed(cat.key, categoryNeeds)}
+                onChange={(v) => setNeed(cat.key, v)} options={[{ value: "need", label: "Need" }, { value: "want", label: "Want" }]} />
               <Button variant="ghost" size="sm" onClick={() => setEditingKey(null)}>Done</Button>
             </div>
           )}
         </>}
       />
+    );
+  }
+
+  /* Needs and Wants (D-134): every category in one of two groups, folded,
+     the same split as 50/30/20 and the ring above them. Bills sit in their
+     category's group; the bill part is still set aside in the headline. */
+  const groupOf = (k: string): Need => categoryNeed(k, categoryNeeds);
+  // Spent plus still due, as each row counts it.
+  const usedOf = (k: string) => spentOf(k) + dueOf(k);
+  const needCats = activeCats.filter((c) => groupOf(c.key) === "need");
+  const wantCats = activeCats.filter((c) => groupOf(c.key) === "want");
+  const byUsed = (cs: typeof activeCats) => [...cs].sort((x, y) => usedOf(y.key) - usedOf(x.key));
+  function renderGroup(need: Need, cats: typeof activeCats) {
+    const name = need === "need" ? "Needs" : "Wants";
+    const color = need === "need" ? NEEDS_COLOR : WANTS_COLOR;
+    const used = sum(cats, usedOf), budget = sum(cats, (k) => expenses[k] || 0);
+    const left = budget - used, open = openGroup === need;
+    const billPart = sum(cats.filter((c) => billCats.has(c.key)), usedOf);
+    if (cats.length === 0) return null;
+    return (
+      <MoneyRow key={need} dot={color} icon={need === "need" ? "🏠" : "🎉"} name={name}
+        meta={`${fmtMoney(used)}${budget > 0 ? ` of ${fmtMoney(budget)}` : ""}${billPart > 0 ? ` · bills ${fmtMoney(billPart)}` : ""} · ${cats.length} ${cats.length === 1 ? "category" : "categories"}`}
+        value={open ? "Hide" : budget <= 0 ? "Show" : left < 0 ? `${fmtMoney(-left)} over` : `${fmtMoney(left)} left`}
+        valueTone={open ? "var(--uf-pos-ink)" : budget > 0 && left < 0 ? "var(--uf-neg-ink)" : undefined} strong
+        bar={budget > 0 ? <MoneyTrack share={used / budget} color={left < 0 ? "var(--uf-neg)" : color} label={`${name}: ${fmtMoney(used)} of ${fmtMoney(budget)}`} /> : undefined}
+        onClick={() => setOpenGroup(open ? null : need)}
+        after={open && <MoneyList>{byUsed(cats).map(renderRow)}</MoneyList>} />
     );
   }
 
@@ -2524,26 +2583,21 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
             ? <MoneyList>{attention.map(renderRow)}</MoneyList>
             : <MoneyList><MoneyRow dot="var(--uf-teal)" icon="✓" name="Everything's on track" meta={`Nothing over budget or heading over in ${now.toLocaleDateString("en-US", { month: "long" })}`} value="" /></MoneyList>}
 
-          <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>This month</div>
+          <NeedsWantsDonut income={income} monthName={monthName} fmt={fmtMoney}
+            needsBills={sum(needCats.filter((c) => billCats.has(c.key)), usedOf)}
+            needsOther={sum(needCats.filter((c) => !billCats.has(c.key)), usedOf)}
+            wants={sum(wantCats, usedOf)} />
+
+          <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>Open a group to see its categories</div>
           <MoneyList footer={<div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <Button variant="secondary" size="sm" onClick={() => setEditAll(true)}>Edit budget</Button>
+            {editCategoriesButton}
             {freeResult && <Button variant="ghost" size="sm" aria-expanded={showHow} onClick={() => setShowHow((v) => !v)}>Free to spend until payday</Button>}
           </div>}>
-            {billGroup.length > 0 && (
-              <MoneyRow dot="var(--uf-ink-3)" icon="🧾" name="Bills"
-                meta={billsStillDue > 0 ? `${fmtMoney(billsStillDue)} still due` : "All paid"}
-                value={`${fmtMoney(sum(billGroup, spentOf))} of ${fmtMoney(sum(billGroup, (k) => expenses[k] || 0))}`}
-                bar={<MoneyTrack share={sum(billGroup, spentOf) / Math.max(1, sum(billGroup, (k) => expenses[k] || 0))} due={billsStillDue / Math.max(1, sum(billGroup, (k) => expenses[k] || 0))} color="var(--uf-ink-3)" label="Bills paid and still due" />}
-                onClick={onOpenUpcoming} />
-            )}
-            {everyday.length > 0 && (
-              <MoneyRow dot="var(--uf-teal)" icon="✓" name={`${everyday.length} everyday ${everyday.length === 1 ? "category" : "categories"} on track`}
-                meta={`${fmtMoney(sum(everyday, spentOf))} of ${fmtMoney(sum(everyday, (k) => expenses[k] || 0))}`}
-                value={showEveryday ? "Hide" : "Show"} valueTone="var(--uf-pos-ink)" strong
-                onClick={() => setShowEveryday((v) => !v)}
-                after={showEveryday && <MoneyList>{everyday.map(renderRow)}</MoneyList>} />
-            )}
+            {renderGroup("need", needCats)}
+            {renderGroup("want", wantCats)}
           </MoneyList>
+          {needError && <Alert tone="critical" title={needError} />}
         </>
       )}
 
@@ -4555,7 +4609,7 @@ const PLAN_SECTIONS: PlanSection[] = [
   { label: "Learn",        tab: "learning-hub" },
 ];
 
-type CashflowSubTab = "cashflow" | "categories" | "expected" | "budgets";
+type CashflowSubTab = "cashflow" | "expected" | "budgets";
 
 // Single source of truth for the Cashflow sub-nav — the sidebar sub-sub-nav and
 // the horizontal switcher both render from this. They used to be two hand-kept
@@ -4601,7 +4655,7 @@ const CASHFLOW_SUB_TABS: { key: CashflowSubTab; label: string }[] = [
   // Upcoming became Calendar (D-61): the same list, plus the month with cash
   // day by day and the invest day on it, which Contributions used to show.
   { key: "expected",   label: "Calendar"     },
-  { key: "categories", label: "Categories"   },
+  // Categories folded into Budget (D-134): the same list twice, as the phone already had it.
   { key: "budgets",    label: "Budget"       },
 ];
 
@@ -4638,8 +4692,10 @@ export default function Dashboard() {
     supabase.auth.getSession().then(({ data: { session } }) => { if (session) stampActive(supabase as never, session.user.id); });
   }, []);
   const [cashflowSubTab, setCashflowSubTab] = useState<CashflowSubTab>("cashflow");
-  const [categoriesKey, setCategoriesKey] = useState(0);
-  const [categoriesStart, setCategoriesStart] = useState<"categories" | "needs">("categories");
+  const [budgetKey, setBudgetKey] = useState(0);
+  const [categoriesStart, setCategoriesStart] = useState<"categories" | "needs" | null>(null);
+  // Home's Needs & wants link opens the editor once; Budget opens normally after that.
+  useEffect(() => { if (cashflowSubTab !== "budgets") setCategoriesStart(null); }, [cashflowSubTab]);
   const [fireCalcSubTab, setFireCalcSubTab] = useState<"menu" | "invest-sim" | "compare">("menu");
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   // Set when a creator referred this account: its trial is 60 days, not 30 (D-27).
@@ -6108,7 +6164,7 @@ export default function Dashboard() {
                 freeResult={freeResult}
                 bills={homeBills}
                 onOpenFreeToSpend={() => { setCashflowSubTab("budgets"); setTab("cashflow"); }}
-                onOpenNeeds={() => { setCategoriesStart("needs"); setCategoriesKey((k) => k + 1); setCashflowSubTab("categories"); setTab("cashflow"); }}
+                onOpenNeeds={() => { setCategoriesStart("needs"); setBudgetKey((k) => k + 1); setCashflowSubTab("budgets"); setTab("cashflow"); }}
                 userId={userId}
                 income={effectiveIncome} expenses={freedomExpenses}
                 k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
@@ -6161,10 +6217,11 @@ export default function Dashboard() {
                   <PillTabs label="Cashflow" options={CASHFLOW_SUB_TABS} value={cashflowSubTab} onChange={setCashflowSubTab} />
                 </div>
                 {cashflowSubTab === "cashflow" && <TransactionsTab categoryNeeds={categoryNeeds} budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
-                {cashflowSubTab === "categories" && <CategoriesTab key={categoriesKey} displayCurrency={defaultCurrency} displayRates={rates} startOn={categoriesStart} onCategoryNeeds={setCategoryNeeds} />}
                 {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} plan={sharedPlan} facts={contributionFacts} billDue={billDue} onMarkDone={setContributionDone} onOpenTransactions={() => setCashflowSubTab("cashflow")} />}
                 {cashflowSubTab === "budgets" && (
-                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} spreadCategories={spreadCategories} categoryNeeds={categoryNeeds} />
+                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} spreadCategories={spreadCategories} categoryNeeds={categoryNeeds}
+                    key={budgetKey} onCategoryNeeds={setCategoryNeeds} manageStart={categoriesStart}
+                    renderCategories={(start) => <CategoriesTab displayCurrency={defaultCurrency} displayRates={rates} startOn={start} onCategoryNeeds={setCategoryNeeds} />} />
                 )}
               </div>
             )}
