@@ -7,6 +7,11 @@
 - Coast FIRE, 25%, 50% and the goal each drop a dotted line to one label row at the bottom, so labels never sit on the line or on each other. A label too close to its neighbour or to the goal is left out.
 - The "Investments / Safety cash" line under the card moved into the hover on today's point.
 
+## 2026-11-01 — Simpler Contributions
+
+- One Emergency savings total, a clear next amount/date and warnings before the plan. Calculations, settings and investment allocation are expandable; existing values and priority maths stay intact on web and phone.
+- The contribution threshold field now shows the same effective percentage as its ladder explanation.
+
 ## 2026-11-01 — Explore globe fills the page
 
 - On a computer, Plan → Explore (and the public /explore page) now gives the globe everything to the right of the sidebar, edge to edge. The filters, Your numbers and the city list float over it in a rounded panel on the right.

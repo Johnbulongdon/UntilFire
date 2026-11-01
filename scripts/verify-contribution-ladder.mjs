@@ -24,7 +24,7 @@ const ACCOUNTS = toCashAccounts([
   { id: "a3", name: "IBKR", type: "investment", subtype: "brokerage", balance_current: 5000, mask: "2210", apy: null },
 ]);
 const FACTS = { cashAccounts: ACCOUNTS, manualCashSavings: 2000, lastMonthNeeds: 1340, averageNeeds: 1180, realReturn: 0.055 };
-const stored = (over = {}) => ladderToStored({ ...EMPTY_LADDER, ...over });
+const stored = (over = {}) => ladderToStored({ ...EMPTY_LADDER, expenseSource: "last-month", ...over });
 
 // ── The measured inputs
 check("the emergency fund reads savings, not every account",
@@ -33,6 +33,8 @@ check("with nothing connected it falls back to the profile figure",
   measuredEmergencyFund(null, { ...FACTS, cashAccounts: [] }).balance === 2000);
 check("expenses follow the month the user picked",
   measuredExpenses("last-month", FACTS) === 1340 && measuredExpenses("average", FACTS) === 1180);
+
+check("the stored average default still follows average needs", buildLadderView(ladderToStored(EMPTY_LADDER), 0, FACTS).efFloor === FACTS.averageNeeds * EMERGENCY_FLOOR_MONTHS);
 
 // ── A buffer that is already full sends everything to the allocation
 {

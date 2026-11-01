@@ -8,12 +8,11 @@ import { DetailScreen } from '@/components/DetailScreen'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { Card, Label, ProgressTrack } from '@/components/Screen'
 import { Text } from '@/components/Text'
-import { brand, colors } from '@/theme/colors'
-import { MoneyRow } from '@/components/MoneyRow'
-import { monthlySaving } from '@/lib/saving'
+import { brand } from '@/theme/colors'
 import { countdownLabel, ladderViewFromPlan, planContribution } from '@/engine'
 import { contributionFacts, EMPTY_PLAN } from '@/lib/contribution-facts'
 import { money } from '@/lib/format'
+import { contributionDestinations, contributionWarnings } from '@engine/contribution-presentation.ts'
 import { haptic } from '@/lib/haptics'
 import { saveFireProfile } from '@/lib/mutations'
 import { useAccount } from '@/state/account'
@@ -30,6 +29,7 @@ export default function Contributions() {
   const { data, loading, refresh } = useAccount()
   const [marking, setMarking] = useState(false)
   const [showHow, setShowHow] = useState(false)
+  const [showMix, setShowMix] = useState(false)
   const plan = data?.contributionPlan ?? EMPTY_PLAN
   const view = useMemo(() => (data ? ladderViewFromPlan(plan, contributionFacts(data)) : null), [data, plan])
 
@@ -49,29 +49,24 @@ export default function Contributions() {
   const mix = plan.targets.length > 0 && view.investable > 0
     ? planContribution(plan.targets.map(t => ({ symbol: t.symbol, targetPct: t.targetPct })), plan.holdings, view.investable)
     : null
-  const efShare = view.efTarget > 0 ? view.efBalance / view.efTarget : 0
-  const saving = monthlySaving(data).saving
+  const warnings = contributionWarnings(view)
+  const primaryWarning = warnings[0]
 
   return (
     <DetailScreen back="Plan" title="Contributions" refreshing={loading} onRefresh={refresh}>
-      <Button kind="quiet" label="Choose an account →" onPress={() => router.push("/plan/account-setup" as never)} />
+      {primaryWarning && <Card>
+        <Text className="text-[16px] font-bold text-ink">{primaryWarning.action === 'accounts' ? 'Update your balances first' : 'Review your cash flow first'}</Text>
+        <Text className="mt-2 text-[14px] leading-5 text-ink-2">{warnings.map(w => w.text).join(' ')}</Text>
+        <Button style={{ marginTop: 12 }} label={primaryWarning.action === 'accounts' ? 'Review balances' : 'Review cash flow'}
+          onPress={() => router.push(primaryWarning.action === 'accounts' ? '/money/net-worth' : '/money/calendar')} />
+      </Card>}
       {/* Simplified Oct 2026 QA: the amount, when, one button; the working is one tap away. */}
       <Card>
-        <Label>{a.done ? 'Made this time' : `Put in by ${a.nextDate.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}`}</Label>
+        <Label>{a.done ? 'Made this cycle' : `Planned for ${a.nextDate.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}`}</Label>
         <Text className="mt-1 font-mono text-[34px] text-ink">{money(a.done ? a.done.amount : view.budget)}</Text>
-        {!a.done && <Text className="text-[13px] text-ink-3">{view.budgetIsCustom ? 'Your amount' : `Safe after bills · ${countdownLabel(a.daysUntil)}`}</Text>}
-        {/* Tied to the one monthly saving (lib/saving, audit round 3), so this isn't a third number. */}
-        {!a.done && !view.budgetIsCustom && saving > 0 && view.budget > 0 && (
-          <View className="mt-2">
-            <MoneyRow first icon="arrow.up.right" fallback="↗" label="You save each month" value={money(saving)} tint={colors.teal} />
-            {Math.abs(view.budget - saving) >= 1 && (
-              <MoneyRow icon="banknote.fill" fallback="$" label={view.budget > saving ? 'Extra cash on hand' : 'Kept back for bills'}
-                value={`${view.budget > saving ? '+' : '−'}${money(Math.abs(view.budget - saving))}`} />
-            )}
-          </View>
-        )}
+        {!a.done && <Text className="text-[13px] text-ink-3">{warnings.length ? 'Estimate · review needed' : view.budgetIsCustom ? 'Your amount' : `Estimate after bills · ${countdownLabel(a.daysUntil)}`}</Text>}
         {session && (a.done || view.budget > 0) && (
-          <Button style={{ marginTop: 12 }} kind={a.done ? 'quiet' : 'primary'} disabled={marking} label={a.done ? 'Undo' : `Mark ${money(view.budget)} as made`}
+          <Button style={{ marginTop: 12 }} kind={a.done || warnings.length ? 'quiet' : 'primary'} disabled={marking} label={a.done ? 'Undo' : `Mark ${money(view.budget)} as made`}
             onPress={async () => {
               setMarking(true)
               const problem = await saveFireProfile(session.user.id, { contributionDone: a.done ? null : { iso: a.forecast.contributionIso, amount: Math.round(view.budget) } })
@@ -80,12 +75,15 @@ export default function Contributions() {
               haptic.success(); refresh()
             }} />
         )}
-        {!view.budgetIsCustom && !a.done && !showHow && view.budget > 0 && (
-          <Button small kind="quiet" style={{ marginTop: 10 }} label="How it's worked out" onPress={() => { haptic.tick(); setShowHow(true) }} />
+        {!showHow && (
+          <Button small kind="quiet" style={{ marginTop: 10 }} label="How calculated" onPress={() => { haptic.tick(); setShowHow(true) }} />
         )}
-        {/* At $0 the working is the answer, so it shows without a tap. */}
-        {!view.budgetIsCustom && !a.done && (showHow || view.budget <= 0) && (
+        {/* The calculation remains available without filling the main screen. */}
+        {showHow && (
           <View className="mt-3 gap-1 border-t border-border pt-3">
+            <Button small kind="quiet" label="Hide calculation" onPress={() => setShowHow(false)} />
+            <Line label="Emergency savings now" value={money(view.efBalance)} />
+            <Line label="Emergency target" value={money(view.efTarget)} />
             <Line label="Cash outside your emergency fund" value={money(a.cash)} />
             {a.income > 0 && <Line label="Income before then" value={`+${money(a.income)}`} tone="pos" />}
             {a.committed > 0 && <Line label="Bills and day-to-day before then" value={`−${money(a.committed)}`} />}
@@ -96,24 +94,17 @@ export default function Contributions() {
           <Label>Where it goes</Label>
           <Button small kind="quiet" label="Edit" onPress={() => { haptic.tick(); router.push('/contribution-edit') }} />
         </View>
-        <Ladder fills={view.waterfall.fills} next={view.next?.kind}
-          met={[...(view.efBalance >= view.efFloor ? ['emergency-floor'] : []), ...(view.efBalance >= view.efTarget ? ['emergency-target'] : [])]} />
+        <Ladder fills={view.waterfall.fills} />
       </Card>
 
+      {!primaryWarning && view.budget > 0 && view.next && ['emergency-floor', 'emergency-target', 'taxable', 'tax-advantaged'].includes(view.next.kind) && <Button kind="quiet" label="Choose destination account" onPress={() => router.push(('/plan/account-setup?goal=' + (view.next?.kind === 'taxable' || view.next?.kind === 'tax-advantaged' ? 'invest' : 'save')) as never)} />}
       <Card>
-        <View className="flex-row items-baseline justify-between">
-          <Label>Emergency fund</Label>
-          <Text className="font-mono text-[13px] text-ink-3">of {money(view.efTarget)}</Text>
-        </View>
-        <Text className="mt-1 font-mono text-[22px] text-ink">{money(view.efBalance)}</Text>
-        <View className="mt-2"><ProgressTrack share={efShare} /></View>
-      </Card>
-
-      <Card>
+        <Button kind="quiet" label={showMix ? 'Hide investment allocation' : 'Investment allocation'} onPress={() => setShowMix(v => !v)} />
+        {showMix && <View>
         <Label>Your investing mix</Label>
         {!mix ? (
           <Text className="mt-2 text-[14px] leading-5 text-ink-2">
-            {plan.targets.length === 0 ? 'Set a mix, like 80% VTI and 20% BND.' : 'Nothing reaches investing this time.'}
+            {plan.targets.length === 0 ? 'Set your investment targets.' : 'Nothing reaches investing this time.'}
           </Text>
         ) : mix.assets.map((s, i) => (
           <View key={s.symbol} className={`gap-1.5 py-2.5 ${i > 0 ? 'border-t border-border' : ''}`}>
@@ -125,6 +116,7 @@ export default function Contributions() {
           </View>
         ))}
         <View className="mt-2"><Button small kind="quiet" label={plan.targets.length ? 'Change your mix' : 'Set a mix'} onPress={() => router.push('/contribution-edit')} /></View>
+        </View>}
       </Card>
     </DetailScreen>
   )
@@ -146,57 +138,19 @@ type Fill = { kind: string; label: string; why: string; amount: number; enabled:
  * magnitude): one bar split by rung, each funded rung's own bar sized against
  * the whole, and the rest named in one line. Rungs are numbered, so the shades are never the only cue.
  */
-function Ladder({ fills, next, met = [] }: { fills: Fill[]; next?: string; met?: string[] }) {
-  const funded = fills.filter(f => f.enabled && f.amount > 0)
-  const later = fills.filter(f => f.enabled && f.amount <= 0)
-  const total = funded.reduce((t, f) => t + f.amount, 0)
-  // Labels and numbers preserve order independently of the decorative colours.
-  const shade = (i: number) => ({ backgroundColor: [brand.lilac, brand.blue, brand.mint, brand.yellow, brand.pink][i % 5] })
-  // With nothing free yet, still show the order money will go in, saving first (Oct 2026 QA: "invest" includes saving).
-  if (funded.length === 0) {
-    return (
-      <View className="mt-2 gap-2.5">
-        <Text className="text-[13px] leading-5 text-ink-3">When money&apos;s free, it fills these in order:</Text>
-        {later.slice(0, 4).map((f, i) => (
-          <View key={f.kind} className="flex-row items-center gap-2.5">
-            <View className="h-6 w-6 items-center justify-center rounded-full border-[1.5px]" style={{ borderColor: colors.border2 }}>
-              <Text className="text-[12px] font-bold" style={{ color: colors.ink }}>{i + 1}</Text>
-            </View>
-            <Text className="flex-1 text-[15px] font-semibold text-ink">{f.label}</Text>
-          </View>
-        ))}
-      </View>
-    )
-  }
-  return (
-    <View className="mt-3 gap-4">
-      <View accessibilityLabel={funded.map(f => `${f.label} ${money(f.amount)}`).join(', ')} className="h-4 flex-row gap-0.5 overflow-hidden rounded-full">
-        {funded.map((f, i) => <View key={f.kind} style={[{ flex: f.amount }, shade(i)]} />)}
-      </View>
-      {funded.map((f, i) => (
-        <View key={f.kind} className="gap-1.5">
-          <View className="flex-row items-center gap-2.5">
-            <View className="h-6 w-6 items-center justify-center rounded-full" style={{ backgroundColor: brand.lilac }}>
-              <Text style={{ color: brand.deep }} className="text-[12px] font-bold">{i + 1}</Text>
-            </View>
-            <Text className={`flex-1 text-[15px] ${f.kind === next ? 'font-bold' : 'font-semibold'} text-ink`}>{f.label}</Text>
-            <Text className="font-mono text-[15px] text-ink">{money(f.amount)}</Text>
-          </View>
-          <View className="ml-[34px] h-2 overflow-hidden rounded-full bg-surface-2">
-            <View className="h-full rounded-full" style={[{ width: `${Math.max(3, (f.amount / total) * 100)}%` }, shade(i)]} />
-          </View>
-        </View>
-      ))}
-      {/* The rest of the ladder as more numbered steps, one per line, not a run-on list (audit round 3). */}
-      {later.map((f, i) => (
-        <View key={f.kind} className="flex-row items-center gap-2.5">
-          <View className="h-6 w-6 items-center justify-center rounded-full border-[1.5px]" style={{ borderColor: colors.border2 }}>
-            <Text className="text-[12px] font-bold" style={{ color: colors.ink }}>{met.includes(f.kind) ? '✓' : funded.length + i + 1}</Text>
-          </View>
-          <Text className={`flex-1 text-[14px] ${met.includes(f.kind) ? 'text-ink-3 line-through' : 'text-ink-2'}`}>{f.label}</Text>
-          {met.includes(f.kind) && <Text className="text-[13px] font-semibold text-ink-3">Done</Text>}
-        </View>
-      ))}
-    </View>
-  )
+function Ladder({ fills }: { fills: Fill[] }) {
+  const funded = contributionDestinations(fills)
+  const total = funded.reduce((t,f) => t + f.amount, 0)
+  const shades = [brand.mint, brand.lilac, brand.blue, brand.pink]
+  return <View className="mt-3 gap-3">
+    {total > 0 && <View accessibilityRole="image" accessibilityLabel={funded.map(f => f.label + ' ' + money(f.amount)).join(', ')} className="h-3 flex-row gap-0.5 overflow-hidden rounded-full">
+      {funded.map((f,i) => <View key={f.kind} style={{ flex: f.amount, backgroundColor: shades[i % shades.length] }} />)}
+    </View>}
+    {funded.map(f => <View key={f.kind} className="flex-row items-center justify-between gap-3 border-b border-border py-3">
+      <Text className="flex-1 text-[16px] font-semibold text-ink">{f.label}</Text>
+      <Text className="font-mono text-[20px] font-bold text-ink">{money(f.amount)}</Text>
+    </View>)}
+    {total === 0 && <Text className="text-[14px] text-ink-2">Nothing allocated this cycle.</Text>}
+    {total > 0 && !funded.some(f => f.kind === 'taxable') && <Text className="text-[13px] text-ink-2">Investments · $0 this cycle</Text>}
+  </View>
 }
