@@ -21,7 +21,9 @@ import { daysSinceSync, STALE_AFTER_DAYS } from "@/lib/account-currency";
 import { recurrenceToMonthly } from "@/lib/recurring-detect";
 import type { AllowanceExclusion } from "@/lib/cashflow-forecast";
 import ContributionLedger from "./ContributionLedger";
-import { MoneyHead, MoneyKey, MoneyList, MoneyRow, StackBar, Fig } from "./MoneyCards";
+import ContributionSummary from "./ContributionSummary";
+import cs from "./Contributions.module.css";
+import { StackBar } from "./MoneyCards";
 import { COLOR_PALETTE } from "@/lib/categories";
 import { supabase } from "@/lib/supabase";
 import {
@@ -40,12 +42,6 @@ import {
    has the two-store rationale. */
 
 type Row = PlanRow;
-
-/** One emoji per ladder step, for the calm step rows (D-42). */
-const STEP_ICON: Record<RungKind, string> = {
-  "emergency-floor": "🛟", "employer-match": "🤝", "high-interest-debt": "💳", "emergency-target": "🛟", "goals": "🎯",
-  "tax-advantaged": "🏖️", "low-interest-debt": "🧾", "taxable": "📈",
-};
 
 /* A worked example rather than an empty form, labelled as one. The named
    portfolios the user picks from, with their arguments for and against, are a
@@ -78,6 +74,8 @@ const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVaria
 export type ContributionsTabProps = Partial<AccountFacts> & {
   /** Opens Money → Net Worth, where the emergency fund's accounts are chosen. */
   onChooseAccounts?: () => void;
+  onReviewCashflow?: () => void;
+  retirementSettings?: React.ReactNode;
 };
 
 /* Three of the ladder's inputs are things the app already knows, so they are
@@ -94,7 +92,7 @@ export type ContributionsTabProps = Partial<AccountFacts> & {
    either the last complete month or the average of them. */
 export default function ContributionsTab({
   cashAccounts = [], manualCashSavings, lastMonthNeeds, averageNeeds, realReturn,
-  expectedItems, today, budgetMonthlySpending, lastMonthSpending, onChooseAccounts, knownDebts = [],
+  expectedItems, today, budgetMonthlySpending, lastMonthSpending, onChooseAccounts, onReviewCashflow, retirementSettings, knownDebts = [],
 }: ContributionsTabProps = {}) {
   const [rows, setRows] = useState<Row[]>(EXAMPLE);
   /* Null means "whatever is actually free by the next contribution date".
@@ -205,7 +203,6 @@ export default function ContributionsTab({
     return () => { cancelled = true; };
   }, []);
 
-  const accountThresholdPct = realReturn != null ? +(realReturn * 100).toFixed(2) : DEFAULT_THRESHOLD_PCT;
 
   /* The emergency fund. Read from the accounts the user has chosen, or from
      their savings accounts if they have not chosen; a profile figure typed in
@@ -259,7 +256,6 @@ export default function ContributionsTab({
     }
   };
 
-  const threshold = thrOverride ?? String(accountThresholdPct);
 
   const [importing, setImporting] = useState(false);
   const [importNote, setImportNote] = useState<{ tone: "ok" | "warn"; text: string } | null>(null);
@@ -366,6 +362,7 @@ export default function ContributionsTab({
     return () => clearTimeout(t);
   }, [rows, budget, frequency, fields, schedule, budgetOverride, loaded]);
 
+  const threshold = thrOverride ?? String(view.thresholdPct);
   const expenses = view.expenses;
   const efFloor = view.efFloor;
   const efTarget = view.efTarget;
@@ -406,53 +403,33 @@ export default function ContributionsTab({
   // follows the contribution cadence. Using buy-in for both made someone paid
   // monthly and buying weekly read "the next week's money".
   const periodWord = frequency === "monthly" ? "month" : frequency === "weekly" ? "week" : "day";
-  const arrivalWord = schedule.cadence === "weekly" ? "week" : "month";
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--uf-s5)" }}>
-      <Card><div style={{ display: "flex", gap: 12, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}><div><strong>Put your plan in motion</strong><p className="uf-t-small" style={{ margin: "4px 0 0", color: "var(--uf-ink-2)" }}>Use an existing account or find a provider.</p></div><a href="/dashboard?tab=account-setup&goal=invest" style={{ minHeight: 44, display: "inline-flex", alignItems: "center", color: "var(--uf-ink)", fontWeight: 700 }}>Choose an account →</a></div></Card>
-      {/* The calm headline (D-42): the amount, the mix now against the target,
-          and the steps it goes through. The inputs that decide it follow. */}
-      <MoneyHead
-        label={`Next contribution · ${view.available.nextDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
-        value={<Money amount={num(budget)} />}
-        sub={<span aria-live="polite" data-testid="uf-save-state">
-          {saveState === "saving" ? "Saving…"
-            : saveState === "saved" ? "Saved to your account."
-            : saveState === "signed-out" ? "Saved on this device. Sign in to keep it across devices."
-            : saveState === "failed" ? "Saved on this device. Your account could not be reached — it will sync next time."
-            : `Where the next ${arrivalWord}'s money goes to close the gap to your target. Saved as you type.`}
-        </span>}
-      >
-        {balanced && portfolio > 0 && (
-          <div style={{ display: "grid", gap: 6 }}>
-            <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Now</span>
-            <StackBar total={portfolio} label="Your mix now" parts={holdings.map((h, i) => ({ key: h.symbol, color: COLOR_PALETTE[i % 8], value: h.value }))} />
-            <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Target</span>
-            <StackBar total={1} label="Your target mix" parts={targets.map((t, i) => ({ key: t.symbol, color: COLOR_PALETTE[i % 8], value: t.targetPct }))} />
-            <MoneyKey items={targets.map((t, i) => (
-              <span key={t.symbol}><i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 999, background: COLOR_PALETTE[i % 8], marginRight: 6 }} />
-                {t.symbol} <Fig>{Math.round(((holdings[i]?.value ?? 0) / portfolio) * 100)}%</Fig> → {Math.round(t.targetPct * 100)}%</span>
-            ))} />
-          </div>
-        )}
-      </MoneyHead>
-      {waterfall.fills.some((f) => f.amount > 0) && (
-        <MoneyList>
-          {waterfall.fills.filter((f) => f.amount > 0).map((f, i) => (
-            <MoneyRow key={f.kind} dot={COLOR_PALETTE[(i + 3) % 8]} icon={STEP_ICON[f.kind]} name={`${i + 1}. ${f.label}`}
-              meta={i === 0 ? "Start here" : undefined} value={<Money amount={f.amount} />} strong={i === 0} />
-          ))}
-        </MoneyList>
-      )}
-
+      <header><h1 className="uf-t-h1">Contributions</h1><p className={cs.subtitle}>Your next savings, in one place.</p></header>
+      {loaded ? <ContributionSummary view={view} today={today} onEdit={() => {
+        setSettingsOpen(true);
+        requestAnimationFrame(() => document.getElementById("uf-budget")?.focus());
+      }} onReviewCashflow={onReviewCashflow} onChooseAccounts={onChooseAccounts} /> : <p role="status">Loading your contribution plan…</p>}
+      <span className={cs.muted} aria-live="polite" data-testid="uf-save-state">{saveState === "saving" ? "Saving…" : saveState === "saved" ? "Saved to your account" : saveState === "failed" ? "Saved on this device. Account sync failed; retry on your next visit." : saveState === "signed-out" ? "Saved on this device" : ""}</span>
+      <details className={cs.disclosure}>
+        <summary>How calculated</summary>
+        <ContributionLedger available={view.available} onSetExclusion={setExclusion}
+          budgetMonthlySpending={budgetMonthlySpending}
+          expectedMonthlyBills={(expectedItems ?? []).filter((i) => i.type === "expense")
+            .reduce((sum, i) => sum + recurrenceToMonthly(i.amountUSD, i.recurrence), 0)} />
+      </details>
+      <details className={cs.disclosure} open={settingsOpen} onToggle={(e) => setSettingsOpen(e.currentTarget.open)}>
+        <summary>Contribution settings</summary>
+        <div className={cs.settings}>
       <Card>
         {/* flex-start, not flex-end: these fields have hints of differing
             heights, and aligning their bottoms pushed the hint-less ones
             down so the row of inputs no longer lined up. */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--uf-s5)", alignItems: "flex-start" }}>
           <Field label="Contribution" htmlFor="uf-budget" style={{ minWidth: 170 }}
-                 hint={budgetOverride !== null ? "A figure you set — clear it to follow your cash" : "Safe to put in — worked out below"}>
+                 hint={budgetOverride !== null ? "Your override — clear to follow the forecast" : "Estimate from your cash forecast"}>
             <Input id="uf-budget" numeric inputMode="decimal" value={budget}
                    onChange={(e) => editBudget(e.target.value)} />
             {budgetOverride !== null && (
@@ -460,7 +437,7 @@ export default function ContributionsTab({
                       onClick={() => editBudget(null)}>Use what I have</Button>
             )}
           </Field>
-          <Field label="Money arrives" htmlFor="uf-cadence" style={{ minWidth: 150 }}
+          <Field label="Contribution repeats" htmlFor="uf-cadence" style={{ minWidth: 150 }}
                  hint={`Next ${countdownLabel(view.available.daysUntil)}`}>
             <Select id="uf-cadence" value={schedule.cadence}
                     onChange={(e) => editSchedule({
@@ -484,7 +461,7 @@ export default function ContributionsTab({
                      onChange={(e) => editSchedule({ anchorDay: Math.min(31, Math.max(1, Math.round(num(e.target.value)) || 1)) })} />
             )}
           </Field>
-          <Field label="Buy in" hint="How often it is invested">
+          <Field label="Buy in" hint="Investment purchases only">
             <SegmentedControl options={FREQUENCIES} value={frequency} onChange={editFrequency} label="How often it is invested" />
           </Field>
           <Field label="Portfolio now">
@@ -492,20 +469,6 @@ export default function ContributionsTab({
           </Field>
         </div>
 
-        {/* The whole ledger, not a one-line sum: a figure nobody can trace is
-            a figure nobody should move money on. Hidden only when the user
-            has fixed the amount by hand, since then there is nothing to
-            explain. */}
-        {budgetOverride === null && (
-          <ContributionLedger
-            available={view.available}
-            onSetExclusion={setExclusion}
-            budgetMonthlySpending={budgetMonthlySpending}
-            expectedMonthlyBills={(expectedItems ?? [])
-              .filter((i) => i.type === "expense")
-              .reduce((sum, i) => sum + recurrenceToMonthly(i.amountUSD, i.recurrence), 0)}
-          />
-        )}
       </Card>
 
       <Card>
@@ -559,12 +522,12 @@ export default function ContributionsTab({
           <Field label="Tax-advantaged room" htmlFor="uf-room"><Input id="uf-room" numeric inputMode="decimal" placeholder="0" value={taxRoom} onChange={(e) => setTaxRoom(e.target.value)} /></Field>
           <Field label="Overpay a cheap loan / mo" htmlFor="uf-extra" hint="Above the minimum you already pay. Leave at 0 unless you want it gone early."><Input id="uf-extra" numeric inputMode="decimal" placeholder="0" value={lowInterestExtra} onChange={(e) => setLowInterestExtra(e.target.value)} /></Field>
           <Field label="Expensive above (%)" htmlFor="uf-thr"
-                 hint={thrOverride !== null ? "Edited — clear to follow your plan" : "Your own growth assumption"}>
+                 hint={thrOverride !== null ? "Edited — clear to follow your plan" : "From your plan, including inflation"}>
             <Input id="uf-thr" numeric inputMode="decimal" value={threshold}
                    onChange={(e) => setThrOverride(e.target.value)} />
             {thrOverride !== null && (
               <Button variant="ghost" size="sm" style={{ alignSelf: "flex-start", marginTop: 2 }}
-                      onClick={() => setThrOverride(null)}>Use my {accountThresholdPct}%</Button>
+                      onClick={() => setThrOverride(null)}>Use my plan assumption</Button>
             )}
           </Field>
         </div>
@@ -638,6 +601,15 @@ export default function ContributionsTab({
         </div>
       </Card>
 
+        {retirementSettings && <details className={cs.disclosure}><summary>Retirement account settings</summary>{retirementSettings}</details>}
+        </div>
+      </details>
+      <details className={cs.disclosure}>
+        <summary>Investment allocation <span className={cs.summaryHint}>{view.investable > 0 ? "Your investment share" : "Nothing going to investments this cycle"}</span></summary>
+        {balanced && portfolio > 0 && <div className={cs.mix}>
+          <span>Current mix</span><StackBar total={portfolio} label="Your mix now" parts={holdings.map((h,i) => ({key:h.symbol,color:COLOR_PALETTE[i%8],value:h.value}))} />
+          <span>Target mix</span><StackBar total={1} label="Your target mix" parts={targets.map((t,i) => ({key:t.symbol,color:COLOR_PALETTE[i%8],value:t.targetPct}))} />
+        </div>}
       <Card>
         <div className="uf-contrib-head uf-contrib-row" style={{ color: "var(--uf-ink-2)" }}>
           <span>Asset</span><span>Target %</span><span>Value now</span>
@@ -655,17 +627,17 @@ export default function ContributionsTab({
             <div key={r.id} className="uf-contrib-row">
               <div className="uf-cell uf-cell-wide">
                 <span className="uf-cell-label">Asset</span>
-                <Input aria-label="Ticker" value={r.symbol} placeholder="VTI"
+                <Input aria-label={`Ticker for ${r.symbol || "new asset"}`} value={r.symbol} placeholder="VTI"
                        onChange={(e) => set(r.id, { symbol: e.target.value })} />
               </div>
               <div className="uf-cell">
                 <span className="uf-cell-label">Target %</span>
-                <Input aria-label="Target percent" numeric inputMode="decimal" value={r.targetPct}
+                <Input aria-label={`Target percent for ${r.symbol || "new asset"}`} numeric inputMode="decimal" value={r.targetPct}
                        onChange={(e) => set(r.id, { targetPct: e.target.value })} />
               </div>
               <div className="uf-cell">
                 <span className="uf-cell-label">Value now</span>
-                <Input aria-label="Current value" numeric inputMode="decimal" value={r.value} placeholder="0"
+                <Input aria-label={`Current value for ${r.symbol || "new asset"}`} numeric inputMode="decimal" value={r.value} placeholder="0"
                        onChange={(e) => set(r.id, { value: e.target.value })} />
               </div>
               <div className="uf-cell">
@@ -732,7 +704,7 @@ export default function ContributionsTab({
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--uf-s6)", alignItems: "baseline" }}>
             <div>
               <div className="uf-t-label" style={{ color: "var(--uf-ink-2)", textTransform: "uppercase", letterSpacing: "0.09em" }}>
-                This {periodWord}
+                Investments per {periodWord}
               </div>
               <div style={{ ...mono, fontSize: 34, fontWeight: 800 }}><Money amount={plan.perPeriod} /></div>
             </div>
@@ -752,6 +724,7 @@ export default function ContributionsTab({
         percentage points or a quarter of its own target, whichever is tighter.
       </p>
 
+      </details>
       <style>{`
         .uf-contrib-row {
           display: grid;

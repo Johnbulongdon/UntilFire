@@ -163,8 +163,8 @@ export default function ContributionLedger({
         {f.lowest.balance <= 0 ? (
           <>Nothing is safe to contribute: your balance reaches <span style={mono}>{fmt(f.lowest.balance)}</span> on {day(f.lowest.iso)}.</>
         ) : (
-          <><strong style={mono}>{fmt(f.safeToContribute)}</strong> is safe to contribute on {day(f.contributionIso)} —
-            the lowest your balance gets before {day(f.nextCycleIso)}, so nothing later in the month bounces.</>
+          <><strong style={mono}>{fmt(f.safeToContribute)}</strong> is the forecast estimate for {day(f.contributionIso)} through {day(f.nextCycleIso)}.
+            Review any shortfall or balance warnings before contributing.</>
         )}
       </p>
 

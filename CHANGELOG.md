@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-01 — Simpler Contributions
+
+- One Emergency savings total, a clear next amount/date and warnings before the plan. Calculations, settings and investment allocation are expandable; existing values and priority maths stay intact on web and phone.
+- The contribution threshold field now shows the same effective percentage as its ladder explanation.
+
+
 ## 2026-11-01 — Budget chart lines
 
 - The Budget line on Money → Budget's spending chart is lilac instead of dark grey. In light mode it looked like the solid black "This month" line, so on the 1st it seemed this month was already drawn across the whole month. This month was only ever the dot on day 1.
