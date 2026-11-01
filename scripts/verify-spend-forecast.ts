@@ -4,7 +4,7 @@
  * Run: npm run test:spend-forecast
  */
 import assert from "node:assert/strict";
-import { type Bill, billsByCategory, typicalForRange, typicalMonth, billsOverBudget, dueByCategory, rateSoFar, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, markPaid, mergeBills, occurrences, paidByName, presumePaid, settleBill, unlinkedBillPayments } from "../lib/spend-forecast.ts";
+import { type Bill, billsByCategory, billForPayment, nextMonthlyDue, ordinal, typicalForRange, typicalMonth, billsOverBudget, dueByCategory, rateSoFar, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, markPaid, mergeBills, occurrences, paidByName, presumePaid, settleBill, unlinkedBillPayments } from "../lib/spend-forecast.ts";
 import { detectRecurring } from "../lib/recurring-detect.ts";
 
 let n = 0;
@@ -211,6 +211,25 @@ ok("an overdue bill paid under its own name counts as paid, as on the phone", ()
   assert.equal(counted.find((b) => b.id === "m")?.due, "2026-11-28");
   assert.equal(counted.find((b) => b.id === "s")?.due, "2026-10-27", "Shopify has no payment, so it is still owed");
   assert.equal(paidByName(txs, [{ ...google, due: "2026-11-23" }], "2026-10-31").size, 0, "a bill not yet due is not rolled on");
+});
+
+ok("make it a bill: next due keeps the paid day, from today on", () => {
+  assert.equal(nextMonthlyDue("2026-11-01", "2026-11-01"), "2026-12-01", "paid today, so next month");
+  assert.equal(nextMonthlyDue("2026-10-02", "2026-11-01"), "2026-11-02", "this month's is still ahead");
+  assert.equal(nextMonthlyDue("2026-01-31", "2026-02-10"), "2026-02-28", "the 31st lands on February's last day");
+  assert.equal(nextMonthlyDue("2026-01-31", "2026-03-01"), "2026-03-31", "and returns to the 31st");
+  assert.deepEqual([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 31].map(ordinal), ["1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "22nd", "23rd", "31st"]);
+});
+ok("make it a bill: a payment that already is a bill, or looks like one", () => {
+  const sirui: Bill = { id: "s", description: "Sirui Rent", category: "housing", usd: 1500, due: "2026-10-01", recurrence: "monthly" };
+  const netflix: Bill = { id: "n", description: "Netflix", category: "subscriptions", usd: 15, due: "2026-10-09", recurrence: "monthly" };
+  const bilt = { usd: 1380, description: "BILT PAYMENT", category: "housing" };
+  assert.deepEqual(billForPayment(bilt, [sirui, netflix]), { already: null, likely: sirui }, "rent through Bilt asks about Sirui Rent");
+  assert.equal(billForPayment(bilt, [{ ...sirui, merchant: "BILT PAYMENT" }]).already?.id, "s", "once linked, it already is the bill");
+  assert.equal(billForPayment(bilt, [{ ...sirui, merchant: "ZELLE" }]).likely, null, "a bill linked elsewhere is not offered");
+  assert.equal(billForPayment({ ...bilt, usd: 1100 }, [sirui]).likely, null, "too far from the rent to ask");
+  assert.equal(billForPayment({ usd: 15.49, description: "NETFLIX.COM", category: "subscriptions" }, [netflix]).already?.id, "n", "named like a bill");
+  assert.deepEqual(billForPayment({ usd: 60, description: "Gym", category: "health" }, [sirui, netflix]), { already: null, likely: null });
 });
 
 console.log(`Spend forecast ok: ${n} checks.`);

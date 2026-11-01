@@ -409,3 +409,44 @@ export function markPaid(b: Pick<Bill, "due" | "recurrence">, nowIso: string): {
   const [y, m, d] = b.due.split("-").map(Number);
   return { due_date: isoDay(addRecurrence(new Date(y, m - 1, d), b.recurrence)) };
 }
+
+/**
+ * "Make it a bill" (D-133): a payment's next due date if it repeats monthly.
+ * The day of the month it was paid, the first one from today on, anchored to
+ * the paid date so the 31st survives short months.
+ */
+export function nextMonthlyDue(paidIso: string, todayIso: string): string {
+  const [y, m, d] = paidIso.slice(0, 10).split("-").map(Number);
+  const anchor = new Date(y, m - 1, d);
+  for (let n = 1; n < 1200; n++) {
+    const iso = isoDay(addRecurrence(anchor, "monthly", n));
+    if (iso >= todayIso) return iso;
+  }
+  return todayIso;
+}
+
+/**
+ * What a payment already is among the listed bills, before it is made one.
+ * `already`: a bill named like it, or linked to its bank name, so a second
+ * bill would count it twice. `likely`: an unlinked bill of the same kind
+ * within 10% of it (rent paid through "BILT PAYMENT"), which the person is
+ * asked about before a new bill is added. The closest amount wins.
+ */
+export function billForPayment(t: Pick<BillTx, "usd" | "description" | "category">, listed: Bill[]): { already: Bill | null; likely: Bill | null } {
+  const bills = listed.filter((b) => b.id);
+  const already = bills.find((b) => namesMatch(b, t.description)) ?? null;
+  if (already) return { already, likely: null };
+  const kind = t.category || guessBillCategory(t.description);
+  const likely = bills
+    .filter((b) => !b.merchant && kind && billCategory(b) === kind && b.usd > 0
+      && Math.abs(t.usd - b.usd) <= 0.1 * Math.max(t.usd, b.usd))
+    .sort((a, b) => Math.abs(t.usd - a.usd) - Math.abs(t.usd - b.usd))[0] ?? null;
+  return { already: null, likely };
+}
+
+/** 1st, 2nd, 3rd, 4th … 21st, 22nd, 31st: a bill's day of the month. */
+export function ordinal(n: number): string {
+  const tens = n % 100;
+  const suffix = tens >= 11 && tens <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th";
+  return `${n}${suffix}`;
+}

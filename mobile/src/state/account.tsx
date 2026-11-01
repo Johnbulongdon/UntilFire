@@ -52,6 +52,8 @@ export interface Bill {
   lease_notice_days: number | null
   lease_rise_pct: number | null
   lease_decision: 'renew' | 'move' | 'unsure' | null
+  /** The bank's name for it ("BILT PAYMENT" for rent), so a payment under that name ticks it paid. */
+  match_merchant?: string | null
 }
 
 export interface Goal {
@@ -223,7 +225,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         .then(d => (Array.isArray(d?.accounts) ? (d.accounts as PlaidAccount[]) : []))
         .catch(() => [] as PlaidAccount[]),
       supabase.from('expected_payments')
-        .select('id, description, amount, currency, transaction_type, due_date, recurrence, category, sub_category, lease_ends_on, lease_notice_days, lease_rise_pct, lease_decision')
+        .select('id, description, amount, currency, transaction_type, due_date, recurrence, category, sub_category, lease_ends_on, lease_notice_days, lease_rise_pct, lease_decision, match_merchant')
         .eq('user_id', userId)
         .is('completed_at', null),
       supabase.from('goals')
