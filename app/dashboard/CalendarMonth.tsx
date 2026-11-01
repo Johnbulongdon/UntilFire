@@ -17,7 +17,7 @@ import { moneyMono } from "./MoneyCards";
  * nothing more is safe to invest until the next one.
  */
 export default function CalendarMonth({ items, forecast, reserve = 0, accounts = [], allowanceFrom = null, safe, done, onMarkDone,
-  selected, onSelect, scheduledItems = items, addForm, onAdd, onOpenTransactions, emojiFor, fmt, compact }: {
+  selected, onSelect, scheduledItems = items, addForm, onAdd, onEdit, onOpenTransactions, emojiFor, fmt, compact }: {
   /** Pending items, in USD. */
   items: ExpectedItem[];
   /** The cash forecast to the next contribution, or null with no plan. */
@@ -41,6 +41,8 @@ export default function CalendarMonth({ items, forecast, reserve = 0, accounts =
   addForm: React.ReactNode;
   /** Open the add form on a day. */
   onAdd: (iso: string) => void;
+  /** Open a saved bill or payday's Edit form. */
+  onEdit?: (id: string) => void;
   onOpenTransactions?: () => void;
   emojiFor: (category: string | null | undefined, income: boolean) => string;
   fmt: (usd: number) => string;
@@ -121,7 +123,7 @@ export default function CalendarMonth({ items, forecast, reserve = 0, accounts =
   const panel = day && (
     <CalendarDayPanel iso={day} todayIso={todayIso} lines={linesOn(day)} cash={balanceOn(day)} sheet={false} scheduled
       invest={day === investIso ? (done ? `Invested ${fmt(done.amount)}` : `Invest day · ${fmt(safe)} safe`) : null}
-      addForm={addForm} onAdd={() => onAdd(day)} onClose={() => onSelect(null)} onOpenTransactions={onOpenTransactions}
+      addForm={addForm} onAdd={() => onAdd(day)} onEdit={onEdit} onClose={() => onSelect(null)} onOpenTransactions={onOpenTransactions}
       emojiFor={emojiFor} fmt={fmt} />
   );
 

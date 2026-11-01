@@ -1,5 +1,6 @@
 import { paydaySpending } from '@engine/payday-spending.ts'
 import type { Bill as ForecastBill } from '@engine/spend-forecast.ts'
+import { sameMerchant } from '@engine/recurring-detect.ts'
 import { BILL_MATCH_TOLERANCE, expandExpected, isoDay, looksLikeCardPayment, type ExpectedItem, type ForecastEvent } from '@/engine'
 import { spentUSD, toUSD, type AccountData, type Bill, type Transaction } from '@/state/account'
 
@@ -32,7 +33,8 @@ const words = (s: string) => new Set((s.toLowerCase().match(/[a-z0-9]{3,}|[\u4e0
  * Bills and paydays less the bill occurrences already paid: a spending
  * transaction in that occurrence's month (for an overdue one, from a week
  * before its due date) within 3% of the amount and sharing a word with the
- * bill's name. Without it a bill paid early (BILT on the 2nd, due the 31st)
+ * bill's name, or under the bank name it was linked to (rent paid as
+ * "BILT PAYMENT", D-133). Without it a bill paid early (BILT on the 2nd, due the 31st)
  * counted twice in Budget's set-aside and free to spend (Oct 16 2026).
  */
 export function unpaid(events: BillEvent[], bills: Bill[], transactions: Transaction[]): BillEvent[] {
@@ -47,7 +49,8 @@ export function unpaid(events: BillEvent[], bills: Bill[], transactions: Transac
     const from = e.overdue ? isoDay(new Date(new Date(`${bill.due_date}T00:00:00`).getTime() - 7 * 864e5)) : `${e.iso.slice(0, 7)}-01`
     const to = e.overdue ? today() : `${e.iso.slice(0, 7)}-31`
     const paid = spends.find(t => !used.has(t.id) && t.date >= from && t.date <= to
-      && Math.abs(spentUSD(t) - due) <= due * BILL_MATCH_TOLERANCE && [...words(t.description)].some(w => name.has(w)))
+      && Math.abs(spentUSD(t) - due) <= due * BILL_MATCH_TOLERANCE
+      && ([...words(t.description)].some(w => name.has(w)) || (!!bill.match_merchant && sameMerchant(bill.match_merchant, t.description))))
     if (paid) used.add(paid.id)
     return !paid
   })

@@ -504,7 +504,7 @@ export default function ExpectedPaymentsTab({
   const ladder = useMemo(() => (facts ? ladderViewFromPlan(plan, { ...facts, expectedItems: calendarItems }) : null),
     [plan, facts, calendarItems]);
   const cash = ladder?.available ?? null;
-  const scheduledItems=useMemo(()=>payments.filter(p=>p.due_date).map(p=>({description:p.description,amountUSD:toUSD(p.amount,p.currency,displayRates),type:p.transaction_type,dueDate:p.due_date.slice(0,10),recurrence:p.recurrence,category:p.category,completed:isDone(p)})),[payments,displayRates]);
+  const scheduledItems=useMemo(()=>payments.filter(p=>p.due_date).map(p=>({id:p.id,description:p.description,amountUSD:toUSD(p.amount,p.currency,displayRates),type:p.transaction_type,dueDate:p.due_date.slice(0,10),recurrence:p.recurrence,category:p.category,completed:isDone(p)})),[payments,displayRates]);
   const categoryEmoji = (category: string | null | undefined, income: boolean) =>
     [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES, ...customCats].find((c) => c.key === category)?.emoji ?? (income ? "💵" : "🧾");
   const completed = payments.filter(isDone).sort((a, b) => (b.completed_at ?? "").localeCompare(a.completed_at ?? ""));
@@ -716,6 +716,7 @@ export default function ExpectedPaymentsTab({
           safe={cash?.free ?? 0} done={cash?.done ?? null}
           onMarkDone={onMarkDone} selected={selected} onSelect={(iso) => { if (showForm) closeForm(); setSelected(iso); }}
           scheduledItems={scheduledItems} addForm={showForm ? formNode : null} onAdd={(iso) => openAddForm(iso)}
+          onEdit={(id) => { const item = payments.find((p) => p.id === id); if (item) openEditForm(item); }}
           onOpenTransactions={onOpenTransactions} emojiFor={categoryEmoji}
           fmt={formatAmount} compact={(usd) => formatUSDInCurrency(usd, displayCurrency, displayRates, { compact: true })} />
       )}

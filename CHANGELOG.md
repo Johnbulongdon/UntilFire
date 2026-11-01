@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-01 — Make a payment a bill
+
+- Open a transaction (website or phone) and press **Make it a bill**. It becomes a monthly bill on the day you paid it, with the same amount and category, and shows on Calendar. The next payment like it ticks the bill paid.
+- If the payment looks like a bill you already have (rent paid through Bilt), it asks "Is this your Rent bill?" first. Yes links the two and moves the bill to that day, so rent is never counted twice. A payment that already is a bill says so.
+- Calendar's Month view: tap a bill in the day panel to edit it. Edit used to exist only in List view.
+
 ## 2026-11-01 — Home freedom card, full-bleed curve
 
 - The yellow freedom card on Home (website) is cleaner (John's pick, option B). The curve now runs edge to edge across the bottom of the card, with no axis and no empty gap above it.

@@ -14,7 +14,7 @@ import ReviewPill from "./ReviewPill";
 import WorthALook from "./WorthALook";
 import { findFlags, type FlagKind, cardRates, isSystemTag, looksLikeRefund, okTag, pendingUncounted, walletTwins } from "@/lib/transaction-flags";
 import { rangeFor, type RangePreset } from "@/lib/spend-range";
-import { type Bill, guessBillCategory, mergeBills, presumePaid, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
+import { type Bill, billForPayment, guessBillCategory, mergeBills, nextMonthlyDue, ordinal, presumePaid, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
 import type { FreeToSpend } from "@/lib/free-to-spend";
 import { detectRecurring, type Recurrence } from "@/lib/recurring-detect";
 import { SUPPORTED_CURRENCIES, FALLBACK_RATES as LIB_FALLBACK_RATES } from "@/lib/currency";
@@ -259,6 +259,7 @@ function QuickAddForm({
   alwaysShop = false,
   onAlwaysShop,
   categoryNeeds = {},
+  bill = null,
 }: {
   draft: DraftTransaction;
   setDraft: React.Dispatch<React.SetStateAction<DraftTransaction>>;
@@ -279,8 +280,22 @@ function QuickAddForm({
   alwaysShop?: boolean;
   onAlwaysShop?: (on: boolean) => void;
   categoryNeeds?: NeedOverrides;
+  /** "Make it a bill" (D-133) for a saved spend: the bill it already is, or
+   *  the unlinked bill it looks like, and the day of the month it repeats on. */
+  bill?: { already: string | null; likely: { id: string; name: string } | null; day: number; onMake: (linkId: string | null) => Promise<boolean> } | null;
 }) {
   const amountRef = useRef<HTMLInputElement>(null);
+  const [billStep, setBillStep] = useState(false);
+  const [billBusy, setBillBusy] = useState(false);
+  // Another transaction opened: start the bill question over.
+  useEffect(() => { setBillStep(false); }, [draft.id]);
+  const makeBill = async (linkId: string | null) => {
+    if (!bill || billBusy) return;
+    setBillBusy(true);
+    const ok = await bill.onMake(linkId);
+    setBillBusy(false);
+    if (ok) setBillStep(false);
+  };
   const [categorizing, setCategorizing] = useState(false);
   const [saveAndAddAnother, setSaveAndAddAnother] = useState(true);
   const [saving, setSavingLocal] = useState(false);
@@ -902,6 +917,27 @@ function QuickAddForm({
         >
           {saving ? "Saving…" : editing ? "Save changes" : "Save transaction"}
         </button>
+        {/* Make it a bill: rare, so it waits here, one tap past the row; the
+            row's bin keeps delete at one tap. */}
+        {editing && bill && (bill.already
+          ? <p className="uf-t-small" style={{ margin: "10px 0 0", textAlign: "center", color: "var(--uf-ink-2)" }}>📅 Already a bill: {bill.already}</p>
+          : !billStep
+            ? <div style={{ marginTop: 8 }}><Button variant="secondary" fullWidth onClick={() => setBillStep(true)}>📅 Make it a bill</Button></div>
+            : (
+              <div role="group" aria-label="Make it a bill" style={{ marginTop: 8, display: "grid", gap: 8, background: "var(--uf-surface)", borderRadius: 16, padding: 12 }}>
+                <span style={{ fontWeight: 700, fontSize: 14 }}>
+                  {bill.likely ? `Is this your ${bill.likely.name} bill?` : `Monthly on the ${ordinal(bill.day)}`}
+                </span>
+                <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>
+                  {bill.likely ? `It will be due monthly on the ${ordinal(bill.day)}, and payments like this tick it paid.` : "Shows on Calendar. Payments like this tick it paid."}
+                </span>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {bill.likely && <Button size="sm" disabled={billBusy} onClick={() => makeBill(bill.likely!.id)}>Yes, link it</Button>}
+                  <Button size="sm" disabled={billBusy} onClick={() => makeBill(null)}>{bill.likely ? "No, new bill" : "Add bill"}</Button>
+                  <Button variant="ghost" size="sm" disabled={billBusy} onClick={() => setBillStep(false)}>Cancel</Button>
+                </div>
+              </div>
+            ))}
         {editing && onDelete && (
           <button type="button" onClick={onDelete}
             style={{ marginTop: 8, background: "transparent", color: "var(--uf-neg-ink)", border: "1px solid var(--uf-border)", borderRadius: 999, padding: "10px 16px", fontSize: 14, fontWeight: 700, width: "100%", cursor: "pointer", fontFamily: "inherit" }}>
@@ -2164,6 +2200,44 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     if (error) { showToast("Couldn't save that — try again", undefined, undefined, true); return; }
     setTransactions((prev) => prev.map((t) => (t.id === tx.id ? { ...t, ...patch } : t)));
   }, [transactions, showToast, billAsks]);
+  // "Make it a bill" (D-133) on the payment being edited: monthly, on the day
+  // it was paid, linked to its bank name so the next one ticks it paid. A
+  // payment that already is a bill offers nothing; one that looks like an
+  // unlinked bill (rent through Bilt) offers linking that bill instead.
+  const billOffer = useMemo(() => {
+    const tx = editingId ? transactions.find((t) => t.id === editingId) : undefined;
+    if (!tx || tx.transaction_type !== "expense") return null;
+    const match = billForPayment({ usd: usd(tx.amount, tx.currency), description: tx.description, category: tx.category }, listedBills);
+    return { tx, ...match, due: nextMonthlyDue(tx.date, today) };
+  }, [editingId, transactions, listedBills, usd, today]);
+  const makeBill = useCallback(async (linkId: string | null): Promise<boolean> => {
+    const offer = billOffer;
+    if (!offer) return false;
+    const { tx, due } = offer;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return false;
+    const day = Number(due.slice(8, 10));
+    if (linkId) {
+      const patch = { match_merchant: tx.description, due_date: due, recurrence: "monthly", completed_at: null };
+      const { error } = await supabase.from("expected_payments").update(patch).eq("id", linkId);
+      if (error) { showToast("Couldn't link the bill. Please try again.", undefined, undefined, true); return false; }
+      setExpected((prev) => prev.map((r) => (r.id === linkId ? { ...r, ...patch } : r)));
+      showToast(`Linked. ${listedBills.find((b) => b.id === linkId)?.description ?? "Bill"} is now due monthly on the ${ordinal(day)}`);
+      return true;
+    }
+    const row = {
+      user_id: session.user.id, description: tx.description, amount: tx.amount, currency: tx.currency,
+      transaction_type: "expense", due_date: due, recurrence: "monthly", match_merchant: tx.description,
+      category: tx.category || guessBillCategory(tx.description), sub_category: tx.sub_category,
+    };
+    const { data, error } = await supabase.from("expected_payments").insert(row)
+      .select("id, amount, currency, transaction_type, due_date, category, description, recurrence, match_merchant, completed_at").single();
+    if (error || !data) { showToast("Couldn't add the bill. Please try again.", undefined, undefined, true); return false; }
+    setExpected((prev) => [...prev, data]);
+    showToast(`Bill added: ${tx.description}, monthly on the ${ordinal(day)}`);
+    return true;
+  }, [billOffer, listedBills, showToast]);
+
   const handleDeleteRef = useRef<((tx: Transaction) => Promise<void>) | null>(null);
 
   // "Delete all card copies": one tap, with Undo putting every row back.
@@ -2348,6 +2422,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           alwaysShop={alwaysShop}
           onAlwaysShop={setAlwaysShop}
           categoryNeeds={categoryNeeds}
+          bill={billOffer && { already: billOffer.already?.description ?? null, likely: billOffer.likely?.id ? { id: billOffer.likely.id, name: billOffer.likely.description ?? "Bill" } : null,
+            day: Number(billOffer.due.slice(8, 10)), onMake: makeBill }}
         />
       </MobileDrawer>
 

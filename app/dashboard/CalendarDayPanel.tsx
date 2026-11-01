@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui";
 import { moneyMono } from "./MoneyCards";
 
-export type DayLine = { label: string; amount: number; income: boolean; category?: string | null; repeats?: boolean; status?: string };
+export type DayLine = { id?: string; label: string; amount: number; income: boolean; category?: string | null; repeats?: boolean; status?: string };
 
 /**
  * One day of the Calendar (D-64), beside the month on a computer and as a
@@ -12,7 +12,7 @@ export type DayLine = { label: string; amount: number; income: boolean; category
  * what is expected, the cash left at its end, and adds an upcoming payment
  * in place, with the month still in view.
  */
-export default function CalendarDayPanel({ iso, todayIso, lines, cash, invest, addForm, onAdd, onClose, onOpenTransactions, emojiFor, fmt, sheet, scheduled = false }: {
+export default function CalendarDayPanel({ iso, todayIso, lines, cash, invest, addForm, onAdd, onEdit, onClose, onOpenTransactions, emojiFor, fmt, sheet, scheduled = false }: {
   iso: string;
   todayIso: string;
   lines: DayLine[];
@@ -23,6 +23,8 @@ export default function CalendarDayPanel({ iso, todayIso, lines, cash, invest, a
   /** The add form, while it is open. */
   addForm: React.ReactNode;
   onAdd: () => void;
+  /** Open a saved bill or payday's Edit form, from its line. */
+  onEdit?: (id: string) => void;
   onClose: () => void;
   onOpenTransactions?: () => void;
   emojiFor: (category: string | null | undefined, income: boolean) => string;
@@ -63,8 +65,13 @@ export default function CalendarDayPanel({ iso, todayIso, lines, cash, invest, a
         {lines.length === 0 && (
           <p className="uf-t-small" style={{ color: "var(--uf-ink-3)", margin: "6px 0" }}>{scheduled ? "No bills or payday scheduled." : past ? "Nothing recorded." : "Nothing expected."}</p>
         )}
-        {lines.map((l, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderTop: i ? "1px solid var(--uf-border)" : undefined }}>
+        {lines.map((l, i) => {
+          const edit = l.id && onEdit ? () => onEdit(l.id!) : undefined;
+          const Row = edit ? "button" : "div";
+          return (
+          <Row key={i} {...(edit ? { type: "button" as const, onClick: edit, "aria-label": `Edit ${l.label}` } : {})}
+            style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 0", borderTop: i ? "1px solid var(--uf-border)" : "none",
+              ...(edit ? { width: "100%", background: "transparent", borderLeft: "none", borderRight: "none", borderBottom: "none", textAlign: "left", font: "inherit", color: "inherit", cursor: "pointer" } : {}) }}>
             <span aria-hidden style={{ width: 30, height: 30, borderRadius: 10, display: "grid", placeItems: "center", flexShrink: 0,
               background: l.income ? "color-mix(in srgb, var(--uf-pos-ink) 14%, var(--uf-card))" : "var(--uf-surface)" }}>{emojiFor(l.category, l.income)}</span>
             <span style={{ flex: 1, minWidth: 0 }}>
@@ -72,13 +79,16 @@ export default function CalendarDayPanel({ iso, todayIso, lines, cash, invest, a
               {(scheduled || !past) && <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>{[l.status,l.repeats ? "Repeats" : "One-off"].filter(Boolean).join(" · ")}</span>}
             </span>
             <span style={{ ...moneyMono, fontSize: 14, color: l.income ? "var(--uf-pos-ink)" : "var(--uf-ink)" }}>{l.income ? "+" : "−"}{fmt(l.amount)}</span>
-          </div>
-        ))}
+            {edit && <span aria-hidden className="uf-t-small" style={{ color: "var(--uf-ink-2)", fontWeight: 700 }}>Edit ›</span>}
+          </Row>
+          );
+        })}
       </div>
 
-      {past
+      {/* An open form shows on any day: editing an overdue bill happens on a past day. */}
+      {addForm ?? (past
         ? onOpenTransactions && <Button variant="ghost" size="sm" onClick={onOpenTransactions}>Open in Transactions</Button>
-        : addForm ?? <Button variant="secondary" size="sm" onClick={onAdd}>+ Add upcoming</Button>}
+        : <Button variant="secondary" size="sm" onClick={onAdd}>+ Add upcoming</Button>)}
     </section>
   );
 }

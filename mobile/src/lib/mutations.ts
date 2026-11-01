@@ -135,6 +135,22 @@ export async function saveBill(userId: string, draft: BillDraft): Promise<string
   return error ? 'Couldn\'t save it. Please try again.' : null
 }
 
+/**
+ * "Make it a bill" (D-133), as the website's transaction form: monthly on
+ * the day it was paid, linked to its bank name so the next one ticks it
+ * paid. With `linkId`, the existing bill it looks like is linked and moved
+ * to that day instead, so nothing counts twice.
+ */
+export async function makeBillFromTransaction(userId: string, tx: { description: string; amount: number; currency: string; category: string | null; sub_category: string | null }, due: string, linkId: string | null): Promise<string | null> {
+  const { error } = linkId
+    ? await supabase.from('expected_payments').update({ match_merchant: tx.description, due_date: due, recurrence: 'monthly', completed_at: null }).eq('id', linkId)
+    : await supabase.from('expected_payments').insert({
+        user_id: userId, description: tx.description, amount: tx.amount, currency: tx.currency, transaction_type: 'expense',
+        due_date: due, recurrence: 'monthly', match_merchant: tx.description, category: tx.category, sub_category: tx.sub_category,
+      })
+  return error ? (linkId ? 'Couldn\'t link the bill. Please try again.' : 'Couldn\'t add the bill. Please try again.') : null
+}
+
 export interface LeaseDraft { ends_on: string; notice_days: number; rise_pct: number | null }
 
 /**

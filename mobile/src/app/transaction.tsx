@@ -10,6 +10,7 @@ import { entryChanged } from '@/lib/entry-state'
 import { useEntryGuard } from '@/lib/useEntryGuard'
 import { CategoryGlyph } from '@/components/Icon'
 import { LeaseCard } from '@/components/LeaseCard'
+import { MakeBillCard } from '@/components/MakeBillCard'
 import { Text } from '@/components/Text'
 import { INCOME_CATEGORIES, isoDay, isRent, merchantKey, SUB_CATEGORIES } from '@/engine'
 import { currencySymbol, displayCurrency } from '@/lib/display-currency'
@@ -273,6 +274,9 @@ export default function TransactionSheet() {
           )}
 
           {error ? <Text className="mt-4 text-[14px] text-neg-ink">{error}</Text> : null}
+          {existing && existing.transaction_type === 'expense' && data && session && (
+            <MakeBillCard tx={existing} bills={data.bills} userId={session.user.id} onDone={refresh} />
+          )}
           {editing && (
             <Pressable accessibilityRole="button" disabled={busy} onPress={remove} className="mt-8 items-center py-2">
               <Text className="text-[15px] font-semibold text-neg-ink">Delete transaction</Text>
