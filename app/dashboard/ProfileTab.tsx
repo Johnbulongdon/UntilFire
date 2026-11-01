@@ -63,6 +63,14 @@ export default function ProfileTab({
   trialLabel = TRIAL_LABEL,
 }: Props) {
   const [displayName, setDisplayName] = useState("");
+  // Theme lives here only (moved out of the sidebar and top bar, 1 Nov 2026).
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => { setIsDark(document.documentElement.classList.contains("dark")); }, []);
+  function setTheme(dark: boolean) {
+    document.documentElement.classList.toggle("dark", dark);
+    try { localStorage.setItem("uf-theme", dark ? "dark" : "light"); } catch {}
+    setIsDark(dark);
+  }
 
   const [currencySearch, setCurrencySearch] = useState("");
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
@@ -333,6 +341,21 @@ export default function ProfileTab({
                 })()}
               </div>
               <div><Button variant="primary" size="sm" onClick={saveCurrency} disabled={saving.currency}>{saving.currency ? "Saving…" : saved.currency ? "Saved ✓" : "Save shortlist"}</Button></div>
+            </div>
+          )} />
+        <MoneyRow dot="var(--uf-ink-3)" icon={isDark ? "🌙" : "☀️"} name="Appearance" meta="Light or dark screens" value={`${isDark ? "Dark" : "Light"} ›`} onClick={() => toggle("appearance")}
+          after={openRow === "appearance" && (
+            <div role="radiogroup" aria-label="Appearance" style={{ display: "flex", gap: 8 }}>
+              {([["light", "Light"], ["dark", "Dark"]] as const).map(([k, label]) => {
+                const on = (k === "dark") === isDark;
+                return (
+                  <button key={k} type="button" role="radio" aria-checked={on} onClick={() => setTheme(k === "dark")} className="uf-t-small"
+                    style={{ padding: "8px 16px", borderRadius: 999, cursor: "pointer", fontWeight: 700, fontFamily: "inherit",
+                      border: `1px solid ${on ? "transparent" : "var(--uf-border)"}`, background: on ? "var(--uf-ink)" : "var(--uf-card)", color: on ? "var(--uf-card)" : "var(--uf-ink-2)" }}>
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           )} />
       </MoneyList>

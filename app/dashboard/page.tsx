@@ -3,7 +3,7 @@ import { paydaySpending, paydayRemainder } from '@/lib/payday-spending';
 
 import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
 
-import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
@@ -4694,24 +4694,6 @@ export default function Dashboard() {
   const [referredTrial, setReferredTrial] = useState(false);
   const [upgradeSource, setUpgradeSource] = useState("dashboard_upgrade_modal");
   const [upgradedBanner, setUpgradedBanner] = useState(false);
-  const [isDark, setIsDark] = useState(false);
-
-  useLayoutEffect(() => {
-    setIsDark(document.documentElement.classList.contains('dark'));
-    const obs = new MutationObserver(() =>
-      setIsDark(document.documentElement.classList.contains('dark'))
-    );
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => obs.disconnect();
-  }, []);
-
-  function toggleDark() {
-    const next = !document.documentElement.classList.contains('dark');
-    document.documentElement.classList.toggle('dark', next);
-    try { localStorage.setItem('uf-theme', next ? 'dark' : 'light'); } catch {}
-    setIsDark(next);
-  }
-
   const wasUpgradedRef = useRef(false);
   // hadSubscription, not just plan: someone who subscribed once and cancelled
   // cannot have another trial, and the upgrade modal has to know that before it
@@ -5989,16 +5971,6 @@ export default function Dashboard() {
         <button type="button" onClick={() => window.dispatchEvent(new Event("uf:feedback"))} aria-label="Send feedback" className="uf-mobile-menu-button">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </button>
-        <button
-          onClick={toggleDark}
-          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          className="uf-mobile-menu-button"
-        >
-          {isDark
-            ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-            : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          }
-        </button>
       </header>
 
       <nav className="uf-mobile-bottom-nav" aria-label="Primary mobile navigation">
@@ -6091,24 +6063,6 @@ export default function Dashboard() {
           </nav>
 
           <div className="uf-sidebar-bottom">
-            <button
-              onClick={toggleDark}
-              style={{
-                display: "flex", alignItems: "center", gap: 8,
-                background: "var(--uf-card)", border: `1px solid var(--uf-border)`,
-                borderRadius: 999, padding: "8px 12px", cursor: "pointer",
-                color: "var(--uf-ink-2)", fontSize: 13, fontWeight: 700,
-                fontFamily: "Inter, sans-serif", width: "100%",
-                transition: "background-color 160ms ease, color 160ms ease",
-              }}
-            >
-              <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                {isDark
-                  ? <path d="M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4" />
-                  : <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />}
-              </svg>
-              {isDark ? "Light mode" : "Dark mode"}
-            </button>
             <span role="status" className="uf-t-small" style={{ minHeight: 16, color: saveStatus === "saved" ? "var(--uf-pos-ink)" : "var(--uf-ink-3)" }}>
               {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "✓ Saved" : ""}
             </span>

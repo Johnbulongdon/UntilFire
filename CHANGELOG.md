@@ -4,7 +4,7 @@
 
 - The page you're on is a yellow pill with dark text in both themes (was a square box with a black or white outline, and a muddy brown in dark mode). Same for the phone bottom bar, the phone menu drawer and the Money/Plan section pills.
 - Sub-pages are pills; hover shows a visible grey (it matched the sidebar before). Offers gets a gift icon like its neighbours.
-- Dark/Light mode switch is a pill with a sun/moon icon instead of emoji. The sidebar Freedom date reads in sentence case with a yellow date chip. The phone drawer backdrop uses the shared scrim.
+- Light/dark choice moved to Profile → Account → Appearance (Light / Dark pills). It is no longer in the sidebar or the phone top bar. The sidebar Freedom date reads in sentence case with a yellow date chip. The phone drawer backdrop uses the shared scrim.
 
 ## 2026-11-01 — Buttons and popups match Next Horizon
 
