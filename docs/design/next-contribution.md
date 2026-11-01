@@ -286,3 +286,11 @@ portfolio looks like this") or personalised ("you should hold 20% AVDV").
 
 This does not block steps 1–4, which contain no recommendation. It should be
 settled with a lawyer before step 5 puts anything in an email.
+
+## Simplified Contributions — D-132 (1 November 2026)
+
+The default page shows the planned contribution/date, a combined Emergency savings destination, any other funded destinations and investing's share. Both emergency stages still fill in their existing priority order; grouping sums their actual allocations and never changes them. Urgent forecast qualifications stay visible above the amount. Default copy says planned/estimate, including for custom amounts, and never promises that no bill will bounce.
+
+How calculated holds the full trace (also available for a custom amount). Contribution settings preserves the existing schedule, overrides and priority controls; retirement settings remain reachable there. Investment allocation holds current/target mix, editing and import. No stored values or source-of-truth ownership are moved. Existing phone mark-as-made/undo remains available. Account discovery is contextual to a savings/investment destination; it does not execute a transfer. The effective nominal debt threshold shown in the website field follows the same value as the ladder, including explicit overrides.
+
+Implementation: `ContributionSummary.tsx`, `Contributions.module.css`, shared `lib/contribution-presentation.ts`, and phone Contributions. Regression: `scripts/verify-contribution-presentation.mjs` plus existing plan, ladder, waterfall and forecast guards. Screen QA and publication evidence are recorded in the task PR. No migration, new dependency or native configuration change.

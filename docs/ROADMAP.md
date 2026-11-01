@@ -2,6 +2,9 @@
 
 ## Current priorities
 
+N2 follow-up — Contributions simplification (D-132), Codex, 1 November 2026: [PR #365](https://github.com/Johnbulongdon/UntilFire/pull/365) in review. Approved option 2 combines Emergency savings; local validation, contribution guards, responsive web QA and phone exports passed. Next: CI, authorized merge and website deployment verification. No new financial model or native configuration. Release evidence will be recorded in the PR.
+
+
 **Last updated:** 27 October 2026 (Asia/Shanghai). **Owner:** John.
 **Goal:** A trustworthy financial-clarity experience people return to and will pay
 for, working toward **$3k MRR**. Positioning: see [CONTEXT.md](CONTEXT.md).

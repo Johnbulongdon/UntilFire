@@ -6422,10 +6422,11 @@ export default function Dashboard() {
             )}
             {tab === "contributions" && (
               <div style={{ display: "grid", gap: 24 }}>
-                <SavingSplitCard plan={planSettings} onChange={setPlanSettings}
-                  afterTaxSaving={planFreedom.annualSavings} takeHomeAnnual={effectiveIncome * 12} usTaxHome={usTaxHome}
-                  displayCurrency={defaultCurrency} displayRates={rates} onOpenIncome={() => setTab("income")} />
-                <ContributionsTab {...contributionFacts} onChooseAccounts={() => setTab("assets")} />
+                <ContributionsTab {...contributionFacts} onChooseAccounts={() => setTab("assets")}
+                  onReviewCashflow={() => { setCashflowSubTab("expected"); setTab("cashflow"); }}
+                  retirementSettings={<SavingSplitCard plan={planSettings} onChange={setPlanSettings}
+                    afterTaxSaving={planFreedom.annualSavings} takeHomeAnnual={effectiveIncome * 12} usTaxHome={usTaxHome}
+                    displayCurrency={defaultCurrency} displayRates={rates} onOpenIncome={() => setTab("income")} />} />
               </div>
             )}
             {tab === "citizenship" && (TAX_ESTIMATES_AVAILABLE ? <CitizenshipTab onOpenExpat={() => openDashboardTab("expat-fire")} /> : <div className="uf-card" style={{ padding: 24 }}>Passport tax comparisons are unavailable while we test them.</div>)}

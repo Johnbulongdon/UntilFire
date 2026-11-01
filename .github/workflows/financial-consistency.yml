@@ -24,3 +24,8 @@ jobs:
       - run: node --experimental-strip-types scripts/verify-tools-navigation.mjs
       - run: npm run test:partner-offers
       - run: npm run test:referrals
+
+      - run: npm run test:contribution-plan
+      - run: npm run test:contribution-ladder
+      - run: npm run test:contribution-waterfall
+      - run: node --experimental-strip-types scripts/verify-contribution-presentation.mjs
