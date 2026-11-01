@@ -119,26 +119,26 @@ export default function PurchaseImpactCalculator() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {result ? (
               <>
-                <div style={{ background: '#001f3f', borderRadius: 18, padding: '28px 28px' }}>
-                  <div style={{ fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginBottom: 8 }}>
+                <div style={{ background: 'var(--uf-yellow)', color: '#151719', borderRadius: 'var(--uf-r-card)', padding: '28px 28px' }}>
+                  <div style={{ fontSize: 14, color: '#151719', fontWeight: 700, marginBottom: 8 }}>
                     Worth at your freedom date
                   </div>
-                  <div style={{ fontSize: 'clamp(36px, 6vw, 52px)', fontWeight: 800, color: '#62FAE3', fontFamily: 'Inter, sans-serif', letterSpacing: '-2px', lineHeight: 1 }}>
+                  <div style={{ fontSize: 'clamp(36px, 6vw, 52px)', fontWeight: 800, color: '#151719', fontFamily: 'Inter, sans-serif', fontVariantNumeric: 'tabular-nums', letterSpacing: '-2px', lineHeight: 1 }}>
                     {formatFV(result.futureValue)}
                   </div>
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 10, lineHeight: 1.6 }}>
+                  <div style={{ fontSize: 13, color: '#3F434C', marginTop: 10, lineHeight: 1.6 }}>
                     ${parseFloat(price || '0').toLocaleString()} compounded at {rate}%/yr for {(result.baselineMonths / 12).toFixed(1)} years
                   </div>
                 </div>
 
-                <div style={{ background: '#3b0000', borderRadius: 18, padding: '28px 28px' }}>
-                  <div style={{ fontSize: 11, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', fontWeight: 700, marginBottom: 8 }}>
+                <div style={{ background: 'var(--uf-pink)', color: 'var(--uf-ink)', borderRadius: 'var(--uf-r-card)', padding: '28px 28px' }}>
+                  <div style={{ fontSize: 14, color: 'var(--uf-ink)', fontWeight: 700, marginBottom: 8 }}>
                     Freedom delayed by
                   </div>
-                  <div style={{ fontSize: 'clamp(36px, 6vw, 52px)', fontWeight: 800, color: 'var(--uf-neg)', fontFamily: 'Inter, sans-serif', letterSpacing: '-2px', lineHeight: 1 }}>
+                  <div style={{ fontSize: 'clamp(36px, 6vw, 52px)', fontWeight: 800, color: 'var(--uf-neg-ink)', fontFamily: 'Inter, sans-serif', fontVariantNumeric: 'tabular-nums', letterSpacing: '-2px', lineHeight: 1 }}>
                     {formatDelay(result.delayDays)}
                   </div>
-                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginTop: 10, lineHeight: 1.6 }}>
+                  <div style={{ fontSize: 13, color: 'var(--uf-ink-2)', marginTop: 10, lineHeight: 1.6 }}>
                     {result.delayDays === 1 ? 'That\'s 1 day later' : `That\'s ${result.delayDays} days later`} — every dollar left invested keeps compounding
                   </div>
                 </div>
@@ -147,7 +147,7 @@ export default function PurchaseImpactCalculator() {
                   <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.7 }}>
                     <strong style={{ color: C.text }}>Want a personalised calculation?</strong> Log in to UntilFire and this tool fills from your real savings, contribution, and FIRE target automatically.
                   </div>
-                  <Link href="/?source=purchase-impact&start=onboarding" style={{ display: 'inline-block', marginTop: 12, background: C.accent, color: 'var(--uf-card)', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
+                  <Link href="/?source=purchase-impact&start=onboarding" style={{ display: 'inline-block', marginTop: 12, background: C.accent, color: 'var(--uf-card)', borderRadius: 'var(--uf-r-pill)', padding: '10px 20px', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
                     Use with my profile →
                   </Link>
                 </div>

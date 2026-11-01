@@ -10,7 +10,7 @@ import { project, type Freedom } from '@/state/freedom'
 type Inputs = Parameters<typeof calcProjection>[0]
 
 // The printed page keeps the light palette in both themes, as the website's report does.
-const C = { card: '#FFFDFA', s2: '#F3EBDF', b: '#EADCC8', ink: '#2A2117', ink2: '#6B5C48', ink3: '#76674F', green: '#12856A', teal: '#0E9C86', pos: '#DDF1EA' }
+const C = { card: '#FFFFFF', s2: '#EEE9FA', b: '#E7E5ED', ink: '#151719', ink2: '#5C6170', ink3: '#686D7C', green: '#151719', teal: '#151719', pos: '#E3F7EF' }
 const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!))
 const pct = (g: number) => `${+(g * 100).toFixed(1)}%`
 

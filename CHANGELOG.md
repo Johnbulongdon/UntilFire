@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-01 — Buttons and popups match Next Horizon
+
+- Welcome ("Let's find your FIRE number"), Send feedback and Take a tour popups use the card colour (dark mode no longer shows a bright white box), pill buttons, a yellow welcome tag and icons instead of the 🔥 emoji. The tour spotlight ring is freedom yellow, not teal.
+- Disconnect bank and the calculator's Start over use our own confirm popup (`components/ui/ConfirmDialog`) instead of the browser's grey `confirm()`.
+- Bank card toasts, spinner and buttons, the Transactions Add bar, empty-state circle, ✦ icon and the investment simulator's buttons use design tokens, so they follow dark mode.
+- Purchase impact results are yellow and pink cards (were navy and dark red with teal). FIRE Type and Share pages use tokens, pill buttons and the supplied logo; FIRE Type drops its second logo bar.
+- Share images (poster and timeline) and the phone's freedom report, confetti and shadows use the Next Horizon palette instead of the old warm/teal one.
+- Removed unused old code: HeroScreen, LandingPage, the never-opened survey popup, the old Calculators tab and about 75 KB of unused teal CSS in the calculator flow.
+
 ## 2026-10-31 — Transactions audit fixes
 
 - A card bill payment or a likely copy no longer adds to Transactions totals while its question waits; it shows faded with "Not counted yet" (D-130). Card copies of Alipay/WeChat buys are now caught before the card's rate is learned (10% band).

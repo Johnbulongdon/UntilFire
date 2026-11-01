@@ -46,6 +46,9 @@ export type { DeltaProps, GoodWhen } from "./Delta";
 export { default as Progress } from "./Progress";
 export type { ProgressProps } from "./Progress";
 
+export { default as ConfirmDialog } from "./ConfirmDialog";
+export type { ConfirmDialogProps } from "./ConfirmDialog";
+
 export { default as Alert } from "./Alert";
 export type { AlertProps, AlertTone } from "./Alert";
 

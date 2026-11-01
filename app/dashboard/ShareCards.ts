@@ -20,9 +20,9 @@ function stats(ctx: CanvasRenderingContext2D, items: [string, string][], x: numb
   const f = fonts(), gap = 18, cw = (w - gap * (items.length - 1)) / items.length;
   items.forEach(([k, v], i) => {
     const bx = x + i * (cw + gap);
-    box(ctx, bx, y, cw, h, 22); ctx.fillStyle = light ? "#F3EBDF" : "rgba(255,255,255,.14)"; ctx.fill();
-    ctx.fillStyle = light ? "#6B5C48" : "rgba(255,255,255,.8)"; ctx.font = `600 26px ${f.body}`; ctx.fillText(k, bx + 24, y + 44);
-    ctx.fillStyle = light ? "#2A2117" : "#fff"; ctx.font = `600 40px ${f.mono}`; ctx.fillText(v, bx + 24, y + 96);
+    box(ctx, bx, y, cw, h, 22); ctx.fillStyle = light ? "#F1EFF6" : "rgba(255,255,255,.6)"; ctx.fill();
+    ctx.fillStyle = "#5C6170"; ctx.font = `600 26px ${f.body}`; ctx.fillText(k, bx + 24, y + 44);
+    ctx.fillStyle = "#151719"; ctx.font = `600 40px ${f.mono}`; ctx.fillText(v, bx + 24, y + 96);
   });
 }
 
@@ -31,27 +31,27 @@ export function drawPoster(c: HTMLCanvasElement, d: ReportData, compact: Money, 
   const W = 1080, H = 1350, ctx = c.getContext("2d")!, f = fonts();
   c.width = W; c.height = H;
   const g = ctx.createRadialGradient(W * 0.85, 0, 40, W * 0.6, H * 0.3, H);
-  g.addColorStop(0, "#f6b26b"); g.addColorStop(0.18, "#e9895a"); g.addColorStop(0.5, "#3c6e5f"); g.addColorStop(1, "#14302a");
+  g.addColorStop(0, "#FFF5CB"); g.addColorStop(0.45, "#FFE58A"); g.addColorStop(1, "#FFE58A");
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = "rgba(255,213,154,.5)"; ctx.beginPath(); ctx.arc(W - 70, 70, 220, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.font = `700 34px ${f.body}`; ctx.fillText("MY FREEDOM PLAN", 72, 120);
-  ctx.fillStyle = "#fff"; ctx.font = `600 400px ${f.display}`; ctx.fillText(freeLabel(d), 56, 470);
+  ctx.fillStyle = "rgba(255,255,255,.45)"; ctx.beginPath(); ctx.arc(W - 70, 70, 220, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#151719"; ctx.font = `700 36px ${f.body}`; ctx.fillText("My freedom plan", 72, 120);
+  ctx.fillStyle = "#151719"; ctx.font = `800 400px ${f.display}`; ctx.fillText(freeLabel(d), 56, 470);
   ctx.font = `600 64px ${f.display}`; ctx.fillText(d.age !== null ? "years old" : "from now", 72, 560);
-  ctx.font = `500 46px ${f.body}`; ctx.fillStyle = "rgba(255,255,255,.95)";
+  ctx.font = `500 46px ${f.body}`; ctx.fillStyle = "#3F434C";
   ctx.fillText(`Free in ${d.date.getFullYear()}, spending ${money(d.spend)} a year.`, 72, 650);
   // The path: invested money rising to the target line.
   const pts = d.path, top = 760, bottom = 1030, max = Math.max(d.target * 1.08, ...pts.map((p) => p.total));
   const x = (i: number) => (i / Math.max(1, pts.length - 1)) * W, y = (v: number) => bottom - (v / max) * (bottom - top);
   ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(x(i), y(p.total)) : ctx.moveTo(x(i), y(p.total))));
-  ctx.strokeStyle = "#fff"; ctx.lineWidth = 7; ctx.stroke();
-  ctx.lineTo(W, bottom + 40); ctx.lineTo(0, bottom + 40); ctx.closePath(); ctx.fillStyle = "rgba(255,255,255,.12)"; ctx.fill();
-  ctx.setLineDash([14, 14]); ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = 3;
+  ctx.strokeStyle = "#151719"; ctx.lineWidth = 7; ctx.stroke();
+  ctx.lineTo(W, bottom + 40); ctx.lineTo(0, bottom + 40); ctx.closePath(); ctx.fillStyle = "rgba(21,23,25,.07)"; ctx.fill();
+  ctx.setLineDash([14, 14]); ctx.strokeStyle = "rgba(21,23,25,.45)"; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.moveTo(0, y(d.target)); ctx.lineTo(W, y(d.target)); ctx.stroke(); ctx.setLineDash([]);
   // The dot sits where the path meets the target: the freedom date, in years from now.
   const yearsToFree = (d.date.getTime() - Date.now()) / (365.25 * 864e5);
-  ctx.fillStyle = "#ffd59a"; ctx.strokeStyle = "#fff"; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(x(Math.min(pts.length - 1, yearsToFree)), y(d.target), 18, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#FFFFFF"; ctx.strokeStyle = "#151719"; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(x(Math.min(pts.length - 1, yearsToFree)), y(d.target), 18, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   stats(ctx, [["Saving", d.savingPct !== null ? `${Math.round(d.savingPct * 100)}%` : compact(d.savingTotal)], ["Invested now", compact(d.invested)], ["Goal", compact(d.target)]], 72, 1090, W - 144, 130, false);
-  ctx.fillStyle = "rgba(255,255,255,.65)"; ctx.font = `500 24px ${f.body}`;
+  ctx.fillStyle = "#5C6170"; ctx.font = `500 24px ${f.body}`;
   ctx.fillText(`My own numbers · ${+(d.growthRate * 100).toFixed(1)}% growth after inflation · ${+(d.withdrawalRate * 100).toFixed(1)}% withdrawals · not advice`, 72, 1290);
 }
 
@@ -59,32 +59,32 @@ export function drawPoster(c: HTMLCanvasElement, d: ReportData, compact: Money, 
 export function drawTimeline(c: HTMLCanvasElement, d: ReportData, compact: Money, money: Money) {
   const W = 1200, H = 800, ctx = c.getContext("2d")!, f = fonts();
   c.width = W; c.height = H;
-  ctx.fillStyle = "#FFFDFA"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#FFFFFF"; ctx.fillRect(0, 0, W, H);
   const now = d.currentAge ?? 0, years = (d.date.getTime() - Date.now()) / (365.25 * 864e5);
   const free = d.age ?? Math.round(now + years), end = Math.max(90, (d.bridge?.at ?? 0) + 10, free + 20);
-  ctx.fillStyle = "#2A2117"; ctx.font = `600 76px ${f.display}`;
+  ctx.fillStyle = "#151719"; ctx.font = `600 76px ${f.display}`;
   const head = d.currentAge !== null ? `${now} → free at ` : "Free in ";
   ctx.fillText(head, 80, 150); const hw = ctx.measureText(head).width;
-  ctx.fillStyle = "#0E9C86"; ctx.fillText(d.currentAge !== null ? String(free) : `${Math.round(years)} years`, 80 + hw, 150);
-  ctx.fillStyle = "#6B5C48"; ctx.font = `500 34px ${f.body}`;
+  ctx.fillStyle = "#151719"; ctx.fillText(d.currentAge !== null ? String(free) : `${Math.round(years)} years`, 80 + hw, 150);
+  ctx.fillStyle = "#5C6170"; ctx.font = `500 34px ${f.body}`;
   ctx.fillText(`Saving ${money(d.savingTotal)} a year to spend ${money(d.spend)} a year, for good.`, 80, 215);
   const L = 80, R = W - 80, Y = 380, x = (a: number) => L + ((a - now) / (end - now)) * (R - L);
   const seg = (a: number, b: number, col: string) => { ctx.fillStyle = col; ctx.fillRect(x(a), Y, Math.max(0, x(b) - x(a)), 30); };
   box(ctx, L, Y, R - L, 30, 15); ctx.save(); ctx.clip();
-  seg(now, free, "#2A2117");
+  seg(now, free, "#151719");
   const opens = d.bridge && d.bridge.at > free ? d.bridge.at : null;
-  if (opens) { seg(free, opens, "#0E9C86"); seg(opens, end, "#9fd8c9"); } else seg(free, end, "#0E9C86");
+  if (opens) { seg(free, opens, "#E5C35C"); seg(opens, end, "#FFE58A"); } else seg(free, end, "#E5C35C");
   ctx.restore();
   const pin = (a: number, big: string, small: string, below = false, align: CanvasTextAlign = "center") => {
-    const px = x(a); ctx.fillStyle = "#9A8A73"; ctx.fillRect(px - 2, below ? Y + 36 : Y - 40, 4, 34);
-    ctx.textAlign = align; ctx.fillStyle = "#2A2117"; ctx.font = `700 40px ${/½/.test(big) ? f.body : f.mono}`; ctx.fillText(big, px, below ? Y + 112 : Y - 92);
-    ctx.fillStyle = "#6B5C48"; ctx.font = `500 28px ${f.body}`; ctx.fillText(small, px, below ? Y + 150 : Y - 54); ctx.textAlign = "left";
+    const px = x(a); ctx.fillStyle = "#A5A3B3"; ctx.fillRect(px - 2, below ? Y + 36 : Y - 40, 4, 34);
+    ctx.textAlign = align; ctx.fillStyle = "#151719"; ctx.font = `700 40px ${/½/.test(big) ? f.body : f.mono}`; ctx.fillText(big, px, below ? Y + 112 : Y - 92);
+    ctx.fillStyle = "#5C6170"; ctx.font = `500 28px ${f.body}`; ctx.fillText(small, px, below ? Y + 150 : Y - 54); ctx.textAlign = "left";
   };
   if (d.currentAge !== null) { pin(now, String(now), "today", false, "left"); pin(free, String(free), "free"); pin(end, String(end), "", false, "right"); }
   if (opens) pin(opens, d.bridge!.accessAge, `${d.bridge!.name} opens`, true);
   ctx.font = `500 26px ${f.body}`; let lx = L;
-  for (const [col, t] of [["#2A2117", "Working"], ["#0E9C86", opens ? "Bridge: money you can reach" : "Free"], ...(opens ? [["#9fd8c9", "Everything"]] : [])] as [string, string][]) {
-    box(ctx, lx, 600, 28, 18, 5); ctx.fillStyle = col; ctx.fill(); ctx.fillStyle = "#6B5C48"; ctx.fillText(t, lx + 38, 617); lx += 60 + ctx.measureText(t).width;
+  for (const [col, t] of [["#151719", "Working"], ["#E5C35C", opens ? "Bridge: money you can reach" : "Free"], ...(opens ? [["#FFE58A", "Everything"]] : [])] as [string, string][]) {
+    box(ctx, lx, 600, 28, 18, 5); ctx.fillStyle = col; ctx.fill(); ctx.fillStyle = "#5C6170"; ctx.fillText(t, lx + 38, 617); lx += 60 + ctx.measureText(t).width;
   }
   stats(ctx, [["Invested now", compact(d.invested)], ["Saving", d.savingPct !== null ? `${Math.round(d.savingPct * 100)}%` : compact(d.savingTotal)], ["Goal", compact(d.target)]], 80, 650, W - 160, 120, true);
 }
