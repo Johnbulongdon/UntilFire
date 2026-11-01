@@ -50,13 +50,13 @@ export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, progress
   onOpen: () => void;
   /** A planned move to the retirement city (D-82), shown under the date so the number says what it assumes. */
   route?: { from: string; fromFlag?: string; to: string; toFlag?: string; when: string; onOpen: () => void };
-  /** How far you've come (lib/freedom-progress): "23%", 0–1, and the next mark. */
-  progress?: { pct: string; share: number; next: string };
+  /** How far you've come (lib/freedom-progress): "23%", 0–1, the next mark, and today's invested total ("$6.6k"). */
+  progress?: { pct: string; share: number; next: string; today?: string };
   /** The curve, drawn by the dashboard from the same projection as the date. */
   children: React.ReactNode;
 }) {
   return (
-    <Card className="uf-freedom-panel" style={{ display: "grid", gap: 14, background: "var(--uf-yellow)", color: "var(--uf-on-accent)" }}>
+    <Card className="uf-freedom-panel" style={{ display: "grid", gap: 14, background: "var(--uf-yellow)", color: "var(--uf-on-accent)", overflow: "hidden" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
         <div>
           <div className="uf-t-small" style={muted}>Work becomes optional</div>
@@ -76,6 +76,13 @@ export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, progress
                   <span style={{ color: "var(--uf-ink-3)", fontWeight: 500 }}>· {route.when} ›</span>
                 </button>
               )}
+              {progress && (
+                // Today's words live here, so the curve below carries only a dot for today (no label clash).
+                <div title={progress.next}
+                  style={{ marginTop: 12, display: "flex", width: "fit-content", alignItems: "center", gap: 6, background: "var(--uf-ink)", color: "var(--uf-yellow)", borderRadius: 999, padding: "6px 12px", fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                  {progress.today ? <>{progress.today} today<span style={{ opacity: 0.7, fontWeight: 500 }}>· {progress.pct} there</span></> : <>{progress.pct} there</>}
+                </div>
+              )}
             </>
           ) : (
             <div className="uf-t-body" style={{ color: "var(--uf-ink-2)" }}>Finish your setup to see your freedom date.</div>
@@ -83,18 +90,6 @@ export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, progress
         </div>
         <DoorChip to="plan" onClick={onOpen} />
       </div>
-      {progress && (
-        <div role="img" aria-label={`${progress.pct} of your freedom number. ${progress.next}`} style={{ display: "grid", gap: 6 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ ...mono, fontSize: 15, fontWeight: 700, color: "var(--uf-ink)" }}>{progress.pct} there</span>
-            <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>{progress.next}</span>
-          </div>
-          <div style={{ position: "relative", height: 10, borderRadius: 999, background: "var(--uf-surface-2)", overflow: "hidden" }}>
-            <i style={{ display: "block", height: "100%", width: `${Math.max(2, progress.share * 100)}%`, borderRadius: 999, background: "var(--uf-teal)" }} />
-            {[25, 50, 75].map((m) => <i key={m} style={{ position: "absolute", top: 0, bottom: 0, left: `${m}%`, width: 2, background: "var(--uf-card)" }} />)}
-          </div>
-        </div>
-      )}
       {children}
     </Card>
   );

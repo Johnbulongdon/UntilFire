@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-01 — Home freedom card, full-bleed curve
+
+- The yellow freedom card on Home (website) is cleaner (John's pick, option B). The curve now runs edge to edge across the bottom of the card, with no axis and no empty gap above it.
+- Today is a dot on the line. Its words moved into one black pill under the date: "$6.6k today · 1% there". The separate progress bar is gone, since the curve already shows it.
+- Coast FIRE, 25%, 50% and the goal each drop a dotted line to one label row at the bottom, so labels never sit on the line or on each other. A label too close to its neighbour or to the goal is left out.
+- The "Investments / Safety cash" line under the card moved into the hover on today's point.
+
 ## 2026-11-01 — Explore globe fills the page
 
 - On a computer, Plan → Explore (and the public /explore page) now gives the globe everything to the right of the sidebar, edge to edge. The filters, Your numbers and the city list float over it in a rounded panel on the right.
