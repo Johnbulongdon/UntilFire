@@ -3,7 +3,7 @@ import { paydaySpending, paydayRemainder } from '@/lib/payday-spending';
 
 import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
 
-import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import {
@@ -4633,6 +4633,7 @@ const SUB_ICONS: Record<string, string> = {
   "Explore": "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18",
   Citizenship: "M6 3h12v18H6zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM9 17h6",
   Learn: "M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2zM4 19V5M8 7h8",
+  Offers: "M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z",
 };
 /** Scenarios sits inside What if, so the section list lights What if for it. */
 const whatIfOf = (sub: "menu" | "invest-sim" | "compare") => (sub === "invest-sim" ? "compare" : sub);
@@ -4695,24 +4696,6 @@ export default function Dashboard() {
   const [referredTrial, setReferredTrial] = useState(false);
   const [upgradeSource, setUpgradeSource] = useState("dashboard_upgrade_modal");
   const [upgradedBanner, setUpgradedBanner] = useState(false);
-  const [isDark, setIsDark] = useState(false);
-
-  useLayoutEffect(() => {
-    setIsDark(document.documentElement.classList.contains('dark'));
-    const obs = new MutationObserver(() =>
-      setIsDark(document.documentElement.classList.contains('dark'))
-    );
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => obs.disconnect();
-  }, []);
-
-  function toggleDark() {
-    const next = !document.documentElement.classList.contains('dark');
-    document.documentElement.classList.toggle('dark', next);
-    try { localStorage.setItem('uf-theme', next ? 'dark' : 'light'); } catch {}
-    setIsDark(next);
-  }
-
   const wasUpgradedRef = useRef(false);
   // hadSubscription, not just plan: someone who subscribed once and cancelled
   // cannot have another trial, and the upgrade modal has to know that before it
@@ -5842,8 +5825,8 @@ export default function Dashboard() {
         .uf-sidebar-logo { padding: 22px 20px 20px; font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 800; color: var(--uf-ink); letter-spacing: -0.04em; text-decoration: none; display: block; border-bottom: 1px solid var(--uf-border); }
         .uf-sidebar-logo span { color: var(--uf-teal); }
         .uf-sidebar-freedom { padding: 14px 20px; border-bottom: 1px solid var(--uf-border); display: flex; flex-direction: column; gap: 2px; }
-        .uf-sidebar-freedom-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--uf-text-3); }
-        .uf-sidebar-freedom-value { font-size: 15px; font-weight: 800; color: var(--uf-text); font-family: 'Inter', sans-serif; }
+        .uf-sidebar-freedom-label { font-size: 12px; font-weight: 600; color: var(--uf-ink-2); }
+        .uf-sidebar-freedom-value { align-self: flex-start; margin-top: 2px; background: var(--uf-yellow); color: #151719; border-radius: 999px; padding: 3px 10px; font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; font-family: 'Inter', sans-serif; }
         .uf-budget-grid { display: grid; grid-template-columns: 1fr 260px; gap: 16px; align-items: start; }
         @media (max-width: 720px) { .uf-budget-grid { grid-template-columns: 1fr; } }
         .uf-budget-row { display: grid; grid-template-columns: 68px 1fr auto; align-items: center; gap: 16px; padding: 10px 18px; margin: 0 -18px; border-bottom: 1px solid var(--uf-border); border-radius: 8px; transition: background 0.12s; cursor: pointer; }
@@ -5860,27 +5843,28 @@ export default function Dashboard() {
         .uf-budget-pencil { opacity: 0; transition: opacity 0.12s; }
         .uf-budget-row:hover .uf-budget-pencil { opacity: 1; }
         .uf-sidebar-nav { padding: 16px 10px 4px; display: flex; flex-direction: column; gap: 2px; }
-        .uf-sidebar-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 8px; font-size: 14px; font-weight: 700; color: var(--uf-text-2); cursor: pointer; border: 1px solid transparent; transition: all 0.15s; background: transparent; width: 100%; text-align: left; font-family: 'Inter', sans-serif; }
-        .uf-sidebar-item:hover { background: var(--uf-surface); color: var(--uf-ink); }
-        .uf-sidebar-item.active { background: var(--uf-green-50); border-color: var(--uf-green); color: var(--uf-green-700); }
+        .uf-sidebar-item { display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 999px; font-size: 14px; font-weight: 700; color: var(--uf-text-2); cursor: pointer; border: 1px solid transparent; transition: background-color 160ms ease, color 160ms ease; background: transparent; width: 100%; text-align: left; font-family: 'Inter', sans-serif; }
+        .uf-sidebar-item:hover { background: var(--uf-surface-2); color: var(--uf-ink); }
+        /* You are here: freedom yellow with fixed dark ink in both themes, no outline. */
+        .uf-sidebar-item.active { background: var(--uf-yellow); border-color: transparent; color: #151719; }
         .uf-sidebar-icon { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: inherit; }
         .uf-sidebar-bottom { margin-top: auto; padding: 14px 16px; border-top: 1px solid var(--uf-border); display: flex; flex-direction: column; gap: 8px; }
 
         .uf-sidebar-sub-nav { display: flex; flex-direction: column; gap: 1px; margin: 2px 0 4px; padding: 0 10px 0 28px; }
-        .uf-sidebar-sub-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; font-size: 13px; font-weight: 700; color: var(--uf-text-2); cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-family: 'Inter', sans-serif; transition: all 0.13s; position: relative; }
+        .uf-sidebar-sub-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--uf-text-2); cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; font-family: 'Inter', sans-serif; transition: all 0.13s; position: relative; }
         .uf-sidebar-sub-item::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 4px; height: 4px; border-radius: 50%; background: var(--uf-border); transition: all 0.13s; }
-        .uf-sidebar-sub-item:hover { background: var(--uf-surface); color: var(--uf-ink); }
+        .uf-sidebar-sub-item:hover { background: var(--uf-surface-2); color: var(--uf-ink); }
         .uf-sidebar-sub-item:hover::before { background: var(--uf-green); }
-        .uf-sidebar-sub-item.active { color: var(--uf-green-700); font-weight: 800; }
+        .uf-sidebar-sub-item.active { color: var(--uf-ink); font-weight: 800; }
         .uf-sidebar-sub-item.active::before { background: var(--uf-green); width: 6px; height: 6px; }
-        .dark .uf-sidebar-sub-item:hover { background: var(--uf-surface); color: var(--uf-ink); }
-        .dark .uf-sidebar-sub-item.active { color: var(--uf-green-700); }
+        .dark .uf-sidebar-sub-item:hover { background: var(--uf-surface-2); color: var(--uf-ink); }
+        .dark .uf-sidebar-sub-item.active { color: var(--uf-ink); }
         .dark .uf-sidebar-sub-item.active::before { background: var(--uf-green); }
         .uf-sidebar-sub-item:has(.uf-sidebar-sub-icon)::before { display: none; }
         .uf-sidebar-sub-icon { flex: none; color: var(--uf-ink-3); transition: color 0.13s; }
         .uf-sidebar-sub-item:hover .uf-sidebar-sub-icon { color: var(--uf-ink-2); }
         .uf-sidebar-sub-item.active:has(.uf-sidebar-sub-icon) { background: var(--uf-surface-2); }
-        .uf-sidebar-sub-item.active .uf-sidebar-sub-icon { color: var(--uf-green-700); }
+        .uf-sidebar-sub-item.active .uf-sidebar-sub-icon { color: var(--uf-ink); }
         /* Desktop has the sidebar, which already carries all three nav levels —
            the horizontal switches are the mobile equivalent and would just
            duplicate it. These class names must match the ones in the JSX:
@@ -5896,8 +5880,8 @@ export default function Dashboard() {
 
         select option { background: var(--uf-card); color: var(--uf-text); }
 
-        .dark .uf-sidebar-item:hover { background: var(--uf-surface); color: var(--uf-ink); }
-        .dark .uf-sidebar-item.active { background: var(--uf-green-50); border-color: var(--uf-green); color: var(--uf-green-700); }
+        .dark .uf-sidebar-item:hover { background: var(--uf-surface-2); color: var(--uf-ink); }
+        .dark .uf-sidebar-item.active { background: var(--uf-yellow); border-color: transparent; color: #151719; }
         .dark .uf-sidebar-logo { color: var(--uf-green); }
 
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
@@ -5905,7 +5889,7 @@ export default function Dashboard() {
         .uf-mobile-topbar, .uf-mobile-bottom-nav, .uf-mobile-drawer-backdrop, .uf-mobile-drawer { display: none; }
         .uf-section-switch { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 22px; }
         .uf-section-button { border: 1px solid var(--uf-border); background: var(--uf-card); color: var(--uf-text-2); border-radius: 999px; padding: 9px 13px; font-size: 12px; font-weight: 800; white-space: nowrap; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: var(--uf-e1); }
-        .uf-section-button.active { border-color: var(--uf-green); background: var(--uf-green-50); color: var(--uf-green-700); }
+        .uf-section-button.active { border-color: var(--uf-yellow); background: var(--uf-yellow); color: #151719; }
         .uf-holdings-grid { display: grid; grid-template-columns: 80px minmax(0, 1fr) 80px 90px 100px; gap: 8px; min-width: 0; }
         .uf-holdings-grid > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -5919,9 +5903,9 @@ export default function Dashboard() {
           .uf-mobile-top-title span { font-size: 11px; color: var(--uf-text-2); font-weight: 600; }
           .uf-mobile-bottom-nav { display: grid; grid-template-columns: repeat(4, 1fr); position: fixed; left: 0; right: 0; bottom: 0; z-index: 120; background: var(--uf-topbar-glass); border-top: 1px solid var(--uf-border); padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); box-shadow: var(--uf-e2); }
           .uf-mobile-bottom-item { border: none; background: transparent; color: var(--uf-text-2); border-radius: 14px; min-width: 0; padding: 7px 4px 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; }
-          .uf-mobile-bottom-item.active { background: var(--uf-green-50); color: var(--uf-green-700); }
+          .uf-mobile-bottom-item.active { background: var(--uf-yellow); color: #151719; }
           .uf-mobile-bottom-icon { width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; }
-          .uf-mobile-drawer-backdrop { display: block; position: fixed; inset: 0; z-index: 130; background: rgba(15,23,42,0.45); opacity: 0; pointer-events: none; transition: opacity 180ms ease; }
+          .uf-mobile-drawer-backdrop { display: block; position: fixed; inset: 0; z-index: 130; background: var(--uf-scrim); opacity: 0; pointer-events: none; transition: opacity 180ms ease; }
           .uf-mobile-drawer-backdrop.open { opacity: 1; pointer-events: auto; }
           .uf-mobile-drawer { display: flex; position: fixed; top: 0; bottom: 0; left: 0; z-index: 140; width: min(86vw, 340px); transform: translateX(-102%); transition: transform 220ms cubic-bezier(0.2,0,0,1); background: var(--uf-drawer-bg); box-shadow: 20px 0 42px rgba(15,23,42,0.2); flex-direction: column; padding: calc(18px + env(safe-area-inset-top, 0px)) 16px calc(18px + env(safe-area-inset-bottom, 0px)); }
           .uf-mobile-drawer.open { transform: translateX(0); }
@@ -5931,13 +5915,14 @@ export default function Dashboard() {
           .uf-mobile-drawer-item { border: 1px solid transparent; background: transparent; color: var(--uf-text); text-align: left; border-radius: 12px; padding: 12px 12px; cursor: pointer; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; gap: 3px; }
           .uf-mobile-drawer-item strong { font-size: 14px; }
           .uf-mobile-drawer-item span { font-size: 12px; color: var(--uf-text-2); line-height: 1.4; }
-          .uf-mobile-drawer-item.active { background: var(--uf-green-50); border-color: var(--uf-green); color: var(--uf-green-700); }
+          .uf-mobile-drawer-item.active { background: var(--uf-yellow); border-color: transparent; color: #151719; }
+          .uf-mobile-drawer-item.active span { color: #3F434C; }
           .uf-mobile-drawer-actions { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--uf-border); display: flex; flex-direction: column; gap: 8px; }
           .uf-mobile-drawer-link { color: var(--uf-text); text-decoration: none; font-size: 13px; font-weight: 800; padding: 10px 12px; border-radius: 10px; background: var(--uf-surface-2); }
           .uf-section-switch { display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; margin: -2px -16px 18px; padding: 0 16px 2px; }
           .uf-section-switch::-webkit-scrollbar { display: none; }
           .uf-section-button { border: 1px solid var(--uf-border); background: var(--uf-card); color: var(--uf-text-2); border-radius: 999px; padding: 9px 13px; font-size: 12px; font-weight: 800; white-space: nowrap; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: var(--uf-e1); }
-          .uf-section-button.active { border-color: var(--uf-green); background: var(--uf-green-50); color: var(--uf-green-700); }
+          .uf-section-button.active { border-color: var(--uf-yellow); background: var(--uf-yellow); color: #151719; }
           .uf-main { overflow-y: unset; overflow-x: hidden; }
           .uf-content { padding: calc(72px + env(safe-area-inset-top, 0px)) 16px calc(112px + env(safe-area-inset-bottom, 0px)); }
           .uf-overview-grid-2,
@@ -5987,16 +5972,6 @@ export default function Dashboard() {
         </div>
         <button type="button" onClick={() => window.dispatchEvent(new Event("uf:feedback"))} aria-label="Send feedback" className="uf-mobile-menu-button">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        </button>
-        <button
-          onClick={toggleDark}
-          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          className="uf-mobile-menu-button"
-        >
-          {isDark
-            ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-            : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          }
         </button>
       </header>
 
@@ -6090,20 +6065,6 @@ export default function Dashboard() {
           </nav>
 
           <div className="uf-sidebar-bottom">
-            <button
-              onClick={toggleDark}
-              style={{
-                display: "flex", alignItems: "center", gap: 8,
-                background: "none", border: `1px solid var(--uf-border)`,
-                borderRadius: 8, padding: "7px 10px", cursor: "pointer",
-                color: "var(--uf-text-2)", fontSize: 12, fontWeight: 700,
-                fontFamily: "Inter, sans-serif", width: "100%",
-                transition: "all 0.15s",
-              }}
-            >
-              <span style={{ fontSize: 14 }}>{isDark ? "☀️" : "🌙"}</span>
-              {isDark ? "Light mode" : "Dark mode"}
-            </button>
             <span role="status" className="uf-t-small" style={{ minHeight: 16, color: saveStatus === "saved" ? "var(--uf-pos-ink)" : "var(--uf-ink-3)" }}>
               {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "✓ Saved" : ""}
             </span>

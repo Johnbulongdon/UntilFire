@@ -69,6 +69,8 @@ Profile                       account, household setup, FIRE personality/type,
    confirms payday and bills found in the bank with one tap (D-101); nothing
    is typed on Home and the rows live in Calendar.
 4. **Profile** — if it's about the account rather than the money, it goes here.
+   That includes Appearance (light/dark), which lives only in Profile → Account
+   (1 Nov 2026), not in the sidebar or top bar.
 5. If a feature seems to fit two groups, it is **two features**. Split it.
 6. Every tab must be reachable from a nav array. **One array per nav — never a
    hand-kept second copy.**

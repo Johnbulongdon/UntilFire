@@ -7,6 +7,12 @@
 - Creator dashboard links directly to provider setup. Member-to-creator upgrades retain existing invite codes; creator lookup failures show a retry state rather than signup.
 - Invite-claim database failures preserve the invite cookie for retry. No commission rules, provider activation or financial values change. Requires the additive migration before callers are released; implementation and rollout contract: docs/design/accounts-tools-journey/README.md.
 
+## 2026-11-01 — Left menu matches Next Horizon
+
+- The page you're on is a yellow pill with dark text in both themes (was a square box with a black or white outline, and a muddy brown in dark mode). Same for the phone bottom bar, the phone menu drawer and the Money/Plan section pills.
+- Sub-pages are pills; hover shows a visible grey (it matched the sidebar before). Offers gets a gift icon like its neighbours.
+- Light/dark choice moved to Profile → Account → Appearance (Light / Dark pills). It is no longer in the sidebar or the phone top bar. The sidebar Freedom date reads in sentence case with a yellow date chip. The phone drawer backdrop uses the shared scrim.
+
 ## 2026-11-01 — Buttons and popups match Next Horizon
 
 - Welcome ("Let's find your FIRE number"), Send feedback and Take a tour popups use the card colour (dark mode no longer shows a bright white box), pill buttons, a yellow welcome tag and icons instead of the 🔥 emoji. The tour spotlight ring is freedom yellow, not teal.
