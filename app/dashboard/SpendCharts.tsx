@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { InfoTip } from "@/components/ui";
 import MarkedMonth, { type MarkedEvent } from "./MarkedMonth";
 import { bucketFor, daysInMonth, type DateRange } from "@/lib/spend-range";
@@ -51,8 +51,10 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLi
   /** Budgeted categories against their budget (forecast while running); unbudgeted spending is shown on its own. */
   vsBudget?: number | null; unbudgeted?: number; forecast: number[] | null; periodLabel: string; fmt: (n: number) => string;
 }) {
-  const W = 360, H = 170, P = 6, base = H - 18;
+  // R leaves room on the right for the end-of-month amounts.
+  const W = 360, H = 190, P = 6, R = 50, base = H - 18;
   const [hover, setHover] = useState<number | null>(null);
+  const gid = useId().replace(/:/g, "");
   const all = useMemo(() => {
     const days: string[] = [];
     for (const m of range.months) for (let d = 1; d <= daysInMonth(m); d++) days.push(`${m}-${String(d).padStart(2, "0")}`);
@@ -74,7 +76,7 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLi
   const step = (() => { const raw = max / 4, mag = 10 ** Math.floor(Math.log10(raw)); return [1, 2, 2.5, 5, 10].map((k) => k * mag).find((v) => v >= raw) ?? raw; })();
   const grid = [1, 2, 3, 4].map((k) => k * step).filter((v) => v < max * 0.95);
   const short = (v: number) => v >= 1000 ? `${fmt(v / 1000).replace(/\.0+$/, "")}k` : fmt(v);
-  const x = (i: number) => P + (i / Math.max(1, all.length - 1)) * (W - 2 * P);
+  const x = (i: number) => P + (i / Math.max(1, all.length - 1)) * (W - P - R);
   const y = (v: number) => base - (v / max) * (base - 12);
   const path = (a: number[]) => a.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
   const end = mine.length - 1, gap = usual && end >= 0 ? mine[end] - usual[end] : null;
@@ -86,7 +88,7 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLi
   // Hover (or touch) anywhere on the chart to read the exact numbers for that day.
   const pick = (e: React.PointerEvent<SVGSVGElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
-    const i = Math.round((((e.clientX - r.left) / r.width) * W - P) / (W - 2 * P) * (all.length - 1));
+    const i = Math.round((((e.clientX - r.left) / r.width) * W - P) / (W - P - R) * (all.length - 1));
     setHover(Math.max(0, Math.min(all.length - 1, i)));
   };
   const day = (iso: string) => { const [yy, mm, dd] = iso.split("-").map(Number); return new Date(yy, mm - 1, dd).toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
@@ -109,27 +111,44 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLi
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block", overflow: "visible", touchAction: "pan-y", cursor: "crosshair" }} role="img"
       onPointerMove={pick} onPointerDown={pick} onPointerLeave={() => setHover(null)}
       aria-label={`${periodLabel}: ${fmt(mine.at(-1) ?? 0)}${gap != null ? `, ${fmt(Math.abs(gap))} ${gap >= 0 ? "more" : "less"} than past months by this day` : ""}${budgetTotal ? `, budget ${fmt(budgetTotal)}` : ""}`}>
-      {budgetTotal != null && (
-        <>
-          {/* Lilac, not grey: in light mode a dark grey budget line read as "This month" running across the whole month. */}
-          {budgetPath && <path d={path(budgetPath)} fill="none" stroke="var(--uf-chart-2)" strokeWidth={2} strokeLinejoin="round" />}
-        </>
-      )}
+      <defs>
+        <linearGradient id={`${gid}-spent`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" style={{ stopColor: "var(--uf-chart-1)", stopOpacity: 0.22 }} /><stop offset="1" style={{ stopColor: "var(--uf-chart-1)", stopOpacity: 0 }} />
+        </linearGradient>
+        <linearGradient id={`${gid}-budget`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" style={{ stopColor: "var(--uf-chart-2)", stopOpacity: 0.18 }} /><stop offset="1" style={{ stopColor: "var(--uf-chart-2)", stopOpacity: 0.02 }} />
+        </linearGradient>
+      </defs>
       {grid.map((v) => (
         <g key={v}>
-          <line x1={P} x2={W - P} y1={y(v)} y2={y(v)} stroke="var(--uf-border)" strokeWidth={1} />
+          <line x1={P} x2={W - R} y1={y(v)} y2={y(v)} stroke="var(--uf-border)" strokeWidth={1} strokeDasharray="2 4" />
           <text x={P} y={y(v) - 3} style={{ ...mono, fontSize: 10, fill: "var(--uf-ink-3)" }}>{short(v)}</text>
         </g>
       ))}
-      {usual && <path d={path(usual)} fill="none" stroke="var(--uf-ink-3)" strokeWidth={2} strokeDasharray="4 4" />}
-      {forecast && <path d={forecast.map((v, i) => Number.isNaN(v) ? "" : `${i === end0 ? "M" : "L"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ")} fill="none" stroke="var(--uf-chart-1)" strokeWidth={2} strokeDasharray="1 4" strokeLinecap="round" />}
-      {end >= 0 && <path d={`${path(mine)} L${x(end)} ${base} L${x(0)} ${base} Z`} fill="color-mix(in oklab, var(--uf-chart-1) 14%, transparent)" />}
-      {end >= 0 && <path d={path(mine)} fill="none" stroke="var(--uf-chart-1)" strokeWidth={2.5} strokeLinejoin="round" />}
-      {end >= 0 && <circle cx={x(end)} cy={y(mine[end])} r={5} fill="var(--uf-chart-1)" stroke="var(--uf-card)" strokeWidth={2} />}
-      <line x1={P} x2={W - P} y1={base} y2={base} stroke="var(--uf-border)" />
+      {/* The budget is a soft lilac zone with its edge drawn; lilac, not grey, which read as "This month" in light mode. */}
+      {budgetPath && <path d={`${path(budgetPath)} L${x(all.length - 1)} ${base} L${x(0)} ${base} Z`} fill={`url(#${gid}-budget)`} />}
+      {budgetPath && <path d={path(budgetPath)} fill="none" stroke="var(--uf-chart-2)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />}
+      {usual && <path d={path(usual)} fill="none" stroke="var(--uf-ink-3)" strokeWidth={2} strokeDasharray="4 4" strokeLinecap="round" />}
+      {forecast && <path d={forecast.map((v, i) => Number.isNaN(v) ? "" : `${i === end0 ? "M" : "L"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ")} fill="none" stroke="var(--uf-chart-1)" strokeWidth={2.5} strokeDasharray="0.1 5" strokeLinecap="round" strokeLinejoin="round" />}
+      {end >= 1 && <path d={`${path(mine)} L${x(end)} ${base} L${x(0)} ${base} Z`} fill={`url(#${gid}-spent)`} />}
+      {end >= 1 && <path d={path(mine)} fill="none" stroke="var(--uf-chart-1)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />}
+      <line x1={P} x2={W - R} y1={base} y2={base} stroke="var(--uf-border)" />
+      {end >= 0 && <circle cx={x(end)} cy={y(mine[end])} r={9} fill="var(--uf-chart-1)" opacity={0.18} />}
+      {end >= 0 && <circle cx={x(end)} cy={y(mine[end])} r={4.5} fill="var(--uf-chart-1)" stroke="var(--uf-card)" strokeWidth={2} />}
+      {/* Where each line lands at the end of the month, so the gap reads without hovering. */}
+      {(() => {
+        const ends = [projected != null ? { v: projected, c: "var(--uf-ink)" } : end === all.length - 1 ? { v: mine[end], c: "var(--uf-ink)" } : null,
+          budgetTotal != null ? { v: budgetTotal, c: "var(--uf-chart-2)" } : usual ? { v: usual[all.length - 1], c: "var(--uf-ink-3)" } : null]
+          .filter((e): e is { v: number; c: string } => !!e).map((e) => ({ ...e, at: y(e.v) + 4 }));
+        if (ends.length === 2 && Math.abs(ends[0].at - ends[1].at) < 13) {
+          const [hi, lo] = ends[0].at < ends[1].at ? [ends[0], ends[1]] : [ends[1], ends[0]], mid = (hi.at + lo.at) / 2;
+          hi.at = mid - 6.5; lo.at = mid + 6.5;
+        }
+        return ends.map((e) => <text key={e.c} x={W - R + 6} y={e.at} style={{ ...mono, fontSize: 10.5, fontWeight: 700, fill: e.c }}>{fmt(e.v)}</text>);
+      })()}
       {hover != null && (
         <>
-          <line x1={x(hover)} x2={x(hover)} y1={8} y2={base} stroke="var(--uf-ink-3)" strokeWidth={1} />
+          <line x1={x(hover)} x2={x(hover)} y1={8} y2={base} stroke="var(--uf-ink-3)" strokeWidth={1} strokeDasharray="2 3" />
           {hover <= end && <circle cx={x(hover)} cy={y(mine[hover])} r={4} fill="var(--uf-chart-1)" stroke="var(--uf-card)" strokeWidth={2} />}
           {usual && <circle cx={x(hover)} cy={y(usual[hover])} r={3} fill="var(--uf-card)" stroke="var(--uf-ink-3)" strokeWidth={1.5} />}
           {budgetPath && <circle cx={x(hover)} cy={y(budgetPath[hover])} r={3} fill="var(--uf-card)" stroke="var(--uf-chart-2)" strokeWidth={1.5} />}
