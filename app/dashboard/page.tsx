@@ -84,7 +84,7 @@ import { isRent } from "@/lib/lease";
 import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
-import { Alert, Button, DateField, ICON_PATHS, Input, SegmentedControl } from "@/components/ui";
+import { Alert, Button, Checkbox, DateField, ICON_PATHS, Input, SegmentedControl } from "@/components/ui";
 import Flag, { flagUri } from "@/app/components/Flag";
 import { stampActive } from "@/lib/last-active";
 import { knownWithdrawalLimit, parseWithdrawalLimit, withdrawalsLeftLabel } from "@/lib/savings-limits";
@@ -3429,7 +3429,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   const isShared = (a: PlaidAccount) => shareOf(a.plaid_account_id, accountShares) < 1;
   const sharedField = (a: PlaidAccount) => onShareToggle && (
     <label className="uf-nw-ef">
-      <input type="checkbox" checked={isShared(a)} onChange={(e) => onShareToggle(a.plaid_account_id, e.target.checked)} />
+      <Checkbox checked={isShared(a)} onChange={(e) => onShareToggle(a.plaid_account_id, e.target.checked)} />
       <span style={{ flex: 1, minWidth: 0 }}>Shared with a partner. Count half of its balance and spending on my freedom date.</span>
     </label>
   );
@@ -3521,7 +3521,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
                   <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700 }}>Accounts that hold it</span>
                   {bankAssets.filter((a) => a.type === "depository").map((a) => (
                     <label key={a.id} className="uf-nw-ef">
-                      <input type="checkbox" checked={efIds.has(a.id)} onChange={() => toggleEfAccount(a.id)} />
+                      <Checkbox checked={efIds.has(a.id)} onChange={() => toggleEfAccount(a.id)} />
                       <span style={{ flex: 1, minWidth: 0 }}>{a.name}</span><Fig>{fmtMoney(a.balance_current ?? 0)}</Fig>
                     </label>
                   ))}
@@ -3547,7 +3547,6 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
       <PlaidConnect layout="rows" onItems={setBanks} onTransactionsImported={onRefreshAccounts} onUpgradeClick={onUpgradeClick} />
       <style>{`
         .uf-nw-ef { display: flex; align-items: center; gap: 10px; min-height: 36px; font-size: 14px; color: var(--uf-ink-2); cursor: pointer; }
-        .uf-nw-ef input { width: 18px; height: 18px; margin: 0; accent-color: var(--uf-green); flex: none; cursor: pointer; }
         .uf-nw-ef:has(input:checked) { color: var(--uf-ink); }
         .uf-nw-ef input:focus-visible, .uf-nw-ef-reset:focus-visible { outline: 2px solid var(--uf-green); outline-offset: 2px; }
         .uf-nw-ef-summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-size: 12px; line-height: 1.5; color: var(--uf-ink-2); }

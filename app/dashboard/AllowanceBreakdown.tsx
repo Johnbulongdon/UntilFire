@@ -14,7 +14,7 @@
  */
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { Button } from "@/components/ui";
+import { Button, Checkbox } from "@/components/ui";
 import type { AllowanceBasis } from "@/lib/contribution-ladder";
 
 type NeedsBasis = Extract<AllowanceBasis, { kind: "needs" }>;
@@ -146,8 +146,8 @@ export default function AllowanceBreakdown({ basis, onSetExclusion, variant = "t
                   </span>
                   {onSetExclusion && (
                     <label className="uf-bd-leave">
-                      <input
-                        type="checkbox" checked={false}
+                      <Checkbox
+                        size="sm" checked={false}
                         aria-label={`Leave ${label(c.category)} out of the estimate`}
                         onChange={() => { setPinned(true); setAsking({ category: c.category, amount: c.amount }); }}
                       />
@@ -175,8 +175,8 @@ export default function AllowanceBreakdown({ basis, onSetExclusion, variant = "t
                     <span className="uf-bd-bar" aria-hidden="true" />
                     {onSetExclusion && (
                       <label className="uf-bd-leave">
-                        <input
-                          type="checkbox" checked
+                        <Checkbox
+                          size="sm" checked
                           aria-label={`Count ${label(e.category)} again`}
                           onChange={() => onSetExclusion(e.category, null, basis.monthKey)}
                         />
@@ -269,7 +269,6 @@ export default function AllowanceBreakdown({ basis, onSetExclusion, variant = "t
           display: inline-flex; align-items: center; gap: 4px; min-height: 24px;
           font-size: 11px; color: var(--uf-ink-2); cursor: pointer; white-space: nowrap;
         }
-        .uf-bd-leave input { width: 16px; height: 16px; margin: 0; accent-color: var(--uf-green); cursor: pointer; }
         .uf-bd-row.is-out .uf-bd-cat, .uf-bd-row.is-out .uf-bd-amt { color: var(--uf-ink-2); }
         .uf-bd-scope { margin-left: var(--uf-s2); font-size: 11px; font-weight: 400; color: var(--uf-ink-2); }
         .uf-bd-group { margin-top: var(--uf-s2); }

@@ -7,7 +7,7 @@ import {
   formatCents, REFERRAL_HOLD_DAYS, REFERRAL_MIN_PAYOUT_CENTS,
   REFERRAL_RATE_LABEL, REFERRAL_TIER_CUSTOMERS, REFERRAL_TIER_RATE_LABEL, type PayoutMethod,
 } from "@/lib/referrals";
-import { Badge, Button, Card, Field, Input, Progress, SegmentedControl, Stat } from "@/components/ui";
+import { Badge, Button, Card, Checkbox, Field, Input, Progress, SegmentedControl, Stat } from "@/components/ui";
 import styles from "./InvitePitch.module.css";
 
 interface Me {
@@ -128,7 +128,7 @@ function JoinForm({ token, onJoined, existingCode }: { token: string; onJoined: 
         <Input id="ref-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
       </Field>
       <label className="uf-t-small" style={{ display: "flex", gap: "var(--uf-s2)", alignItems: "flex-start", color: "var(--uf-ink-2)" }}>
-        <input type="checkbox" checked={accept} onChange={(e) => setAccept(e.target.checked)} style={{ marginTop: 3 }} />
+        <Checkbox checked={accept} onChange={(e) => setAccept(e.target.checked)} style={{ marginTop: 1 }} />
         <span>I accept the <Link href="/invite/terms" style={{ color: "var(--uf-green)" }} target="_blank">terms</Link>, and I&apos;ll tell readers it&apos;s an affiliate link.</span>
       </label>
       {error && <p role="alert" className="uf-t-small" style={{ margin: 0, color: "var(--uf-neg-ink)" }}>{error}</p>}

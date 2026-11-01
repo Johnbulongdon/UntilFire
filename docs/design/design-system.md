@@ -87,6 +87,10 @@ Popups use `--uf-card` with a `--uf-border` line, `--uf-r-modal` corners, `--uf-
 
 Web date fields use `DateField` (components/ui), never `<input type="date">`, whose browser popup ignores our type, corners and dark mode. The field shows "Mon, Nov 30, 2026" with a calendar icon; the popup is a `--uf-card` panel with `--uf-r-card` corners, Sunday-first like the Calendar, today in freedom yellow with fixed dark ink, the chosen day in ink, and a black Today pill (plus Clear when the date is optional). Value stays a "YYYY-MM-DD" string. Keyboard: arrows, Page Up/Down, Enter, Esc. Styles: `.uf-date-*` in app/globals.css.
 
+## Checkbox — 1 November 2026
+
+Web tick boxes use `Checkbox` (components/ui), never a bare `<input type="checkbox">`, whose browser square ignores our corners and dark mode. It is a real checkbox underneath, so labels, keyboard and screen readers work unchanged. Unticked: a 20px box with 6px corners, `--uf-border-2` edge on `--uf-card`. Ticked: an `--uf-ink` box with a `--uf-card` tick, so it flips correctly in dark mode. `size="sm"` (16px) for dense rows such as Leave out. Disabled fades to 45%. Focus ring 2px `--uf-ink`. Put the label text after the box with a 10px gap, one option per row. Styles: `.uf-check` in app/globals.css.
+
 ## Native supporting surfaces
 
 31 October refinement: Money shortcuts and Plan tools use multiple approved pastel fills, with fixed dark ink in either theme. Profile uses pastel settings/FIRE-type icon wells. Summary chips use yellow freedom, blue budget and mint safety. Black primary actions and existing semantic financial status colours remain distinct. Contribution rungs retain numbers and labels alongside decorative pastel bars; unfilled steps use theme ink. See mobile-pastels/README.md for implementation checks and device limitations.

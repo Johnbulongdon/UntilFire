@@ -2,7 +2,7 @@
 import { reserveToolHandoff } from "@/lib/tool-handoff";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui";
+import { Button, Checkbox } from "@/components/ui";
 import { rateLabel } from "@/lib/partner-offers";
 import type { ToolOffer } from "@/lib/accounts-tools-client";
 import { isSetupGoal, type SetupGoal } from "@/lib/account-setup";
@@ -205,8 +205,7 @@ function OffersBrowser({ plan }: { plan?: PlanAccountPicker }) {
                   View details →
                 </Button>
                 <label className={s.check}>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={compare.includes(o.slug)}
                     disabled={!compare.includes(o.slug) && compare.length >= 2}
                     onChange={() =>

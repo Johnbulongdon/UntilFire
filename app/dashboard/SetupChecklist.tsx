@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@/components/ui";
+import { Button, Checkbox } from "@/components/ui";
 import { supabase } from "@/lib/supabase";
 import { trackSetupChecklist } from "@/lib/analytics";
 import { RECURRENCE_LABEL, type RawTx } from "@/lib/recurring-detect";
@@ -268,7 +268,7 @@ export default function SetupChecklist({ userId, facts, freedomYear, untilPayday
                       const on = !unticked.includes(f.key);
                       return (
                         <label key={f.key} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 4px", fontSize: 14, fontWeight: 600, cursor: "pointer", color: on ? "var(--uf-ink)" : "var(--uf-ink-3)" }}>
-                          <input type="checkbox" className="uf-setup-check" checked={on}
+                          <Checkbox checked={on}
                             onChange={() => setUnticked((u) => (on ? [...u, f.key] : u.filter((k) => k !== f.key)))} />
                           <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.description}</span>
                           <span style={mono}>{fmt(f.amountUSD)}</span>
@@ -324,8 +324,7 @@ function SetupStyles() {
       .uf-setup-fold { width: 36px; height: 36px; border-radius: 10px; border: none; background: transparent; color: var(--uf-ink-3); cursor: pointer;
         display: flex; align-items: center; justify-content: center; }
       .uf-setup-fold:hover { background: var(--uf-surface); }
-      .uf-setup-pill:focus-visible, .uf-setup-fold:focus-visible, .uf-setup-check:focus-visible { outline: 2px solid var(--uf-green); outline-offset: 2px; }
-      .uf-setup-check { width: 20px; height: 20px; margin: 0; flex-shrink: 0; accent-color: var(--uf-green); cursor: pointer; }
+      .uf-setup-pill:focus-visible, .uf-setup-fold:focus-visible { outline: 2px solid var(--uf-green); outline-offset: 2px; }
     `}</style>
   );
 }
