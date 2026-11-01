@@ -1,6 +1,11 @@
 # Changelog
 
 <<<<<<< HEAD
+## 2026-11-01 — Accounts & tools gets its icon
+
+- In the left menu, "Accounts & tools" under Money now has a wallet icon and lines up with the other pages. It lost its icon when Offers was renamed, so it fell back to a small dot sitting further left.
+- Any future menu page without an icon keeps the same left edge instead of showing a dot.
+
 ## 2026-11-01 — Creator and account setup navigation (in review)
 
 - Referral links use approved provider programmes and matching HTTPS domains; web/phone now show the provider website and flag mismatches before submitting. Connected accounts are not required.

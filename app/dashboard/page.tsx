@@ -4633,14 +4633,17 @@ const SUB_ICONS: Record<string, string> = {
   "Explore": "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18",
   Citizenship: "M6 3h12v18H6zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM9 17h6",
   Learn: "M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2zM4 19V5M8 7h8",
-  Offers: "M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 1 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 1 0 0-5C13 2 12 7 12 7z",
+  // Wallet: where your money is kept (renamed from Offers in #354; the old key left it iconless).
+  "Accounts & tools": "M3 7a2 2 0 0 1 2-2h13v4M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2zM16 14.5h.01",
 };
 /** Scenarios sits inside What if, so the section list lights What if for it. */
 const whatIfOf = (sub: "menu" | "invest-sim" | "compare") => (sub === "invest-sim" ? "compare" : sub);
 
 function SubIcon({ label }: { label: string }) {
   const d = SUB_ICONS[label];
-  return d ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="uf-sidebar-sub-icon"><path d={d} /></svg> : null;
+  return d ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="uf-sidebar-sub-icon"><path d={d} /></svg>
+    // A page with no icon yet keeps the same left edge instead of falling back to a dot.
+    : <span aria-hidden className="uf-sidebar-sub-icon" style={{ display: "inline-block", width: 15, height: 15 }} />;
 }
 
 const CASHFLOW_SUB_TABS: { key: CashflowSubTab; label: string }[] = [
