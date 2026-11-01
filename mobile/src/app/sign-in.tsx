@@ -1,8 +1,9 @@
+import { useAppearance } from '@/state/appearance'
 import { router } from 'expo-router'
 import * as AppleAuthentication from 'expo-apple-authentication'
 import { nativeBuild } from '@/lib/native-build'
 import { useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, TextInput, useColorScheme, View } from 'react-native'
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, TextInput, View } from 'react-native'
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
@@ -21,7 +22,7 @@ const RESEND_AFTER_S = 60
 /** Sign in with an emailed 6-digit code: the same account and the same flow as untilfire.com/login. */
 export default function SignIn() {
   const { session, sendCode, verifyCode, signInWithGoogle, signInWithApple } = useAuth()
-  const scheme = useColorScheme()
+  const { scheme } = useAppearance()
   // Sign in with Apple needs the app's own build (our bundle ID), so it never shows in Expo Go.
   const [appleReady, setAppleReady] = useState(false)
   useEffect(() => { if (nativeBuild) AppleAuthentication.isAvailableAsync().then(setAppleReady).catch(() => {}) }, [])
@@ -78,7 +79,7 @@ export default function SignIn() {
             <Animated.View entering={FadeInDown.duration(400)}>
               <Text className="font-display text-[32px] font-bold leading-10 tracking-tight text-ink">Sign in to UntilFire</Text>
               <Text className="mt-3 text-[16px] leading-6 text-ink-2">
-                The same account as untilfire.com. We'll email you a 6-digit code, no password needed.
+                The same account as untilfire.com. We&apos;ll email you a 6-digit code, no password needed.
               </Text>
               <TextInput
                 accessibilityLabel="Email"

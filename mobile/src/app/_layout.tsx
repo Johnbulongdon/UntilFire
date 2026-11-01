@@ -1,9 +1,10 @@
+import { AppearanceProvider, useAppearance } from '@/state/appearance'
 import '../global.css'
 
 import { useFonts } from 'expo-font'
 import { Stack, usePathname, type ErrorBoundaryProps } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
-import { useColorScheme, View } from 'react-native'
+import { View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { useEffect } from 'react'
 
@@ -58,8 +59,8 @@ function RootLayout() {
   }, [loaded, error])
   // The monthly check-in gave way to the daily Today reminder (D-73); stop any still scheduled.
   useEffect(() => { cancelMonthlyCheckIn().catch(() => {}) }, [])
-  // Light or dark follows the phone. The palette is set before anything renders with it.
-  const scheme = useColorScheme() === 'dark' ? 'dark' : 'light'
+  // Apply the saved appearance before rendering the app; System follows the phone.
+  const { scheme } = useAppearance()
   setPalette(scheme)
   if (!loaded && !error) return null
 
@@ -127,4 +128,5 @@ function ScreenViews() {
   return null
 }
 
-export default withCrashReporting(RootLayout)
+function RootWithAppearance() { return <AppearanceProvider><RootLayout /></AppearanceProvider> }
+export default withCrashReporting(RootWithAppearance)

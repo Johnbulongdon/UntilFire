@@ -232,3 +232,11 @@ preserves current navigation; it does not authorize a redesign.
 Own provider links: Creator programme → My provider links → back to Creator programme. Web `/invite/provider-links` owns the editor, with an explicit Profile return for ordinary member shortcuts. Phone Profile → Creator programme owns the same capability; Give a month shortcuts preserve their own return. Money is not the editor's parent.
 
 Money → Accounts & tools only discovers/opens providers; a click does not start a Plan task. Plan → Contributions → Account setup opens a picker inside setup, with Back to Account setup and retained provider/country/comparison state. Selecting an existing account opens the nickname editor directly. The outer setup Back goes to Contributions. Legacy editor deep links redirect to the canonical creator area.
+
+## Phone appearance preference (2 November 2026)
+
+Phone: Profile → Settings → Appearance offers System / Light / Dark. System is the default; the explicit choice is stored only on this device, outside financial/account data. Theme hydration finishes before the app renders. App palette/CSS variables, modal ThemeScope, status bar, native tabs, sign-in controls and Home's soft panel use the same effective scheme. Native app appearance uses the installed React Native 0.86 API (`unspecified` restores the OS choice); web uses the context's resolved scheme.
+
+Rapid storage writes are serialized. A late startup read cannot overwrite a new selection. Invalid preferences fall back to System; load/save failures show a retry message. No new dependency, permissions, package script or native configuration. Website placement remains Profile → Account. Phone Settings placement was explicitly approved in this conversation.
+
+Verification: `node --experimental-strip-types --no-warnings scripts/verify-mobile-appearance.mjs`; mobile TypeScript, changed-file lint and platform exports. Installed-device interaction, OS scheduled changes and screen-reader acceptance still need device verification. No claim that this fixes all dark-mode styling defects.

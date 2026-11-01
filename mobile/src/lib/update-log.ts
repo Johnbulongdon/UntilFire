@@ -7,6 +7,7 @@ import * as Updates from 'expo-updates'
  * each line short and in plain words (the founder reads it to check a build).
  */
 export const UPDATE_LOG: { version: string; date: string; changes: string[] }[] = [
+  { version: '0.2.1', date: '2026-11-02', changes: ['Choose System, Light or Dark in Profile settings; your choice stays after restarting'] },
   { version: '0.2.1', date: '2026-11-01', changes: ['Open a payment and tap Make it a bill to put it on Calendar; payments like it tick the bill paid'] },
   { version: '0.2.1', date: '2026-11-01', changes: ['Contributions combines emergency savings, shows cash warnings first and keeps investment details one tap away'] },
   { version: '0.2.1', date: '2026-11-01', changes: ['Manage provider links in Creator programme; browse accounts without leaving your plan or starting one by accident'] },

@@ -1,3 +1,4 @@
+import { AppearanceControl } from '@/components/AppearanceControl'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { nativeBuild, proForSale } from '@/lib/native-build'
 import { router, useFocusEffect } from 'expo-router'
@@ -133,6 +134,7 @@ export default function Profile() {
 
       <Card>
         <Label>Settings</Label>
+          <AppearanceControl />
         {session && (
           <View className="flex-row items-center justify-between gap-3 py-3">
             <RowIcon name="bell.fill" fallback="!" />
