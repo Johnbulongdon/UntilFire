@@ -1,6 +1,7 @@
 import { router } from 'expo-router'
 import { Pressable, View } from 'react-native'
 
+import { Button } from '@/components/Button'
 import { Icon } from '@/components/Icon'
 import { FeatureTile, PLAN_FEATURES } from '@/components/FeatureTile'
 import { ProgressTrack, Screen } from '@/components/Screen'
@@ -35,6 +36,7 @@ export default function PlanHub() {
         </Text>
       </Pressable>
 
+      <View className="gap-3 rounded-card border border-border bg-card p-5"><Text className="text-[20px] font-bold text-ink">Put your plan in motion</Text><Text className="text-[14px] text-ink-2">Use an existing account or find a provider.</Text><Button label="Choose an account" onPress={() => router.push("/plan/account-setup" as never)} /></View>
       <View className="flex-row flex-wrap justify-between" style={{ rowGap: 14 }}>
         {PLAN_FEATURES.map(t => <FeatureTile key={t.to} feature={t}
           onPress={() => { haptic.press(); router.push(t.to as never) }} />)}

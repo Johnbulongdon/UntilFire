@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import ProviderLinkReviews from "./ProviderLinkReviews";
 import { OFFER_KIND_LABEL, OFFER_KINDS, rateLabel, type OfferKind } from "@/lib/partner-offers";
 
 interface AdminOffer {
@@ -17,6 +18,8 @@ interface AdminOffer {
   status?: "live" | "hidden";
   sort: number;
   clicks?: number;
+  country?: string;
+  memberLinksEnabled?: boolean;
 }
 
 const BLANK: AdminOffer = { slug: "", kind: "savings", name: "", blurb: "", rateBps: "", bonusText: "", bonusEndsOn: "", url: "", allowedDomain: "", sort: 0 };
@@ -69,7 +72,7 @@ export default function OffersTab({ token }: { token: string }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <p style={{ margin: 0, fontSize: 14, color: "var(--uf-ink-2)" }}>
-          The accounts users see on Money → Offers, with UntilFire&apos;s link. Users always see who earns from a link.
+          The accounts users see in Accounts & tools. Enable member links only after reviewing the provider’s programme terms.
         </p>
         <button style={button} onClick={() => setEditing({ ...BLANK })}>Add offer</button>
       </div>
@@ -90,6 +93,8 @@ export default function OffersTab({ token }: { token: string }) {
           <label style={small}>Bonus ends on<input style={input} type="date" value={editing.bonusEndsOn ?? ""} onChange={set("bonusEndsOn")} /></label>
           <label style={small}>Provider domain<input style={input} value={editing.allowedDomain} onChange={set("allowedDomain")} placeholder="example.com" /></label>
           <label style={small}>UntilFire&apos;s referral link<input style={input} value={editing.url} onChange={set("url")} placeholder="https://example.com/r/untilfire" /></label>
+          <label style={small}>Country (two-letter code)<input style={input} value={editing.country ?? "US"} onChange={set("country")} maxLength={2} /></label>
+          <label style={{...small, display:"flex",alignItems:"center",gap:8}}><input type="checkbox" checked={editing.memberLinksEnabled===true} onChange={e=>setEditing(o=>o?{...o,memberLinksEnabled:e.target.checked}:o)}/> Programme permits member referral links</label>
           <label style={small}>Order<input style={input} value={editing.sort} onChange={set("sort")} inputMode="numeric" /></label>
           <div style={{ display: "flex", gap: 8, alignItems: "flex-end", justifyContent: "flex-end" }}>
             <button style={button} onClick={() => setEditing(null)}>Cancel</button>
@@ -120,6 +125,7 @@ export default function OffersTab({ token }: { token: string }) {
           </div>
         </div>
       ))}
+      <ProviderLinkReviews token={token} />
     </div>
   );
 }

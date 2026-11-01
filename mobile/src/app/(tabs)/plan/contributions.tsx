@@ -54,6 +54,7 @@ export default function Contributions() {
 
   return (
     <DetailScreen back="Plan" title="Contributions" refreshing={loading} onRefresh={refresh}>
+      <Button kind="quiet" label="Choose an account →" onPress={() => router.push("/plan/account-setup" as never)} />
       {/* Simplified Oct 2026 QA: the amount, when, one button; the working is one tap away. */}
       <Card>
         <Label>{a.done ? 'Made this time' : `Put in by ${a.nextDate.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short' })}`}</Label>

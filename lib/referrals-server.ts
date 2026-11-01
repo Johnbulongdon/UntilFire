@@ -24,11 +24,12 @@ export async function claimReferral(admin: Admin, user: { id: string; created_at
   if (!code) return "no-cookie";
   if (!accountYoungEnoughToClaim(user.created_at)) return "existing-account";
 
-  const { data: partner } = await admin
+  const { data: partner, error: lookupError } = await admin
     .from("referral_partners")
     .select("id, user_id, status, rate_bps, months")
     .eq("code", code)
     .maybeSingle();
+  if (lookupError) throw new Error("Referral attribution unavailable");
   if (!partner || partner.status !== "active") return "unknown-code";
   if (partner.user_id === user.id) return "self-referral";
 
@@ -40,6 +41,7 @@ export async function claimReferral(admin: Admin, user: { id: string; created_at
     rate_bps: partner.rate_bps,
     months: partner.months,
   });
+  if (error && error.code !== "23505") throw new Error("Referral attribution unavailable");
   return error ? "already-attributed" : "claimed";
 }
 

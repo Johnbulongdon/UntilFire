@@ -12,6 +12,7 @@ import styles from "./InvitePitch.module.css";
 
 interface Me {
   partner: null | { code: string; status: "active" | "paused" | "removed"; payout_method: PayoutMethod; payout_email: string };
+  inviteCode?: string | null;
   stats?: {
     visits: number; signups: number; inTrial: number; inTrialWorthCents: number; payingCustomers: number;
     earned: number; pending: number; payable: number; paid: number; readyToPay: boolean;
@@ -32,20 +33,42 @@ export default function CreatorArea() {
   const [token, setToken] = useState<string | null | undefined>(undefined);
   const [me, setMe] = useState<Me | null>(null);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
   const load = useCallback(async (t: string) => {
-    const res = await fetch("/api/referrals/me", { headers: { Authorization: `Bearer ${t}` } });
-    setMe(res.ok ? await res.json() : { partner: null });
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const res = await fetch("/api/referrals/me", { headers: { Authorization: `Bearer ${t}` } });
+      if (!res.ok) throw new Error("Couldn’t load your creator account. Try again.");
+      setMe(await res.json());
+    } catch {
+      setLoadError("Couldn’t load your creator account. Try again.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setToken(session?.access_token ?? null);
       if (session) load(session.access_token);
-    });
+    }).catch(() => setLoadError("Couldn’t load your creator account. Try again."));
   }, [load]);
 
+  if (loadError) {
+    const retry = <div style={{ display: "grid", gap: "var(--uf-s3)", justifyItems: "start" }}>
+      <p role="alert" className="uf-t-small" style={{ margin: 0 }}>{loadError}</p>
+      <Button variant="primary" disabled={loading} onClick={() => token ? void load(token) : window.location.reload()}>{loading ? "Loading…" : "Try again"}</Button>
+    </div>;
+    return me?.partner && token ? <>
+      <div className={styles.inner} style={{ paddingTop: "var(--uf-s5)" }}>{retry}</div>
+      <CreatorDashboard me={me} token={token} onSaved={() => load(token)} />
+    </> : <Hero title="Your creator program">{retry}</Hero>;
+  }
   if (!token || !me) return <Hero title="Your creator program"><p className={`uf-t-small ${styles.onDark}`} style={{ margin: 0 }}>{token === null ? "Sign in to join." : "Loading…"}</p></Hero>;
-  if (!me.partner) return <JoinForm token={token} onJoined={() => load(token)} />;
+  if (!me.partner) return <JoinForm existingCode={me.inviteCode} token={token} onJoined={() => load(token)} />;
   return <CreatorDashboard me={me} token={token} onSaved={() => load(token)} />;
 }
 
@@ -69,8 +92,8 @@ function Hero({ title, children, card }: { title: string; children?: React.React
   );
 }
 
-function JoinForm({ token, onJoined }: { token: string; onJoined: () => void }) {
-  const [code, setCode] = useState("");
+function JoinForm({ token, onJoined, existingCode }: { token: string; onJoined: () => void; existingCode?: string | null }) {
+  const [code, setCode] = useState(existingCode ?? "");
   const [method, setMethod] = useState<PayoutMethod>("paypal");
   const [email, setEmail] = useState("");
   const [accept, setAccept] = useState(false);
@@ -94,10 +117,10 @@ function JoinForm({ token, onJoined }: { token: string; onJoined: () => void }) 
   const form = (
     <form onSubmit={submit} style={{ display: "grid", gap: "var(--uf-s4)" }}>
       <h2 className="uf-t-h3" style={{ margin: 0 }}>Get your link</h2>
-      <Field label="Your link" htmlFor="ref-code" hint="Letters, numbers and hyphens. It can't change later.">
+      <Field label="Your link" htmlFor="ref-code" hint={existingCode ? "Your existing invite link stays the same." : "Letters, numbers and hyphens. It can’t change later."}>
         <div style={{ display: "flex", alignItems: "center", gap: "var(--uf-s2)" }}>
           <span className="uf-t-data" style={{ color: "var(--uf-ink-3)", whiteSpace: "nowrap" }}>untilfire.com/r/</span>
-          <Input id="ref-code" value={code} onChange={(e) => setCode(e.target.value.toLowerCase())} placeholder="jane-saves" autoComplete="off" required style={{ minWidth: 0, flex: 1 }} />
+          <Input id="ref-code" readOnly={!!existingCode} value={code} onChange={(e) => setCode(e.target.value.toLowerCase())} placeholder="jane-saves" autoComplete="off" required style={{ minWidth: 0, flex: 1 }} />
         </div>
       </Field>
       <SegmentedControl label="Get paid by" options={METHODS} value={method} onChange={setMethod} />
@@ -193,6 +216,12 @@ function CreatorDashboard({ me, token, onSaved }: { me: Me; token: string; onSav
         <Stat label="In free trial" value={s.inTrial.toLocaleString()} />
         <Stat label="Paying" value={s.payingCustomers.toLocaleString()} />
       </div>
+
+      <Card style={{ display: "grid", gap: "var(--uf-s3)" }}>
+        <h2 className="uf-t-h3" style={{ margin: 0 }}>My provider links</h2>
+        <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>Add your links for the people you invite. Links go live after approval.</p>
+        <Link href="/dashboard?tab=offers&view=links" className="uf-t-small" style={{ color: "var(--uf-ink)", fontWeight: 700, justifySelf: "start", display: "inline-flex", alignItems: "center", minHeight: 44 }}>Manage my provider links →</Link>
+      </Card>
 
       <EmbedSnippet code={p.code} />
 

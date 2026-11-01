@@ -19,3 +19,7 @@ jobs:
       - run: npm run test:fire-projection
       - run: npm run test:payday-spending
       - run: npm run test:marked-calendar
+
+      - run: node scripts/verify-provider-links.mjs
+      - run: npm run test:partner-offers
+      - run: npm run test:referrals

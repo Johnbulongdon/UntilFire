@@ -2688,7 +2688,7 @@ once a bank connects, and shows zero months of safety before one does).
 
 ### D-81 — October 15: partner offers, from a list UntilFire picks
 
-**Status:** Step 1 built (UntilFire's own links); step 2, creators' links, next.
+**Status:** Step 1 built. Step 2 authorized by John on 1 November; implementation in review in PR #354. Migration and programme activation remain pending.
 **Decision:** Money → Offers ("Where to keep your money") lists high-yield
 savings, bank and brokerage accounts with UntilFire's referral link
 (`partner_offers`, migration 0053; `lib/partner-offers.ts`). Every click goes
@@ -2714,6 +2714,8 @@ live. An idle-cash card for people with banks connected is not built yet.
 **Changed:** the founder chose (2026-10-15) to drop the HYSA empty-state
 card's "We are not recommending any bank here yet"; it now links to Offers
 (`cta: see_offers`), and `test:hysa-empty-state` checks that.
+
+**1 November follow-up (John-authorized):** expand submissions to ordinary members as well as creators, using their existing invite code and immutable account attribution. Money now calls this Accounts & tools, with a focused Plan account-setup step and existing-account bypass. Use the inviter’s approved per-provider link before UntilFire’s fallback; edits return to review. John selected a small neutral link-owner label rather than payout-certainty copy. That choice does not resolve the original provider-terms/disclosure gate: member programmes start disabled and need admin review before activation. Full contract and rollout order: [Accounts & tools](design/accounts-tools-journey/README.md). The original decision/rationale above is retained.
 
 ### D-82 — October 15: where you live and where you retire are two places
 

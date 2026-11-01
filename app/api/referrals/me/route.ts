@@ -30,13 +30,14 @@ export async function GET(req: NextRequest) {
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { user, admin } = auth;
 
-  const { data: partner } = await admin
+  const { data: partner, error: partnerError } = await admin
     .from("referral_partners")
     .select("id, code, status, kind, payout_method, payout_email, rate_bps, months, created_at")
     .eq("user_id", user.id)
     .maybeSingle();
+  if (partnerError) return NextResponse.json({ error: "Couldn’t load your creator account. Try again." }, { status: 503 });
   // A "give a month" link is not the creator program; they can still join it.
-  if (!partner || partner.kind !== "creator") return NextResponse.json({ partner: null });
+  if (!partner || partner.kind !== "creator") return NextResponse.json({ partner: null, inviteCode: partner?.code ?? null });
 
   const [visits, attributions, commissions, payouts] = await Promise.all([
     admin.from("referral_visits").select("id", { count: "exact", head: true }).eq("partner_id", partner.id),
@@ -45,13 +46,18 @@ export async function GET(req: NextRequest) {
     admin.from("referral_payouts").select("amount_cents, method, paid_at").eq("partner_id", partner.id).order("paid_at", { ascending: false }),
   ]);
 
+  if ([visits, attributions, commissions, payouts].some((r) => r.error)) {
+    return NextResponse.json({ error: "Couldn’t load your creator account. Try again." }, { status: 503 });
+  }
+
   // Momentum before money (D-27): readers on Pro who haven't paid yet are
   // in their free trial. Counted, never named.
   const referredIds = (attributions.data ?? []).map((a) => a.referred_user_id);
   const paidIds = new Set((commissions.data ?? []).map((c) => c.referred_user_id));
-  const { data: onPro } = referredIds.length
+  const { data: onPro, error: subscriptionError } = referredIds.length
     ? await admin.from("subscriptions").select("user_id").in("user_id", referredIds).eq("plan", "pro")
-    : { data: [] as { user_id: string }[] };
+    : { data: [] as { user_id: string }[], error: null };
+  if (subscriptionError) return NextResponse.json({ error: "Couldn’t load your creator account. Try again." }, { status: 503 });
   const inTrial = (onPro ?? []).filter((s) => !paidIds.has(s.user_id)).length;
 
   return NextResponse.json({
@@ -74,8 +80,13 @@ export async function POST(req: NextRequest) {
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { user, admin } = auth;
 
+  const { data: friendRow, error: friendError } = await admin
+    .from("referral_partners").select("id, code")
+    .eq("user_id", user.id).eq("kind", "friend").maybeSingle();
+  if (friendError) return NextResponse.json({ error: "Couldn’t load your invite link. Try again." }, { status: 503 });
+
   const body = await req.json().catch(() => ({}));
-  const code = normaliseCode(String(body?.code ?? ""));
+  const code = friendRow?.code ?? normaliseCode(String(body?.code ?? ""));
   if (!code) {
     return NextResponse.json({ error: "Use 3–24 letters, numbers or single hyphens, like jane-saves." }, { status: 400 });
   }
@@ -87,7 +98,8 @@ export async function POST(req: NextRequest) {
   if (body?.acceptTerms !== true) return NextResponse.json({ error: "Please accept the program terms." }, { status: 400 });
 
   // A code held for a creator being pitched: only their email can take it.
-  const { data: hold } = await admin.from("referral_code_holds").select("email").eq("code", code).maybeSingle();
+  const { data: hold, error: holdError } = await admin.from("referral_code_holds").select("email").eq("code", code).maybeSingle();
+  if (holdError) return NextResponse.json({ error: "Couldn’t check your invite link. Try again." }, { status: 503 });
   if (hold && hold.email !== (user.email ?? "").toLowerCase()) {
     return NextResponse.json({ error: "That link is taken. Try another." }, { status: 409 });
   }
@@ -103,19 +115,15 @@ export async function POST(req: NextRequest) {
     terms_accepted_at: new Date().toISOString(),
   };
   // Someone with a "give a month" link becomes a creator on the same row, so
-  // friends they already invited count toward their creator numbers.
-  const { data: friendRow } = await admin
-    .from("referral_partners")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("kind", "friend")
-    .maybeSingle();
-  const { error } = friendRow
-    ? await admin.from("referral_partners").update(creator).eq("id", friendRow.id)
-    : await admin.from("referral_partners").insert({ user_id: user.id, ...creator });
-  if (error) {
+  // friends they already invited count toward their creator numbers. Keep the
+  // existing code too: outstanding invitations must still attribute new signups.
+  const { data: saved, error } = friendRow
+    ? await admin.from("referral_partners").update(creator).eq("id", friendRow.id).eq("kind", "friend").select("id").maybeSingle()
+    : await admin.from("referral_partners").insert({ user_id: user.id, ...creator }).select("id").single();
+  if (error && error.code !== "23505") return NextResponse.json({ error: "Couldn’t create your creator account. Try again." }, { status: 503 });
+  if (error || !saved) {
     // Unique violation: either the code is taken or this account already joined.
-    const taken = error.code === "23505" && error.message.includes("code");
+    const taken = error?.code === "23505" && error.message?.includes("code");
     return NextResponse.json(
       { error: taken ? "That link is taken. Try another." : "You're already in the program." },
       { status: 409 },

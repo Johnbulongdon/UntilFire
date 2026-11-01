@@ -1,8 +1,9 @@
 import { router } from 'expo-router'
 import { useEffect, useState } from 'react'
-import { ActivityIndicator, Pressable, Share, View } from 'react-native'
+import { ActivityIndicator, Pressable, ScrollView, Share, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
+import { Button } from '@/components/Button'
 import { PrimaryButton } from '@/components/PrimaryButton'
 import { Icon } from '@/components/Icon'
 import { Text } from '@/components/Text'
@@ -41,7 +42,7 @@ export default function GiveAMonth() {
         <Text className="text-[16px] font-bold text-ink">Give a month</Text>
         <View style={{ width: 52 }} />
       </View>
-      <View className="flex-1 px-6 pt-10">
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingHorizontal:24, paddingTop:32, paddingBottom:32 }}>
         <Icon name="gift.fill" size={64} color={colors.tealDeep} />
         <Text className="mt-3 font-display text-[28px] font-bold leading-9 text-ink">Give a month, get a month</Text>
         <Text className="mt-2 text-[16px] leading-6 text-ink-2">Friends who join through your link get a longer free trial. When one of them subscribes, you get a month free.</Text>
@@ -52,11 +53,11 @@ export default function GiveAMonth() {
               {link.monthsEarned > 0 && <Text className="mt-2 text-[13px] font-semibold text-pos-ink">{link.monthsEarned === 1 ? '1 free month earned' : `${link.monthsEarned} free months earned`}</Text>}
             </>
           ) : failed ? (
-            <Text className="text-[14px] text-neg-ink">Couldn't get your link. Check your connection and try again.</Text>
+            <Text className="text-[14px] text-neg-ink">Couldn’t get your link. Check your connection and try again.</Text>
           ) : <ActivityIndicator color={colors.green} />}
         </View>
-        <View className="mt-6"><PrimaryButton label="Share my link" onPress={share} disabled={!link} /></View>
-      </View>
+        <View className="mt-6 gap-3"><PrimaryButton label="Share my link" onPress={share} disabled={!link} /><Button kind="quiet" label="My provider referral links" onPress={() => router.push("/provider-links" as never)} /></View>
+      </ScrollView>
     </SafeAreaView>
   )
 }

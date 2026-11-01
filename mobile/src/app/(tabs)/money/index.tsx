@@ -38,6 +38,7 @@ export default function Money() {
         <>
           <Headline data={data} />
           <Tiles />
+          <Button kind="quiet" label="Accounts & tools →" onPress={() => router.push("/money/tools" as never)} />
           {data.plaidAccounts.length === 0 && <BankBridge />}
           <Latest data={data} />
         </>

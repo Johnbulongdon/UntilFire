@@ -7,6 +7,8 @@ import * as Updates from 'expo-updates'
  * each line short and in plain words (the founder reads it to check a build).
  */
 export const UPDATE_LOG: { version: string; date: string; changes: string[] }[] = [
+  { version: '0.2.1', date: '2026-11-01', changes: ['Find accounts and tools, finish your account setup, and share your own provider referral links with people you invite'] },
+
   { version: '0.2.1', date: '2026-11-01', changes: ['Celebrations, shadows and the freedom report use the new colours'] },
   { version: '0.2.1', date: '2026-10-31', changes: ['Unfinished transaction and bill edits ask before discarding', 'Next and Done controls make number entry easier', 'Activity remembers your filters and place when you return'] },
   { version: '0.2.1', date: '2026-10-31', changes: ['Transactions are colour-coded: green money in, red money out, blue transfers'] },

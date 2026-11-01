@@ -16,7 +16,9 @@ export async function GET(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
   if (!token) return NextResponse.json({ referred: false });
   const admin = adminClient();
-  const { data: { user } } = await admin.auth.getUser(token);
+  const {
+    data: { user },
+  } = await admin.auth.getUser(token);
   if (!user) return NextResponse.json({ referred: false });
   const { data } = await admin
     .from("referral_attributions")
@@ -28,14 +30,34 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace("Bearer ", "");
-  if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!token)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const admin = adminClient();
-  const { data: { user }, error } = await admin.auth.getUser(token);
-  if (error || !user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const {
+    data: { user },
+    error,
+  } = await admin.auth.getUser(token);
+  if (error || !user)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const result = await claimReferral(admin, user, req.cookies.get(REFERRAL_COOKIE)?.value);
-  const res = NextResponse.json({ ok: true, referred: result === "claimed" || result === "already-attributed" });
+  let result: string;
+  try {
+    result = await claimReferral(
+      admin,
+      user,
+      req.cookies.get(REFERRAL_COOKIE)?.value,
+    );
+  } catch {
+    return NextResponse.json(
+      { error: "Couldn’t save your invitation. Try again." },
+      { status: 503, headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
+  const res = NextResponse.json({
+    ok: true,
+    referred: result === "claimed" || result === "already-attributed",
+  });
   if (result !== "no-cookie") res.cookies.delete(REFERRAL_COOKIE);
   return res;
 }

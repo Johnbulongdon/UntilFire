@@ -31,7 +31,7 @@ check("bonus: hidden the day after", activeBonus({ bonusText: "$300", bonusEndsO
 check("bonus: no end date stays", activeBonus({ bonusText: "$300", bonusEndsOn: null }, now) === "$300");
 check("rate: 420 bps is 4.20% APY", rateLabel(420) === "4.20% APY" && rateLabel(null) === null);
 check("interest: $12,400 at 4.20% is $521 a year", yearlyInterest(12400, 420) === 521 && yearlyInterest(-5, 420) === 0);
-check("disclosure: names who earns", disclosure(null).startsWith("UntilFire earns") && disclosure("Alex").startsWith("Alex, who invited you"));
+check("referral label: identifies the link without promising rewards", disclosure(null) === "UntilFire referral link" && disclosure("Alex") === "Alex’s referral link");
 check("groups: savings, bank, brokerage order; empty kinds dropped",
   JSON.stringify(groupOffers([{ kind: "brokerage" }, { kind: "savings" }] as { kind: "savings" | "bank" | "brokerage" }[]).map((g) => g.kind)) === '["savings","brokerage"]');
 
@@ -40,13 +40,13 @@ check("tables: RLS on, no policies", /ALTER TABLE partner_offers ENABLE ROW LEVE
 check("clicks: no user id stored", !/user_id/.test(sql.split("partner_offer_clicks (")[1] ?? ""));
 
 const go = read("app/go/[slug]/route.ts");
-check("redirect: only to a stored URL that still matches its domain", go.includes("linkMatchesDomain(offer.url, offer.allowed_domain)") && go.includes("NextResponse.redirect(offer.url)") && !/searchParams\.get/.test(go));
+check("redirect: revalidates a stored selection and uses a one-use intent", go.includes("resolveOffer(db, slug, partnerId)") && go.includes("redirect(resolved.selection.url)") && /\.delete\(\)\s*\.eq\("id", token\)/.test(go));
 const list = read("app/api/offers/route.ts");
 check("public list: never sends referral URLs", !/select\([^)]*\burl\b/.test(list));
 const admin = read("app/api/admin/offers/route.ts");
 check("admin: every handler checks the admin first", (admin.match(/requireAdminUser\(req\)/g) ?? []).length === 2);
 const page = read("app/dashboard/OffersTab.tsx");
-check("page: every offer shows the disclosure and a sponsored link", page.includes("disclosure(referrer)") && page.includes('rel="noopener noreferrer sponsored"'));
+check("page: every offer shows the disclosure and a sponsored link", page.includes("detail.referralLabel") && page.includes('rel="noopener noreferrer sponsored"'));
 
 const failed = checks.filter((c) => !c.ok);
 for (const c of checks) console.log(`${c.ok ? "✓" : "✗"} ${c.name}`);

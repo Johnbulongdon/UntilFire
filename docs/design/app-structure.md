@@ -40,14 +40,14 @@ Money                         actual finances and operational planning
   ├ Net Worth
   ├ Debts
   ├ Insights
-  └ Offers                    where to keep your money: partner savings, bank, brokerage (D-81)
+  └ Accounts & tools          curated savings/bank/brokerage accounts; existing offers deep links stay valid (D-81)
 
 Plan                          long-term projections and scenarios
   ├ Freedom Date
   ├ What if                   life changes on your plan (D-69), with
   │                           Investing (Scenarios) one switch away (D-105)
   ├ Goals
-  ├ Contributions
+  ├ Contributions             account setup is a focused step; existing accounts bypass provider referrals
   ├ Explore
   └ Learn                     a quiet row under the phone's tiles (D-105)
 

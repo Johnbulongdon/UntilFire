@@ -12,6 +12,7 @@ in [DECISIONS.md](DECISIONS.md).
 | Visual primitives | [Design system](design/design-system.md), `components/ui/` | Verify both themes and accessibility; prominent freedom-date Fraunces exception |
 | Cashflow and imports | `app/dashboard/TransactionsTab.tsx`, `app/dashboard/CsvImportModal.tsx`, `app/dashboard/ExpectedPaymentsTab.tsx` | Upcoming combines expected payments and recurrence suggestions; mobile save QA follow-up |
 | Household | [Family accounts](design/family-accounts.md), `app/dashboard/HouseholdSection.tsx` | Invitation, combined view, confirmed deduplication, shared Pro; verify user isolation |
+| Accounts & tools / provider referrals | [Implementation contract](design/accounts-tools-journey/README.md), PR #354 | In review; curated members’ links, immutable invitation routing, account setup; migration and programme activation pending |
 | Contributions | [Next contribution](design/next-contribution.md) | Shared Home/Plan derivation, separate payday/buy-in cadences and cashflow ledger; monthly email and live persistence QA remain separate |
 | Portfolio and scenarios | `app/portfolio/`, `app/dashboard/page.tsx` | Already implemented; no implied approval for new named asset recommendations |
 | City pricing | [Cost of living](cost-of-living.md) | Preserve rejected-source rationale; review data before promotion |
