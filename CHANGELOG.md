@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-01 — Accounts & tools and member provider referrals (in review)
+
+- Website and phone add curated account browsing/comparison, focused account setup and existing-account bypass; opening a provider never marks an account opened or moves money.
+- Members can submit their own provider referral links through their existing UntilFire referral profile. Approved inviter links take precedence for invited accounts, with per-provider UntilFire fallback, admin review, safe one-use redirects and account-owned setup progress.
+- Invite-claim database failures preserve the invite cookie for retry. No commission rules, provider activation or financial values change. Requires the additive migration before callers are released; implementation and rollout contract: docs/design/accounts-tools-journey/README.md.
+
 ## 2026-10-31 — Until payday stops counting paid bills
 
 - Possible duplicates at the same shop (two 美团 ¥22.90 on one day) now show both payments as a Delete / Keep pair with their times and files, like card copies, instead of one lone row.

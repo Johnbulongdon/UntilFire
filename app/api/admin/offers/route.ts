@@ -36,6 +36,8 @@ export async function GET(req: NextRequest) {
       allowedDomain: o.allowed_domain,
       status: o.status,
       sort: o.sort,
+      country: o.country,
+      memberLinksEnabled: o.member_links_enabled,
       clicks: clicksBy.get(o.id) ?? 0,
     })),
   });
@@ -86,6 +88,8 @@ export async function POST(req: NextRequest) {
       bonus_ends_on: endsOn,
       url,
       allowed_domain: domain,
+      country: typeof o.country === "string" && /^[A-Z]{2}$/.test(o.country) ? o.country : "US",
+      member_links_enabled: o.memberLinksEnabled === true,
       sort: Number.isFinite(Number(o.sort)) ? Math.round(Number(o.sort)) : 0,
       updated_at: new Date().toISOString(),
     };

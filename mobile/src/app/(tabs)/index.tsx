@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { Appearance, Pressable, View } from 'react-native'
 import Svg, { Circle, Line, Path } from 'react-native-svg'
 
+import { AccountSetupCard } from '@/components/AccountSetupCard'
 import { UntilPaydayCard } from '@/components/UntilPaydayCard'
 import { Button } from '@/components/Button'
 import { FreedomLineChart } from '@/components/FreedomLineChart'
@@ -246,7 +247,7 @@ function NextMoveCard({ data }: { data: AccountData }) {
   useEffect(() => { snoozedMoves().then(setSnoozed).catch(() => setSnoozed(new Set())) }, [])
   if (!snoozed) return null
   const move = phoneNextMove(data, snoozed, answers)
-  if (!move) return null
+  if (!move) return <AccountSetupCard />
   const later = () => { haptic.tick(); snoozeMove(move.key).catch(() => {}); setSnoozed(new Set([...snoozed, move.key])) }
   const icon = MOVE_ICON[move.key === 'lease' ? 'lease' : move.tab]
   // The one card on Home that looks different (Von Restorff): a green frame and

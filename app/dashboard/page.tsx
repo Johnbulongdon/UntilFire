@@ -60,6 +60,7 @@ import StarterBudgetCard from "./StarterBudgetCard";
 import { starterBudget, usualByCategory } from "@/lib/starter-budget";
 import ReportsTab from "./ReportsTab";
 import OffersTab from "./OffersTab";
+import AccountSetupTab, { PendingAccountSetup } from "./AccountSetupTab";
 import ProfileTab from "./ProfileTab";
 import type { ProBilling } from "./CancelProSheet";
 import ExploreClient from "../explore/ExploreClient";
@@ -140,6 +141,7 @@ type TabKey =
   | "contributions"
   | "citizenship"
   | "reports"
+  | "account-setup"
   | "offers"
   | "learning-hub"
   | "profile";
@@ -1795,7 +1797,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           onOpen={() => onTabChange?.(nextMove.tab)}
           onSnooze={() => { snooze(nextMove.key); setSnoozeTick((t) => t + 1); }} />
       ) : contributionFacts && (
-        <NextContributionCard facts={contributionFacts} onOpenPlan={() => onTabChange?.("contributions")} />
+        <PendingAccountSetup fallback={<NextContributionCard facts={contributionFacts} onOpenPlan={() => onTabChange?.("contributions")} />} />
       )}
       </HomeSlot>
       </div>
@@ -4820,7 +4822,7 @@ const SIDEBAR_ITEMS: { key: TabKey; label: string; mobileLabel?: string; svg: st
   {
     key: "fire-calculator",
     label: "Plan",
-    activeTabs: ["fire-calculator", "expat-fire", "goals", "citizenship", "learning-hub"],
+    activeTabs: ["fire-calculator", "expat-fire", "goals", "contributions", "account-setup", "citizenship", "learning-hub"],
     svg: ICON_PATHS.plan,
   },
   { key: "profile", label: "Profile", svg: '<circle cx="12" cy="8" r="4"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/>' },
@@ -4837,7 +4839,7 @@ const MONEY_SECTIONS: { label: string; tab: TabKey }[] = [
   { label: "Debts",     tab: "liabilities" },
   { label: "Insights",  tab: "reports"     },
   // Where to keep your money: partner savings, bank and brokerage accounts.
-  { label: "Offers",    tab: "offers"      },
+  { label: "Accounts & tools",    tab: "offers"      },
 ];
 
 // Plan's destinations. Two of them are sub-tab states of fire-calculator rather
@@ -4980,7 +4982,7 @@ export default function Dashboard() {
     const t = params.get("tab") as TabKey | null;
     const valid: TabKey[] = [
       "overview", "cashflow", "income", "assets", "liabilities",
-      "fire-calculator", "expat-fire", "goals", "contributions", "citizenship", "reports", "offers", "learning-hub", "profile",
+      "fire-calculator", "expat-fire", "goals", "contributions", "citizenship", "reports", "offers", "account-setup", "learning-hub", "profile",
     ];
     if (t && valid.includes(t)) setTab(t);
     if (params.get("upgraded") === "true") {
@@ -5697,7 +5699,7 @@ export default function Dashboard() {
   const isMobilePrimaryActive = (key: MobilePrimaryKey) => {
     if (key === "home") return tab === "overview";
     if (key === "cashflow") return MONEY_SECTIONS.some(s => s.tab === tab);
-    if (key === "plan") return tab === "fire-calculator" || tab === "expat-fire" || tab === "goals" || tab === "contributions" || tab === "citizenship" || tab === "learning-hub";
+    if (key === "plan") return tab === "fire-calculator" || tab === "expat-fire" || tab === "goals" || tab === "contributions" || tab === "account-setup" || tab === "citizenship" || tab === "learning-hub";
     return tab === "profile";
   };
 
@@ -6249,7 +6251,7 @@ export default function Dashboard() {
         <Link href="/" className="uf-sidebar-logo" style={{ padding: "0 4px" }}><Logo variant="auto" size={22} /></Link>
         {/* The logo already says UntilFire; the title says where you are (D-54). */}
         <div className="uf-mobile-top-title">
-          <strong>{tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Explore" : tab === "goals" ? "Goals" : tab === "contributions" ? "Contributions" : tab === "citizenship" ? "Citizenship" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Money"}</strong>
+          <strong>{tab === "overview" ? "Home" : tab === "fire-calculator" ? "Freedom Date" : tab === "expat-fire" ? "Explore" : tab === "goals" ? "Goals" : tab === "contributions" ? "Contributions" : tab === "account-setup" ? "Account setup" : tab === "citizenship" ? "Citizenship" : tab === "learning-hub" ? "Learn" : tab === "profile" ? "Profile" : "Money"}</strong>
           {/* Home shows the date in its own card, so the bar doesn't repeat it there (D-108). */}
           {freedomDateCompactLabel && tab !== "overview" && <span>{`Free · ${freedomDateCompactLabel}`}</span>}
         </div>
@@ -6733,6 +6735,7 @@ export default function Dashboard() {
             {tab === "citizenship" && (TAX_ESTIMATES_AVAILABLE ? <CitizenshipTab onOpenExpat={() => openDashboardTab("expat-fire")} /> : <div className="uf-card" style={{ padding: 24 }}>Passport tax comparisons are unavailable while we test them.</div>)}
             {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar} />}
             {tab === "offers" && <OffersTab />}
+            {tab === "account-setup" && <AccountSetupTab />}
             {tab === "learning-hub" && <LearnTab recommendedStageId={learnPlace.stage} progress={learnPlace.progress} yearsToGo={learnPlace.years} onOpenTab={openDashboardTab} />}
             {tab === "expat-fire" && (
               <ExploreClient appPlan={explorePlan} displayCurrency={defaultCurrency} displayRates={rates}

@@ -1,6 +1,97 @@
-# Accounts & tools — connected journey mock
+# Accounts & tools — implementation contract
 
-**Status:** interactive mock for review, 1 November 2026. Concept approved; production integration is not implemented here.
+**Status:** implementation in review in [PR #354](https://github.com/Johnbulongdon/UntilFire/pull/354), 1 November 2026. No production migration, live programme activation, merge or phone promotion performed. Baseline: latest pushed main 78f24d2. The approved prototype remains under mock/ as design history.
+
+## Placement and behaviour
+
+- Money → Accounts & tools replaces the visible Offers label and preserves tab=offers links. Investing and savings/banking filters, country selection, details and up-to-two-account comparison use only live curated provider metadata. Empty/error states never invent sample offers.
+- Plan → Contributions links to the focused Account setup step (tab=account-setup; phone /plan/account-setup). Existing accounts bypass referrals. An outbound click starts a setup task; it does not confirm an account opened. The user confirms opened and setup complete separately. Existing/new origin survives completion. No balances, financial assumptions or transfers change.
+- Home can resume a user-started task when no higher-priority next move is present. It has no independent money input.
+- Profile → Give a month and Money → Accounts & tools lead to My referral links. Both friend and creator partners can submit their own provider links. One UntilFire invite code continues to own attribution; this does not enrol a member in paid creator terms or change commissions/free-month rules.
+
+## Referral routing and review
+
+The signed-in account's immutable referral_attributions row selects the inviter. A later cookie, supplied partner ID or URL cannot replace it. The web list awaits the existing invite claim first; temporary claim failures preserve its cookie for retry.
+
+For each provider, use the active inviter's approved link only while that provider is live, member links are enabled and the URL still matches its HTTPS provider domain. Otherwise use UntilFire's stored link. Database failures return a retryable error rather than silently selecting another beneficiary. The page identifies the selected link with UntilFire referral link or the submitted public name's referral link; it makes no payout, bonus or exclusive-reward promise. Founder-only bonus copy is omitted on member links.
+
+Members can submit only registry providers, using a public first name and direct HTTPS referral URL. Every edit resets approval and increments a version. Admin review requires actual server admin authorization and the version reviewed; stale approvals conflict. Hiding a provider, disabling its programme, pausing the inviter or revoking/editing a link invalidates pending outbound tickets. Members can remove their own links.
+
+POST /api/offers/open verifies authentication and the displayed selection key, then creates an opaque ten-minute ticket. /go consumes it once, revalidates current provider/partner/link status, records only offer and partner IDs, then redirects. It never takes a destination URL from the request or forwards an auth token. Bare legacy /go links continue to use UntilFire's link. Expired or changed tickets return to Accounts & tools rather than switching recipient.
+
+## Programme activation and limits
+
+No Robinhood, IBKR or other provider is seeded or enabled by this change. Admin must confirm the programme permits this placement, review current provider terms/disclosure requirements under D-03/D-81, add real approved metadata/domain/UntilFire link, and explicitly enable member submissions. A neutral label is not a compliance determination. No arbitrary shorteners or user-created providers. Rates/eligibility are provider supplied, not personalized recommendations.
+
+Native uses the same saved account attribution. This release does not add deferred Play-install attribution: someone who joins on the web through an invite retains it when signing into the phone; an uncaptured mobile install is not retroactively attributed. Setup completion is self-reported, not verified by the broker.
+
+## Rollout order
+
+1. Review and apply the additive migration below to the intended database before releasing either caller. It changes no existing financial/referral rows.
+2. Deploy the website/API and verify authenticated list, own-link submission, admin approval, inviter selection and account isolation in a non-production acceptance environment.
+3. Verify installed-device browser handoff/return, then use the normal phone preview/production workflow (D-102). No dependencies, mobile scripts or native configuration change.
+4. Activate individual programmes only after their review. Until then the library can be empty and member submissions remain disabled by default.
+
+Rollback: revert the callers; leave additive tables and submitted data intact. Disable programmes or hide offers immediately if necessary. Do not drop user submissions as routine rollback.
+
+## Verification
+
+- node scripts/verify-provider-links.mjs executes real API handlers with an isolated in-memory Supabase adapter: invitation selection, wrong-user/invalid-auth attempts, stale approval/version conflicts, revoked/expired/replayed tickets, failure preservation and setup transitions. This adapter is not a live PostgREST acceptance test.
+- Existing partner-offer, referral and Journeys guards remain required. Web/mobile typecheck, ESLint, production build and Android/iOS/web exports are checked separately.
+- Local PostgreSQL/PGlite checks executed the full migration against baseline offer/referral tables and tested anon/authenticated denial, service-role access, default-disabled programmes, unique ownership, stale version updates and one-use ticket deletion. Existing installed tools were used; no new dependency was added. Queued PGlite operations do not prove independent-session concurrency.
+- Browser component QA uses the actual web components and handlers with synthetic accounts/providers; no customer money or real provider application is touched. Auth and transport fixtures stay ignored under .audit-financial/. Record final visual/build results in implementation-qa.md.
+
+## Migration
+
+```sql
+-- Curated member links; no providers seeded or made live.
+BEGIN;
+ALTER TABLE public.partner_offers ADD COLUMN IF NOT EXISTS member_links_enabled boolean NOT NULL DEFAULT false;
+CREATE TABLE public.partner_referral_links (
+ id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ partner_id uuid NOT NULL REFERENCES public.referral_partners(id) ON DELETE CASCADE,
+ offer_id uuid NOT NULL REFERENCES public.partner_offers(id) ON DELETE CASCADE,
+ url text NOT NULL CHECK (length(url) BETWEEN 8 AND 2048),
+ display_name text NOT NULL CHECK (length(display_name) BETWEEN 1 AND 40),
+ status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0),
+ review_note text CHECK (length(review_note) <= 240),
+ reviewed_at timestamptz,
+ updated_at timestamptz NOT NULL DEFAULT now(),
+ UNIQUE (partner_id, offer_id)
+);
+CREATE TABLE public.partner_offer_intents (
+ id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ offer_id uuid NOT NULL REFERENCES public.partner_offers(id) ON DELETE CASCADE,
+ link_id uuid REFERENCES public.partner_referral_links(id) ON DELETE CASCADE,
+ partner_id uuid REFERENCES public.referral_partners(id) ON DELETE CASCADE,
+ selection_key text NOT NULL,
+ expires_at timestamptz NOT NULL DEFAULT (now() + interval '10 minutes')
+);
+CREATE INDEX partner_offer_intents_expiry_idx ON public.partner_offer_intents(expires_at);
+CREATE TABLE public.account_setup_journeys (
+ user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+ goal text NOT NULL CHECK (goal IN ('invest','save')),
+ account_label text NOT NULL DEFAULT '' CHECK (length(account_label) <= 80),
+ origin text CHECK (origin IN ('existing','new')),
+ stage text NOT NULL DEFAULT 'choose' CHECK (stage IN ('choose','applying','opened','selected','done')),
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0),
+ updated_at timestamptz NOT NULL DEFAULT now(),
+ PRIMARY KEY (user_id, goal)
+);
+ALTER TABLE public.partner_referral_links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.partner_offer_intents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.account_setup_journeys ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.partner_referral_links, public.partner_offer_intents, public.account_setup_journeys FROM anon, authenticated;
+GRANT ALL ON public.partner_referral_links, public.partner_offer_intents, public.account_setup_journeys TO service_role;
+COMMIT;
+```
+
+## Approved mock history
+
+### Original mock record
+
+**Historical status:** review-only mock before implementation was authorized. The contract above owns current behaviour.
 **Baseline:** started from GitHub main af157f1; reconciled latest main 3d97d33 before publication. Kept separate from bank-health PR #352.
 **Style:** John explicitly selected the current app's yellow and pastel style over the older local Mint default. Use Inter, supplied logo assets, black pill actions and Next Horizon colours.
 

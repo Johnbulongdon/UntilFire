@@ -1,7 +1,7 @@
 /**
  * Partner offers' rules, in one place: savings, bank and brokerage accounts
  * UntilFire lists after someone has their result. Offers are picked for fit,
- * never for what they pay, and every link says who earns from it.
+ * never for what they pay, and every link identifies its owner.
  *
  * No imports, so the tests, the API routes and the pages read the same rules.
  */
@@ -23,6 +23,9 @@ export type PartnerOffer = {
   rateBps: number | null;
   bonusText: string | null;
   bonusEndsOn: string | null;
+  country?: string;
+  referralLabel?: string;
+  referralKey?: string;
 };
 
 export const isOfferKind = (v: unknown): v is OfferKind =>
@@ -54,7 +57,7 @@ export function linkMatchesDomain(rawUrl: unknown, domain: string): boolean {
   } catch {
     return false;
   }
-  if (url.protocol !== "https:" || url.username || url.password) return false;
+  if (url.protocol !== "https:" || url.username || url.password || (url.port && url.port !== "443")) return false;
   const host = url.hostname.toLowerCase();
   return host === domain || host.endsWith(`.${domain}`);
 }
@@ -75,14 +78,11 @@ export const yearlyInterest = (balance: number, bps: number | null) =>
   bps == null || !(balance > 0) ? 0 : Math.round((balance * bps) / 10000);
 
 /**
- * The disclosure shown under every link (FTC endorsement guides): plain,
- * next to the button, naming who earns. `referrer` is the creator's first
- * name when their link is the one in use.
+ * Compact link-owner label. Programme-specific live disclosures are reviewed
+ * separately before activation; this helper does not promise a reward.
  */
 export function disclosure(referrer: string | null): string {
-  return referrer
-    ? `${referrer}, who invited you to UntilFire, earns a reward if you open this account. It costs you nothing.`
-    : "UntilFire earns a reward if you open this account. It costs you nothing.";
+  return referrer ? `${referrer}’s referral link` : "UntilFire referral link";
 }
 
 /** Live offers for the page, grouped in OFFER_KINDS order. */

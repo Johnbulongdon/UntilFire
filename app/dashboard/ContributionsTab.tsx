@@ -410,6 +410,7 @@ export default function ContributionsTab({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "var(--uf-s5)" }}>
+      <Card><div style={{ display: "flex", gap: 12, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap" }}><div><strong>Put your plan in motion</strong><p className="uf-t-small" style={{ margin: "4px 0 0", color: "var(--uf-ink-2)" }}>Use an existing account or find a provider.</p></div><a href="/dashboard?tab=account-setup&goal=invest" style={{ minHeight: 44, display: "inline-flex", alignItems: "center", color: "var(--uf-ink)", fontWeight: 700 }}>Choose an account →</a></div></Card>
       {/* The calm headline (D-42): the amount, the mix now against the target,
           and the steps it goes through. The inputs that decide it follow. */}
       <MoneyHead

@@ -70,6 +70,8 @@ const PHONE_ONBOARDING: JourneyStep[] = [
 
 /** Website Money and Plan pages; sub-pages without their own URL are opened like a person would, by their tab. */
 const WEB_MONEY: JourneyStep[] = [
+  { label: 'Accounts & tools', route: '/dashboard', shot: 'user:/dashboard?tab=offers' },
+  { label: 'Provider referral links', route: '/dashboard', shot: 'user:/dashboard?tab=offers&view=links' },
   { label: 'Transactions', action: 'Tap Calendar', route: '/dashboard', shot: 'user:/dashboard?tab=cashflow' },
   { label: 'Calendar', action: 'Tap Categories', route: '/dashboard', shot: 'user:/dashboard?tab=cashflow', click: ['^Calendar$'] },
   { label: 'Categories', action: 'Tap Budget', route: '/dashboard', shot: 'user:/dashboard?tab=cashflow', click: ['^Categories$'] },
@@ -81,6 +83,7 @@ const WEB_MONEY: JourneyStep[] = [
 ]
 
 const WEB_PLAN: JourneyStep[] = [
+  { label: 'Account setup', action: 'Choose an account', route: '/dashboard', shot: 'user:/dashboard?tab=account-setup' },
   { label: 'Freedom Date', action: 'Tap What if', route: '/dashboard', shot: 'user:/dashboard?tab=fire-calculator' },
   { label: 'What if', action: 'Tap Investing', route: '/dashboard', shot: 'user:/dashboard?tab=fire-calculator', click: ['^What if$'] },
   { label: 'What if: Investing', action: 'Tap Goals', route: '/dashboard', shot: 'user:/dashboard?tab=fire-calculator', click: ['^What if$', '^Investing$'] },
@@ -102,6 +105,7 @@ const phoneScreens = (screens: [string, string][]): JourneyStep[] => screens.map
   route: `${file}.tsx`, shot: `app-user:/${file.replace(/^\(tabs\)\//, '').replace(/\/?index$/, '')}`,
 }))
 const PHONE_MONEY = phoneScreens([
+  ['Accounts & tools', '(tabs)/money/tools'],
   ['Money', '(tabs)/money/index'], ['Transactions', '(tabs)/money/transactions'], ['Calendar', '(tabs)/money/calendar'],
   ['Budget', '(tabs)/money/budget'], ['Income', '(tabs)/money/income'], ['Net worth', '(tabs)/money/net-worth'],
   ['Insights', '(tabs)/money/insights'],
@@ -109,11 +113,11 @@ const PHONE_MONEY = phoneScreens([
 const PHONE_PLAN = phoneScreens([
   ['Plan', '(tabs)/plan/index'], ['Freedom date', '(tabs)/plan/freedom'], ['What if', '(tabs)/plan/what-if'],
   ['What if: Life', '(tabs)/plan/compare'], ['What if: Investing', '(tabs)/plan/scenarios'], ['Goals', '(tabs)/plan/goals'],
-  ['Contributions', '(tabs)/plan/contributions'], ['Explore', '(tabs)/plan/explore'], ['Learn', '(tabs)/plan/learn'],
+  ['Account setup', '(tabs)/plan/account-setup'], ['Contributions', '(tabs)/plan/contributions'], ['Explore', '(tabs)/plan/explore'], ['Learn', '(tabs)/plan/learn'],
 ])
 const PHONE_PROFILE = phoneScreens([
   ['Household', 'household'], ['Currency', 'currency'], ['Name', 'name'], ['FIRE type', 'fire-quiz'],
-  ['Give a month', 'give-a-month'], ["What's new", 'update-log'], ['Feedback', 'feedback'], ['Import', 'import'],
+  ['Provider referral links', 'provider-links'], ['Give a month', 'give-a-month'], ["What's new", 'update-log'], ['Feedback', 'feedback'], ['Import', 'import'],
 ])
 /** GuidedTour's four stops on Home. */
 const PHONE_TOUR: JourneyStep[] = ['Freedom date', 'Quick moves', 'Today', 'Tabs'].map((label, i) => ({

@@ -53,6 +53,7 @@ export default function GiveAMonthCard({ cardStyle, bare = false }: { cardStyle:
           <Button variant="secondary" size="sm" onClick={getLink} disabled={busy}>{busy ? "Getting your link…" : "Get my link"}</Button>
         </div>
       )}
+      <a href="/dashboard?tab=offers&view=links" style={{ minHeight: 44, display: "inline-flex", alignItems: "center", fontWeight: 700, color: "var(--uf-ink)" }}>Manage my provider referral links →</a>
       {error && <span role="alert" style={{ fontSize: 13, color: "var(--uf-neg-ink)" }}>{error}</span>}
     </div>
   );

@@ -1,43 +1,38 @@
-import { NextResponse } from "next/server";
-import { adminClient } from "@/lib/supabase-admin";
-import { activeBonus, isOfferKind, type PartnerOffer } from "@/lib/partner-offers";
-
+import { NextRequest } from "next/server";
+import { isOfferKind, linkMatchesDomain } from "@/lib/partner-offers";
+import { providerAuth, reply, apiFailure } from "@/lib/provider-api";
+import {
+  checked,
+  inviterFor,
+  linksFor,
+  publicOffer,
+  OFFER_FIELDS,
+} from "@/lib/provider-links-server";
+import type { ProviderRow } from "@/lib/provider-links";
 export const dynamic = "force-dynamic";
-
-/**
- * The live partner offers, for "Where to keep your money". Public data only:
- * no referral URLs (every click goes through /go/<slug>, which picks the link
- * and counts the click), and a bonus past its end date is left out.
- */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const { data, error } = await adminClient()
-      .from("partner_offers")
-      .select("slug, kind, name, blurb, rate_bps, bonus_text, bonus_ends_on")
-      .eq("status", "live")
-      .order("sort", { ascending: true })
-      .order("name", { ascending: true });
-    if (error) throw error;
-
-    const now = new Date();
-    const offers: PartnerOffer[] = (data ?? [])
-      .filter((o) => isOfferKind(o.kind))
-      .map((o) => {
-        const bonusText = activeBonus({ bonusText: o.bonus_text, bonusEndsOn: o.bonus_ends_on }, now);
-        return {
-          slug: o.slug,
-          kind: o.kind,
-          name: o.name,
-          blurb: o.blurb ?? "",
-          rateBps: o.rate_bps,
-          bonusText,
-          bonusEndsOn: bonusText ? o.bonus_ends_on : null,
-        };
-      });
-    // Step 1 shows UntilFire's own links only; a creator's links come later.
-    return NextResponse.json({ offers, referrer: null });
-  } catch (err) {
-    console.error("[offers] list failed:", err);
-    return NextResponse.json({ offers: [], referrer: null });
+    const { db, user } = await providerAuth(req, false);
+    const partnerId = user ? await inviterFor(db, user.id) : null;
+    const [rows, links] = await Promise.all([
+      db
+        .from("partner_offers")
+        .select(OFFER_FIELDS)
+        .eq("status", "live")
+        .order("sort")
+        .order("name"),
+      linksFor(db, partnerId),
+    ]);
+    const offers = (checked(rows) ?? []) as ProviderRow[];
+    return reply({
+      offers: offers
+        .filter(
+          (o) =>
+            isOfferKind(o.kind) && linkMatchesDomain(o.url, o.allowed_domain),
+        )
+        .map((o) => publicOffer(o, links)),
+    });
+  } catch (error) {
+    return apiFailure(error);
   }
 }
