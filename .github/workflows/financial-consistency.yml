@@ -21,5 +21,6 @@ jobs:
       - run: npm run test:marked-calendar
 
       - run: node scripts/verify-provider-links.mjs
+      - run: node --experimental-strip-types scripts/verify-tools-navigation.mjs
       - run: npm run test:partner-offers
       - run: npm run test:referrals

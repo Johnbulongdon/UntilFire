@@ -71,7 +71,7 @@ const PHONE_ONBOARDING: JourneyStep[] = [
 /** Website Money and Plan pages; sub-pages without their own URL are opened like a person would, by their tab. */
 const WEB_MONEY: JourneyStep[] = [
   { label: 'Accounts & tools', route: '/dashboard', shot: 'user:/dashboard?tab=offers' },
-  { label: 'Provider referral links', route: '/dashboard', shot: 'user:/dashboard?tab=offers&view=links' },
+  { label: 'Provider referral links', route: '/invite/provider-links', shot: 'user:/invite/provider-links' },
   { label: 'Transactions', action: 'Tap Calendar', route: '/dashboard', shot: 'user:/dashboard?tab=cashflow' },
   { label: 'Calendar', action: 'Tap Categories', route: '/dashboard', shot: 'user:/dashboard?tab=cashflow', click: ['^Calendar$'] },
   { label: 'Categories', action: 'Tap Budget', route: '/dashboard', shot: 'user:/dashboard?tab=cashflow', click: ['^Categories$'] },
@@ -117,7 +117,7 @@ const PHONE_PLAN = phoneScreens([
 ])
 const PHONE_PROFILE = phoneScreens([
   ['Household', 'household'], ['Currency', 'currency'], ['Name', 'name'], ['FIRE type', 'fire-quiz'],
-  ['Provider referral links', 'provider-links'], ['Give a month', 'give-a-month'], ["What's new", 'update-log'], ['Feedback', 'feedback'], ['Import', 'import'],
+  ['Creator programme and provider links', 'creator'], ['Give a month', 'give-a-month'], ["What's new", 'update-log'], ['Feedback', 'feedback'], ['Import', 'import'],
 ])
 /** GuidedTour's four stops on Home. */
 const PHONE_TOUR: JourneyStep[] = ['Freedom date', 'Quick moves', 'Today', 'Tabs'].map((label, i) => ({
@@ -132,7 +132,7 @@ export const JOURNEYS: Journey[] = [
     id: 'web-creator-links', title: 'Creator: add provider links', platform: 'web', visitor: 'returning',
     steps: [
       { label: 'Creator program', action: 'Join or open creator dashboard; existing invite code is retained', route: '/invite', shot: 'user:/invite' },
-      { label: 'My provider links', action: 'Manage my provider links, submit for approval', route: '/dashboard', shot: 'user:/dashboard?tab=offers&view=links' },
+      { label: 'My provider links', action: 'Manage my provider links, submit for approval', route: '/invite/provider-links', shot: 'user:/invite/provider-links' },
       { label: 'Accounts & tools', action: 'After approval, attributed invitees see the inviter link', route: '/dashboard', shot: 'user:/dashboard?tab=offers' },
     ],
   },

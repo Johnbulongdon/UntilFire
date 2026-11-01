@@ -220,7 +220,7 @@ function CreatorDashboard({ me, token, onSaved }: { me: Me; token: string; onSav
       <Card style={{ display: "grid", gap: "var(--uf-s3)" }}>
         <h2 className="uf-t-h3" style={{ margin: 0 }}>My provider links</h2>
         <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>Add your links for the people you invite. Links go live after approval.</p>
-        <Link href="/dashboard?tab=offers&view=links" className="uf-t-small" style={{ color: "var(--uf-ink)", fontWeight: 700, justifySelf: "start", display: "inline-flex", alignItems: "center", minHeight: 44 }}>Manage my provider links →</Link>
+        <Link href="/invite/provider-links" className="uf-t-small" style={{ color: "var(--uf-ink)", fontWeight: 700, justifySelf: "start", display: "inline-flex", alignItems: "center", minHeight: 44 }}>Manage my provider links →</Link>
       </Card>
 
       <EmbedSnippet code={p.code} />
