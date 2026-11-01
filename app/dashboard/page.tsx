@@ -6,10 +6,6 @@ import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import {
-  XAxis, YAxis, Tooltip,
-  ResponsiveContainer, ReferenceLine, ReferenceDot, AreaChart, Area,
-} from "recharts";
 import TransactionsTab from "./TransactionsTab";
 import PlaidConnect, { type PlaidItem } from "./PlaidConnect";
 import UpgradeModal from "./UpgradeModal";
@@ -48,6 +44,7 @@ import { SETUP_BUTTON, SETUP_FINISHED_KEY, SETUP_LABEL, SETUP_WHY, setupSteps, t
 import type { IconName } from "@/components/ui";
 import type { NextMove } from "@/lib/next-move";
 import type { RawTx } from "@/lib/recurring-detect";
+import { FreedomCurve } from "./FreedomCurve";
 import { FreedomCard, MonthCard, GlanceRow, NextMoveCard, UntilPaydayCard, type MonthCategory } from "./HomeCards";
 import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, MoneyTrack, Fig, StackBar, PaceBar, MonthCalendar, BankLogo } from "./MoneyCards";
 import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
@@ -1711,7 +1708,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         age={fireAge > 0 && exactFreedomDate ? Math.round(fireAge + Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5))) : null}
         onOpen={() => onTabChange?.("fire-calculator")}
         progress={howFar ? {
-          pct: progressPercent(howFar.share), share: howFar.share,
+          pct: progressPercent(howFar.share), share: howFar.share, today: todayPoint ? fmtMoney(todayPoint.value, true) : undefined,
           next: howFar.next ? `Next: ${Math.round(howFar.next.mark * 100)}%${howFar.next.year != null ? ` in ${howFar.next.year}` : `, ${fmtMoney(howFar.next.toGo, true)} to go`}` : "Your freedom number is there",
         } : undefined}
         route={retireCity ? {
@@ -1723,65 +1720,15 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           onOpen: () => onTabChange?.("fire-calculator"),
         } : undefined}
       >
-        <ResponsiveContainer width="100%" height={220}>
-          <AreaChart data={yearBars} margin={{ top: 34, right: 24, bottom: 0, left: 24 }}>
-            <XAxis dataKey="label" tick={{ fill: "var(--uf-ink-3)", fontSize: 12, fontFamily: "var(--uf-font-mono)" }} axisLine={{ stroke: "var(--uf-border)" }} tickLine={false} interval="preserveStartEnd" minTickGap={28} />
-            <YAxis hide domain={[0, "auto"]} />
-            <Tooltip
-              animationDuration={150}
-              cursor={{ stroke: "var(--uf-border-2)" }}
-              content={({ active, payload }) => {
-                const b = active ? payload?.[0]?.payload as { year: number; value: number; actual: boolean } | undefined : undefined;
-                if (!b) return null;
-                return (
-                  <div className="uf-t-small" style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10, padding: "8px 10px", boxShadow: "var(--uf-e2)" }}>
-                    <div style={{ color: "var(--uf-ink-2)" }}>{b.year}{b.year === thisYear ? " · counts toward freedom" : b.actual ? "" : " · projected"}{moveYear != null && b.year >= moveYear ? ` · in ${retireCity.split(",")[0]}` : ""}</div>
-                    <b style={{ fontFamily: "var(--uf-font-mono)", color: "var(--uf-ink)" }}>{fmtMoney(b.value, true)}</b>
-                  </div>
-                );
-              }}
-            />
-            <ReferenceLine y={fireTarget} stroke="var(--uf-ink-3)" strokeDasharray="4 5" label={{ value: "FIRE number", position: "insideTopLeft", fill: "var(--uf-ink-3)", fontSize: 12, fontFamily: "var(--uf-font-mono)" }} />
-            {moveYear != null && yearBars.some((b) => b.year === moveYear) && (
-              <ReferenceLine x={String(moveYear)} stroke="var(--uf-ink-3)" strokeDasharray="2 3"
-                label={(props: { viewBox?: { x?: number; y?: number } }) => {
-                  const x = props.viewBox?.x ?? 0, y = (props.viewBox?.y ?? 0) - 18;
-                  return (
-                    <g aria-label={`Move to ${retireCity} in ${moveYear}`}>
-                      <circle cx={x} cy={y} r={14} fill="var(--uf-card)" stroke="var(--uf-teal)" strokeWidth={1.5} />
-                      {moveFlagUri
-                        ? <image href={moveFlagUri} x={x - 9} y={y - 6} width={18} height={12} preserveAspectRatio="xMidYMid slice" />
-                        : <text x={x} y={y + 5} textAnchor="middle" fontSize={14}>{"\u{1F4CD}"}</text>}
-                    </g>
-                  );
-                }} />
-            )}
-            <Area type="monotone" dataKey="value" stroke="var(--uf-teal)" strokeWidth={3} fill="var(--uf-teal-soft)" fillOpacity={1} isAnimationActive={false}
-              dot={false} activeDot={{ r: 5, fill: "var(--uf-teal)", stroke: "var(--uf-card)", strokeWidth: 2 }} />
-            {/* The end dot first, so a milestone label near the end draws over it, not under it. */}
-            {freeYear != null && yearBars.length > 1 && (
-              <ReferenceDot x={yearBars[yearBars.length - 1].label} y={yearBars[yearBars.length - 1].value} r={8} fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2} />
-            )}
-            {todayPoint && (
-              // To the right of the dot: centred above the first point it ran off the card's left edge.
-              <ReferenceDot x={todayPoint.label} y={todayPoint.value} r={7} fill="var(--uf-teal)" stroke="var(--uf-card)" strokeWidth={2}
-                label={{ value: `You · ${fmtMoney(todayPoint.value, true)}`, position: "right", offset: 12, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
-            )}
-            {milestones.map((m) => {
-              // Near the end its label would run into the end dot, so it sits to the left instead.
-              const nearEnd = yearBars.length > 4 && m.year >= yearBars[Math.floor(yearBars.length * 0.8)].year;
-              return (
-                <ReferenceDot key={m.label} x={String(m.year)} y={m.value} r={6} fill="var(--uf-card)" stroke="var(--uf-teal)" strokeWidth={3}
-                  label={{ value: m.label, position: nearEnd ? "left" : "top", offset: 10, fill: "var(--uf-teal-deep)", fontSize: 12, fontWeight: 700 }} />
-              );
-            })}
-          </AreaChart>
-        </ResponsiveContainer>
-        {/* The assumption behind the cash figure stays one hover or tap away, not a footnote on Home (D-108). */}
-        <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", display: "flex", flexWrap: "wrap", gap: "4px 16px", marginTop: 8 }}>
-          <span>Investments <span className="uf-t-data">{fmtMoney(investable - balances.cash, true)}</span></span>
-          <span title="Cash uses saved APY (0% if unknown), less 3% inflation.">Safety cash <span className="uf-t-data">{fmtMoney(balances.cash, true)}</span></span>
-        </div>
+        <FreedomCurve
+          points={yearBars}
+          target={fireTarget}
+          todayYear={thisYear}
+          milestones={milestones}
+          move={moveYear != null ? { year: moveYear, flagUri: moveFlagUri, city: retireCity.split(",")[0] } : null}
+          fmt={(n) => fmtMoney(n, true)}
+          todayNote={`Investments ${fmtMoney(investable - balances.cash, true)}\nSafety cash ${fmtMoney(balances.cash, true)}`}
+        />
       </FreedomCard>
 
       </HomeSlot>
