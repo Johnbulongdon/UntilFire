@@ -1,6 +1,12 @@
 # Changelog
 
-<<<<<<< HEAD
+## 2026-11-01 — Budget chart lines
+
+- The Budget line on Money → Budget's spending chart is lilac instead of dark grey. In light mode it looked like the solid black "This month" line, so on the 1st it seemed this month was already drawn across the whole month. This month was only ever the dot on day 1.
+- Simpler chart (John's pick): with a budget, the chart shows the budgeted categories against the Budget line; with no budget, against Past months. One pill sums it up ("On track for $2,297 · $3 under budget"), pink when over.
+- Style C (John's pick): the gap between where spending is heading and the budget is shaded pink (over) or mint (under). At the right edge, the spending and budget totals are joined by a bracket with an "$X over/under" pill, so the number never sits on the lines. Big bills (10%+ of the budget) get a small name tag at their step.
+- Spending in categories without a budget moved into an ⓘ tip next to the pill (forecast while the month runs). Before, "$3 under budget" sat next to a forecast line well above the budget line with nothing explaining the gap.
+
 ## 2026-11-01 — Accounts & tools gets its icon
 
 - In the left menu, "Accounts & tools" under Money now has a wallet icon and lines up with the other pages. It lost its icon when Offers was renamed, so it fell back to a small dot sitting further left.
@@ -11,13 +17,11 @@
 - Referral links use approved provider programmes and matching HTTPS domains; web/phone now show the provider website and flag mismatches before submitting. Connected accounts are not required.
 - Own provider links stay under Creator programme; legacy links forward there. Profile keeps access for ordinary members without paid creator enrolment.
 - Money account browsing no longer creates a Plan task. Plan opens its own account picker in place, retains selection/filter state and returns to setup. Existing-account selection opens its editor directly. Web and phone back labels match their destinations.
-=======
 ## 2026-11-01 — Free to spend pill on Budget
 
 - The "Free to spend" bar under the Budget chart is now a rounded mint pill. Early in the month, with no expenses yet, it stood alone as a square black box that looked like a broken button. Short after bills stays a warm warning pill.
 - Expenses and Free to spend are two separate pills that wrap on small phones, so the Expenses label no longer disappears or gets cut off.
 - The "to review" and Worth a look buttons use the ink token directly instead of the old green alias.
->>>>>>> origin/main
 
 ## 2026-11-01 — Accounts & tools and member provider referrals (in review)
 
@@ -108,20 +112,17 @@
 - Add lighter multicolour tool tiles to Money and Plan, coloured settings wells to Profile, and distinct summary chip colours.
 - Flatten heavy tile edges and fix dark-mode Plan icons and step numbers; preserve routes, primary actions and financial calculations.
 
-
 ## 2026-10-31 — ether.fi card statements import
 
 - Website PDF import now reads card statements that print signed dollar amounts with a reference ID (ether.fi): spending comes in as spending, refunds as money back, in the statement's own currency (USD), with no "flip signs" step.
 - Handles "Sept" and dates whose year wraps onto the next line, keeps location/crypto detail lines out of the merchant name, and stops before "Pending transactions" so charges aren't counted twice.
 - PDF row rules moved to lib/pdf-statement.ts with made-up test rows (`npm run test:pdf-statement`); older card and savings layouts read the same.
 
-
 ## Unreleased — mobile welcome product preview
 
 - Replace the large welcome logo tile with the selected example-plan artwork, clearer headline and equally wide start/sign-in actions.
 - Keep the existing journey and sign-in recovery; short coordinated entrance respects reduced motion and small screens can scroll.
 - Defer the welcome A/B test; no feature flags, new events or native runtime changes.
-
 
 ## 2026-10-31 — October update email pictures
 
@@ -133,7 +134,6 @@
 - Replace chart inspection with the approved mint summary, compact breakdown and three-row bill ledger linking to Money.
 - Add an editable estimate and optional collapsed cushion (zero by default); adjustments apply to the current visit and update Home Today. No automatic savings deduction or budget mutation.
 - Match the phone card and shared forecast rule; missing estimates remain visibly unknown.
-
 
 ## Unreleased — website audit follow-ups
 
@@ -160,7 +160,6 @@
 
 - Approved option 2: centered headline, one connected pastel product preview without page tabs, selectable example bill dates and categories, and a whole-dollar savings scenario powered by the existing projection helper. Initial estimate still opens the existing free onboarding.
 - A dedicated wrapping Listed on tray preserves all directory URLs, issued badge images and verification attributes. Failed third-party images retain readable links. Phone layouts stack the preview and keep the header action compact.
-
 
 ## 2026-10-29 — Starting budget (50/30/20)
 
@@ -197,11 +196,9 @@
 - Colourful Home cards, black pill actions and matched phone welcome controls. Financial calculations retain the shared engine; local-currency display values round-trip to USD once.
 - Native icon and splash assets require a new store build; this branch is not a production release.
 
-
 ## 2026-10-27 — Aligned phone welcome actions
 
 - On the phone welcome screen, I already have an account uses the standard full-width, 56-point button and 17-point label, matching Get started. Retain the quieter secondary styling, spacing and existing sign-in behavior. The shared Button component is unchanged.
-
 
 ## 2026-10-27 — Financial consistency repairs
 
@@ -236,7 +233,6 @@
 ## 2026-10-27 — Startup without a video player
 
 - Replace the first-session MP4 splash with the existing vector sun mark on the app background. Keep a brief rise/fade and immediate pointer, key or scroll skip. A CSS deadline dismisses it even before hydration; reduced motion skips the introduction. No media element means no native play controls or black video rectangle.
-
 
 ## 2026-10-26 — Today leads Home
 
@@ -351,7 +347,6 @@
 ## 2026-10-22 — Try a different savings pace
 
 - Add an editable monthly savings slider before reveal sign-up on desktop and phone browsers. Income stays fixed; spending, target and date recalculate together using the existing projection. Keep one original/updated-plan button and carry the selected numbers into sign-up. Native Expo onboarding is unchanged.
-
 
 ## 2026-10-21 — Journey canvas panning
 

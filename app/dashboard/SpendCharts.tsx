@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { InfoTip } from "@/components/ui";
 import MarkedMonth, { type MarkedEvent } from "./MarkedMonth";
 import { bucketFor, daysInMonth, type DateRange } from "@/lib/spend-range";
 
@@ -26,7 +27,7 @@ const monthShort = (ym: string) => { const [y, m] = ym.split("-").map(Number); r
 function ChartKey({ items }: { items: { mark: "line" | "dot" | "dash" | "thin" | "bar" | "barSoft"; label: string }[] }) {
   const swatch = (m: string) => m === "line" ? <i style={{ width: 16, height: 0, borderTop: "2.5px solid var(--uf-chart-1)" }} />
     : m === "dot" ? <i style={{ width: 16, height: 0, borderTop: "2.5px dotted var(--uf-chart-1)" }} />
-    : m === "thin" ? <i style={{ width: 16, height: 0, borderTop: "1.5px solid var(--uf-ink-2)" }} />
+    : m === "thin" ? <i style={{ width: 16, height: 0, borderTop: "2px solid var(--uf-chart-2)" }} />
     : m === "dash" ? <i style={{ width: 16, height: 0, borderTop: "2px dashed var(--uf-ink-3)" }} />
     : <i style={{ width: 10, height: 10, borderRadius: 2, background: m === "bar" ? "var(--uf-chart-1)" : "color-mix(in oklab, var(--uf-chart-1) 28%, var(--uf-card))" }} />;
   return (
@@ -37,19 +38,23 @@ function ChartKey({ items }: { items: { mark: "line" | "dot" | "dash" | "thin" |
 }
 
 /**
- * Running total for the period against past months (how a typical month went
- * by each day) and the budget, with the forecast to the end of the period.
+ * Running total for the period, with the forecast to the end of the period,
+ * against one reference: the budget when there is one, otherwise past months
+ * (how a typical month went by each day). One pill sums it up.
  * The budget line and forecast are built from Upcoming bills in
  * lib/spend-forecast; this only draws them. `usualByDay[d]` is past months'
  * spend through day d.
  */
-export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLine, billsOver = 0, vsBudget = null, unbudgeted = 0, forecast, periodLabel, fmt }: {
+export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLine, billsOver = 0, vsBudget = null, unbudgeted = 0, forecast, billTags = [], periodLabel, fmt }: {
   range: DateRange; today: string; daily: Daily; usualByDay: number[] | null; usualMonth: number | null;
   budgetLine: number[] | null; billsOver?: number;
   /** Budgeted categories against their budget (forecast while running); unbudgeted spending is shown on its own. */
   vsBudget?: number | null; unbudgeted?: number; forecast: number[] | null; periodLabel: string; fmt: (n: number) => string;
+  /** Big bills to name at their step: day index in the range and a short label. */
+  billTags?: { day: number; label: string }[];
 }) {
-  const W = 360, H = 170, P = 6, base = H - 18;
+  // R leaves room on the right for the end-of-month amounts (and, with a budget, the gap between them).
+  const W = 360, H = 190, P = 6, R = budgetLine ? 92 : 50, base = H - 18;
   const [hover, setHover] = useState<number | null>(null);
   const all = useMemo(() => {
     const days: string[] = [];
@@ -58,7 +63,9 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLi
   }, [range]);
   let run = 0;
   const mine = all.filter((d) => d <= today).map((d) => (run += daily.get(d) ?? 0));
-  const usual = usualByDay && usualMonth != null
+  // One line to compare against (2026-11-01, John): the budget when there is
+  // one, otherwise past months. Both at once competed with each other.
+  const usual = !budgetLine && usualByDay && usualMonth != null
     ? all.map((d) => range.months.indexOf(d.slice(0, 7)) * usualMonth + usualByDay[Number(d.slice(8, 10))])
     : null;
   const budgetPath = budgetLine;
@@ -70,10 +77,15 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLi
   const step = (() => { const raw = max / 4, mag = 10 ** Math.floor(Math.log10(raw)); return [1, 2, 2.5, 5, 10].map((k) => k * mag).find((v) => v >= raw) ?? raw; })();
   const grid = [1, 2, 3, 4].map((k) => k * step).filter((v) => v < max * 0.95);
   const short = (v: number) => v >= 1000 ? `${fmt(v / 1000).replace(/\.0+$/, "")}k` : fmt(v);
-  const x = (i: number) => P + (i / Math.max(1, all.length - 1)) * (W - 2 * P);
+  const x = (i: number) => P + (i / Math.max(1, all.length - 1)) * (W - P - R);
   const y = (v: number) => base - (v / max) * (base - 12);
   const path = (a: number[]) => a.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
   const end = mine.length - 1, gap = usual && end >= 0 ? mine[end] - usual[end] : null;
+  // Where spending lands at the end (forecast while running, actual once the period is over), and the days the gap is shaded.
+  const endSpend = projected ?? (end === all.length - 1 ? mine[end] : null);
+  const spendAt = (i: number) => (i <= end ? mine[i] : forecast?.[i] ?? NaN);
+  const lead = endSpend != null ? all.map((_, i) => i).filter((i) => i >= (projected != null ? end0 : 0)) : null;
+  const over = (vsBudget ?? (endSpend != null && budgetTotal != null ? endSpend - budgetTotal : 0)) >= 1;
   const ticks = range.months.length === 1 ? [0, 9, 19, all.length - 1] : range.months.map((m) => all.indexOf(`${m}-01`));
 
   const chip = (text: React.ReactNode, strong: boolean) => (
@@ -82,19 +94,23 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLi
   // Hover (or touch) anywhere on the chart to read the exact numbers for that day.
   const pick = (e: React.PointerEvent<SVGSVGElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
-    const i = Math.round((((e.clientX - r.left) / r.width) * W - P) / (W - 2 * P) * (all.length - 1));
+    const i = Math.round((((e.clientX - r.left) / r.width) * W - P) / (W - P - R) * (all.length - 1));
     setHover(Math.max(0, Math.min(all.length - 1, i)));
   };
   const day = (iso: string) => { const [yy, mm, dd] = iso.split("-").map(Number); return new Date(yy, mm - 1, dd).toLocaleDateString("en-US", { month: "short", day: "numeric" }); };
   return (
     <div style={{ position: "relative" }}>
-    {(projected != null || vsBudget != null || gap != null || billsOver >= 1 || unbudgeted >= 1) && (
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-        {projected != null
-          ? chip(<>On track for {fmt(projected)}</>, true)
-          : gap != null && Math.abs(gap) >= 1 && chip(<>{gap >= 0 ? "▲" : "▼"} {fmt(Math.abs(gap))} vs past months</>, false)}
-        {vsBudget != null && Math.abs(vsBudget) >= 1 && chip(vsBudget > 0 ? <>{fmt(vsBudget)} over budget</> : <>{fmt(-vsBudget)} under budget</>, vsBudget > 0)}
-        {unbudgeted >= 1 && chip(<>+{fmt(unbudgeted)} not budgeted</>, false)}
+    {(projected != null || vsBudget != null || gap != null || billsOver >= 1) && (
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 6 }}>
+        {/* One pill: where the month is heading and how that sits against the budget. */}
+        {(() => {
+          const vs = vsBudget != null && Math.abs(vsBudget) >= 1 ? (vsBudget > 0 ? `${fmt(vsBudget)} over budget` : `${fmt(-vsBudget)} under budget`) : null;
+          const parts = [projected != null ? `On track for ${fmt(projected)}` : null, vs,
+            projected == null && vs == null && gap != null && Math.abs(gap) >= 1 ? `${gap >= 0 ? "▲" : "▼"} ${fmt(Math.abs(gap))} vs past months` : null].filter(Boolean);
+          if (!parts.length) return null;
+          return over ? <span className="uf-t-small" style={{ ...mono, padding: "3px 8px", borderRadius: 999, background: "var(--uf-neg-bg)", color: "var(--uf-neg-ink)", fontWeight: 700 }}>{parts.join(" · ")}</span> : chip(<>{parts.join(" · ")}</>, true);
+        })()}
+        {unbudgeted >= 1 && vsBudget != null && <InfoTip label="About this chart">This chart shows the categories with a budget. Another {fmt(unbudgeted)} {projected != null ? "is expected" : "went"} in categories without one; it is still counted in what you save.</InfoTip>}
         {billsOver >= 1 && <span className="uf-t-small" style={{ ...mono, padding: "3px 8px", borderRadius: 999, background: "var(--uf-warn-bg)", color: "var(--uf-warn-ink)", fontWeight: 700 }}>
           <span aria-hidden>⚑ </span>Bills exceed budget by {fmt(billsOver)}</span>}
       </div>
@@ -102,29 +118,60 @@ export function LineView({ range, today, daily, usualByDay, usualMonth, budgetLi
     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block", overflow: "visible", touchAction: "pan-y", cursor: "crosshair" }} role="img"
       onPointerMove={pick} onPointerDown={pick} onPointerLeave={() => setHover(null)}
       aria-label={`${periodLabel}: ${fmt(mine.at(-1) ?? 0)}${gap != null ? `, ${fmt(Math.abs(gap))} ${gap >= 0 ? "more" : "less"} than past months by this day` : ""}${budgetTotal ? `, budget ${fmt(budgetTotal)}` : ""}`}>
-      {budgetTotal != null && (
-        <>
-          {budgetPath && <path d={path(budgetPath)} fill="none" stroke="var(--uf-ink-2)" strokeWidth={1.5} strokeLinejoin="round" />}
-        </>
-      )}
       {grid.map((v) => (
         <g key={v}>
-          <line x1={P} x2={W - P} y1={y(v)} y2={y(v)} stroke="var(--uf-border)" strokeWidth={1} />
+          <line x1={P} x2={W - R} y1={y(v)} y2={y(v)} stroke="var(--uf-border)" strokeWidth={1} strokeDasharray="2 4" />
           <text x={P} y={y(v) - 3} style={{ ...mono, fontSize: 10, fill: "var(--uf-ink-3)" }}>{short(v)}</text>
         </g>
       ))}
-      {usual && <path d={path(usual)} fill="none" stroke="var(--uf-ink-3)" strokeWidth={2} strokeDasharray="4 4" />}
-      {forecast && <path d={forecast.map((v, i) => Number.isNaN(v) ? "" : `${i === end0 ? "M" : "L"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ")} fill="none" stroke="var(--uf-chart-1)" strokeWidth={2} strokeDasharray="1 4" strokeLinecap="round" />}
-      {end >= 0 && <path d={`${path(mine)} L${x(end)} ${base} L${x(0)} ${base} Z`} fill="color-mix(in oklab, var(--uf-chart-1) 14%, transparent)" />}
-      {end >= 0 && <path d={path(mine)} fill="none" stroke="var(--uf-chart-1)" strokeWidth={2.5} strokeLinejoin="round" />}
-      {end >= 0 && <circle cx={x(end)} cy={y(mine[end])} r={5} fill="var(--uf-chart-1)" stroke="var(--uf-card)" strokeWidth={2} />}
-      <line x1={P} x2={W - P} y1={base} y2={base} stroke="var(--uf-border)" />
+      {/* The gap between where spending is heading and the budget: pink over, mint under. */}
+      {budgetPath && lead && <path d={`M${lead.map((i) => `${x(i).toFixed(1)} ${y(spendAt(i)).toFixed(1)}`).join(" L")} L${[...lead].reverse().map((i) => `${x(i).toFixed(1)} ${y(budgetPath[i]).toFixed(1)}`).join(" L")} Z`}
+        fill={over ? "var(--uf-neg)" : "var(--uf-pos)"} opacity={0.16} />}
+      {/* Lilac, not grey: a dark grey budget line read as "This month" in light mode. */}
+      {budgetPath && <path d={path(budgetPath)} fill="none" stroke="var(--uf-chart-2)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />}
+      {usual && <path d={path(usual)} fill="none" stroke="var(--uf-ink-3)" strokeWidth={2} strokeDasharray="4 4" strokeLinecap="round" />}
+      {forecast && <path d={forecast.map((v, i) => Number.isNaN(v) ? "" : `${i === end0 ? "M" : "L"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ")} fill="none" stroke="var(--uf-chart-1)" strokeWidth={2.5} strokeDasharray="0.1 5" strokeLinecap="round" strokeLinejoin="round" />}
+      {end >= 1 && <path d={path(mine)} fill="none" stroke="var(--uf-chart-1)" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />}
+      <line x1={P} x2={W - R} y1={base} y2={base} stroke="var(--uf-border)" />
+      {end >= 0 && <circle cx={x(end)} cy={y(mine[end])} r={9} fill="var(--uf-chart-1)" opacity={0.18} />}
+      {end >= 0 && <circle cx={x(end)} cy={y(mine[end])} r={4.5} fill="var(--uf-chart-1)" stroke="var(--uf-card)" strokeWidth={2} />}
+      {/* Where each line lands at the end of the month, so the gap reads without hovering. */}
+      {budgetPath && billTags.map((t) => {
+        // Left of the step, in the empty space above the lines; right of it near the start.
+        const right = t.day < 3, tx = right ? x(t.day) + 18 : x(t.day) - 28;
+        const ty = right ? y(budgetPath[t.day]) - 22 : Math.min(y(budgetPath[t.day]) - 14, (y(budgetPath[Math.max(0, t.day - 1)]) + y(budgetPath[t.day])) / 2);
+        return <g key={`${t.day}-${t.label}`}><rect x={tx - 24} y={ty - 8} width={48} height={16} rx={8} fill="var(--uf-surface)" />
+          <text x={tx} y={ty + 3.5} textAnchor="middle" style={{ fontSize: 9.5, fontWeight: 600, fill: "var(--uf-ink-2)" }}>{t.label.length > 8 ? `${t.label.slice(0, 7)}…` : t.label}</text></g>;
+      })}
+      {budgetTotal != null && endSpend != null ? (() => {
+        // Spending total, gap pill and budget total in a column at the right, joined by a bracket, clear of the lines.
+        const yS = y(endSpend), yB = y(budgetTotal), xe = x(all.length - 1), lx = xe + 12, diff = vsBudget ?? endSpend - budgetTotal;
+        let a = Math.min(yS, yB), c = Math.max(yS, yB);
+        if (c - a < 44) { const m = (a + c) / 2; a = m - 22; c = m + 22; }
+        const [lS, lB] = yS <= yB ? [a, c] : [c, a], word = { fontSize: 9.5, fontWeight: 500, fill: "var(--uf-ink-3)" };
+        return <g>
+          <path d={`M${xe + 5} ${yS} H${xe + 8} V${yB} H${xe + 5}`} fill="none" stroke={over ? "var(--uf-neg)" : "var(--uf-pos)"} strokeWidth={1.5} strokeLinecap="round" />
+          <text x={lx} y={lS + 4} style={{ ...mono, fontSize: 10.5, fontWeight: 700, fill: "var(--uf-ink)" }}>{fmt(endSpend)}<tspan dx={4} style={word}>{projected != null ? "forecast" : "spent"}</tspan></text>
+          {Math.abs(diff) >= 1 && <><rect x={lx - 2} y={(a + c) / 2 - 9} width={R - 14} height={18} rx={9} fill={over ? "var(--uf-neg-bg)" : "var(--uf-mint)"} />
+            <text x={lx - 2 + (R - 14) / 2} y={(a + c) / 2 + 4} textAnchor="middle" style={{ ...mono, fontSize: 10.5, fontWeight: 700, fill: over ? "var(--uf-neg-ink)" : "var(--uf-pos-ink)" }}>{fmt(Math.abs(diff))} {over ? "over" : "under"}</text></>}
+          <text x={lx} y={lB + 4} style={{ ...mono, fontSize: 10.5, fontWeight: 700, fill: "var(--uf-chart-2)" }}>{fmt(budgetTotal)}<tspan dx={4} style={word}>budget</tspan></text>
+        </g>;
+      })() : (() => {
+        const ends = [projected != null ? { v: projected, c: "var(--uf-ink)" } : end === all.length - 1 ? { v: mine[end], c: "var(--uf-ink)" } : null,
+          budgetTotal != null ? { v: budgetTotal, c: "var(--uf-chart-2)" } : usual ? { v: usual[all.length - 1], c: "var(--uf-ink-3)" } : null]
+          .filter((e): e is { v: number; c: string } => !!e).map((e) => ({ ...e, at: y(e.v) + 4 }));
+        if (ends.length === 2 && Math.abs(ends[0].at - ends[1].at) < 13) {
+          const [hi, lo] = ends[0].at < ends[1].at ? [ends[0], ends[1]] : [ends[1], ends[0]], mid = (hi.at + lo.at) / 2;
+          hi.at = mid - 6.5; lo.at = mid + 6.5;
+        }
+        return ends.map((e) => <text key={e.c} x={W - R + 6} y={e.at} style={{ ...mono, fontSize: 10.5, fontWeight: 700, fill: e.c }}>{fmt(e.v)}</text>);
+      })()}
       {hover != null && (
         <>
-          <line x1={x(hover)} x2={x(hover)} y1={8} y2={base} stroke="var(--uf-ink-3)" strokeWidth={1} />
+          <line x1={x(hover)} x2={x(hover)} y1={8} y2={base} stroke="var(--uf-ink-3)" strokeWidth={1} strokeDasharray="2 3" />
           {hover <= end && <circle cx={x(hover)} cy={y(mine[hover])} r={4} fill="var(--uf-chart-1)" stroke="var(--uf-card)" strokeWidth={2} />}
           {usual && <circle cx={x(hover)} cy={y(usual[hover])} r={3} fill="var(--uf-card)" stroke="var(--uf-ink-3)" strokeWidth={1.5} />}
-          {budgetPath && <circle cx={x(hover)} cy={y(budgetPath[hover])} r={3} fill="var(--uf-card)" stroke="var(--uf-ink-2)" strokeWidth={1.5} />}
+          {budgetPath && <circle cx={x(hover)} cy={y(budgetPath[hover])} r={3} fill="var(--uf-card)" stroke="var(--uf-chart-2)" strokeWidth={1.5} />}
         </>
       )}
       {ticks.map((i) => i >= 0 && (
@@ -205,7 +252,7 @@ export function BarsView({ range, today, daily, usualMonth, budgetMonth, fmt, va
       )}
       {plan != null && (
         <>
-          <i style={{ position: "absolute", left: 0, right: 0, bottom: 20 + (plan / max) * 140, borderTop: "1.5px solid var(--uf-ink-2)" }} />
+          <i style={{ position: "absolute", left: 0, right: 0, bottom: 20 + (plan / max) * 140, borderTop: "2px solid var(--uf-chart-2)" }} />
           <span className="uf-t-small" style={{ ...mono, position: "absolute", right: 0, bottom: 24 + (plan / max) * 140, color: "var(--uf-ink-2)", background: "var(--uf-card)", paddingLeft: 4 }}>budget {fmt(plan)}</span>
         </>
       )}
