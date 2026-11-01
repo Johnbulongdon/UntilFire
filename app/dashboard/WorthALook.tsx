@@ -16,12 +16,12 @@ const COPY: Record<FlagKind, { label: string; tip: string; yes: string; no: stri
   },
   card_payment: {
     label: "Card payment",
-    tip: "Paying a credit card bill moves money; the purchases on the card were the spending. Counting both doubles it.",
+    tip: "Paying a credit card bill moves money; the purchases on the card were the spending. Counting both doubles it, so it stays out of your totals until you answer.",
     yes: "It's a card payment", no: "No, it's spending",
   },
   duplicate: {
     label: "Possible duplicate",
-    tip: "Same amount as another row a day or two apart, one you typed in that your bank has now sent, or a card line for an Alipay or WeChat buy you also imported from the wallet. Deleting keeps the bank's or wallet's copy.",
+    tip: "Same amount as another row a day or two apart, one you typed in that your bank has now sent, or a card line for an Alipay or WeChat buy you also imported from the wallet. Deleting keeps the bank's or wallet's copy. Until you answer, this one stays out of your totals.",
     yes: "Delete this one", no: "Keep both",
   },
   large: {

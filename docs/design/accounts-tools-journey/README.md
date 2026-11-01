@@ -1,6 +1,6 @@
 # Accounts & tools — implementation contract
 
-**Status:** implementation in review in [PR #354](https://github.com/Johnbulongdon/UntilFire/pull/354), 1 November 2026. No production migration, live programme activation, merge or phone promotion performed. Baseline: latest pushed main 78f24d2. The approved prototype remains under mock/ as design history.
+**Status:** implementation in review in [PR #354](https://github.com/Johnbulongdon/UntilFire/pull/354), 1 November 2026. No production migration, live programme activation, merge or phone promotion performed. Baseline: latest pushed main 3759091 (including PR #357 transaction fixes). The approved prototype remains under mock/ as design history.
 
 ## Placement and behaviour
 

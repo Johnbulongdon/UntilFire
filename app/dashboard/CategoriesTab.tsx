@@ -606,7 +606,7 @@ export default function CategoriesTab({ displayCurrency = "USD", displayRates = 
   useEffect(() => {
     fetch("https://api.frankfurter.app/latest?from=USD")
       .then((r) => r.json())
-      .then((d) => { if (d.rates) setRates(d.rates); })
+      .then((d) => { if (d.rates) setRates({ ...FALLBACK_RATES, ...d.rates }); })
       .catch(() => {});
 
     supabase.auth.getSession().then(({ data: { session } }) => {
