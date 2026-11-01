@@ -24,3 +24,9 @@ The actual Expo components ran in Expo web using a temporary local fixture trans
 - Physical Android/iOS browser handoff, keyboard, assistive technology and installed-device light/dark acceptance remain pending. Expo web is not a substitute.
 - Native attribution reads the existing saved UntilFire invitation; this does not add deferred Play-install attribution. Broker completion remains self-reported and no money is moved.
 - Local fixture transport is review tooling only and is not included in production routes or phone bundles.
+
+## Creator-flow audit repairs — 1 November 2026
+
+Baseline refreshed to origin/main 8f9b8d5 and merged normally, preserving both changelog and phone update-log entries from main. Creator dashboard now links directly to own provider setup. Existing member invite codes are shown read-only and retained on creator upgrade; their partner ID, shared invitation URL and provider-link ownership are unchanged. Failed creator/profile/statistics reads return retryable errors; the client shows Try again and retains previously loaded creator state.
+
+Verification: 28 actual-handler routing/setup scenarios plus privacy guards pass; existing referrals 70/70, partner offers 17/17 and Journeys 23/23 pass. Website production build/TypeScript and targeted ESLint pass. Current real CreatorArea checked with synthetic fixture transport at 1280px and 390px; direct navigation, initial lookup failure, retry recovery and read-only member code verified. New provider entry has a 44px target; no horizontal overflow at either width. Narrow dark creator card checked. No production writes, migration application, provider activation or phone release. Hosted auth/database and installed-device acceptance remain pending.

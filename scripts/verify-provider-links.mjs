@@ -652,6 +652,56 @@ await check(
     assert.equal(store.referral_attributions[0].partner_id, "partner-a");
   },
 );
+const creator = load("app/api/referrals/me/route.ts");
+const invite = load("app/r/[code]/route.ts");
+const join = () => creator.POST(req(undefined, "a", {
+  code: "alex-creator", payoutMethod: "paypal", payoutEmail: "alex@example.test", acceptTerms: true,
+}));
+await check("member upgrade preserves shared code, partner ownership and outstanding invite claims", async () => {
+  const partner = store.referral_partners[0];
+  partner.kind = "friend";
+  partner.code = "f-abcdefgh";
+  const before = await json(await creator.GET(req(undefined, "a")));
+  assert.equal(before.inviteCode, partner.code);
+  assert.equal((await join()).status, 200);
+  assert.equal(partner.code, "f-abcdefgh");
+  assert.equal(partner.kind, "creator");
+  assert.equal(partner.id, "partner-a");
+  const visit = await invite.GET(req("https://www.untilfire.com/r/f-abcdefgh", null), { params: Promise.resolve({ code: "f-abcdefgh" }) });
+  assert.match(visit.headers.get("set-cookie"), /uf_ref=f-abcdefgh/);
+  store.referral_attributions = [];
+  const claimed = await claim.POST(req(undefined, "b", {}, { cookie: "uf_ref=f-abcdefgh" }));
+  assert.equal(claimed.status, 200);
+  assert.equal(store.referral_attributions[0].partner_id, partner.id);
+  assert.equal(store.partner_referral_links[0].partner_id, partner.id);
+});
+await check("new creators can still select a new invite code", async () => {
+  store.referral_partners = [];
+  assert.equal((await join()).status, 200);
+  assert.equal(store.referral_partners[0].code, "alex-creator");
+});
+await check("creator lookup failure is retryable, never a successful not-joined response", async () => {
+  failedTable = "referral_partners";
+  const response = await json(await creator.GET(req(undefined, "a")));
+  assert.equal(response.status, 503);
+  assert.ok(response.error);
+  assert.equal("partner" in response, false);
+  assert.equal((await join()).status, 503);
+});
+await check("creator statistics failure does not show fabricated zero balances", async () => {
+  store.referral_partners[0].kind = "creator";
+  failedTable = "referral_commissions";
+  const response = await json(await creator.GET(req(undefined, "a")));
+  assert.equal(response.status, 503);
+  assert.equal("stats" in response, false);
+});
+await check("creator code-check failure does not create an account", async () => {
+  store.referral_partners = [];
+  failedTable = "referral_code_holds";
+  assert.equal((await join()).status, 503);
+  assert.equal(store.referral_partners.length, 0);
+});
+
 console.log(
   "All " + tests + " provider-routing and setup-handler scenarios passed.",
 );

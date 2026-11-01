@@ -129,6 +129,14 @@ const PHONE_HOME: JourneyStep = { label: 'Home', action: 'Open a tab', route: '(
 
 export const JOURNEYS: Journey[] = [
   {
+    id: 'web-creator-links', title: 'Creator: add provider links', platform: 'web', visitor: 'returning',
+    steps: [
+      { label: 'Creator program', action: 'Join or open creator dashboard; existing invite code is retained', route: '/invite', shot: 'user:/invite' },
+      { label: 'My provider links', action: 'Manage my provider links, submit for approval', route: '/dashboard', shot: 'user:/dashboard?tab=offers&view=links' },
+      { label: 'Accounts & tools', action: 'After approval, attributed invitees see the inviter link', route: '/dashboard', shot: 'user:/dashboard?tab=offers' },
+    ],
+  },
+  {
     id: 'web-landing', title: 'Landing → plan → sign up', platform: 'web', visitor: 'new',
     steps: [{ label: 'Landing', action: 'Tap Get started', route: '/', shot: '/' }, ...WEB_CALCULATOR, ...WEB_SIGN_UP],
   },

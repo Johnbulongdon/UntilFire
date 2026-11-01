@@ -4,6 +4,7 @@
 
 - Website and phone add curated account browsing/comparison, focused account setup and existing-account bypass; opening a provider never marks an account opened or moves money.
 - Members can submit their own provider referral links through their existing UntilFire referral profile. Approved inviter links take precedence for invited accounts, with per-provider UntilFire fallback, admin review, safe one-use redirects and account-owned setup progress.
+- Creator dashboard links directly to provider setup. Member-to-creator upgrades retain existing invite codes; creator lookup failures show a retry state rather than signup.
 - Invite-claim database failures preserve the invite cookie for retry. No commission rules, provider activation or financial values change. Requires the additive migration before callers are released; implementation and rollout contract: docs/design/accounts-tools-journey/README.md.
 
 ## 2026-11-01 — Buttons and popups match Next Horizon

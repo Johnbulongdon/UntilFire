@@ -149,3 +149,7 @@ These sources establish broad product descriptions, not approval of commercial r
 ## Referral-copy refinement — 1 November
 
 John selected neutral attribution for the review mock: UntilFire referral link, or the inviter’s named referral link. No paid-link claim, payout certainty or unique-user-reward claim is made. Provider terms and any applicable live disclosure remain a production review requirement under D-81; the mock label is not a compliance determination.
+
+### Creator-flow audit repairs — 1 November 2026
+
+Creator dashboard now opens Money → Accounts & tools → My referral links directly. Existing members retain their current invitation code when joining the creator programme, preserving already-shared invitations and the partner ID used by approved provider links. New creators without an existing invite still choose a code. Creator account and statistics read failures return a retryable error; the UI never treats a failed lookup as not joined. No migration or commission change is needed for these repairs.
