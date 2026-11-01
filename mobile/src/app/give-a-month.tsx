@@ -56,7 +56,7 @@ export default function GiveAMonth() {
             <Text className="text-[14px] text-neg-ink">Couldn’t get your link. Check your connection and try again.</Text>
           ) : <ActivityIndicator color={colors.green} />}
         </View>
-        <View className="mt-6 gap-3"><PrimaryButton label="Share my link" onPress={share} disabled={!link} /><Button kind="quiet" label="My provider referral links" onPress={() => router.push("/provider-links" as never)} /></View>
+        <View className="mt-6 gap-3"><PrimaryButton label="Share my link" onPress={share} disabled={!link} /><Button kind="quiet" label="My provider referral links" onPress={() => router.push({ pathname: "/creator", params: { from: "give-a-month" } } as never)} /></View>
       </ScrollView>
     </SafeAreaView>
   )

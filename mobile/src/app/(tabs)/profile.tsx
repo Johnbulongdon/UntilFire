@@ -103,6 +103,7 @@ export default function Profile() {
           <Row icon="house.fill" fallback="⌂" label="Household" value="" onPress={() => router.push('/household')} />
           {/* Its reward is a longer web trial, which App Review reads as paying outside Apple (3.1.1); hidden in the App Store build. */}
           {!nativeBuild && <Row icon="gift.fill" fallback="🎁" label="Give a month, get a month" value="" onPress={() => router.push('/give-a-month')} />}
+          <Row icon="gift.fill" fallback="🎁" label="Creator programme" value="" onPress={() => router.push("/creator" as never)} />
           <Row icon="dollarsign.circle.fill" fallback="$" label="Currency" value={data ? `${currencyFlag(data.currency)}  ${CURRENCY_NAMES[data.currency] ?? data.currency}` : '…'} onPress={() => router.push('/currency')} />
         </Card>
       ) : (

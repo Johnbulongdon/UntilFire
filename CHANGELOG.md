@@ -1,10 +1,18 @@
 # Changelog
 
+<<<<<<< HEAD
+## 2026-11-01 — Creator and account setup navigation (in review)
+
+- Referral links use approved provider programmes and matching HTTPS domains; web/phone now show the provider website and flag mismatches before submitting. Connected accounts are not required.
+- Own provider links stay under Creator programme; legacy links forward there. Profile keeps access for ordinary members without paid creator enrolment.
+- Money account browsing no longer creates a Plan task. Plan opens its own account picker in place, retains selection/filter state and returns to setup. Existing-account selection opens its editor directly. Web and phone back labels match their destinations.
+=======
 ## 2026-11-01 — Free to spend pill on Budget
 
 - The "Free to spend" bar under the Budget chart is now a rounded mint pill. Early in the month, with no expenses yet, it stood alone as a square black box that looked like a broken button. Short after bills stays a warm warning pill.
 - Expenses and Free to spend are two separate pills that wrap on small phones, so the Expenses label no longer disappears or gets cut off.
 - The "to review" and Worth a look buttons use the ink token directly instead of the old green alias.
+>>>>>>> origin/main
 
 ## 2026-11-01 — Accounts & tools and member provider referrals (in review)
 

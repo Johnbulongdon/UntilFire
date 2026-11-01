@@ -11,6 +11,7 @@ import { DetailScreen } from "@/components/DetailScreen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { useToolsAPI } from "@/lib/use-tools-api";
+import AccountToolsBrowser from "@/components/AccountToolsBrowser";
 import { colors, brand } from "@/theme/colors";
 export default function AccountSetupScreen() {
   const { owner } = useToolsAPI();
@@ -25,6 +26,8 @@ function Setup() {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [browsing, setBrowsing] = useState(false);
+  const [browserOpened, setBrowserOpened] = useState(false);
   const [existing, setExisting] = useState(false);
   const [label, setLabel] = useState("");
   const load = useCallback(async () => {
@@ -62,6 +65,7 @@ function Setup() {
       });
       await load();
       setExisting(false);
+      if (action === "reset") { setBrowserOpened(false); setBrowsing(false); }
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -70,9 +74,18 @@ function Setup() {
   }
   const stage = current?.stage ?? "choose";
   const step = stage === "choose" ? 0 : stage === "applying" ? 1 : 2;
-  return (
-    <DetailScreen
-      back="Plan"
+  return (<View className="flex-1">
+    {browserOpened && <View style={{ flex: 1, display: browsing ? "flex" : "none" }}><AccountToolsBrowser plan={{ goal,
+      onBack: () => setBrowsing(false),
+      onExisting: () => { setBrowsing(false); setExisting(true); },
+      onStarted: async (provider) => {
+        await api("/api/account-setup", { goal, version: current?.version ?? 0, action: "started", label: provider.name });
+        await load();
+      },
+    }} /></View>}
+    <View style={{ flex: 1, display: browsing ? "none" : "flex" }}><DetailScreen
+      back="Contributions"
+      onBack={() => router.navigate("/plan/contributions" as never)}
       title={setupTitle(goal)}
       onRefresh={() => {
         void load().catch((e) => setError(e.message));
@@ -133,10 +146,10 @@ function Setup() {
               <Text className="text-[20px] font-bold text-ink">
                 Choose an account
               </Text>
-              <Button
+              {!existing && <Button
                 label="Use an existing account"
                 onPress={() => setExisting(true)}
-              />
+              />}
               {existing && (
                 <>
                   <Text nativeID="account-label" className="text-ink">
@@ -144,6 +157,7 @@ function Setup() {
                   </Text>
                   <TextInput
                     accessibilityLabel="Account nickname"
+                    autoFocus
                     value={label}
                     maxLength={80}
                     onChangeText={setLabel}
@@ -169,12 +183,7 @@ function Setup() {
               <Button
                 kind="quiet"
                 label="Browse accounts & tools"
-                onPress={() =>
-                  router.push({
-                    pathname: "/money/tools",
-                    params: { goal },
-                  } as never)
-                }
+                onPress={() => { setBrowserOpened(true); setBrowsing(true); }}
               />
             </>
           )}
@@ -259,6 +268,6 @@ function Setup() {
           )}
         </View>
       )}
-    </DetailScreen>
-  );
+    </DetailScreen></View>
+  </View>);
 }

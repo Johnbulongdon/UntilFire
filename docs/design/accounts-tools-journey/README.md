@@ -153,3 +153,13 @@ John selected neutral attribution for the review mock: UntilFire referral link, 
 ### Creator-flow audit repairs — 1 November 2026
 
 Creator dashboard now opens Money → Accounts & tools → My referral links directly. Existing members retain their current invitation code when joining the creator programme, preserving already-shared invitations and the partner ID used by approved provider links. New creators without an existing invite still choose a code. Creator account and statistics read failures return a retryable error; the UI never treats a failed lookup as not joined. No migration or commission change is needed for these repairs.
+
+### Navigation correction — D-131
+
+Supersedes earlier placement of own-link management inside Money. Creator programme now owns `/invite/provider-links` (phone `/creator`); ordinary members keep a Profile sharing shortcut. Existing `/dashboard?tab=offers&view=links` and phone `/provider-links` addresses forward to that editor.
+
+Account browsing in Money never writes setup progress. Only the explicit Plan picker calls `onStarted` after a valid handoff ticket is reserved. Plan keeps the picker mounted within Account setup, preserving country, selected provider and comparisons while moving between picker, existing-account editor and setup progress. Creator editing never enters Plan. Back labels use actual parent destinations.
+
+### Provider eligibility clarification — 1 November 2026
+
+John clarified that provider legitimacy, not a connected-account requirement, is the eligibility rule. Members choose only admin-curated, live programmes with member submissions enabled. No member can create a provider or override its approved domain/status. The API, admin approval and outbound resolver all enforce the provider domain; web/phone show the expected domain and reject a mismatched URL before submitting. New/edited links still require review. A matching domain does not independently prove that a referral code is valid or belongs to the submitter; approval is retained. Wise, IBKR and Capital One are examples, not activated listings or hard-coded exceptions.
