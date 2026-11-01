@@ -25,13 +25,16 @@ export default function ReviewPill({ filed, need, busy, onReview, bank, banksOpe
   return (
     <div style={{ display: "grid", gap: 4 }}>
       {split && free && (
-        <div style={{ display: "flex", height: 44, borderRadius: 999, overflow: "hidden", gap: 3 }}>
+        // Two separate pills, each rounded on its own: with no expenses yet the
+        // Free to spend pill stood alone and lost its rounded right end (1 Nov 2026).
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
           {spentThisMonth > 0 && (
-            <div style={{ flex: "1 1 0", minWidth: 0, overflow: "hidden", background: "var(--uf-surface-2)", color: "var(--uf-ink-2)", display: "flex", alignItems: "center", gap: 8, padding: "0 16px", whiteSpace: "nowrap" }}>
-              <span className="uf-t-small uf-free-until">Expenses</span><b style={{ ...mono, fontSize: 15, color: "var(--uf-ink)" }}>{fmt(spentThisMonth)}</b>
+            <div style={{ flex: "1 1 auto", minWidth: "max-content", height: 44, borderRadius: 999, overflow: "hidden", background: "var(--uf-surface-2)", color: "var(--uf-ink-2)", display: "flex", alignItems: "center", gap: 8, padding: "0 16px", whiteSpace: "nowrap" }}>
+              <span className="uf-t-small">Expenses</span><b style={{ ...mono, fontSize: 15, color: "var(--uf-ink)" }}>{fmt(spentThisMonth)}</b>
             </div>
           )}
-          <div style={{ flex: "0 0 auto", background: free.amount < 0 ? "var(--uf-warn-bg)" : "var(--uf-ink)", color: free.amount < 0 ? "var(--uf-warn-ink)" : "var(--uf-card)",
+          {/* Mint, not black: black pills are buttons, and this is a number to read. */}
+          <div style={{ flex: "0 0 auto", height: 44, borderRadius: 999, background: free.amount < 0 ? "var(--uf-warn-bg)" : "var(--uf-mint)", color: free.amount < 0 ? "var(--uf-warn-ink)" : "var(--uf-ink)",
             display: "flex", alignItems: "center", gap: 8, padding: "0 16px", whiteSpace: "nowrap" }}>
             <span className="uf-t-small">{free.amount < 0 ? "Short after bills" : "Free to spend"}</span>
             <b style={{ ...mono, fontSize: 15 }}>{fmt(Math.abs(free.amount))}</b>
@@ -53,7 +56,7 @@ export default function ReviewPill({ filed, need, busy, onReview, bank, banksOpe
           )}
           {need > 0 && (
             <button type="button" onClick={onReview} disabled={busy} aria-label={`Review ${need} transactions`} style={{
-              flex: filed ? `0 0 max(${(need / total) * 100}%, 140px)` : 1, border: "none", cursor: busy ? "wait" : "pointer", background: "var(--uf-green)", color: "var(--uf-card)",
+              flex: filed ? `0 0 max(${(need / total) * 100}%, 140px)` : 1, border: "none", cursor: busy ? "wait" : "pointer", background: "var(--uf-ink)", color: "var(--uf-card)",
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8, font: "inherit", fontWeight: 700, opacity: busy ? 0.7 : 1 }}>
               <b style={{ ...mono, fontSize: 16 }}>{need}</b>{busy ? "checking…" : <>to review <span aria-hidden>→</span></>}
             </button>
