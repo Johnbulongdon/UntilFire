@@ -19,6 +19,8 @@ Members can submit only registry providers, using a public first name and direct
 
 POST /api/offers/open verifies authentication and the displayed selection key, then creates an opaque ten-minute ticket. /go consumes it once, revalidates current provider/partner/link status, records only offer and partner IDs, then redirects. It never takes a destination URL from the request or forwards an auth token. Bare legacy /go links continue to use UntilFire's link. Expired or changed tickets return to Accounts & tools rather than switching recipient.
 
+Dynamic account nicknames, inviter labels, own links and member review details are masked in session recordings on web and phone, following D-103. No referral URL or financial amount is sent to a new analytics event.
+
 ## Programme activation and limits
 
 No Robinhood, IBKR or other provider is seeded or enabled by this change. Admin must confirm the programme permits this placement, review current provider terms/disclosure requirements under D-03/D-81, add real approved metadata/domain/UntilFire link, and explicitly enable member submissions. A neutral label is not a compliance determination. No arbitrary shorteners or user-created providers. Rates/eligibility are provider supplied, not personalized recommendations.

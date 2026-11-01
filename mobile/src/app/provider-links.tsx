@@ -88,7 +88,7 @@ function Links() {
       {data?.code && (
         <View className="gap-3 rounded-card border border-border bg-card p-5">
           <Text className="font-bold text-ink">Your UntilFire invite</Text>
-          <Text selectable className="text-[14px] text-ink-2">
+          <Text private selectable className="text-[14px] text-ink-2">
             {"https://www.untilfire.com/r/" + data.code}
           </Text>
           <Button
@@ -195,7 +195,9 @@ function LinkForm({
         style={input}
       />
       {!!link?.review_note && (
-        <Text className="text-ink-2">{link.review_note}</Text>
+        <Text private className="text-ink-2">
+          {link.review_note}
+        </Text>
       )}
       <Text className="text-[12px] leading-5 text-ink-2">
         New and edited links need approval. UntilFire’s link is used during

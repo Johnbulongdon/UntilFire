@@ -34,7 +34,7 @@ export function AccountSetupCard() {
       <Text className="text-[12px] font-bold uppercase text-ink-2">
         Your next step
       </Text>
-      <Text className="text-[19px] font-bold text-ink">
+      <Text private className="text-[19px] font-bold text-ink">
         Continue with {state.item.account_label}
       </Text>
       <Button

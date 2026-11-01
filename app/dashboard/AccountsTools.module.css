@@ -195,3 +195,5 @@
 .compare[data-expanded="true"] {
   position: static;
 }
+
+.page { overflow-wrap: anywhere; }

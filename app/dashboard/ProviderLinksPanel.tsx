@@ -81,7 +81,9 @@ export default function ProviderLinksPanel() {
       {data?.code && (
         <div className={s.card}>
           <strong>Your UntilFire invite</strong>
-          <code>{"https://www.untilfire.com/r/" + data.code}</code>
+          <code className="ph-mask">
+            {"https://www.untilfire.com/r/" + data.code}
+          </code>
           <Button
             onClick={() => {
               void navigator.clipboard
@@ -154,7 +156,9 @@ export default function ProviderLinksPanel() {
                 placeholder={"https://" + provider.allowed_domain + "/…"}
               />
             </label>
-            {link?.review_note && <p className={s.muted}>{link.review_note}</p>}
+            {link?.review_note && (
+              <p className={s.muted + " ph-mask"}>{link.review_note}</p>
+            )}
             <p className={s.small}>
               New and edited links need approval. UntilFire’s link is used while
               yours is in review.

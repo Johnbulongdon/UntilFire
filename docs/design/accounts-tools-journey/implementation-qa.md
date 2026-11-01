@@ -4,12 +4,12 @@
 
 ## Executed checks
 
-- Full npm run validate passed against main 78f24d2 (Next production build, TypeScript, repository ESLint and second production build). Existing repository warnings remain; no errors. Main subsequently gained PR #357 transaction changes; combined checks are recorded in the PR.
+- Full npm run validate passed against main 78f24d2 (Next production build, TypeScript, repository ESLint and second production build). Existing repository warnings remain; no errors. Main subsequently gained PR #357 transaction changes; reconciled 3759091. The combined production build, website/mobile TypeScript, changed-file ESLint and focused provider/referral/Journeys/transaction guards passed.
 - Website and phone TypeScript passed. Changed-file ESLint passed; mobile files are checked explicitly with --no-ignore.
-- node scripts/verify-provider-links.mjs: 23 scenarios execute the actual API handlers against a synthetic Supabase adapter. Invalid bearer/admin identity, immutable inviter selection, link ownership, pending/rejected/wrong-domain fallback, per-provider bonus isolation, stale selection/review/setup versions, one-use/expired/revoked/disabled/paused tickets, duplicate claims, database failure preservation and existing/new setup origins are covered. CI runs it with the existing referral and partner-offer checks.
+- node scripts/verify-provider-links.mjs: 23 scenarios execute the actual API handlers against a synthetic Supabase adapter. Invalid bearer/admin identity, immutable inviter selection, link ownership, pending/rejected/wrong-domain fallback, per-provider bonus isolation, stale selection/review/setup versions, one-use/expired/revoked/disabled/paused tickets, duplicate claims, database failure preservation and existing/new setup origins are covered. CI runs it with the existing referral and partner-offer checks. Additional guards require private account names, inviter labels, own links and review notes to remain masked in phone/web replays.
 - Existing referrals: 70/70; existing partner offers: all checks pass. Journeys: 22 paths and canvas validation pass.
 - The complete additive migration executed locally using the already-installed PGlite PostgreSQL runtime. Verified default-disabled member submissions, RLS on all three new tables, anon/authenticated permission denial, service-role access, unique partner/provider and user/goal rows, stale-version update rejection, and consume-once deletion. This is not hosted PostgREST or independent-connection concurrency verification.
-- Android/iOS/web production exports passed before the final small phone layout/key/retry refinements; final export is rerun after removing temporary fixtures. No native configuration, mobile scripts or dependency changes.
+- Android/iOS/web production exports passed before the final small phone layout/key/retry refinements; final export is rerun after removing temporary fixtures. Final Android/iOS/web exports passed again after main reconciliation and replay masking, with no QA route, fixture text or localhost transport in the output. No native configuration, mobile scripts or dependency changes.
 
 ## Browser evidence
 

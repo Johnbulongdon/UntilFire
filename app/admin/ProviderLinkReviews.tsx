@@ -88,11 +88,11 @@ export default function ProviderLinkReviews({ token }: { token: string }) {
             <strong>{l.partner_offers?.name ?? "Provider"}</strong>
             <span className={s.pill}>{l.status}</span>
           </div>
-          <p>
+          <p className="ph-mask">
             {l.display_name} · {l.referral_partners?.code} ·{" "}
             {l.referral_partners?.status}
           </p>
-          <code>{l.url}</code>
+          <code className="ph-mask">{l.url}</code>
           <label className={s.field}>
             Review note
             <input name="note" maxLength={240} />

@@ -141,7 +141,7 @@ export default function AccountSetupTab() {
           )}
           {stage === "applying" && (
             <>
-              <h2>{current?.account_label}</h2>
+              <h2 className="ph-mask">{current?.account_label}</h2>
               <p className={s.muted}>
                 Your account is only marked open when you confirm.
               </p>
@@ -162,7 +162,7 @@ export default function AccountSetupTab() {
           )}
           {["selected", "opened"].includes(stage) && (
             <>
-              <h2>{current?.account_label}</h2>
+              <h2 className="ph-mask">{current?.account_label}</h2>
               <span className={s.pill}>
                 {current?.origin === "existing"
                   ? "Existing account"
@@ -236,7 +236,7 @@ export function PendingAccountSetup({
   return (
     <div className={s.card}>
       <span className={s.pill}>Your next step</span>
-      <h3>Continue with {state.item.account_label}</h3>
+      <h3 className="ph-mask">Continue with {state.item.account_label}</h3>
       <p className={s.muted}>
         {state.item.stage === "applying"
           ? "Come back when your account is ready."

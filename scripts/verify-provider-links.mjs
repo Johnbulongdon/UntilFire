@@ -655,3 +655,28 @@ await check(
 console.log(
   "All " + tests + " provider-routing and setup-handler scenarios passed.",
 );
+
+// User-entered names must not be unmasked in phone session recordings.
+for (const file of [
+  "mobile/src/app/(tabs)/plan/account-setup.tsx",
+  "mobile/src/app/(tabs)/money/tools.tsx",
+  "mobile/src/app/provider-links.tsx",
+  "mobile/src/components/AccountSetupCard.tsx",
+]) {
+  const source = fs.readFileSync(file, "utf8");
+  for (const node of source.matchAll(/<Text\b([^>]*)>([\s\S]*?)<\/Text>/g)) {
+    if (/account_label|referralLabel|data\.code|review_note/.test(node[2]))
+      assert.match(node[1], /\bprivate\b/, file + " has unmasked private text");
+  }
+}
+console.log(
+  "Session replay privacy guard passed for account names, inviter labels and own links.",
+);
+
+for (const file of ['app/dashboard/AccountSetupTab.tsx','app/dashboard/OffersTab.tsx','app/dashboard/ProviderLinksPanel.tsx','app/admin/ProviderLinkReviews.tsx']) {
+ const source=fs.readFileSync(file,'utf8');
+ for (const node of source.matchAll(/<(p|h2|h3|code)\b([^>]*)>([\s\S]*?)<\/\1>/g)) {
+  if (/account_label|referralLabel|review_note|display_name|data\.code/.test(node[3])) assert.match(node[2],/ph-mask/,file+' has unmasked private text');
+ }
+}
+console.log('Web replay privacy guard passed.');

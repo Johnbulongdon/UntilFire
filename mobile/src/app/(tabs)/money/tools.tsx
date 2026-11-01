@@ -181,7 +181,9 @@ function Tools() {
             busy={busy}
             onPress={() => void open(detail)}
           />
-          <Text className="text-[12px] text-ink-2">{detail.referralLabel}</Text>
+          <Text private className="text-[12px] text-ink-2">
+            {detail.referralLabel}
+          </Text>
           <Button
             kind="quiet"
             label="I already have an account"
@@ -358,7 +360,7 @@ function Tools() {
                       <Text className="text-ink">
                         {rateLabel(o.rateBps) ?? "No listed APY"}
                       </Text>
-                      <Text className="text-[12px] text-ink-2">
+                      <Text private className="text-[12px] text-ink-2">
                         {o.referralLabel}
                       </Text>
                       <Button

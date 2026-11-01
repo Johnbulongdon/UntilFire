@@ -284,7 +284,9 @@ export default function OffersTab() {
                         <h3>{o.name}</h3>
                         <p className={s.muted}>{o.blurb}</p>
                         <p>{rateLabel(o.rateBps) ?? "No listed APY"}</p>
-                        <p className={s.small}>{o.referralLabel}</p>
+                        <p className={s.small + " ph-mask"}>
+                          {o.referralLabel}
+                        </p>
                         <Button onClick={() => setSelected(o.slug)}>
                           View details
                         </Button>
@@ -323,7 +325,7 @@ export default function OffersTab() {
             >
               {busy ? "Opening…" : "Continue to " + detail.name + " ↗"}
             </Button>
-            <p className={s.small}>{detail.referralLabel}</p>
+            <p className={s.small + " ph-mask"}>{detail.referralLabel}</p>
             <a
               className={s.link}
               href={"/dashboard?tab=account-setup&goal=" + goal}

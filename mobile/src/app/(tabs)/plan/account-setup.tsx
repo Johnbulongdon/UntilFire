@@ -180,7 +180,7 @@ function Setup() {
           )}
           {stage === "applying" && (
             <>
-              <Text className="text-[20px] font-bold text-ink">
+              <Text private className="text-[20px] font-bold text-ink">
                 {current?.account_label}
               </Text>
               <Text className="text-[14px] text-ink-2">
@@ -206,7 +206,7 @@ function Setup() {
           )}
           {["selected", "opened"].includes(stage) && (
             <>
-              <Text className="text-[20px] font-bold text-ink">
+              <Text private className="text-[20px] font-bold text-ink">
                 {current?.account_label}
               </Text>
               <Text className="text-[14px] text-ink-2">
