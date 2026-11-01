@@ -11,7 +11,8 @@ import { TODAY_BAR_SPACE } from './TabChrome'
 import { Text } from './Text'
 
 /** A page one tap below a hub: a back link to the hub, a Fraunces title, scrolling content. */
-export function DetailScreen({ back, title, subtitle, children, refreshing, onRefresh }: {
+export function DetailScreen({ back, title, subtitle, children, refreshing, onRefresh, onBack }: {
+  onBack?: () => void
   back: string
   title: string
   subtitle?: string
@@ -22,7 +23,7 @@ export function DetailScreen({ back, title, subtitle, children, refreshing, onRe
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-ground">
       <View className="px-5 pt-2">
-        <Pressable accessibilityRole="button" accessibilityLabel={`Back to ${back}`} hitSlop={12} onPress={() => { haptic.tick(); router.back() }}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Back to ${back}`} hitSlop={12} onPress={() => { haptic.tick(); if (onBack) onBack(); else router.back() }}>
           <Text className="text-[16px] font-semibold text-pos-ink">‹ {back}</Text>
         </Pressable>
       </View>

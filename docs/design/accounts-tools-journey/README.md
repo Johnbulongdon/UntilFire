@@ -153,3 +153,9 @@ John selected neutral attribution for the review mock: UntilFire referral link, 
 ### Creator-flow audit repairs — 1 November 2026
 
 Creator dashboard now opens Money → Accounts & tools → My referral links directly. Existing members retain their current invitation code when joining the creator programme, preserving already-shared invitations and the partner ID used by approved provider links. New creators without an existing invite still choose a code. Creator account and statistics read failures return a retryable error; the UI never treats a failed lookup as not joined. No migration or commission change is needed for these repairs.
+
+### Navigation correction — D-131
+
+Supersedes earlier placement of own-link management inside Money. Creator programme now owns `/invite/provider-links` (phone `/creator`); ordinary members keep a Profile sharing shortcut. Existing `/dashboard?tab=offers&view=links` and phone `/provider-links` addresses forward to that editor.
+
+Account browsing in Money never writes setup progress. Only the explicit Plan picker calls `onStarted` after a valid handoff ticket is reserved. Plan keeps the picker mounted within Account setup, preserving country, selected provider and comparisons while moving between picker, existing-account editor and setup progress. Creator editing never enters Plan. Back labels use actual parent destinations.

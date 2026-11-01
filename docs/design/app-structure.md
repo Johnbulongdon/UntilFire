@@ -224,3 +224,9 @@ with current onboarding and input ownership before implementing it. This documen
 preserves current navigation; it does not authorize a redesign.
 
 31 October D-124 Home exception: Until payday supports temporary, visit-only everyday-cost and cushion adjustments. Persistent financial inputs remain in Money; this card does not edit budgets or move savings.
+
+## Creator/provider navigation ownership (D-131)
+
+Own provider links: Creator programme → My provider links → back to Creator programme. Web `/invite/provider-links` owns the editor, with an explicit Profile return for ordinary member shortcuts. Phone Profile → Creator programme owns the same capability; Give a month shortcuts preserve their own return. Money is not the editor's parent.
+
+Money → Accounts & tools only discovers/opens providers; a click does not start a Plan task. Plan → Contributions → Account setup opens a picker inside setup, with Back to Account setup and retained provider/country/comparison state. Selecting an existing account opens the nickname editor directly. The outer setup Back goes to Contributions. Legacy editor deep links redirect to the canonical creator area.

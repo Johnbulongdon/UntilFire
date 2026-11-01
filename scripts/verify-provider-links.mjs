@@ -709,8 +709,8 @@ console.log(
 // User-entered names must not be unmasked in phone session recordings.
 for (const file of [
   "mobile/src/app/(tabs)/plan/account-setup.tsx",
-  "mobile/src/app/(tabs)/money/tools.tsx",
-  "mobile/src/app/provider-links.tsx",
+  "mobile/src/components/AccountToolsBrowser.tsx",
+  "mobile/src/app/creator.tsx",
   "mobile/src/components/AccountSetupCard.tsx",
 ]) {
   const source = fs.readFileSync(file, "utf8");

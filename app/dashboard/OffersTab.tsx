@@ -1,4 +1,5 @@
 "use client";
+import { reserveToolHandoff } from "@/lib/tool-handoff";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui";
@@ -6,12 +7,17 @@ import { rateLabel } from "@/lib/partner-offers";
 import type { ToolOffer } from "@/lib/accounts-tools-client";
 import { isSetupGoal, type SetupGoal } from "@/lib/account-setup";
 import { useToolsAPI } from "./useToolsAPI";
-import ProviderLinksPanel from "./ProviderLinksPanel";
+import type { PlanAccountPicker } from "@/lib/account-tools-navigation";
 import s from "./AccountsTools.module.css";
-export default function OffersTab() {
+export default function OffersTab({ plan }: { plan?: PlanAccountPicker } = {}) {
+  const { owner } = useToolsAPI();
+  const params = useSearchParams();
+  return <OffersBrowser key={(owner ?? "signed-out") + ":" + (plan?.goal ?? params.get("goal") ?? "invest")} plan={plan} />;
+}
+function OffersBrowser({ plan }: { plan?: PlanAccountPicker }) {
   const params = useSearchParams();
   const rawGoal = params.get("goal");
-  const initialGoal = isSetupGoal(rawGoal) ? rawGoal : "invest";
+  const initialGoal = plan?.goal ?? (isSetupGoal(rawGoal) ? rawGoal : "invest");
   const { api, owner } = useToolsAPI();
   const [state, setState] = useState<{
     owner: string;
@@ -57,24 +63,9 @@ export default function OffersTab() {
     const popup = window.open("about:blank", "_blank");
     if (popup) popup.opener = null;
     try {
-      const d = await api<{ href: string }>("/api/offers/open", {
-        slug: o.slug,
-        referralKey: o.referralKey,
-      });
-      if (!/^\/go\/[a-z0-9-]+\?intent=[a-f0-9-]+$/.test(d.href))
-        throw new Error("Couldn’t open this provider.");
-      const progress = await api<{
-        journeys: import("@/lib/account-setup").AccountSetup[];
-      }>("/api/account-setup");
-      const current = progress.journeys.find((j) => j.goal === goal);
-      await api("/api/account-setup", {
-        goal,
-        version: current?.version ?? 0,
-        action: "started",
-        label: o.name,
-      });
-      setHandoff({ slug: o.slug, href: popup ? "" : d.href });
-      if (popup) popup.location.href = d.href;
+      const href = await reserveToolHandoff(api, o, plan);
+      setHandoff({ slug: o.slug, href: popup ? "" : href });
+      if (popup) popup.location.href = href;
     } catch (e) {
       popup?.close();
       setError((e as Error).message);
@@ -83,22 +74,14 @@ export default function OffersTab() {
       setBusy(false);
     }
   }
-  if (params.get("view") === "links")
-    return (
-      <div className={s.page}>
-        <a className={s.link} href="/dashboard?tab=offers">
-          ‹ Accounts &amp; tools
-        </a>
-        <ProviderLinksPanel />
-      </div>
-    );
+  if (params.get("view") === "links") return <LegacyProviderLinks />;
   if (handoff)
     return (
       <div className={s.page}>
         <div className={s.hero}>
           <span className={s.icon}>↗</span>
           <h1>Continue with your provider</h1>
-          <p>Come back when you’re ready. Your plan stays here.</p>
+          <p>{plan ? "Come back when you’re ready. Your plan stays here." : "You can return to these account details at any time."}</p>
         </div>
         <div className={s.card}>
           <h2>How did it go?</h2>
@@ -115,19 +98,13 @@ export default function OffersTab() {
               Open provider ↗
             </a>
           )}
-          <a
-            className={s.link}
-            href={"/dashboard?tab=account-setup&goal=" + goal}
-          >
-            Return to my plan →
-          </a>
+          {plan && <Button onClick={plan.onBack}>Return to my plan →</Button>}
           <Button
             onClick={() => {
               setHandoff(null);
-              setSelected(null);
             }}
           >
-            Browse accounts
+            Back to accounts &amp; tools
           </Button>
         </div>
       </div>
@@ -141,12 +118,10 @@ export default function OffersTab() {
     <div className={s.page}>
       <header className={s.row + " " + s.between}>
         <div>
-          <h1 className="uf-t-h1">Accounts &amp; tools</h1>
+          <h1 tabIndex={-1} className="uf-t-h1">Accounts &amp; tools</h1>
           <p className={s.muted}>Find a home for your next step.</p>
         </div>
-        <a className={s.link} href="/dashboard?tab=offers&view=links">
-          My referral links
-        </a>
+        {plan && <Button onClick={plan.onBack}>‹ Account setup</Button>}
       </header>
       {params.get("link") === "refresh" && (
         <p role="status" className={s.muted}>
@@ -167,17 +142,12 @@ export default function OffersTab() {
                 ? "Long-term money. A clearer next step."
                 : "A place for money you’ll need sooner."}
             </h2>
-            <p>Already have an account? You can use that.</p>
-            <a
-              className={s.link}
-              href={"/dashboard?tab=account-setup&goal=" + goal}
-            >
-              Use an existing account →
-            </a>
+            <p>{plan ? "Use an account you have, or choose a provider." : "Compare accounts for your savings and investing."}</p>
+            {plan ? <Button onClick={plan.onExisting}>Use an existing account</Button> : <a className={s.link} href="/dashboard?tab=assets">View my accounts →</a>}
           </div>
           <div className={s.row}>
             <div role="group" aria-label="Account purpose" className={s.row}>
-              {(["invest", "save"] as const).map((g) => (
+              {(plan ? [plan.goal] : ["invest", "save"] as const).map((g) => (
                 <Button
                   key={g}
                   aria-pressed={g === goal}
@@ -326,12 +296,7 @@ export default function OffersTab() {
               {busy ? "Opening…" : "Continue to " + detail.name + " ↗"}
             </Button>
             <p className={s.small + " ph-mask"}>{detail.referralLabel}</p>
-            <a
-              className={s.link}
-              href={"/dashboard?tab=account-setup&goal=" + goal}
-            >
-              I already have an account
-            </a>
+            {plan ? <Button onClick={plan.onExisting}>Use an existing account</Button> : <a className={s.link} href="/dashboard?tab=assets">View my accounts →</a>}
           </article>
         </>
       )}
@@ -341,4 +306,9 @@ export default function OffersTab() {
       </p>
     </div>
   );
+}
+
+function LegacyProviderLinks() {
+  useEffect(() => { window.location.replace("/invite/provider-links"); }, []);
+  return <p role="status">Opening your provider links…</p>;
 }

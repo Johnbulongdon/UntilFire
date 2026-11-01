@@ -13,7 +13,7 @@ import { isFirstSignIn, type SignInMethod } from './auth-user'
  * on this list: a free-form return URL would be an open redirect.
  */
 export const RETURN_TO_KEY = 'uf_return_to'
-const RETURNABLE = new Set(['/invite'])
+const RETURNABLE = new Set(['/invite', '/invite/provider-links', '/invite/provider-links?from=profile'])
 
 export function rememberReturnTo(path: string): void {
   try { if (RETURNABLE.has(path)) localStorage.setItem(RETURN_TO_KEY, path) } catch { /* private mode */ }

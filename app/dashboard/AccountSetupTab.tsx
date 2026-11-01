@@ -10,7 +10,13 @@ import {
 } from "@/lib/account-setup";
 import { useToolsAPI } from "./useToolsAPI";
 import s from "./AccountsTools.module.css";
+import OffersTab from "./OffersTab";
 export default function AccountSetupTab() {
+  const { owner } = useToolsAPI();
+  const params = useSearchParams();
+  return <Setup key={(owner ?? "signed-out") + ":" + (params.get("goal") ?? "invest")} />;
+}
+function Setup() {
   const params = useSearchParams();
   const raw = params.get("goal");
   const goal: SetupGoal = isSetupGoal(raw) ? raw : "invest";
@@ -21,6 +27,15 @@ export default function AccountSetupTab() {
   } | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [browsing, setBrowsing] = useState(false);
+  const [browserOpened, setBrowserOpened] = useState(false);
+  const pickerRoot = useRef<HTMLDivElement>(null);
+  const setupHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (!browserOpened) return;
+    const heading = browsing ? pickerRoot.current?.querySelector<HTMLHeadingElement>("h1") : setupHeading.current;
+    heading?.focus();
+  }, [browsing, browserOpened]);
   const [label, setLabel] = useState("");
   const [existing, setExisting] = useState(false);
   const generation = useRef(0);
@@ -58,6 +73,7 @@ export default function AccountSetupTab() {
       });
       await load();
       setExisting(false);
+      if (action === "reset") { setBrowserOpened(false); setBrowsing(false); }
     } catch (e) {
       setError((e as Error).message);
       await load();
@@ -67,14 +83,22 @@ export default function AccountSetupTab() {
   }
   const stage = current?.stage ?? "choose";
   const step = stage === "choose" ? 0 : stage === "applying" ? 1 : 2;
-  return (
-    <div className={s.page}>
+  return (<>
+    {browserOpened && <div ref={pickerRoot} hidden={!browsing}><OffersTab plan={{ goal,
+      onBack: () => setBrowsing(false),
+      onExisting: () => { setBrowsing(false); setExisting(true); },
+      onStarted: async (provider) => {
+        await api("/api/account-setup", { goal, version: current?.version ?? 0, action: "started", label: provider.name });
+        await load();
+      },
+    }} /></div>}
+    <div hidden={browsing}><div className={s.page}>
       <a className={s.link} href="/dashboard?tab=contributions">
         ‹ Contributions
       </a>
       <div className={s.hero}>
         <span className={s.icon}>{stage === "done" ? "✓" : "↗"}</span>
-        <h1>{setupTitle(goal)}</h1>
+        <h1 ref={setupHeading} tabIndex={-1}>{setupTitle(goal)}</h1>
         <p>
           {stage === "done"
             ? "Setup marked complete. Keep your balances and contributions up to date in Money."
@@ -109,9 +133,9 @@ export default function AccountSetupTab() {
               <p className={s.muted}>
                 Use one you have, or compare reviewed providers.
               </p>
-              <Button variant="primary" onClick={() => setExisting(true)}>
+              {!existing && <Button variant="primary" onClick={() => setExisting(true)}>
                 Use an existing account
-              </Button>
+              </Button>}
               {existing && (
                 <form
                   onSubmit={(e) => {
@@ -123,6 +147,7 @@ export default function AccountSetupTab() {
                   <label htmlFor="setup-account">Account nickname</label>
                   <input
                     id="setup-account"
+                    autoFocus
                     required
                     maxLength={80}
                     value={label}
@@ -134,9 +159,7 @@ export default function AccountSetupTab() {
                   </Button>
                 </form>
               )}
-              <a className={s.link} href={"/dashboard?tab=offers&goal=" + goal}>
-                Browse accounts &amp; tools →
-              </a>
+              <Button onClick={() => { setBrowserOpened(true); setBrowsing(true); }}>Browse accounts &amp; tools →</Button>
             </>
           )}
           {stage === "applying" && (
@@ -204,8 +227,8 @@ export default function AccountSetupTab() {
           )}
         </div>
       )}
-    </div>
-  );
+    </div></div>
+  </>);
 }
 /** Only resumes a user-started task; never displaces a higher-priority financial action. */
 export function PendingAccountSetup({

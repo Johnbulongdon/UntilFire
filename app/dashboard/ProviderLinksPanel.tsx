@@ -57,7 +57,7 @@ export default function ProviderLinksPanel() {
   return (
     <section className={s.page}>
       <header>
-        <h2>My referral links</h2>
+        <h1 className="uf-t-h1">My provider links</h1>
         <p className={s.muted}>
           People who join through your UntilFire invite can use your provider
           links.

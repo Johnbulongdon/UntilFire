@@ -160,7 +160,8 @@ check('a payout must match the amount the founder sent', adminRoute.includes('Nu
 const me = read('app/api/referrals/me/route.ts');
 check('a creator never sees who they referred', !/commissions:\s/.test(me) && !me.includes('referred_user_id:'));
 const auth = read('lib/auth-finish.ts');
-check('sign-in returns only to allowlisted pages', auth.includes("new Set(['/invite'])"));
+const returnPages = auth.match(/const RETURNABLE = new Set\(\[([^\]]+)\]\)/)?.[1].match(/'[^']+'/g)?.map(s => s.slice(1, -1)) ?? [];
+check('sign-in returns only to allowlisted pages', returnPages.length === 3 && returnPages.every(p => ['/invite', '/invite/provider-links', '/invite/provider-links?from=profile'].includes(p)) && auth.includes('RETURNABLE.has(path)'));
 const checkout = read('app/api/stripe/checkout/route.ts');
 check('referred readers get the 60-day trial at checkout', checkout.includes('if (referred) trialDays = REFERRED_TRIAL_DAYS;') && checkout.includes('trial_period_days: trialDays'));
 check('the upgrade screen names the referred trial', read('app/dashboard/page.tsx').includes('trialLabel={referredTrial ? REFERRED_TRIAL_LABEL : TRIAL_LABEL}'));
