@@ -140,10 +140,6 @@
   min-height: 44px;
   font-size: 14px;
 }
-.check input {
-  width: 18px;
-  height: 18px;
-}
 .link {
   min-height: 44px;
   display: inline-flex;

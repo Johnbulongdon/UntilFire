@@ -60,3 +60,6 @@ export type { SegmentedControlProps, SegmentedOption } from "./SegmentedControl"
 
 export { default as Icon, ICON_PATHS } from "./Icon";
 export type { IconProps, IconName } from "./Icon";
+
+export { default as Checkbox } from "./Checkbox";
+export type { CheckboxProps } from "./Checkbox";

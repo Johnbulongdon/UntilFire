@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import ProviderLinkReviews from "./ProviderLinkReviews";
-import { DateField } from "@/components/ui";
+import { Checkbox, DateField } from "@/components/ui";
 import { OFFER_KIND_LABEL, OFFER_KINDS, rateLabel, type OfferKind } from "@/lib/partner-offers";
 
 interface AdminOffer {
@@ -95,7 +95,7 @@ export default function OffersTab({ token }: { token: string }) {
           <label style={small}>Provider domain<input style={input} value={editing.allowedDomain} onChange={set("allowedDomain")} placeholder="example.com" /></label>
           <label style={small}>UntilFire&apos;s referral link<input style={input} value={editing.url} onChange={set("url")} placeholder="https://example.com/r/untilfire" /></label>
           <label style={small}>Country (two-letter code)<input style={input} value={editing.country ?? "US"} onChange={set("country")} maxLength={2} /></label>
-          <label style={{...small, display:"flex",alignItems:"center",gap:8}}><input type="checkbox" checked={editing.memberLinksEnabled===true} onChange={e=>setEditing(o=>o?{...o,memberLinksEnabled:e.target.checked}:o)}/> Programme permits member referral links</label>
+          <label style={{...small, display:"flex",alignItems:"center",gap:8}}><Checkbox checked={editing.memberLinksEnabled===true} onChange={e=>setEditing(o=>o?{...o,memberLinksEnabled:e.target.checked}:o)}/> Programme permits member referral links</label>
           <label style={small}>Order<input style={input} value={editing.sort} onChange={set("sort")} inputMode="numeric" /></label>
           <div style={{ display: "flex", gap: 8, alignItems: "flex-end", justifyContent: "flex-end" }}>
             <button style={button} onClick={() => setEditing(null)}>Cancel</button>

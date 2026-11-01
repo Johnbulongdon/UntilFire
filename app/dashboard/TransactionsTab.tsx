@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "@/lib/supabase";
 import { fetchAllPages } from "@/lib/supabase-pages";
@@ -36,7 +36,10 @@ import { useCustomCategories } from "@/lib/useCustomCategories";
 import { combineDateAndTime, formatTime, timeInputValue } from "@/lib/transaction-time";
 import { buildMerchantMemory, merchantKey, suggestFromHistory } from "@/lib/merchant-memory";
 import { transactionNeed, type NeedOverrides } from "@/lib/needs";
-import { Button, DateField, SegmentedControl } from "@/components/ui";
+import { Button, Checkbox, DateField, SegmentedControl } from "@/components/ui";
+
+/** One tick row under Classify: box and label on one line, 32px tall so both rows match. */
+const classifyTick: CSSProperties = { display: "flex", alignItems: "center", gap: 10, minHeight: 32, fontSize: 13, fontWeight: 600, color: "var(--uf-ink-2)", cursor: "pointer" };
 import { readMerchantRules } from "@/lib/merchant-rules";
 import { trackTxFlagResolved, trackTxRangeChanged, trackTxReviewOpened } from "@/lib/analytics";
 
@@ -715,26 +718,27 @@ function QuickAddForm({
             <label style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.4px", textTransform: "uppercase", color: "var(--uf-text-2)" }}>
               Classify
             </label>
-            {/* One switch, Need or Want, the same pill as elsewhere (D-106); work costs keep their own tag. */}
-            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            {/* One switch, Need or Want, the same pill as elsewhere (D-106); work costs keep their own tag.
+                The pill sits alone; the two ticks line up beneath it, one per row. */}
+            <div style={{ alignSelf: "flex-start" }}>
               <SegmentedControl
                 label="Need or want"
                 value={draft.tags.includes("need") ? "need" : draft.tags.includes("want") ? "want" : transactionNeed({ category: draft.category, sub_category: draft.sub_category || null, tags: [] }, categoryNeeds)}
                 onChange={(v) => setField("tags", [...draft.tags.filter((t) => t !== "need" && t !== "want"), v])}
                 options={[{ value: "need", label: "Need" }, { value: "want", label: "Want" }]}
               />
-              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--uf-text-2)", cursor: "pointer" }}>
-                <input type="checkbox" checked={draft.tags.includes("work")}
-                  onChange={(e) => setField("tags", e.target.checked ? [...draft.tags.filter((t) => t !== "work"), "work"] : draft.tags.filter((t) => t !== "work"))} />
-                Work cost
-              </label>
             </div>
             {editing && onAlwaysShop && draft.description.trim() && (
-              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--uf-text-2)", cursor: "pointer" }}>
-                <input type="checkbox" checked={alwaysShop} onChange={(e) => onAlwaysShop(e.target.checked)} />
-                Always for {draft.description.trim()}
+              <label style={classifyTick}>
+                <Checkbox checked={alwaysShop} onChange={(e) => onAlwaysShop(e.target.checked)} />
+                <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Always for {draft.description.trim()}</span>
               </label>
             )}
+            <label style={classifyTick}>
+              <Checkbox checked={draft.tags.includes("work")}
+                onChange={(e) => setField("tags", e.target.checked ? [...draft.tags.filter((t) => t !== "work"), "work"] : draft.tags.filter((t) => t !== "work"))} />
+              Work cost
+            </label>
           </div>
         )}
 

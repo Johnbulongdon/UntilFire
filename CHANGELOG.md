@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-01 — Tick boxes in the app style
+
+- Every tick box on the website (a transaction's Work cost and Always for this shop, the Setup checklist's found bills, emergency-fund and shared accounts in Net Worth, Free to spend accounts, Leave out, offer Compare, invite terms, admin) now uses UntilFire's own rounded box: black with a white tick in light mode, light with a dark tick in dark mode.
+- A transaction's Classify section is tidier: Need or Want on its own line, then Always for this shop and Work cost as two even rows underneath.
+
 ## 2026-11-02 — Phone appearance choice
 
 - Profile settings adds System, Light and Dark. The choice persists on the device and applies to screens, modals and navigation; System follows the phone.

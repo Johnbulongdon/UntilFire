@@ -1,6 +1,6 @@
 "use client";
 
-import { Card } from "@/components/ui";
+import { Card, Checkbox } from "@/components/ui";
 import type { FreeToSpend, SpendAccount } from "@/lib/free-to-spend";
 import { countsByDefault } from "@/lib/free-to-spend";
 
@@ -79,7 +79,7 @@ export default function FreeToSpendRunway({ result, fmt, allAccounts, toggles, o
           <div style={{ display: "grid", gap: 6, marginTop: "var(--uf-s2)" }}>
             {allAccounts.filter((a) => a.type === "depository").map((a) => (
               <label key={a.id} className="uf-t-small" style={{ display: "flex", gap: "var(--uf-s2)", alignItems: "center", color: "var(--uf-ink-2)" }}>
-                <input type="checkbox" checked={toggles[a.id] ?? countsByDefault(a)} onChange={(e) => onToggle(a.id, e.target.checked)} />
+                <Checkbox checked={toggles[a.id] ?? countsByDefault(a)} onChange={(e) => onToggle(a.id, e.target.checked)} />
                 <span>{a.name}</span>
                 <span style={{ ...mono, marginLeft: "auto" }}>{fmt(a.balanceUSD)}</span>
               </label>

@@ -1,5 +1,6 @@
 "use client";
 
+import { Checkbox } from "@/components/ui";
 import { useCallback, useEffect, useState } from "react";
 
 /**
@@ -228,7 +229,7 @@ export default function CensusPanel({ token }: { token: string }) {
       {rows.length > 0 && (
         <>
           <label style={{ fontSize: 12.5, color: MUTED, display: "flex", alignItems: "center", gap: 6, cursor: "pointer", marginTop: 16 }}>
-            <input type="checkbox" checked={onlyChanged} onChange={(e) => setOnlyChanged(e.target.checked)} />
+            <Checkbox checked={onlyChanged} onChange={(e) => setOnlyChanged(e.target.checked)} />
             Only moves over 5% ({changed.length})
           </label>
 
