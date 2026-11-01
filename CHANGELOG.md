@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-01 — Budget and Categories are one page
+
+- Money → Categories is gone from the website; everything moved into **Budget**.
+- Budget now has a ring of your take-home pay: Needs (bills the darker part), Wants and what's not spent yet, each with its 50/30/20 goal and a small bar.
+- Under it, your categories sit in two groups, **Needs** and **Wants**. Click a group to see its categories; click a category to change its budget or move it between Needs and Wants.
+- **Edit categories** on Budget opens names, icons, sub-categories, your own categories and Needs & wants.
+
 ## 2026-11-01 — Tick boxes in the app style
 
 - Every tick box on the website (a transaction's Work cost and Always for this shop, the Setup checklist's found bills, emergency-fund and shared accounts in Net Worth, Free to spend accounts, Leave out, offer Compare, invite terms, admin) now uses UntilFire's own rounded box: black with a white tick in light mode, light with a dark tick in dark mode.

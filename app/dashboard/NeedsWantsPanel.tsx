@@ -14,7 +14,7 @@ type Tx = { category: string | null; sub_category: string | null; tags: string[]
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
 
 /** Writes a few keys into the FIRE profile, read fresh so nothing the phone saved is lost. */
-async function saveProfile(userId: string, patch: Record<string, unknown>) {
+export async function saveProfile(userId: string, patch: Record<string, unknown>) {
   try {
     const { data, error: readError } = await supabase.from("user_budget").select("expenses").eq("user_id", userId).maybeSingle();
     if (readError) return { message: "Couldn't load your budget. Please try again." };
