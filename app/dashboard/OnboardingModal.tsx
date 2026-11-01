@@ -1,11 +1,12 @@
 "use client";
 import { useState } from "react";
+import { Button } from "@/components/ui";
 
 const OnboardingMoneyField = ({ label, hint, value, onChange, defaultCurrency }: { label: string; hint: string; value: string; defaultCurrency: string; onChange: (v: string) => void }) => (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label htmlFor={`onboarding-${label.replace(/[^a-z0-9]/gi, "-")}`} style={{ fontSize: 12, fontWeight: 700, color: "#374151", fontFamily: "Inter, sans-serif", letterSpacing: "0.02em" }}>{label}</label>
+      <label htmlFor={`onboarding-${label.replace(/[^a-z0-9]/gi, "-")}`} style={{ fontSize: 13, fontWeight: 700, color: "var(--uf-ink)" }}>{label}</label>
       <div style={{ position: "relative" }}>
-        <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 600, color: "#6B7280", fontFamily: "Inter, sans-serif" }}>{defaultCurrency}</span>
+        <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 15, fontWeight: 600, color: "var(--uf-ink-3)" }}>{defaultCurrency}</span>
         <input
           id={`onboarding-${label.replace(/[^a-z0-9]/gi, "-")}`}
           type="text"
@@ -14,11 +15,12 @@ const OnboardingMoneyField = ({ label, hint, value, onChange, defaultCurrency }:
           onChange={e => onChange(e.target.value.replace(/[^0-9.,]/g, ""))}
 
           placeholder="0"
-          style={{ width: "100%", paddingLeft: 52, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: "1.5px solid #E5E7EB", borderRadius: 10, fontSize: 16, fontWeight: 600, fontFamily: "Inter, sans-serif", outline: "none", boxSizing: "border-box", color: "#111827" }}
-          onFocus={e => { e.target.style.borderColor = "#151719"; }}
+          style={{ width: "100%", paddingLeft: 52, paddingRight: 16, paddingTop: 12, paddingBottom: 12, border: "1.5px solid var(--uf-border)", borderRadius: "var(--uf-r-control)", fontSize: 16, fontWeight: 600, fontFamily: "var(--uf-font)", fontVariantNumeric: "tabular-nums", outline: "none", boxSizing: "border-box", color: "var(--uf-ink)", background: "var(--uf-card)" }}
+          onFocus={e => { e.target.style.borderColor = "var(--uf-ink)"; }}
+          onBlur={e => { e.target.style.borderColor = "var(--uf-border)"; }}
         />
       </div>
-      <span style={{ fontSize: 11, color: "#6B7280", fontFamily: "Inter, sans-serif" }}>{hint}</span>
+      <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>{hint}</span>
     </div>
   );
 
@@ -39,15 +41,15 @@ export default function OnboardingModal({ defaultCurrency, onComplete, onDismiss
   };
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Find your FIRE number" onKeyDown={e => { if (e.key === "Enter" && e.target instanceof HTMLInputElement) { e.preventDefault(); handleSubmit(); } }} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" }}>
-      <div style={{ background: "#fff", borderRadius: 20, padding: "36px 32px 28px", maxWidth: 440, width: "100%", boxShadow: "0 24px 64px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 24, margin: "auto" }}>
+    <div role="dialog" aria-modal="true" aria-label="Find your FIRE number" onKeyDown={e => { if (e.key === "Enter" && e.target instanceof HTMLInputElement) { e.preventDefault(); handleSubmit(); } }} style={{ position: "fixed", inset: 0, background: "var(--uf-scrim)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" }}>
+      <div style={{ background: "var(--uf-card)", color: "var(--uf-ink)", border: "1px solid var(--uf-border)", borderRadius: "var(--uf-r-modal)", padding: "32px 28px 24px", maxWidth: 440, width: "100%", boxShadow: "var(--uf-e3)", display: "flex", flexDirection: "column", gap: 24, margin: "auto" }}>
         {/* Header */}
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#20D4BF", marginBottom: 8, fontFamily: "Inter, sans-serif" }}>Welcome to UntilFire</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#0F172A", fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px", lineHeight: 1.25 }}>
+          <span style={{ display: "inline-block", background: "var(--uf-yellow)", color: "var(--uf-on-accent)", borderRadius: "var(--uf-r-pill)", padding: "4px 12px", fontSize: 12, fontWeight: 700, marginBottom: 12 }}>Welcome to UntilFire</span>
+          <div className="uf-t-h2">
             Let&apos;s find your FIRE number
           </div>
-          <div style={{ fontSize: 13, color: "#6B7280", marginTop: 6, fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>
+          <div className="uf-t-body" style={{ color: "var(--uf-ink-2)", marginTop: 6 }}>
             Income, spending, and current savings are enough to get started. You can refine everything later.
           </div>
         </div>
@@ -61,16 +63,12 @@ export default function OnboardingModal({ defaultCurrency, onComplete, onDismiss
 
         {/* Actions */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
-          <button
-            onClick={handleSubmit}
-            disabled={!valid}
-            style={{ background: valid ? "#151719" : "#E5E7EB", color: valid ? "#fff" : "#9CA3AF", border: "none", borderRadius: 10, padding: "13px 20px", fontSize: 15, fontWeight: 700, cursor: valid ? "pointer" : "not-allowed", fontFamily: "Inter, sans-serif", transition: "background 0.15s" }}
-          >
+          <Button variant="primary" size="lg" fullWidth onClick={handleSubmit} disabled={!valid}>
             Get my FIRE number →
-          </button>
-          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "Inter, sans-serif", padding: "4px 0" }}>
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onDismiss}>
             Skip for now
-          </button>
+          </Button>
         </div>
       </div>
     </div>

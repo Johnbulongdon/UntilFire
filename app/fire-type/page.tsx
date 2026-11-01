@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, Suspense, type CSSProperties } from 'react'
+import Logo from '@/app/components/Logo'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { FireTypeAvatar } from './FireTypeAvatar'
@@ -20,21 +21,22 @@ import {
 const FIRE_TYPE_STORAGE_KEY = 'uf_fire_type_result'
 
 const C = {
-  bg: '#F7F9FB',
-  card: '#FFFFFF',
-  border: '#E2E8F0',
-  borderSoft: '#EEF2F4',
-  text: '#19181E',
-  textStrong: '#003527',
-  muted: '#64748B',
-  mutedSoft: '#94A3B8',
-  accent: '#151719',
-  accentDark: '#151719',
-  accentDeep: '#003527',
+  // Next Horizon tokens (app/globals.css); light and dark both follow them.
+  bg: 'var(--uf-ground)',
+  card: 'var(--uf-card)',
+  border: 'var(--uf-border)',
+  borderSoft: 'var(--uf-surface)',
+  text: 'var(--uf-ink)',
+  textStrong: 'var(--uf-ink)',
+  muted: 'var(--uf-ink-2)',
+  mutedSoft: 'var(--uf-ink-3)',
+  accent: 'var(--uf-ink)',
+  accentDark: 'var(--uf-ink)',
+  accentDeep: '#151719',
   teal: '#FFE58A',
-  tealSoft: '#ECFDF5',
-  cream: '#FBF8EF',
-  creamLine: '#E8E1CF',
+  tealSoft: 'var(--uf-yellow)',
+  cream: 'var(--uf-surface)',
+  creamLine: 'var(--uf-border)',
 }
 
 type ResultMeta = {
@@ -50,22 +52,8 @@ type ResultMeta = {
 }
 
 function Wordmark({ light = false, size = 22 }: { light?: boolean; size?: number }) {
-  return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'baseline',
-        gap: 0,
-        fontWeight: 800,
-        fontSize: size * 0.82,
-        letterSpacing: '-0.04em',
-        lineHeight: 1,
-      }}
-    >
-      <span style={{ color: light ? '#FFFFFF' : C.textStrong }}>Until</span>
-      <span style={{ color: light ? '#FFFFFF' : C.textStrong }}>Fire</span>
-    </span>
-  )
+  // The supplied logo artwork (public/brand), never a typeset copy.
+  return <Logo variant={light ? 'dark' : 'auto'} size={size} />
 }
 
 function RarityChip({
@@ -89,7 +77,7 @@ function RarityChip({
         fontWeight: 700,
         letterSpacing: '1px',
         color: dark ? C.teal : C.accentDark,
-        border: `1.5px solid ${dark ? 'rgba(98,250,227,.45)' : 'rgba(6,95,70,.24)'}`,
+        border: `1.5px solid ${dark ? 'rgba(255,229,138,.6)' : 'var(--uf-border-2)'}`,
         whiteSpace: 'nowrap',
       }}
     >
@@ -113,9 +101,9 @@ function Spectrum({
   onDark?: boolean
 }) {
   const leftPole = pos < 0.5
-  const labelColor = onDark ? '#bfe9dd' : C.muted
+  const labelColor = onDark ? 'rgba(255,255,255,.78)' : C.muted
   const activeColor = onDark ? C.teal : C.accentDark
-  const trackColor = onDark ? 'rgba(255,255,255,.14)' : '#EAF1ED'
+  const trackColor = onDark ? 'rgba(255,255,255,.14)' : 'var(--uf-surface-2)'
   const thumbFill = onDark ? C.teal : '#FFFFFF'
   const thumbBorder = onDark ? C.accentDeep : C.accent
 
@@ -180,7 +168,7 @@ function SurfaceCard({
         background: C.card,
         borderRadius: 16,
         padding: 24,
-        border: `1px solid ${highlight ? 'rgba(6,95,70,.24)' : C.border}`,
+        border: `1px solid ${highlight ? 'var(--uf-ink)' : C.border}`,
         boxShadow: '0 1px 4px rgba(0,0,0,.06)',
         ...style,
       }}
@@ -484,9 +472,7 @@ function FireTypeQuizInner() {
             gap: 12,
           }}
         >
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <Wordmark size={22} />
-          </Link>
+          <span />
           <Link
             href="/"
             style={{
@@ -496,7 +482,7 @@ function FireTypeQuizInner() {
               fontWeight: 600,
               border: `1px solid ${C.accent}`,
               padding: '6px 14px',
-              borderRadius: 8,
+              borderRadius: 999,
             }}
           >
             Calculate my FIRE number →
@@ -554,9 +540,9 @@ function FireTypeQuizInner() {
             onClick={() => setStage('quiz')}
             style={{
               background: C.accent,
-              color: '#FFFFFF',
+              color: 'var(--uf-card)',
               border: 'none',
-              borderRadius: 10,
+              borderRadius: 999,
               padding: '16px 36px',
               fontSize: 17,
               fontWeight: 700,
@@ -606,9 +592,7 @@ function FireTypeQuizInner() {
             gap: 12,
           }}
         >
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <Wordmark size={22} />
-          </Link>
+          <span />
           <span style={{ fontSize: 13, color: C.muted }}>
             Question {currentQ + 1} of {QUIZ_QUESTIONS.length}
           </span>
@@ -631,7 +615,7 @@ function FireTypeQuizInner() {
               animation: 'ft-slide-in 0.22s ease-out',
             }}
           >
-            <p style={{ fontSize: 12, fontWeight: 700, color: C.teal, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: 16 }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: C.muted, marginBottom: 16 }}>
               Question {currentQ + 1} of {QUIZ_QUESTIONS.length}
             </p>
             <h2 style={{ fontSize: 'clamp(20px, 4vw, 26px)', fontWeight: 800, color: C.text, letterSpacing: '-0.02em', margin: '0 0 28px', lineHeight: 1.3 }}>
@@ -744,9 +728,7 @@ function FireTypeQuizInner() {
           gap: 12,
         }}
       >
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <Wordmark size={18} />
-        </Link>
+        <span />
         <button
           onClick={retake}
           style={{
@@ -766,7 +748,7 @@ function FireTypeQuizInner() {
       <div
         style={{
           padding: '30px 22px 8px',
-          background: 'radial-gradient(80% 46% at 50% 0%, rgba(6,95,70,.07), transparent 70%)',
+          background: 'radial-gradient(80% 46% at 50% 0%, rgba(255,229,138,.28), transparent 70%)',
           textAlign: 'center',
         }}
       >
@@ -778,7 +760,7 @@ function FireTypeQuizInner() {
           <div
             style={{
               background: C.tealSoft,
-              border: '1px solid rgba(6,95,70,.16)',
+              border: '1px solid var(--uf-border)',
               borderRadius: 14,
               padding: '14px 18px',
               color: C.accentDark,
@@ -801,10 +783,10 @@ function FireTypeQuizInner() {
             style={{
               fontWeight: 700,
               fontSize: 14,
-              color: '#FFFFFF',
+              color: 'var(--uf-card)',
               background: C.accentDark,
               border: 'none',
-              borderRadius: 10,
+              borderRadius: 999,
               padding: '11px 20px',
               cursor: 'pointer',
               minWidth: 150,
@@ -826,7 +808,7 @@ function FireTypeQuizInner() {
               color: C.accentDark,
               background: 'transparent',
               border: `1.5px solid ${C.accentDark}`,
-              borderRadius: 10,
+              borderRadius: 999,
               padding: '11px 20px',
               cursor: 'pointer',
               minWidth: 150,
@@ -843,7 +825,7 @@ function FireTypeQuizInner() {
                 color: C.textStrong,
                 background: C.card,
                 border: `1px solid ${C.border}`,
-                borderRadius: 10,
+                borderRadius: 999,
                 padding: '11px 20px',
                 cursor: 'pointer',
               }}
@@ -901,7 +883,7 @@ function FireTypeQuizInner() {
         >
           <div style={{ fontWeight: 700, fontSize: 11, letterSpacing: '2px', color: C.teal, textTransform: 'uppercase' }}>How rare you are</div>
           <div style={{ fontWeight: 800, fontSize: 52, letterSpacing: '-1px', lineHeight: 1.05, marginTop: 6 }}>{result.rarity}</div>
-          <div style={{ fontSize: 14, color: '#cfeee4', marginTop: 2 }}>of UntilFire quiz-takers share your type · {result.rank}</div>
+          <div style={{ fontSize: 14, color: 'rgba(255,255,255,.78)', marginTop: 2 }}>of UntilFire quiz-takers share your type · {result.rank}</div>
         </div>
 
         <SurfaceCard style={{ background: C.cream, border: `1px solid ${C.creamLine}`, marginBottom: 16, textAlign: 'center' }}>
@@ -917,7 +899,7 @@ function FireTypeQuizInner() {
                 display: 'block',
                 background: C.card,
                 color: C.textStrong,
-                borderRadius: 10,
+                borderRadius: 999,
                 padding: '14px 28px',
                 fontSize: 15,
                 fontWeight: 700,
@@ -936,9 +918,9 @@ function FireTypeQuizInner() {
             style={{
               display: 'block',
               background: C.accentDark,
-              color: '#FFFFFF',
+              color: 'var(--uf-card)',
               textDecoration: 'none',
-              borderRadius: 10,
+              borderRadius: 999,
               padding: '14px 28px',
               fontSize: 15,
               fontWeight: 700,

@@ -79,6 +79,10 @@ Approved global-planning chapter: light mint/lilac interactive globe with yellow
 ## Remaining web surfaces — 31 October 2026
 Explore city cards use mint, dark ink and yellow amount badges. Referral hero/closing bands use lilac/mint with fixed dark ink. Portfolio tools use shared theme tokens and supplied logo; exported graphics and the printable freedom report use the fixed light Next Horizon palette. Admin uses theme-aware panels, pill navigation/actions and readable fields. Import and budget dialogs inherit shared surfaces and semantic status ink rather than hard-coded dark backgrounds. Keep chart series and financial meaning distinguishable.
 
+## Popups and confirms — 1 November 2026
+
+Popups use `--uf-card` with a `--uf-border` line, `--uf-r-modal` corners, `--uf-scrim` behind and `Button` pills; never a hard-coded white box, so dark mode follows. Ask "are you sure?" with `ConfirmDialog` (components/ui), never the browser's `confirm()`; focus starts on the safe choice. Prefer Undo when the action is reversible. Tour and onboarding use product icons, not emoji.
+
 ## Native supporting surfaces
 
 31 October refinement: Money shortcuts and Plan tools use multiple approved pastel fills, with fixed dark ink in either theme. Profile uses pastel settings/FIRE-type icon wells. Summary chips use yellow freedom, blue budget and mint safety. Black primary actions and existing semantic financial status colours remain distinct. Contribution rungs retain numbers and labels alongside decorative pastel bars; unfilled steps use theme ink. See mobile-pastels/README.md for implementation checks and device limitations.

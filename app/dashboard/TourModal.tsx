@@ -1,13 +1,15 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { Button, Icon, type IconName } from '@/components/ui'
+import Logo from '@/app/components/Logo'
 
 // Names match the menus (docs/design/app-structure.md), and only features that exist.
-const TOUR_SLIDES = [
-  { tabKey: null,              emoji: "🔥", title: "Welcome to UntilFire",  description: "A 30-second look around. Use the arrows or tap a dot to jump." },
-  { tabKey: "overview",        emoji: "🏠", title: "Home",                  description: "Your freedom date, progress toward your FIRE number, and the one move that helps most right now." },
-  { tabKey: "cashflow",        emoji: "💳", title: "Money",                 description: "Transactions, a calendar of payments, categories and budgets; Net Worth, Debts and Insights for the bigger picture." },
-  { tabKey: "fire-calculator", emoji: "📅", title: "Plan",                  description: "Your freedom date and the assumptions behind it, plus What if, Goals, Contributions, Explore and Learn." },
-  { tabKey: "profile",         emoji: "⚙️", title: "Profile",               description: "Your account, currency, Pro subscription, household and FIRE type." },
+const TOUR_SLIDES: { tabKey: string | null; icon: IconName | null; title: string; description: string }[] = [
+  { tabKey: null,              icon: null, title: "Welcome to UntilFire",  description: "A 30-second look around. Use the arrows or tap a dot to jump." },
+  { tabKey: "overview",        icon: "home", title: "Home",                  description: "Your freedom date, progress toward your FIRE number, and the one move that helps most right now." },
+  { tabKey: "cashflow",        icon: "money", title: "Money",                 description: "Transactions, a calendar of payments, categories and budgets; Net Worth, Debts and Insights for the bigger picture." },
+  { tabKey: "fire-calculator", icon: "plan", title: "Plan",                  description: "Your freedom date and the assumptions behind it, plus What if, Goals, Contributions, Explore and Learn." },
+  { tabKey: "profile",         icon: "profile", title: "Profile",               description: "Your account, currency, Pro subscription, household and FIRE type." },
 ]
 
 export default function TourModal({ onClose }: { onClose: () => void }) {
@@ -52,16 +54,19 @@ export default function TourModal({ onClose }: { onClose: () => void }) {
   }
 
   const dots = (
-    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
       {TOUR_SLIDES.map((_, i) => (
-        <div
+        <button
           key={i}
+          type="button"
+          aria-label={`Go to step ${i + 1}`}
+          aria-current={i === step ? 'step' : undefined}
           onClick={() => setStep(i)}
           style={{
-            width: i === step ? 14 : 6, height: 6,
-            borderRadius: 99,
-            background: i === step ? '#151719' : '#E2E8F0',
-            transition: 'all 0.2s',
+            width: i === step ? 16 : 6, height: 6, padding: 0, border: 'none',
+            borderRadius: 'var(--uf-r-pill)',
+            background: i === step ? 'var(--uf-ink)' : 'var(--uf-border-2)',
+            transition: 'width var(--uf-dur-2) var(--uf-ease)',
             cursor: 'pointer',
             flexShrink: 0,
           }}
@@ -70,15 +75,19 @@ export default function TourModal({ onClose }: { onClose: () => void }) {
     </div>
   )
 
+  const card: React.CSSProperties = {
+    background: 'var(--uf-card)', color: 'var(--uf-ink)', border: '1px solid var(--uf-border)', boxShadow: 'var(--uf-e3)',
+  }
+
   return (
     <>
       {/* Dark overlay — click to dismiss */}
       <div
         onClick={onClose}
-        style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.65)', zIndex: 290 }}
+        style={{ position: 'fixed', inset: 0, background: rect ? 'transparent' : 'var(--uf-scrim)', zIndex: 290 }}
       />
 
-      {/* Spotlight halo around active tab */}
+      {/* Spotlight around the active tab: the scrim is the shadow, the ring is freedom yellow */}
       {rect && (
         <div style={{
           position: 'fixed',
@@ -86,8 +95,8 @@ export default function TourModal({ onClose }: { onClose: () => void }) {
           left: rect.left - 4,
           width: rect.width + 8,
           height: rect.height + 8,
-          borderRadius: 10,
-          boxShadow: '0 0 0 9999px rgba(15,23,42,0.65), 0 0 0 3px #17684B',
+          borderRadius: 'var(--uf-r-control)',
+          boxShadow: '0 0 0 9999px var(--uf-scrim), 0 0 0 3px var(--uf-yellow)',
           zIndex: 291,
           pointerEvents: 'none',
         }} />
@@ -100,98 +109,84 @@ export default function TourModal({ onClose }: { onClose: () => void }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: 16, pointerEvents: 'none',
         }}>
-          <div style={{
-            background: '#fff', borderRadius: 20,
-            padding: '36px 32px 28px',
+          <div role="dialog" aria-modal="true" aria-labelledby="uf-tour-title" style={{
+            ...card, borderRadius: 'var(--uf-r-modal)',
+            padding: '32px 28px 24px',
             maxWidth: 420, width: '100%',
-            boxShadow: '0 24px 64px rgba(0,0,0,0.25)',
             pointerEvents: 'auto',
-            display: 'flex', flexDirection: 'column',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
           }}>
-            <div style={{ fontSize: 48, textAlign: 'center', marginBottom: 16 }}>{slide.emoji}</div>
-            <h2 style={{ fontFamily: 'Inter, sans-serif', fontSize: 22, fontWeight: 800, color: '#19181E', textAlign: 'center', margin: '0 0 12px', letterSpacing: '-0.02em' }}>
+            <div style={{ marginBottom: 20 }}><Logo variant="auto" size={26} /></div>
+            <h2 id="uf-tour-title" className="uf-t-h2" style={{ margin: '0 0 8px' }}>
               {slide.title}
             </h2>
-            <p style={{ fontSize: 15, color: '#64748B', lineHeight: 1.7, textAlign: 'center', margin: '0 0 24px' }}>
+            <p className="uf-t-body" style={{ color: 'var(--uf-ink-2)', margin: '0 0 20px' }}>
               {slide.description}
             </p>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
               {dots}
             </div>
-            <button
-              onClick={() => setStep(1)}
-              style={{ padding: '12px 0', borderRadius: 10, border: 'none', background: '#151719', color: '#fff', fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit' }}
-            >
-              Start Tour →
-            </button>
-            <button
-              onClick={onClose}
-              style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: 13, cursor: 'pointer', marginTop: 12, fontFamily: 'inherit', textAlign: 'center' as const }}
-            >
+            <Button variant="primary" size="lg" fullWidth onClick={() => setStep(1)}>
+              Start tour →
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onClose} style={{ marginTop: 8 }}>
               Skip tour
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {/* Spotlight tooltip for tab steps */}
       {!isIntro && (
-        <div style={{
+        <div role="dialog" aria-modal="true" aria-labelledby="uf-tour-step-title" style={{
           ...effectiveTooltipStyle,
+          ...card,
           zIndex: 300,
-          background: '#fff',
-          borderRadius: 14,
+          borderRadius: 'var(--uf-r-card)',
           padding: '18px 18px 14px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.20)',
         }}>
           {/* Arrow pointing left toward the sidebar tab (desktop) */}
           {tooltipStyle && !isMobileNav && (
-            <div style={{ position: 'absolute', left: -8, top: '38%', width: 0, height: 0, borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderRight: '8px solid #fff' }} />
+            <div style={{ position: 'absolute', left: -8, top: '38%', width: 0, height: 0, borderTop: '8px solid transparent', borderBottom: '8px solid transparent', borderRight: '8px solid var(--uf-card)' }} />
           )}
           {/* Arrow pointing down toward the bottom nav tab (mobile) */}
           {tooltipStyle && isMobileNav && (
-            <div style={{ position: 'absolute', bottom: -8, left: 28, width: 0, height: 0, borderLeft: '8px solid transparent', borderRight: '8px solid transparent', borderTop: '8px solid #fff' }} />
+            <div style={{ position: 'absolute', bottom: -8, left: 28, width: 0, height: 0, borderLeft: '8px solid transparent', borderRight: '8px solid transparent', borderTop: '8px solid var(--uf-card)' }} />
           )}
 
-          <div style={{ fontSize: 11, color: '#94A3B8', fontWeight: 700, letterSpacing: '0.06em', marginBottom: 8 }}>
-            {step} OF {TOUR_SLIDES.length - 1}
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 20 }}>{slide.emoji}</span>
-            <h3 style={{ fontFamily: 'Inter, sans-serif', fontSize: 15, fontWeight: 800, color: '#19181E', margin: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            {slide.icon && (
+              <span aria-hidden style={{ width: 32, height: 32, borderRadius: 'var(--uf-r-pill)', background: 'var(--uf-yellow)', color: 'var(--uf-on-accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon name={slide.icon} size={17} />
+              </span>
+            )}
+            <h3 id="uf-tour-step-title" className="uf-t-h3" style={{ margin: 0, flex: 1 }}>
               {slide.title}
             </h3>
+            <span style={{ fontSize: 12, color: 'var(--uf-ink-3)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+              {step} of {TOUR_SLIDES.length - 1}
+            </span>
           </div>
 
-          <p style={{ fontSize: 13, color: '#64748B', lineHeight: 1.65, margin: '0 0 14px' }}>
+          <p className="uf-t-small" style={{ color: 'var(--uf-ink-2)', margin: '0 0 14px' }}>
             {slide.description}
           </p>
 
-          <div style={{ marginBottom: 12 }}>{dots}</div>
+          <div style={{ marginBottom: 14 }}>{dots}</div>
 
           <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              onClick={() => setStep(s => s - 1)}
-              style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: '1.5px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
-            >
+            <Button variant="secondary" size="sm" onClick={() => setStep(s => s - 1)} style={{ flex: 1 }}>
               ← Back
-            </button>
-            <button
-              onClick={() => isLast ? onClose() : setStep(s => s + 1)}
-              style={{ flex: 2, padding: '8px 0', borderRadius: 8, border: 'none', background: '#151719', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
-            >
+            </Button>
+            <Button variant="primary" size="sm" onClick={() => isLast ? onClose() : setStep(s => s + 1)} style={{ flex: 2 }}>
               {isLast ? 'Get started →' : 'Next →'}
-            </button>
+            </Button>
           </div>
 
           {!isLast && (
-            <button
-              onClick={onClose}
-              style={{ display: 'block', margin: '10px auto 0', background: 'none', border: 'none', color: '#94A3B8', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}
-            >
+            <Button variant="ghost" size="sm" onClick={onClose} style={{ display: 'flex', margin: '6px auto 0' }}>
               Skip tour
-            </button>
+            </Button>
           )}
         </div>
       )}

@@ -91,7 +91,7 @@ export const DragCategoryPicker = forwardRef<DragPickerHandle, { open: boolean }
       </View>
       {pop && (
         <Animated.View entering={FadeIn.duration(120)} className="rounded-2xl border border-border-2 bg-card p-1"
-          style={{ position: 'absolute', left: pop.x, top: pop.y, width: pop.w, shadowColor: '#78501E', shadowOpacity: 0.25, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } }}>
+          style={{ position: 'absolute', left: pop.x, top: pop.y, width: pop.w, shadowColor: '#151719', shadowOpacity: 0.25, shadowRadius: 16, shadowOffset: { width: 0, height: 6 } }}>
           {subs.map(sc => {
             const on = target?.sub === sc
             return (

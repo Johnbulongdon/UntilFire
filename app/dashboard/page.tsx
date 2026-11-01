@@ -2283,79 +2283,6 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   );
 }
 
-// ─── Calculators Hub Tab ─────────────────────────────────────────────────────
-const CALCULATORS = [
-  {
-    href: "/calculators/4-percent-rule",
-    title: "FIRE Number Calculator",
-    description: "Calculate exactly how much you need to retire. Adjust the withdrawal rate and see how it changes your target.",
-    tag: "FIRE · Retirement",
-    color: "#151719",
-    label: "FI",
-  },
-  {
-    href: "/calculators/savings-rate",
-    title: "Savings Rate Calculator",
-    description: "Find your savings rate and see exactly how it shifts your FIRE date — the single most powerful FIRE lever.",
-    tag: "FIRE · Core",
-    color: "#17684B",
-    label: "SR",
-  },
-  {
-    href: "/calculators/coast-fire",
-    title: "Coast FIRE Calculator",
-    description: "Find the magic number where you can stop saving and let compound growth carry you to retirement.",
-    tag: "FIRE · Strategy",
-    color: "#20D4BF",
-    label: "~",
-  },
-  {
-    href: "/calculators/compound-interest",
-    title: "Compound Interest Calculator",
-    description: "Project how your investments grow with regular contributions over any time horizon.",
-    tag: "Investing",
-    color: "#151719",
-    label: "↗",
-  },
-  {
-    href: "/calculators/apy",
-    title: "APY Calculator",
-    description: "Convert APR to APY and see exactly how compounding frequency affects your real return.",
-    tag: "Savings",
-    color: "#20D4BF",
-    label: "%",
-  },
-];
-
-function _CalculatorsTab() {
-  return (
-    <div>
-      <p style={{ color: "#64748B", fontSize: 12, fontFamily: "Inter, sans-serif", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 20 }}>
-        All tools
-      </p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-        {CALCULATORS.map(c => (
-          <Link key={c.href} href={c.href} target="_blank" style={{ textDecoration: "none" }}>
-            <div
-              style={{ background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 12, padding: "24px 20px", height: "100%", display: "flex", flexDirection: "column", gap: 10, cursor: "pointer", transition: "border-color 0.15s" }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = c.color)}
-              onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--uf-border)")}
-            >
-              <div style={{ width: 40, height: 40, borderRadius: 10, background: `${c.color}18`, border: `1px solid ${c.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: c.color, letterSpacing: "-1px" }}>
-                {c.label}
-              </div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: c.color, letterSpacing: "1.5px", textTransform: "uppercase", margin: 0 }}>{c.tag}</p>
-              <p style={{ fontSize: 16, fontWeight: 700, color: "var(--uf-text)", margin: 0, letterSpacing: "-0.3px" }}>{c.title}</p>
-              <p style={{ fontSize: 13, color: "var(--uf-text-2)", margin: 0, lineHeight: 1.6, flexGrow: 1 }}>{c.description}</p>
-              <p style={{ fontSize: 12, color: c.color, fontWeight: 600, margin: 0 }}>Open calculator →</p>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Budget Tracker Tab ───────────────────────────────────────────────────────
 function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], bills = [], onOpenUpcoming, spreadCategories = [], categoryNeeds = {} }: {
   income: number; setIncome: (v: number) => void;
@@ -2679,184 +2606,6 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
       )}
 
       {guidedSetupModal}
-    </div>
-  );
-}
-
-// ─── Survey Modal ─────────────────────────────────────────────────────────────
-type SurveyResponses = {
-  satisfaction: number | null;
-  featuresUsed: string[];
-  missing: string | null;
-  missingOther: string;
-  recommend: string | null;
-  notes: string;
-};
-
-const SURVEY_FEATURES = [
-  "FIRE Calculator",
-  "Expense Tracking",
-  "Bank Sync",
-  "Retirement Target Planner",
-  "Learning Hub",
-];
-
-const SURVEY_MISSING = [
-  "Better budgeting tools",
-  "More city / cost-of-living data",
-  "AI-powered advice",
-  "Mobile app",
-  "Faster bank sync",
-  "Other",
-];
-
-function SurveyModal({ onSubmit, onDismiss }: {
-  onSubmit: (r: SurveyResponses) => Promise<void>;
-  onDismiss: () => void;
-}) {
-  const [satisfaction, setSatisfaction]   = useState<number | null>(null);
-  const [hovered,      setHovered]        = useState<number | null>(null);
-  const [featuresUsed, setFeaturesUsed]   = useState<string[]>([]);
-  const [missing,      setMissing]        = useState<string | null>(null);
-  const [missingOther, setMissingOther]   = useState("");
-  const [recommend,    setRecommend]      = useState<string | null>(null);
-  const [notes,        setNotes]          = useState("");
-  const [submitting,   setSubmitting]     = useState(false);
-  const [done,         setDone]           = useState(false);
-
-  const toggleFeature = (f: string) =>
-    setFeaturesUsed(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f]);
-
-  const handleSubmit = async () => {
-    setSubmitting(true);
-    await onSubmit({ satisfaction, featuresUsed, missing, missingOther, recommend, notes });
-    setSubmitting(false);
-    setDone(true);
-  };
-
-  const starDisplay = hovered ?? satisfaction ?? 0;
-
-  if (done) return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ background: "#fff", borderRadius: 20, padding: "40px 32px", maxWidth: 400, width: "100%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.2)" }}>
-        <div style={{ fontSize: 40, marginBottom: 12 }}>🙏</div>
-        <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px" }}>Thank you!</div>
-        <div style={{ fontSize: 13, color: "#64748B", marginTop: 8, fontFamily: "Inter, sans-serif", lineHeight: 1.5 }}>Your feedback shapes what we build next.</div>
-      </div>
-    </div>
-  );
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, overflowY: "auto" }}>
-      <div style={{ background: "#fff", borderRadius: 20, padding: "32px 28px 24px", maxWidth: 480, width: "100%", boxShadow: "0 24px 64px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 24 }}>
-
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "1.2px", textTransform: "uppercase", color: "#17684B", marginBottom: 6, fontFamily: "Inter, sans-serif" }}>Optional check-in</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: "#0F172A", fontFamily: "Inter, sans-serif", letterSpacing: "-0.5px" }}>Want to help us improve this?</div>
-            <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 4, fontFamily: "Inter, sans-serif" }}>A few optional questions · skip anytime</div>
-          </div>
-        </div>
-
-        {/* Q1 — Satisfaction */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Inter, sans-serif" }}>1. If you have a minute, how is UntilFire feeling so far?</div>
-          <div style={{ display: "flex", gap: 8 }}>
-            {[1, 2, 3, 4, 5].map(n => (
-              <button
-                key={n}
-                onClick={() => setSatisfaction(n)}
-                onMouseEnter={() => setHovered(n)}
-                onMouseLeave={() => setHovered(null)}
-                style={{ flex: 1, fontSize: 22, background: "none", border: `1.5px solid ${n <= starDisplay ? "#F59E0B" : "#E2E8F0"}`, borderRadius: 8, padding: "8px 0", cursor: "pointer", color: n <= starDisplay ? "#F59E0B" : "#E2E8F0", transition: "all 0.1s" }}
-              >★</button>
-            ))}
-          </div>
-          {satisfaction && (
-            <div style={{ fontSize: 11, color: "#94A3B8", fontFamily: "Inter, sans-serif" }}>
-              {["", "Very dissatisfied", "Dissatisfied", "Neutral", "Satisfied", "Very satisfied"][satisfaction]}
-            </div>
-          )}
-        </div>
-
-        {/* Q2 — Features used */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Inter, sans-serif" }}>2. Which features do you use most? <span style={{ color: "#94A3B8", fontWeight: 400 }}>(pick any)</span></div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {SURVEY_FEATURES.map(f => {
-              const active = featuresUsed.includes(f);
-              return (
-                <button key={f} onClick={() => toggleFeature(f)} style={{ padding: "7px 12px", borderRadius: 99, border: `1.5px solid ${active ? "#17684B" : "#E2E8F0"}`, background: active ? "#F0FDF4" : "#F8FAFC", color: active ? "#151719" : "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
-                  {active ? "✓ " : ""}{f}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Q3 — Missing */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Inter, sans-serif" }}>3. Was anything confusing or missing?</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {SURVEY_MISSING.map(m => {
-              const active = missing === m;
-              return (
-                <button key={m} onClick={() => setMissing(active ? null : m)} style={{ padding: "7px 12px", borderRadius: 99, border: `1.5px solid ${active ? "#F97316" : "#E2E8F0"}`, background: active ? "#FFF7ED" : "#F8FAFC", color: active ? "#C2410C" : "#64748B", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
-                  {m}
-                </button>
-              );
-            })}
-          </div>
-          {missing === "Other" && (
-            <input
-              type="text"
-              value={missingOther}
-              onChange={e => setMissingOther(e.target.value)}
-              placeholder="Tell us more…"
-              style={{ border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none", color: "#0F172A" }}
-            />
-          )}
-        </div>
-
-        {/* Q4 — Recommend */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Inter, sans-serif" }}>4. Would you recommend UntilFire to a friend?</div>
-          <div style={{ display: "flex", gap: 8 }}>
-            {([["yes", "👍 Yes", "#17684B", "#F0FDF4"], ["maybe", "🤔 Maybe", "#6366F1", "#EEF2FF"], ["no", "👎 No", "#DC2626", "#FEF2F2"]] as const).map(([val, label, activeColor, activeBg]) => (
-              <button key={val} onClick={() => setRecommend(recommend === val ? null : val)} style={{ flex: 1, padding: "9px 8px", borderRadius: 9, border: `1.5px solid ${recommend === val ? activeColor : "#E2E8F0"}`, background: recommend === val ? activeBg : "#F8FAFC", color: recommend === val ? activeColor : "#64748B", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "Inter, sans-serif" }}>
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Q5 — Notes */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", fontFamily: "Inter, sans-serif" }}>5. Anything else you&apos;d like us to know? <span style={{ color: "#94A3B8", fontWeight: 400 }}>(optional)</span></div>
-          <textarea
-            value={notes}
-            onChange={e => setNotes(e.target.value)}
-            placeholder="Feature ideas, annoyances, compliments…"
-            rows={3}
-            style={{ border: "1.5px solid #E2E8F0", borderRadius: 8, padding: "9px 12px", fontSize: 13, fontFamily: "Inter, sans-serif", outline: "none", resize: "none", color: "#0F172A" }}
-          />
-        </div>
-
-        {/* Actions */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <button
-            onClick={handleSubmit}
-            disabled={!satisfaction || submitting}
-            style={{ background: satisfaction ? "#151719" : "#E5E7EB", color: satisfaction ? "#fff" : "#9CA3AF", border: "none", borderRadius: 10, padding: "13px 20px", fontSize: 15, fontWeight: 700, cursor: satisfaction ? "pointer" : "not-allowed", fontFamily: "Inter, sans-serif" }}
-          >
-            {submitting ? "Sending…" : "Send feedback →"}
-          </button>
-          <button onClick={onDismiss} style={{ background: "transparent", border: "none", color: "#9CA3AF", fontSize: 13, cursor: "pointer", fontFamily: "Inter, sans-serif", padding: "4px 0" }}>
-            Skip for now
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -3453,7 +3202,7 @@ function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => vo
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>
             {name ?? "Profile"}
           </span>
-          <span style={{ fontSize: 11, fontWeight: 400, color: "#94A3B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{email}</span>
+          <span style={{ fontSize: 11, fontWeight: 400, color: "var(--uf-ink-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{email}</span>
         </div>
       </button>
     </div>
@@ -4196,7 +3945,8 @@ const SIM_GROWTH_RANGES = [
 function simCompound(ret1y: number, years: number) { return (Math.pow(1 + ret1y / 100, years) - 1) * 100; }
 
 function InvestSimTab({ onBack }: { onBack: () => void }) {
-  const GREEN = "#16A06A", GREEN_TEXT = "#15A05F", RED = "#DC2626";
+  // Next Horizon: actions are ink; gains and losses keep their own colours.
+  const GREEN = "var(--uf-ink)", GREEN_TEXT = "var(--uf-pos-ink)", RED = "var(--uf-neg-ink)";
 
   const [scenarios, setScenarios] = useState<SimScenario[]>(
     () => SIM_INITIAL_SCENARIOS.map(s => ({ ...s, geo: { ...s.geo }, stats: { ...s.stats }, holdings: s.holdings.map(h => ({ ...h })) }))
@@ -4310,7 +4060,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
           <div style={{ fontFamily: "Inter, sans-serif", fontSize: 27, fontWeight: 800, color: "var(--uf-text)", letterSpacing: "-0.5px" }}>Investment simulations</div>
           <div style={{ fontSize: 15, color: "var(--uf-text-2)", marginTop: 4 }}>Compare strategies side-by-side. Click a scenario to adjust its holdings.</div>
         </div>
-        <button onClick={newScenario} style={{ flexShrink: 0, background: GREEN, color: "#fff", border: "none", borderRadius: 10, padding: "12px 20px", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, boxShadow: "0 1px 2px rgba(22,160,106,0.3)" }}>
+        <button onClick={newScenario} style={{ flexShrink: 0, background: GREEN, color: "var(--uf-card)", border: "none", borderRadius: "var(--uf-r-pill)", padding: "12px 20px", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, boxShadow: "0 1px 2px rgba(22,160,106,0.3)" }}>
           <span style={{ fontSize: 18, lineHeight: 1 }}>+</span> New Scenario
         </button>
       </div>
@@ -4323,14 +4073,14 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
             const ret = simWeightedRet(s.holdings);
             const tot = railTot(s);
             const isSel = i === selected;
-            const border = isSel ? `2px solid ${GREEN}` : (i === 0 ? "1px solid #BFE6D2" : "1px solid var(--uf-border)");
+            const border = isSel ? `2px solid ${GREEN}` : (i === 0 ? "1px solid var(--uf-border-2)" : "1px solid var(--uf-border)");
             const tag = i === 0 ? "YOUR PLAN" : (isSel ? "COMPARING" : "");
             return (
               <div key={i} onClick={() => setSelected(i)} style={{ background: "var(--uf-card)", borderRadius: 12, padding: 16, cursor: "pointer", transition: "all .15s", border, boxShadow: isSel ? "0 4px 14px rgba(22,160,106,0.14)" : "none" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "var(--uf-text)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                    {tag && <div style={{ fontFamily: "Inter, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.5px", color: GREEN_TEXT, background: "#E7F6EE", padding: "3px 8px", borderRadius: 9999 }}>{tag}</div>}
+                    {tag && <div style={{ fontFamily: "Inter, sans-serif", fontSize: 9, fontWeight: 700, letterSpacing: "0.5px", color: GREEN_TEXT, background: "var(--uf-mint)", padding: "3px 8px", borderRadius: 9999 }}>{tag}</div>}
                     {scenarios.length > 1 && (
                       <button onClick={e => { e.stopPropagation(); removeScenario(i); }} title="Remove scenario" aria-label={`Remove ${s.name}`} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--uf-text-3)", fontSize: 16, lineHeight: 1, padding: 0, width: 16, textAlign: "center" }}>×</button>
                     )}
@@ -4427,22 +4177,22 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
               <div style={uppercaseLabel}>Modeled Growth · {range.title}</div>
               <div style={{ display: "flex", gap: 4, background: "var(--uf-surface-2)", borderRadius: 9999, padding: 3 }}>
                 {SIM_GROWTH_RANGES.map(r => (
-                  <div key={r.key} onClick={() => setGrowthRange(r.key)} style={{ padding: "5px 14px", borderRadius: 9999, background: growthRange === r.key ? GREEN : "transparent", color: growthRange === r.key ? "#fff" : "var(--uf-text-2)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{r.key}</div>
+                  <div key={r.key} onClick={() => setGrowthRange(r.key)} style={{ padding: "5px 14px", borderRadius: 9999, background: growthRange === r.key ? GREEN : "transparent", color: growthRange === r.key ? "var(--uf-card)" : "var(--uf-text-2)", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{r.key}</div>
                 ))}
               </div>
             </div>
             <div style={{ display: "flex", gap: 18, marginBottom: 12, flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "#64748B" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>Your plan</span><span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>{simFmtPct(baseRet)}</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "var(--uf-ink-2)" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>Your plan</span><span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-2)" }}>{simFmtPct(baseRet)}</span></div>
               <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: GREEN }} /><span style={{ fontSize: 12, fontWeight: 700, color: GREEN_TEXT }}>{sel.name}</span><span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: GREEN_TEXT }}>{simFmtPct(selRet)}</span></div>
-              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "#CBD5E1" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{bench}</span><span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{simFmtPct(benchRet)}</span></div>
+              <div style={{ display: "flex", alignItems: "center", gap: 7 }}><div style={{ width: 18, height: 3, borderRadius: 2, background: "var(--uf-border-2)" }} /><span style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{bench}</span><span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)" }}>{simFmtPct(benchRet)}</span></div>
             </div>
             <svg width="100%" viewBox={`0 0 ${GW} ${GH}`} preserveAspectRatio="none" style={{ display: "block", height: 196 }}>
               <line x1="0" y1="52" x2={GW} y2="52" stroke="var(--uf-border)" />
               <line x1="0" y1="100" x2={GW} y2="100" stroke="var(--uf-border)" />
               <line x1="0" y1="148" x2={GW} y2="148" stroke="var(--uf-border)" />
               <path d={gSelArea} fill="rgba(22,160,106,0.07)" />
-              <polyline points={gSp} fill="none" stroke="#CBD5E1" strokeWidth="2" strokeDasharray="5 4" />
-              <polyline points={gBase} fill="none" stroke="#64748B" strokeWidth="2" />
+              <polyline points={gSp} fill="none" stroke="var(--uf-border-2)" strokeWidth="2" strokeDasharray="5 4" />
+              <polyline points={gBase} fill="none" stroke="var(--uf-ink-2)" strokeWidth="2" />
               <polyline points={gSel} fill="none" stroke={GREEN} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
               <circle cx={gSelEnd.x} cy={gSelEnd.y} r="4" fill={GREEN} />
             </svg>
@@ -4485,7 +4235,7 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <div style={uppercaseLabel}>Holdings</div>
-                <div style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 800, color: draftTotal === 100 ? GREEN_TEXT : "#E0902B" }}>Total {draftTotal}%</div>
+                <div style={{ fontFamily: "Inter, sans-serif", fontSize: 12, fontWeight: 800, color: draftTotal === 100 ? GREEN_TEXT : "var(--uf-warn-ink)" }}>Total {draftTotal}%</div>
               </div>
               <div style={{ height: 7, borderRadius: 9999, background: "var(--uf-surface-2)", overflow: "hidden", display: "flex", marginBottom: 6 }}>
                 {draftDonut.map((g, k) => <div key={k} style={{ width: g.barW, background: g.c }} />)}
@@ -4514,13 +4264,13 @@ function InvestSimTab({ onBack }: { onBack: () => void }) {
                 <datalist id="sim-ticker-list">
                   {Object.entries(SIM_TICKER_LIBRARY).map(([t, info]) => <option key={t} value={t}>{info.name}</option>)}
                 </datalist>
-                <button onClick={addRow} style={{ background: GREEN, color: "#fff", border: "none", borderRadius: 9, width: 46, fontSize: 22, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+                <button onClick={addRow} style={{ background: GREEN, color: "var(--uf-card)", border: "none", borderRadius: "var(--uf-r-pill)", width: 46, fontSize: 22, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
               </div>
               <div style={{ fontSize: 11.5, color: "var(--uf-text-3)", marginTop: 12, fontStyle: "italic" }}>Returns model 1-year historical CAGR. Past performance doesn&apos;t guarantee future results.</div>
             </div>
             <div style={{ position: "sticky", bottom: 0, background: "var(--uf-card)", display: "flex", justifyContent: "flex-end", gap: 10, padding: "16px 26px", borderTop: "1px solid var(--uf-border)" }}>
               <button onClick={closeModal} style={{ background: "var(--uf-card)", color: "var(--uf-text-2)", border: "1px solid var(--uf-border)", borderRadius: 9, padding: "11px 20px", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Cancel</button>
-              <button onClick={save} style={{ background: GREEN, color: "#fff", border: "none", borderRadius: 9, padding: "11px 22px", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Save changes</button>
+              <button onClick={save} style={{ background: GREEN, color: "var(--uf-card)", border: "none", borderRadius: "var(--uf-r-pill)", padding: "11px 22px", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Save changes</button>
             </div>
           </div>
         </div>
@@ -5677,7 +5427,6 @@ export default function Dashboard() {
   // welcome form and never auto-save defaults over the saved row.
   const [planLoadFailed, setPlanLoadFailed] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
-  const [surveyOpen,     setSurveyOpen]     = useState(false);
   const [tourOpen,       setTourOpen]       = useState(false);
   function closeTour() {
     setTourOpen(false);
@@ -6208,25 +5957,6 @@ export default function Dashboard() {
         }
       `}</style>
 
-      {surveyOpen && (
-        <SurveyModal
-          onSubmit={async (responses) => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
-            await fetch("/api/survey", {
-              method: "POST",
-              headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-              body: JSON.stringify(responses),
-            });
-            localStorage.setItem('uf_survey_done', '1');
-            setSurveyOpen(false);
-          }}
-          onDismiss={() => {
-            localStorage.setItem('uf_survey_done', '1');
-            setSurveyOpen(false);
-          }}
-        />
-      )}
       {onboardingOpen && (
         <OnboardingModal
           defaultCurrency={defaultCurrency}
@@ -6243,7 +5973,7 @@ export default function Dashboard() {
           }}
         />
       )}
-      {tourOpen && !onboardingOpen && !surveyOpen && (
+      {tourOpen && !onboardingOpen && (
         <TourModal onClose={closeTour} />
       )}
 
@@ -6387,9 +6117,9 @@ export default function Dashboard() {
             </div>
             <button
               onClick={() => setTourOpen(true)}
-              style={{ background: "none", border: "none", color: "#94A3B8", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "2px 0", textAlign: "left", display: "flex", alignItems: "center", gap: 5 }}
+              style={{ background: "none", border: "none", color: "var(--uf-ink-3)", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "2px 0", textAlign: "left", display: "flex", alignItems: "center", gap: 5 }}
             >
-              <span style={{ width: 16, height: 16, borderRadius: "50%", border: "1.5px solid #CBD5E1", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>?</span>
+              <span style={{ width: 16, height: 16, borderRadius: "50%", border: "1.5px solid var(--uf-border-2)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>?</span>
               Take a tour
             </button>
           </div>

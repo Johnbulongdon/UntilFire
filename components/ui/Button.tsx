@@ -35,6 +35,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: ButtonVariant;
   size?: ButtonSize;
   fullWidth?: boolean;
+  /** React 19 passes ref as a prop; used to focus the safe choice in ConfirmDialog. */
+  ref?: React.Ref<HTMLButtonElement>;
 }
 
 export default function Button({

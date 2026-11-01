@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { ConfirmDialog } from "@/components/ui";
 import Logo from "@/app/components/Logo";
 
 export default function Nav({
@@ -14,6 +16,7 @@ export default function Nav({
   onRestart: () => void;
   onSignIn: () => void;
 }) {
+  const [confirmRestart, setConfirmRestart] = useState(false);
   return (
     <nav className="uf-nav">
       <Link href="/" className="uf-nav-logo" style={{ textDecoration: "none" }}>
@@ -31,9 +34,7 @@ export default function Nav({
         {step > 0 ? (
           <button
             className="uf-nav-restart"
-            onClick={() => {
-              if (window.confirm("Start over? This clears your current answers.")) onRestart();
-            }}
+            onClick={() => setConfirmRestart(true)}
           >
             Start over
           </button>
@@ -41,6 +42,15 @@ export default function Nav({
           <button className="uf-nav-signin" onClick={onSignIn}>Sign in</button>
         )}
       </div>
+      <ConfirmDialog
+        open={confirmRestart}
+        title="Start over?"
+        body="This clears your answers so far."
+        confirmLabel="Start over"
+        cancelLabel="Keep going"
+        onConfirm={() => { setConfirmRestart(false); onRestart(); }}
+        onCancel={() => setConfirmRestart(false)}
+      />
     </nav>
   );
 }
