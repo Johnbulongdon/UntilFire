@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-02 — Quieter phone Appearance setting
+
+- Appearance is one settings row showing the current mode. Tapping opens a compact picker with a checkmark; selecting closes it and preserves the existing saved preference. Cancel, backdrop and Android Back dismiss without changes.
+
+
 ## 2026-11-01 — Tick boxes in the app style
 
 - Every tick box on the website (a transaction's Work cost and Always for this shop, the Setup checklist's found bills, emergency-fund and shared accounts in Net Worth, Free to spend accounts, Leave out, offer Compare, invite terms, admin) now uses UntilFire's own rounded box: black with a white tick in light mode, light with a dark tick in dark mode.

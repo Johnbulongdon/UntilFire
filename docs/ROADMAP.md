@@ -2,6 +2,9 @@
 
 ## Current priorities
 
+N2 follow-up — Compact phone Appearance, Codex, 2 November 2026: approved compact settings row and picker replacing large inline pills. Implementation and platform checks in progress; saved preference logic unchanged. Merge/production promotion pending.
+
+
 N2 follow-up — Phone appearance, Codex, 2 November 2026: [PR #369](https://github.com/Johnbulongdon/UntilFire/pull/369) in review: approved System/Light/Dark control in Profile Settings, device persistence and common effective theme. Types, lint, preference race/failure tests and Android/iOS/web exports passed; physical-device acceptance pending. No money/native configuration changes. Merge and installed-phone rollout remain pending.
 
 
