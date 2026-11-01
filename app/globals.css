@@ -782,3 +782,45 @@ button,input,select,textarea{font-family:inherit}h1,h2{font-weight:800;letter-sp
   .uf-review-foot span{display:none}
   .uf-review-foot .uf-button{flex:1}
 }
+
+/* ── Date picker (components/ui/DateField). Replaces the browser's date popup. */
+.uf-date-trigger:hover:not(:disabled) { border-color: var(--uf-ink-2); }
+.uf-date-trigger:focus-visible { outline: 2px solid var(--uf-ink); outline-offset: 2px; }
+.uf-date-pop {
+  z-index: 10001; box-sizing: border-box; padding: 16px;
+  background: var(--uf-card); color: var(--uf-ink);
+  border: 1px solid var(--uf-border); border-radius: var(--uf-r-card);
+  box-shadow: var(--uf-e3); font-family: var(--uf-font);
+  animation: uf-date-in var(--uf-dur-2) var(--uf-ease);
+}
+@keyframes uf-date-in { from { opacity: 0; transform: translateY(-4px); } }
+.uf-date-pop button { font-family: inherit; cursor: pointer; }
+.uf-date-pop button:focus-visible { outline: 2px solid var(--uf-ink); outline-offset: 2px; }
+.uf-date-nav {
+  width: 36px; height: 36px; display: grid; place-items: center;
+  border: 1px solid var(--uf-border); border-radius: var(--uf-r-control);
+  background: var(--uf-card); color: var(--uf-ink);
+  transition: background var(--uf-dur-1) var(--uf-ease);
+}
+.uf-date-nav:hover { background: var(--uf-surface); }
+.uf-date-day {
+  height: 38px; border: 0; border-radius: var(--uf-r-control);
+  background: transparent; color: var(--uf-ink);
+  font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums;
+  transition: background var(--uf-dur-1) var(--uf-ease);
+}
+.uf-date-day:hover:not(:disabled) { background: var(--uf-surface); }
+.uf-date-day[data-today="true"] { background: var(--uf-sun); color: #151719; font-weight: 700; }
+.uf-date-day[data-selected="true"] { background: var(--uf-ink); color: var(--uf-card); font-weight: 700; }
+.uf-date-day:disabled { color: var(--uf-ink-3); opacity: 0.4; cursor: not-allowed; }
+.uf-date-today {
+  border: 0; border-radius: var(--uf-r-pill); padding: 9px 18px;
+  background: var(--uf-ink); color: var(--uf-card); font-size: 13px; font-weight: 700;
+}
+.uf-date-today:disabled { opacity: 0.4; cursor: not-allowed; }
+.uf-date-link {
+  border: 0; background: transparent; padding: 9px 4px;
+  color: var(--uf-ink-2); font-size: 13px; font-weight: 600;
+}
+.uf-date-link:hover { color: var(--uf-ink); }
+@media (prefers-reduced-motion: reduce) { .uf-date-pop { animation: none; } }
