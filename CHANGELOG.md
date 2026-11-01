@@ -2,6 +2,7 @@
 
 ## 2026-11-01 — Creator and account setup navigation (in review)
 
+- Referral links use approved provider programmes and matching HTTPS domains; web/phone now show the provider website and flag mismatches before submitting. Connected accounts are not required.
 - Own provider links stay under Creator programme; legacy links forward there. Profile keeps access for ordinary members without paid creator enrolment.
 - Money account browsing no longer creates a Plan task. Plan opens its own account picker in place, retains selection/filter state and returns to setup. Existing-account selection opens its editor directly. Web and phone back labels match their destinations.
 

@@ -9,6 +9,7 @@ import { DetailScreen } from "@/components/DetailScreen";
 import { Text } from "@/components/Text";
 import { Button } from "@/components/Button";
 import { useToolsAPI } from "@/lib/use-tools-api";
+import { linkMatchesDomain } from "@engine/partner-offers.ts";
 import { colors } from "@/theme/colors";
 export default function CreatorScreen() {
   const { owner } = useToolsAPI();
@@ -47,6 +48,11 @@ function Links() {
     action = "save",
   ) {
     setError("");
+    const provider = data?.providers.find((p) => p.slug === slug);
+    if (action !== "remove" && (!provider || !linkMatchesDomain(url, provider.allowed_domain))) {
+      setError(provider ? "Use an HTTPS referral link on " + provider.allowed_domain + "." : "Choose an approved provider.");
+      return;
+    }
     setBusy(true);
     try {
       await api("/api/referrals/provider-links", {
@@ -68,7 +74,7 @@ function Links() {
       back={from === "give-a-month" ? "Give a month" : "Profile"}
       onBack={() => router.navigate(from === "give-a-month" ? "/give-a-month" : "/profile")}
       title="Creator programme"
-      subtitle="People who join through your UntilFire invite can use your provider links."
+      subtitle="Share links from approved providers with people you invite."
       refreshing={busy}
       onRefresh={() => {
         void load().catch((e) => setError(e.message));
@@ -113,7 +119,7 @@ function Links() {
       {data?.providers.length === 0 && (
         <View className="gap-2 rounded-card border border-border bg-card p-5">
           <Text className="text-[20px] font-bold text-ink">
-            Provider links are coming
+            No approved providers available yet
           </Text>
           <Text className="text-ink-2">
             Only reviewed providers appear here. Your UntilFire invite still
@@ -197,6 +203,7 @@ function LinkForm({
         placeholderTextColor={colors.ink3}
         style={input}
       />
+      <Text className="text-[12px] text-ink-2">Provider website: {provider.allowed_domain}</Text>
       {!!link?.review_note && (
         <Text private className="text-ink-2">
           {link.review_note}

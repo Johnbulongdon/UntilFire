@@ -18,3 +18,10 @@ Baseline: origin/main 609b323. Scope approved by John after the navigation audit
 - Actual web components with isolated synthetic transport: creator-to-editor/back, ordinary-member Profile context and account switching, legacy redirect, Money handoff with zero setup rows before/after, in-place Plan browse/return, retained comparison selection, direct existing-account editor and explicit Plan handoff returning to applying state. URL stays on Account setup; heading focus verified.
 - Browser layout at 1280px and narrow dark 390px: no horizontal overflow. Screenshots stay private outside Git.
 - No production writes, migration, programme activation, dependency/native-config changes or release during this follow-up. Phone export and physical-device status are recorded in the PR; physical hardware-back, external browser return and screen-reader acceptance remain pending. The browser fixture is not a live production acceptance test.
+
+## Provider eligibility clarification
+
+- Approved catalogue providers are eligible without a connected account. The server continues to enforce live/member-enabled programmes, HTTPS domain matching and review before invitee use.
+- Actual-handler coverage increased from 28 to 32 scenarios: unknown providers and domain override attempts, disabled programmes, valid submission without a connection, and mismatched stored links at approval/resolution.
+- Web and phone show the approved provider website and validate mismatches before submitting. Actual web form feedback was verified using isolated synthetic accounts; no production writes.
+- Targeted web/phone TypeScript, changed-file ESLint, navigation guards, all 17 partner-offer checks and diff whitespace checks passed for this clarification. The earlier full build/export evidence above predates this small client validation and copy follow-up.

@@ -652,6 +652,34 @@ await check(
     assert.equal(store.referral_attributions[0].partner_id, "partner-a");
   },
 );
+await check("member cannot invent a provider or supply their own allowed domain", async () => {
+  const r = await own.POST(req(undefined, "a", { slug: "made-up-bank", version: 0, url: "https://fake.example/r/alex", allowed_domain: "fake.example", member_links_enabled: true, displayName: "Alex" }));
+  assert.equal(r.status, 404);
+  const spoof = await own.POST(req(undefined, "a", { slug: "broker-a", version: 1, url: "https://fake.example/r/alex", allowed_domain: "fake.example", displayName: "Alex" }));
+  assert.equal(spoof.status, 400);
+  assert.equal(store.partner_referral_links[0].url, link.url);
+});
+await check("members cannot enable a hidden or disabled provider", async () => {
+  for (const change of [{ status: "hidden", member_links_enabled: true }, { status: "live", member_links_enabled: false }]) {
+    Object.assign(store.partner_offers[0], change);
+    const r = await own.POST(req(undefined, "a", { slug: "broker-a", version: 1, url: "https://broker.example/r/new", status: "live", member_links_enabled: true, displayName: "Alex" }));
+    assert.equal(r.status, 409);
+  }
+});
+await check("approved provider submission does not require a connected account", async () => {
+  const r = await own.POST(req(undefined, "a", { slug: "broker-a", version: 1, url: "https://broker.example/r/new", displayName: "Alex" }));
+  assert.equal(r.status, 200);
+  assert.equal(store.partner_referral_links[0].status, "pending");
+  assert.equal("plaid_items" in store, false);
+});
+await check("a stored mismatched URL cannot be approved or shown to an invitee", async () => {
+  store.partner_referral_links[0].url = "https://fake.example/r/alex";
+  const r = await review.POST(req(undefined, "admin", { id: "link-a", version: 1, status: "approved" }));
+  assert.equal(r.status, 409);
+  const visible = await json(await list.GET(req()));
+  assert.equal(visible.offers[0].referralLabel, "UntilFire referral link");
+});
+
 const creator = load("app/api/referrals/me/route.ts");
 const invite = load("app/r/[code]/route.ts");
 const join = () => creator.POST(req(undefined, "a", {

@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui";
+import { linkMatchesDomain } from "@/lib/partner-offers";
 import type { OwnLinks } from "@/lib/accounts-tools-client";
 import { useToolsAPI } from "./useToolsAPI";
 import s from "./AccountsTools.module.css";
@@ -38,6 +39,11 @@ export default function ProviderLinksPanel() {
   ) {
     const f = new FormData(form);
     setError("");
+    const provider = data?.providers.find((p) => p.slug === slug);
+    if (action !== "remove" && (!provider || !linkMatchesDomain(f.get("url"), provider.allowed_domain))) {
+      setError(provider ? "Use an HTTPS referral link on " + provider.allowed_domain + "." : "Choose an approved provider.");
+      return;
+    }
     setBusy(true);
     try {
       await api("/api/referrals/provider-links", {
@@ -59,8 +65,7 @@ export default function ProviderLinksPanel() {
       <header>
         <h1 className="uf-t-h1">My provider links</h1>
         <p className={s.muted}>
-          People who join through your UntilFire invite can use your provider
-          links.
+          Share links from approved providers with people you invite.
         </p>
       </header>
       {error && (
@@ -105,7 +110,7 @@ export default function ProviderLinksPanel() {
       )}
       {data?.providers.length === 0 && (
         <div className={s.card}>
-          <strong>Provider links are coming</strong>
+          <strong>No approved providers available yet</strong>
           <p className={s.muted}>
             Only reviewed providers appear here. Your UntilFire invite still
             works.
@@ -156,6 +161,7 @@ export default function ProviderLinksPanel() {
                 placeholder={"https://" + provider.allowed_domain + "/…"}
               />
             </label>
+            <p className={s.small}>Provider website: {provider.allowed_domain}</p>
             {link?.review_note && (
               <p className={s.muted + " ph-mask"}>{link.review_note}</p>
             )}
