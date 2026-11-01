@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Explore (D-58): the map and the cards, side by side on a computer, stacked
- * on a phone. Your numbers come from the calculator when it has run in this
+ * Explore (D-58): on a computer the globe fills the page and the cards float
+ * over its right side in a panel you can fold away; stacked on a phone. Your numbers come from the calculator when it has run in this
  * browser, or from two quick fields here; money shows in your currency (the
  * app's default currency, or the one you used in the calculator). Stars and
  * your numbers stay on this device; nothing is sent anywhere.
@@ -23,6 +23,9 @@ import Flag from "@/app/components/Flag";
 import "./explore.css";
 
 const STARS_KEY = "uf_explore_stars";
+const PANEL_KEY = "uf_explore_panel";
+/** The floating panel's width plus its gap from the edge, kept in step with explore.css. */
+const PANEL_COVER = 440 + 32;
 const read = <T,>(key: string): T | null => { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) as T : null; } catch { return null; } };
 const write = (key: string, v: unknown) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* private mode */ } };
 const chip = (on: boolean): React.CSSProperties => ({ fontSize: 13, fontWeight: 700, padding: "7px 12px", borderRadius: 99, border: "1px solid var(--uf-border)", whiteSpace: "nowrap", cursor: "pointer",
@@ -71,10 +74,14 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
   // On a computer the page fits the screen: the globe stays in view and only
   // the cards scroll, inside their own column. Null on a phone (it scrolls).
   const [boxHeight, setBoxHeight] = useState<number | null>(null);
+  // The city panel folds into the right edge to give the globe the whole page (computer only).
+  const [panelOpen, setPanelOpen] = useState(true);
+  const togglePanel = () => setPanelOpen(o => { write(PANEL_KEY, !o); return !o; });
   const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setStarred(new Set(read<string[]>(STARS_KEY) ?? []));
+    if (read<boolean>(PANEL_KEY) === false) setPanelOpen(false);
     const p = readExplorePlan();
     if (p) { setPlan(p); setMode("year"); if (!displayCurrency && p.currency && p.currency !== "USD") setView("all"); }
     trackExploreViewed({ has_plan: !!p });
@@ -84,12 +91,12 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
       // From where the page starts (below the site header or app bar) to the bottom of the window.
       const top = box.current.getBoundingClientRect().top + window.scrollY;
       const h = Math.max(520, window.innerHeight - top);
-      setBoxHeight(h); setMapHeight(h - 48 - 40);
+      setBoxHeight(h); setMapHeight(h);
       // Padding below us (the app shell adds some) would still make the page
       // scroll: measure once laid out and give that back.
       requestAnimationFrame(() => {
         const extra = document.documentElement.scrollHeight - window.innerHeight;
-        if (extra > 0 && h - extra >= 520) { setBoxHeight(h - extra); setMapHeight(h - extra - 48 - 40); }
+        if (extra > 0 && h - extra >= 520) { setBoxHeight(h - extra); setMapHeight(h - extra); }
       });
     };
     fit(); phone.addEventListener("change", fit); window.addEventListener("resize", fit);
@@ -159,7 +166,14 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
   </>;
   const modes: [PinMode, string, boolean][] = [["monthly", `${getCurrencySymbol(currency)} / month`, true], ["year", "🏁 Year", !!plan], ["age", "🎂 Age", plan?.age != null], ["badge", "🏅 Badges", plan?.age != null]];
   return <div className="uf-explore" ref={box} style={boxHeight ? { height: boxHeight } : undefined}>
-    <div className="uf-explore-head">
+    <aside className="uf-explore-panel" data-open={panelOpen} aria-label="Cities">
+    <button type="button" className="uf-explore-fold" onClick={togglePanel} aria-expanded={panelOpen}
+      aria-label={panelOpen ? "Hide the city list" : "Show the city list"} title={panelOpen ? "Hide cities" : "Show cities"}>
+      <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d={panelOpen ? "M6 3l5 5-5 5" : "M10 3L5 8l5 5"} /></svg>
+      {!panelOpen && <span>Cities</span>}
+    </button>
+    <div className="uf-explore-head" inert={boxHeight != null && !panelOpen ? true : undefined}>
       {!appPlan && <h1 className="uf-t-display" style={{ margin: 0, fontSize: "clamp(26px, 4vw, 34px)" }}>Where could you retire?</h1>}
       <div role="radiogroup" aria-label="Pins show" style={{ display: "inline-flex", gap: 2, padding: 3, borderRadius: 99, background: "var(--uf-card)", justifySelf: "start" }}>
         {modes.map(([m, label, can]) => <button key={m} type="button" role="radio" aria-checked={mode === m} disabled={!can} onClick={() => changeMode(m)}
@@ -185,7 +199,7 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
         {TAX_ESTIMATES_AVAILABLE && <button type="button" style={chip(noTax)} onClick={() => setNoTax(v => !v)}>🧾 No income tax</button>}
       </div>
     </div>
-    <div className="uf-explore-cards" ref={cardsRef}>
+    <div className="uf-explore-cards" ref={cardsRef} inert={boxHeight != null && !panelOpen ? true : undefined}>
         {following && <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "var(--uf-ink-2)" }}>
           <span>{list.length} {list.length === 1 ? "city" : "cities"} in view</span>
           <button type="button" onClick={() => setAllAnyway(true)} style={{ border: 0, background: "none", color: "var(--uf-green)", fontWeight: 700, cursor: "pointer", font: "inherit" }}>Show all</button></div>}
@@ -194,9 +208,11 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
           onStar={() => toggleStar(c.key)} selected={selected === c.key} onSelect={() => choose(c.key, "list")} actions={actions} />)}
         {list.length > shown && <button type="button" onClick={() => setShown(n => n + 48)} style={{ ...chip(false), justifySelf: "center" }}>Show {Math.min(48, list.length - shown)} more of {list.length}</button>}
     </div>
+    </aside>
     <div className="uf-explore-mapwrap">
-      <ExploreMap cities={onlyStarred || noTax ? filtered : EXPLORE_CITIES} focus={view} mode={mode} money={moneyShort} freedom={freedom} badges={badges} starred={starred} selected={selected} onSelect={choose} height={mapHeight} flyTo={flyTo} onView={onView} />
-      <p title="Typical household spending per city. Your year keeps your savings as they are and retires on each city's cost at your way of spending." style={{ fontSize: 12, color: "var(--uf-ink-2)", margin: "8px 2px 0", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Typical household spending, in {currency}, at your way of spending.</p>
+      <ExploreMap cities={onlyStarred || noTax ? filtered : EXPLORE_CITIES} focus={view} mode={mode} money={moneyShort} freedom={freedom} badges={badges} starred={starred} selected={selected} onSelect={choose} height={mapHeight} flyTo={flyTo} onView={onView}
+        padRight={boxHeight != null && panelOpen ? PANEL_COVER : 0} />
+      <p className="uf-explore-note" title="Typical household spending per city. Your year keeps your savings as they are and retires on each city's cost at your way of spending." >Typical household spending, in {currency}, at your way of spending.</p>
     </div>
   </div>;
 }

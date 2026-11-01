@@ -5824,6 +5824,8 @@ export default function Dashboard() {
         .uf-sidebar { width: 248px; min-height: 100vh; position: sticky; top: 0; height: 100vh; overflow-y: auto; background: var(--uf-surface); border-right: 1px solid var(--uf-border); display: flex; flex-direction: column; flex-shrink: 0; }
         .uf-main { flex: 1; overflow-y: auto; min-width: 0; }
         .uf-content { padding: 32px 36px 60px; max-width: 1152px; margin: 0 auto; }
+        /* Explore's globe fills everything right of the sidebar (computer only; the phone keeps its padding). */
+        @media (min-width: 901px) { .uf-content.uf-content-bleed { padding: 0; max-width: none; } }
 
         .uf-sidebar-logo { padding: 22px 20px 20px; font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 800; color: var(--uf-ink); letter-spacing: -0.04em; text-decoration: none; display: block; border-bottom: 1px solid var(--uf-border); }
         .uf-sidebar-logo span { color: var(--uf-teal); }
@@ -6091,7 +6093,7 @@ export default function Dashboard() {
 
         {/* ── Main content ─────────────────────────────────────────────────── */}
         <main id="uf-main" tabIndex={-1} className="uf-main">
-          <MotionScene className="uf-content" scene={`${tab}:${cashflowSubTab}:${fireCalcSubTab}`}>
+          <MotionScene className={tab === "expat-fire" ? "uf-content uf-content-bleed" : "uf-content"} scene={`${tab}:${cashflowSubTab}:${fireCalcSubTab}`}>
             {upgradedBanner && (
               <Alert
                 tone="positive"
