@@ -17,7 +17,7 @@ import { moneyMono } from "./MoneyCards";
  * nothing more is safe to invest until the next one.
  */
 export default function CalendarMonth({ items, forecast, reserve = 0, accounts = [], allowanceFrom = null, safe, done, onMarkDone,
-  selected, onSelect, scheduledItems = items, addForm, onAdd, onEdit, onOpenTransactions, emojiFor, fmt, compact }: {
+  selected, onSelect, scheduledItems = items, pastMonth, addForm, onAdd, onEdit, onOpenTransactions, emojiFor, fmt, compact }: {
   /** Pending items, in USD. */
   items: ExpectedItem[];
   /** The cash forecast to the next contribution, or null with no plan. */
@@ -37,6 +37,9 @@ export default function CalendarMonth({ items, forecast, reserve = 0, accounts =
   onSelect: (iso: string | null) => void;
   /** Complete scheduled rows, including completed one-offs; never transaction history. */
   scheduledItems?: ScheduledCalendarItem[];
+  /** What actually came in and went out in a past month ("YYYY-MM"), in USD,
+   *  from the person's transactions. Bills and the forecast only run forward. */
+  pastMonth?: (month: string) => { in: number; out: number };
   /** The add form while it is open, shown in the day panel. */
   addForm: React.ReactNode;
   /** Open the add form on a day. */
@@ -92,6 +95,12 @@ export default function CalendarMonth({ items, forecast, reserve = 0, accounts =
   const isThisMonth = y === today.getFullYear() && m === today.getMonth();
   const monthWord = new Date(y, m, 1).toLocaleDateString(undefined, { month: "long" });
   const span = isThisMonth ? `to ${new Date(y, m, daysInMonth).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : monthWord;
+  // A month already over has no bills or day-to-day ahead of it: show what
+  // really came in and went out, from the transactions (Nov 2026 fix; it
+  // showed 0 and 0).
+  const actual = monthEnd < todayIso ? pastMonth?.(`${y}-${String(m + 1).padStart(2, "0")}`) ?? null : null;
+  const inTotal = actual ? actual.in : comingIn;
+  const outTotal = actual ? actual.out : bills + dayToDay;
 
   const investIso = forecast?.contributionIso;
   // A dip below zero before payday is the low that matters, even though it
@@ -114,8 +123,8 @@ export default function CalendarMonth({ items, forecast, reserve = 0, accounts =
   const scheduledIncome = scheduled.filter(e=>e.income).reduce((sum,e)=>sum+e.amount,0);
 
   const tiles: [string, string, string, string, string][] = [
-    ["↓", `In · ${span}`, `+${fmt(comingIn)}`, "var(--uf-pos-ink)", "color-mix(in srgb, var(--uf-pos-ink) 14%, var(--uf-card))"],
-    ["↑", `Out · ${span}`, `−${fmt(bills + dayToDay)}`, "var(--uf-ink)", "var(--uf-surface-2)"],
+    ["↓", `In · ${span}`, `+${fmt(inTotal)}`, "var(--uf-pos-ink)", "color-mix(in srgb, var(--uf-pos-ink) 14%, var(--uf-card))"],
+    ["↑", `Out · ${span}`, `−${fmt(outTotal)}`, "var(--uf-ink)", "var(--uf-surface-2)"],
     ["◔", `Lowest${lowIso ? ` · ${dayLabel(lowIso)}` : ""}${intoReserve ? " · uses savings" : ""}`, low ? `${lowCash < 0 ? "−" : ""}${fmt(Math.abs(lowCash))}` : "—", lowCash < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink)", "var(--uf-warn-bg)"],
     ["◆", done ? "Invested this cycle" : `Safe to invest${investIso ? ` · ${dayLabel(investIso)}` : ""}`, done ? `${fmt(done.amount)} ✓` : fmt(safe), "var(--uf-teal-deep)", "var(--uf-teal-soft)"],
   ];

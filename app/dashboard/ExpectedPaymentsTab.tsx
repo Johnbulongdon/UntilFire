@@ -17,6 +17,7 @@ import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SUB_CATEGORIES } from "@/lib/cat
 import { guessBillCategory, settleBill } from "@/lib/spend-forecast";
 import { DEFAULT_NOTICE_DAYS, daysUntil as leaseDaysUntil, isRent, noticeDeadline } from "@/lib/lease";
 import { useCustomCategories } from "@/lib/useCustomCategories";
+import { monthActuals, type FlagTx } from "@/lib/transaction-flags";
 import {
   detectRecurring, toRecurrence, sameMerchant,
   recurrenceToMonthly, RECURRENCE_LABEL,
@@ -273,7 +274,7 @@ export default function ExpectedPaymentsTab({
   const needsCategory = formType === "expense" && !formCategory;
   const [saving, setSaving] = useState(false);
   const [suggestions, setSuggestions] = useState<DetectedItem[]>([]);
-  const [history, setHistory] = useState<RawTx[]>([]);
+  const [history, setHistory] = useState<(RawTx & FlagTx)[]>([]);
   const [dismissed, setDismissed] = useState<string[]>([]);
 
   useEffect(() => {
@@ -300,13 +301,15 @@ export default function ExpectedPaymentsTab({
       // Detection is a suggestion feed, never a list in its own right.
       const { data: txns } = await fetchAllPages((from, to) => supabase
         .from("expenses")
-        .select("id, date, amount, currency, description, category, transaction_type")
+        // Every column, as Transactions reads it: refunds, tags and source
+        // decide what a past month's In and Out count (monthActuals).
+        .select("*")
         .eq("user_id", userId)
         .order("date", { ascending: false })
         .order("id")
         .range(from, to));
       if (cancelled || !txns) return;
-      setHistory(txns as RawTx[]);
+      setHistory(txns as (RawTx & FlagTx)[]);
       const found = detectRecurring(txns as RawTx[], displayRates);
       setSuggestions([...found.expenses, ...found.income].slice(0, 8));
       try {
@@ -715,7 +718,7 @@ export default function ExpectedPaymentsTab({
             ...(ladder?.efAccounts ?? []).map((a) => ({ name: a.label, balance: a.balance, reserve: true }))]}
           safe={cash?.free ?? 0} done={cash?.done ?? null}
           onMarkDone={onMarkDone} selected={selected} onSelect={(iso) => { if (showForm) closeForm(); setSelected(iso); }}
-          scheduledItems={scheduledItems} addForm={showForm ? formNode : null} onAdd={(iso) => openAddForm(iso)}
+          scheduledItems={scheduledItems} pastMonth={(month) => monthActuals(history, month, (a, c) => toUSD(a, c, displayRates))} addForm={showForm ? formNode : null} onAdd={(iso) => openAddForm(iso)}
           onEdit={(id) => { const item = payments.find((p) => p.id === id); if (item) openEditForm(item); }}
           onOpenTransactions={onOpenTransactions} emojiFor={categoryEmoji}
           fmt={formatAmount} compact={(usd) => formatUSDInCurrency(usd, displayCurrency, displayRates, { compact: true })} />

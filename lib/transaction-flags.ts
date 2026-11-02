@@ -240,3 +240,25 @@ const REFUND = /退款|退货|\brefund(ed)?\b|\breversal\b|\bchargeback\b/i;
  */
 export const looksLikeRefund = (t: { transaction_type: string; description?: string | null }) =>
   t.transaction_type === "income" && REFUND.test(t.description ?? "");
+
+/**
+ * What actually came in and went out in one past month (Nov 2026), counted as
+ * the Transactions page counts it: transfers never count, card bill payments
+ * and likely copies wait out (D-130), refunds saved as income are not
+ * earnings, and an expense counts after its own refund. Wallet copies are
+ * matched across all of `history`, as on Transactions.
+ */
+export function monthActuals(history: FlagTx[], month: string, toUSD: (amount: number, currency: string) => number): { in: number; out: number } {
+  const inMonth = history.filter((t) => t.date.startsWith(month));
+  const flags = findFlags(inMonth, history, toUSD);
+  const expenses = history.filter((t) => t.transaction_type === "expense");
+  for (const id of walletTwins(expenses.filter((t) => !t.tags?.includes(okTag("duplicate"))), expenses, toUSD).keys()) flags.set(id, "duplicate");
+  const skip = pendingUncounted(flags);
+  let got = 0, spent = 0;
+  for (const t of inMonth) {
+    if (skip.has(t.id)) continue;
+    if (t.transaction_type === "income" && !looksLikeRefund(t)) got += toUSD(t.amount, t.currency);
+    else if (t.transaction_type === "expense") spent += toUSD(netAmount(t), t.currency);
+  }
+  return { in: got, out: spent };
+}

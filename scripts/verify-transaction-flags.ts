@@ -4,7 +4,7 @@
  * Run: npm run test:transaction-flags
  */
 import assert from "node:assert/strict";
-import { findFlags, type FlagTx, okTag, pendingUncounted, walletTwins, cardRates, looksLikeRefund } from "../lib/transaction-flags.ts";
+import { findFlags, type FlagTx, okTag, pendingUncounted, walletTwins, cardRates, looksLikeRefund, monthActuals } from "../lib/transaction-flags.ts";
 
 let n = 0;
 const ok = (name: string, fn: () => void) => { fn(); n++; console.log(`✓ ${name}`); };
@@ -138,6 +138,20 @@ ok("a few card rows among many meals still learn the card's rate", () => {
   const twins = walletTwins(rows, rows, (a, c) => (c === "CNY" ? a / 6.6 : a));
   assert.equal(twins.get("c3")?.description, "蜂充");
   assert.equal(twins.get("c2")?.amount, 29.9);
+});
+
+ok("a past month's in and out come from its own transactions, as Transactions counts them", () => {
+  const rows: FlagTx[] = [
+    { ...tx("Groceries", 80, "2026-10-04") },
+    { ...tx("Shoes", 100, "2026-10-06"), refund_amount: 40 },
+    { ...tx("CHASE CARD AUTOPAY", 900, "2026-10-08") },
+    { ...tx("Savings move", 500, "2026-10-09"), transaction_type: "transfer" },
+    { ...tx("Salary", 3000, "2026-10-15"), transaction_type: "income" },
+    { ...tx("Amazon refund", 25, "2026-10-16"), transaction_type: "income" },
+    { ...tx("Groceries", 70, "2026-09-20") },
+  ];
+  assert.deepEqual(monthActuals(rows, "2026-10", usd), { in: 3000, out: 140 });
+  assert.deepEqual(monthActuals(rows, "2026-08", usd), { in: 0, out: 0 });
 });
 
 console.log(`Transaction flags ok: ${n} checks.`);
