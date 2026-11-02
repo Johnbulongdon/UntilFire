@@ -441,10 +441,11 @@ function QuickAddForm({
           <button
             type="button"
             onClick={() => setShowDescription((v) => !v)}
+            aria-pressed={showDescription || !!draft.description}
             style={{
               display: "inline-flex", alignItems: "center", gap: 4,
-              background: (showDescription || !!draft.description) ? "#EEE9FA" : "var(--uf-surface-2)",
-              border: `1px solid ${(showDescription || !!draft.description) ? "#D9CEF3" : "var(--uf-border)"}`,
+              background: (showDescription || !!draft.description) ? "var(--uf-lilac)" : "var(--uf-surface-2)",
+              border: `1px solid ${(showDescription || !!draft.description) ? "var(--uf-lilac)" : "var(--uf-border)"}`,
               borderRadius: 999, padding: "5px 10px",
               fontSize: 11, fontWeight: 700, color: (showDescription || !!draft.description) ? "var(--uf-ink)" : "var(--uf-text-2)",
               cursor: "pointer", fontFamily: "inherit",
@@ -455,10 +456,11 @@ function QuickAddForm({
           <button
             type="button"
             onClick={() => setShowNotes((v) => !v)}
+            aria-pressed={showNotes || !!draft.notes}
             style={{
               display: "inline-flex", alignItems: "center", gap: 4,
-              background: (showNotes || !!draft.notes) ? "#EEE9FA" : "var(--uf-surface-2)",
-              border: `1px solid ${(showNotes || !!draft.notes) ? "#D9CEF3" : "var(--uf-border)"}`,
+              background: (showNotes || !!draft.notes) ? "var(--uf-lilac)" : "var(--uf-surface-2)",
+              border: `1px solid ${(showNotes || !!draft.notes) ? "var(--uf-lilac)" : "var(--uf-border)"}`,
               borderRadius: 999, padding: "5px 10px",
               fontSize: 11, fontWeight: 700, color: (showNotes || !!draft.notes) ? "var(--uf-ink)" : "var(--uf-text-2)",
               cursor: "pointer", fontFamily: "inherit",
@@ -748,13 +750,14 @@ function QuickAddForm({
             <button
               type="button"
               onClick={() => setShowRefund((v) => !v)}
+              aria-pressed={showRefund || !!(draft.refund_amount && parseFloat(draft.refund_amount) > 0)}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
-                background: (showRefund || !!(draft.refund_amount && parseFloat(draft.refund_amount) > 0)) ? "rgba(245,158,11,0.1)" : "var(--uf-surface-2)",
-                border: `1px solid ${(showRefund || !!(draft.refund_amount && parseFloat(draft.refund_amount) > 0)) ? "#f59e0b" : "var(--uf-border)"}`,
+                background: (showRefund || !!(draft.refund_amount && parseFloat(draft.refund_amount) > 0)) ? "var(--uf-lilac)" : "var(--uf-surface-2)",
+                border: `1px solid ${(showRefund || !!(draft.refund_amount && parseFloat(draft.refund_amount) > 0)) ? "var(--uf-lilac)" : "var(--uf-border)"}`,
                 borderRadius: 999, padding: "5px 10px",
                 fontSize: 11, fontWeight: 700,
-                color: (showRefund || !!(draft.refund_amount && parseFloat(draft.refund_amount) > 0)) ? "#d97706" : "var(--uf-text-2)",
+                color: (showRefund || !!(draft.refund_amount && parseFloat(draft.refund_amount) > 0)) ? "var(--uf-ink)" : "var(--uf-text-2)",
                 cursor: "pointer", fontFamily: "inherit",
               }}
             >
@@ -763,10 +766,11 @@ function QuickAddForm({
             <button
               type="button"
               onClick={() => setShowProject((v) => !v)}
+              aria-pressed={showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0}
               style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
-                background: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#EEE9FA" : "var(--uf-surface-2)",
-                border: `1px solid ${(showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "#D9CEF3" : "var(--uf-border)"}`,
+                background: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "var(--uf-lilac)" : "var(--uf-surface-2)",
+                border: `1px solid ${(showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "var(--uf-lilac)" : "var(--uf-border)"}`,
                 borderRadius: 999, padding: "5px 10px",
                 fontSize: 11, fontWeight: 700,
                 color: (showProject || draft.tags.filter((t) => t !== "need" && t !== "want" && t !== "work").length > 0) ? "var(--uf-ink)" : "var(--uf-text-2)",
