@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-02 — Readable field buttons in a transaction
+
+- In Edit transaction, the Description, Notes, Refund and Project buttons now use the app's lilac when switched on, with dark text in light mode and light text in dark mode. Before, Description and Notes turned near-white on pale lilac in dark mode, and Refund used the old orange.
+
 ## 2026-11-01 — Budget and Categories are one page
 
 - Money → Categories is gone from the website; everything moved into **Budget**.
