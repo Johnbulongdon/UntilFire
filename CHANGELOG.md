@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-02 — Split a payment
+
+- Open a payment on Transactions and tap **Split it** (above Make it a bill). Pick how many people, or type your share. Only your share counts in Budget and your freedom date; the list shows it with a "÷3 of $120" tag. Change or Undo any time.
+- When Venmo, Zelle or PayPal money comes in after a split, Today asks if it's a pay-back, so it isn't counted as income.
+- If nothing came back after 30 days, Today asks once if they paid you back. No counts the full amount again.
+
 ## 2026-11-01 — Budget and Categories are one page
 
 - Money → Categories is gone from the website; everything moved into **Budget**.
