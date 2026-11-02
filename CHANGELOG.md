@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-02 — Past months in Calendar show real In and Out
+
+- On the website Calendar's Month view, going back to a past month showed In $0 and Out $0. Now a past month shows what really came in and went out, from your transactions, counted the same way as Transactions (transfers, card bill payments and likely copies left out, refunds taken off).
+- This month and future months still show what's coming, from your bills, paydays and day-to-day budget. The phone Calendar only goes forward, so it never had this bug.
+
 ## 2026-11-02 — Readable field buttons in a transaction
 
 - In Edit transaction, the Description, Notes, Refund and Project buttons now use the app's lilac when switched on, with dark text in light mode and light text in dark mode. Before, Description and Notes turned near-white on pale lilac in dark mode, and Refund used the old orange.
