@@ -12,6 +12,7 @@
 import { occurrences, type Bill } from "./spend-forecast.ts";
 import { leaseAsk, noticeDeadline, type LeaseDecision } from "./lease.ts";
 import { asksShop } from "./needs.ts";
+import { paybackAsks, splitChecks, type SplitRow } from "./split.ts";
 
 export interface TodayProgress { done: string[]; acks: string[] }
 
@@ -25,7 +26,9 @@ export type WebTodayItem =
   | { key: string; kind: "renttag" }
   | { key: string; kind: "sorted"; count: number }
   | { key: string; kind: "need"; row: TodayRow }
-  | { key: string; kind: "bill"; label: string; usd: number; iso: string };
+  | { key: string; kind: "bill"; label: string; usd: number; iso: string }
+  | { key: string; kind: "payback"; row: TodayRow; split: SplitRow }
+  | { key: string; kind: "splitcheck"; split: SplitRow };
 
 /** The strip shows at most this many spends to sort; the phone has the rest. */
 const MAX_NEED = 2;
@@ -45,7 +48,7 @@ export function listDay(done: string[], now = new Date()): string {
   return now.getHours() < 12 && !done.includes(yesterday) && !done.includes(today) ? yesterday : today;
 }
 
-export function webTodayItems({ rows, bills, progress, leases = [], oldRentTag = false, shopRules = {}, sorted = 0, now = new Date() }: {
+export function webTodayItems({ rows, bills, progress, leases = [], oldRentTag = false, shopRules = {}, sorted = 0, splits = [], now = new Date() }: {
   /** Recent expense rows, newest first. */
   rows: TodayRow[];
   bills: Bill[];
@@ -58,6 +61,8 @@ export function webTodayItems({ rows, bills, progress, leases = [], oldRentTag =
   shopRules?: Record<string, unknown>;
   /** Bank purchases in the last 30 days: above zero, the one-time "We sorted" card shows. */
   sorted?: number;
+  /** Split payments from the last few months (D-135), for the pay-back checks. Website only for now. */
+  splits?: SplitRow[];
   now?: Date;
 }): { day: string; items: WebTodayItem[] } {
   const day = listDay(progress.done, now);
@@ -73,6 +78,10 @@ export function webTodayItems({ rows, bills, progress, leases = [], oldRentTag =
     if (ask && !acked.has(key)) out.push({ key, kind: "lease", billId: l.id, deadline: noticeDeadline(l) });
   }
   if (oldRentTag && !acked.has("renttag")) out.push({ key: "renttag", kind: "renttag" });
+
+  // Split pay-backs (D-135): money in that may be a friend paying back, then splits never paid back.
+  for (const p of paybackAsks(rows.filter((r) => r.date >= from && r.date <= isoDay(now)), splits, acked)) out.push({ key: p.key, kind: "payback", row: p.row, split: p.split });
+  for (const c of splitChecks(splits, day, acked)) out.push({ key: c.key, kind: "splitcheck", split: c.split });
 
   // Once, when bank spending first shows up; the phone's key, so it's seen on one only.
   if (sorted > 0 && !acked.has("sorted")) out.push({ key: "sorted", kind: "sorted", count: sorted });

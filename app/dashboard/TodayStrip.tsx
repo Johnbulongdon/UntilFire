@@ -8,6 +8,7 @@ import { isRent, type LeaseDecision } from "@/lib/lease";
 import { merchantKey } from "@/lib/merchant-memory";
 import { readMerchantRules, type MerchantRule } from "@/lib/merchant-rules";
 import type { Bill } from "@/lib/spend-forecast";
+import { splitPatch, type SplitRow, type SplitState } from "@/lib/split";
 import DoneCheck from "./DoneCheck";
 
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
@@ -33,11 +34,12 @@ function useTodayData(userId: string | undefined, toUsd: (amount: number, curren
   const [oldRentTag, setOldRentTag] = useState(false);
   const [shopRules, setShopRules] = useState<Record<string, MerchantRule>>({});
   const [sorted, setSorted] = useState(0);
+  const [splits, setSplits] = useState<SplitRow[]>([]);
   useEffect(() => {
     if (!userId) return;
     let cancelled = false;
     (async () => {
-      const [{ data: budget }, { data: tx }, { data: housing }, { count: oldTx }, { count: bankTx }] = await Promise.all([
+      const [{ data: budget }, { data: tx }, { data: housing }, { count: oldTx }, { count: bankTx }, { data: split }] = await Promise.all([
         supabase.from("user_budget").select("expenses").eq("user_id", userId).maybeSingle(),
         supabase.from("expenses").select("id, date, description, amount, refund_amount, currency, category, sub_category, tags, transaction_type")
           .eq("user_id", userId).gte("date", addDays(isoDay(new Date()), -3)).order("date", { ascending: false }).limit(50),
@@ -49,12 +51,19 @@ function useTodayData(userId: string | undefined, toUsd: (amount: number, curren
         // Bank purchases in the last 30 days, for the one-time "We sorted" card (D-106).
         supabase.from("expenses").select("id", { count: "exact", head: true })
           .eq("user_id", userId).eq("transaction_type", "expense").not("plaid_transaction_id", "is", null).gte("date", addDays(isoDay(new Date()), -30)),
+        // Split payments (D-135) recent enough to be paid back or checked on.
+        supabase.from("expenses").select("id, date, description, currency, split_owed, split_state")
+          .eq("user_id", userId).gt("split_owed", 0).gte("date", addDays(isoDay(new Date()), -90)),
       ]);
       if (cancelled) return;
       const fp = (budget?.expenses as Record<string, unknown>)?._fire_profile as { today?: TodayProgress; merchantRules?: unknown } | undefined;
       const saved = fp?.today;
       setShopRules(readMerchantRules(fp?.merchantRules));
       setSorted(bankTx ?? 0);
+      setSplits((split ?? []).map((t) => ({
+        id: String(t.id), date: String(t.date).slice(0, 10), description: t.description ?? "",
+        owedUsd: toUsd(Number(t.split_owed) || 0, t.currency ?? "USD"), state: (t.split_state as SplitState | null) ?? null,
+      })));
       setProgress({ done: saved?.done ?? [], acks: saved?.acks ?? [] });
       setLeases((housing ?? []).filter((b) => isRent(b) && b.lease_ends_on).map((b) => ({
         id: String(b.id), ends_on: String(b.lease_ends_on).slice(0, 10), notice_days: b.lease_notice_days ?? null, decision: (b.lease_decision as LeaseDecision | null) ?? null,
@@ -70,14 +79,18 @@ function useTodayData(userId: string | undefined, toUsd: (amount: number, curren
     // toUsd changes with rates only; the strip reads once per visit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
-  return { progress, setProgress, rows, setRows, leases, setLeases, oldRentTag, setOldRentTag, shopRules, setShopRules, sorted };
+  return { progress, setProgress, rows, setRows, leases, setLeases, oldRentTag, setOldRentTag, shopRules, setShopRules, sorted, splits, setSplits };
 }
 
 /** A Today answer that writes back to a bill or a tag, not only the saved progress. */
 export type TodayWrite =
   | { id: string; need: "need" | "want" }
   | { lease: string; decision: LeaseDecision }
-  | { renttag: "Rent" | "Mortgage" };
+  | { renttag: "Rent" | "Mortgage" }
+  /** Yes, this money in pays back that split: a transfer, not income. */
+  | { payback: string; split: string }
+  /** Did they pay you back? Yes keeps the split; no counts the full amount again. */
+  | { splitDone: string; paid: boolean };
 
 export default function TodayStrip({ userId, bills, perDay, fmt, toUsd, onOpen, onWhatIf, onOpenNeeds }: {
   userId?: string;
@@ -92,9 +105,9 @@ export default function TodayStrip({ userId, bills, perDay, fmt, toUsd, onOpen, 
   /** Money › Categories › Needs & wants, from the "We sorted" card. */
   onOpenNeeds?: () => void;
 }) {
-  const { progress, setProgress, rows, setRows, leases, setLeases, oldRentTag, setOldRentTag, shopRules, setShopRules, sorted } = useTodayData(userId, toUsd);
+  const { progress, setProgress, rows, setRows, leases, setLeases, oldRentTag, setOldRentTag, shopRules, setShopRules, sorted, splits, setSplits } = useTodayData(userId, toUsd);
 
-  const list = progress ? webTodayItems({ rows, bills, progress, leases, oldRentTag, shopRules, sorted }) : null;
+  const list = progress ? webTodayItems({ rows, bills, progress, leases, oldRentTag, shopRules, sorted, splits }) : null;
 
   /* Each answer is saved straight away; the answer that empties the list also
      marks the day finished. Need or want is written onto the spend itself, a
@@ -102,7 +115,7 @@ export default function TodayStrip({ userId, bills, perDay, fmt, toUsd, onOpen, 
      the phone writes them (mobile/src/lib/mutations.ts), so both see it. */
   const answer = useCallback(async (key: string, write?: TodayWrite) => {
     if (!userId || !progress || !list) return;
-    let nextRows = rows, nextLeases = leases, nextOld = oldRentTag;
+    let nextRows = rows, nextLeases = leases, nextOld = oldRentTag, nextSplits = splits;
     if (write && "need" in write) {
       const row = rows.find((r) => r.id === write.id);
       if (!row) return;
@@ -135,14 +148,39 @@ export default function TodayStrip({ userId, bills, perDay, fmt, toUsd, onOpen, 
       if (tx.error || eb.error) { console.error("[today] retag", tx.error ?? eb.error); return; }
       nextOld = false;
       setOldRentTag(false);
+    } else if (write && "payback" in write) {
+      // Filed by hand, so a bank resync keeps it a transfer (lib/plaid-sync filedByHand).
+      const [money, split] = await Promise.all([
+        supabase.from("expenses").update({ transaction_type: "transfer", category: "transfer", sub_category: "Pay-back" }).eq("id", write.payback).eq("user_id", userId),
+        supabase.from("expenses").update({ split_state: "paid" }).eq("id", write.split).eq("user_id", userId),
+      ]);
+      if (money.error || split.error) { console.error("[today] pay-back", money.error ?? split.error); return; }
+      nextRows = rows.map((r) => (r.id === write.payback ? { ...r, transaction_type: "transfer", category: "transfer" } : r));
+      nextSplits = splits.map((s) => (s.id === write.split ? { ...s, state: "paid" } : s));
+      setRows(nextRows);
+      setSplits(nextSplits);
+    } else if (write && "splitDone" in write) {
+      if (write.paid) {
+        const { error } = await supabase.from("expenses").update({ split_state: "cash" }).eq("id", write.splitDone).eq("user_id", userId);
+        if (error) { console.error("[today] split paid", error); return; }
+      } else {
+        // Never paid back: the whole payment is theirs again, any real refund kept.
+        const { data: t, error: readError } = await supabase.from("expenses").select("amount, refund_amount, split_owed, split_state").eq("id", write.splitDone).eq("user_id", userId).maybeSingle();
+        if (readError || !t) { console.error("[today] split read", readError); return; }
+        const { error } = await supabase.from("expenses").update(splitPatch({ amount: Number(t.amount), refund_amount: Number(t.refund_amount), split_owed: Number(t.split_owed), split_state: t.split_state as SplitState | null }, 0, null))
+          .eq("id", write.splitDone).eq("user_id", userId);
+        if (error) { console.error("[today] split undo", error); return; }
+      }
+      nextSplits = write.paid ? splits.map((s) => (s.id === write.splitDone ? { ...s, state: "cash" } : s)) : splits.filter((s) => s.id !== write.splitDone);
+      setSplits(nextSplits);
     }
     // A sorted spend leaves by its tag; everything else is acked, which also stops a second ask the same stage.
     const acks = write && "need" in write ? progress.acks : [...progress.acks, key];
-    const left = webTodayItems({ rows: nextRows, bills, progress: { ...progress, acks }, leases: nextLeases, oldRentTag: nextOld, sorted }).items;
+    const left = webTodayItems({ rows: nextRows, bills, progress: { ...progress, acks }, leases: nextLeases, oldRentTag: nextOld, sorted, splits: nextSplits }).items;
     const next = { acks, done: left.length === 0 ? [...progress.done, list.day] : progress.done };
     setProgress(next);
     await saveProgress(userId, next);
-  }, [userId, progress, list, rows, leases, oldRentTag, bills, shopRules, sorted, setProgress, setRows, setLeases, setOldRentTag, setShopRules]);
+  }, [userId, progress, list, rows, leases, oldRentTag, bills, shopRules, sorted, splits, setProgress, setRows, setLeases, setOldRentTag, setShopRules, setSplits]);
 
   // Nothing to answer: opening the day counts it (D-108).
   const quiet = progress && list ? quietDayToMark(progress.done, list.items.length) : null;
@@ -245,6 +283,30 @@ export function TodayList({ items, count, perDay, fmt, onAnswer, onOpen, onWhatI
                   <span style={{ display: "flex", gap: 8 }}>
                     <Button size="sm" onClick={() => onAnswer(item.key, { id: item.row.id, need: "need" })}>Need</Button>
                     <Button size="sm" onClick={() => onAnswer(item.key, { id: item.row.id, need: "want" })}>Want</Button>
+                  </span>
+                </>
+              )}
+              {item.kind === "payback" && (
+                <>
+                  <span style={{ display: "grid", gap: 2 }}>
+                    <span className="uf-t-small" style={muted}>Money in <span style={mono}>{fmt(item.row.usd)}</span> · {item.row.description || "Payment app"}</span>
+                    <span style={{ fontWeight: 700 }}>Is this a pay-back for {item.split.description || "a split"}?</span>
+                  </span>
+                  <span style={{ display: "flex", gap: 8 }}>
+                    <Button size="sm" onClick={() => onAnswer(item.key, { payback: item.row.id, split: item.split.id })}>Yes, pay-back</Button>
+                    <Button size="sm" variant="ghost" onClick={() => onAnswer(item.key)}>No</Button>
+                  </span>
+                </>
+              )}
+              {item.kind === "splitcheck" && (
+                <>
+                  <span style={{ display: "grid", gap: 2 }}>
+                    <span style={{ fontWeight: 700 }}>Did they pay you back for {item.split.description || "your split"}?</span>
+                    <span className="uf-t-small" style={muted}><span style={mono}>{fmt(item.split.owedUsd)}</span> is left out of your spending. No counts it again.</span>
+                  </span>
+                  <span style={{ display: "flex", gap: 8 }}>
+                    <Button size="sm" onClick={() => onAnswer(item.key, { splitDone: item.split.id, paid: true })}>Yes</Button>
+                    <Button size="sm" variant="ghost" onClick={() => onAnswer(item.key, { splitDone: item.split.id, paid: false })}>No</Button>
                   </span>
                 </>
               )}

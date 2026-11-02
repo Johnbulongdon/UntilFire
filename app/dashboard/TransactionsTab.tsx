@@ -42,6 +42,8 @@ import { Button, Checkbox, DateField, SegmentedControl } from "@/components/ui";
 const classifyTick: CSSProperties = { display: "flex", alignItems: "center", gap: 10, minHeight: 32, fontSize: 13, fontWeight: 600, color: "var(--uf-ink-2)", cursor: "pointer" };
 import { readMerchantRules } from "@/lib/merchant-rules";
 import { trackTxFlagResolved, trackTxRangeChanged, trackTxReviewOpened } from "@/lib/analytics";
+import { owedFor, splitPatch, type SplitState } from "@/lib/split";
+import SplitPanel from "./SplitPanel";
 
 type CustomCategory = { key: string; label: string; code: string; color: string; emoji?: string };
 
@@ -92,6 +94,10 @@ type Transaction = {
   source?: string | null;
   // Optional: most rows have no time. date stays authoritative for grouping.
   occurred_at?: string | null;
+  /** Split it (D-135, 0060): the others' share, already inside refund_amount. */
+  split_owed?: number | null;
+  split_count?: number | null;
+  split_state?: SplitState | null;
 };
 
 // Where a row came from, in words: the wallet or bank behind an imported
@@ -263,6 +269,7 @@ function QuickAddForm({
   onAlwaysShop,
   categoryNeeds = {},
   bill = null,
+  split = null,
 }: {
   draft: DraftTransaction;
   setDraft: React.Dispatch<React.SetStateAction<DraftTransaction>>;
@@ -286,6 +293,8 @@ function QuickAddForm({
   /** "Make it a bill" (D-133) for a saved spend: the bill it already is, or
    *  the unlinked bill it looks like, and the day of the month it repeats on. */
   bill?: { already: string | null; likely: { id: string; name: string } | null; day: number; onMake: (linkId: string | null) => Promise<boolean> } | null;
+  /** "Split it" (D-135) for a saved spend: what was paid less real refunds, and the split on it. */
+  split?: { paid: number; owed: number; people: number | null; onSave: (owed: number, people: number | null) => Promise<boolean> } | null;
 }) {
   const amountRef = useRef<HTMLInputElement>(null);
   const [billStep, setBillStep] = useState(false);
@@ -921,6 +930,10 @@ function QuickAddForm({
         >
           {saving ? "Saving…" : editing ? "Save changes" : "Save transaction"}
         </button>
+        {editing && split && (
+          <SplitPanel txId={draft.id} paid={split.paid} split={split.owed > 0 ? { owed: split.owed, people: split.people } : null}
+            money={(n) => txMoney(n, draft.currency)} onSave={split.onSave} />
+        )}
         {/* Make it a bill: rare, so it waits here, one tap past the row; the
             row's bin keeps delete at one tap. */}
         {editing && bill && (bill.already
@@ -1332,7 +1345,16 @@ function TransactionList({
 
                         {/* Amount */}
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-                          {tx.refund_amount > 0 ? (
+                          {(tx.split_owed || 0) > 0 ? (
+                            <>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: "var(--uf-neg-ink)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                                −{txMoney(netAmt(tx), tx.currency).replace(/^−/, "").replace(/^\+/, "")}
+                              </div>
+                              <span title="Split: only your share counts" style={{ fontSize: 10.5, fontWeight: 700, color: "var(--uf-ink)", background: "var(--uf-lilac)", borderRadius: 999, padding: "1px 8px", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums" }}>
+                                👥 {tx.split_count ? `÷${tx.split_count} of ` : "Split of "}{txMoney(tx.amount, tx.currency).replace(/^−/, "")}
+                              </span>
+                            </>
+                          ) : tx.refund_amount > 0 ? (
                             <>
                               <div style={{ fontSize: 14, fontWeight: 700, color: tx.refund_amount >= tx.amount ? "var(--uf-ink-3)" : "var(--uf-neg-ink)", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums", textDecoration: tx.refund_amount >= tx.amount ? "line-through" : "none" }}>
                                 −{txMoney(tx.amount, tx.currency).replace(/^−/, "").replace(/^\+/, "")}
@@ -2043,6 +2065,14 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
+    // The form shows only a real refund; a split's share (D-135) rides on top,
+    // re-cut by people when the amount changed.
+    const old = draft.id ? transactions.find((t) => t.id === draft.id) : undefined;
+    const amountNum = parseFloat(draft.amount) || 0;
+    const realRefund = Math.min(parseFloat(draft.refund_amount) || 0, amountNum);
+    const splitOwed = !old?.split_owed ? 0
+      : old.split_count ? owedFor(amountNum - realRefund, { people: old.split_count })
+      : Math.min(old.split_owed, Math.max(0, amountNum - realRefund));
     const payload = {
       user_id: session.user.id,
       date: draft.date,
@@ -2050,7 +2080,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       // rather than becoming a confident midnight.
       occurred_at: combineDateAndTime(draft.date, draft.time),
       amount: parseFloat(draft.amount),
-      refund_amount: Math.min(parseFloat(draft.refund_amount) || 0, parseFloat(draft.amount) || 0),
+      refund_amount: Math.round((realRefund + splitOwed) * 100) / 100,
+      ...(old?.split_owed ? { split_owed: splitOwed } : {}),
       currency: draft.currency,
       description: draft.description,
       notes: draft.notes || "",
@@ -2102,7 +2133,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       }
       if (drawerOpen && !keepOpen) setDrawerOpen(false);
     }
-  }, [defaultCurrency, draft, drawerOpen, inRange, showToast, alwaysShop, categoryNeeds]);
+  }, [defaultCurrency, draft, drawerOpen, inRange, showToast, alwaysShop, categoryNeeds, transactions]);
 
   const handleEdit = useCallback((tx: Transaction) => {
     setEditingId(tx.id);
@@ -2110,7 +2141,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
       id: tx.id,
       transaction_type: tx.transaction_type,
       amount: String(tx.amount),
-      refund_amount: tx.refund_amount ? String(tx.refund_amount) : "",
+      refund_amount: tx.refund_amount - (tx.split_owed || 0) > 0 ? String(Math.round((tx.refund_amount - (tx.split_owed || 0)) * 100) / 100) : "",
       currency: tx.currency,
       description: tx.description,
       notes: tx.notes || "",
@@ -2241,6 +2272,19 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     showToast(`Bill added: ${tx.description}, monthly on the ${ordinal(day)}`);
     return true;
   }, [billOffer, listedBills, showToast]);
+
+  // "Split it" (D-135) on the spend being edited: saved at once, like the bill.
+  const splitTx = billOffer?.tx;
+  const saveSplit = useCallback(async (owed: number, people: number | null): Promise<boolean> => {
+    const tx = splitTx;
+    if (!tx) return false;
+    const patch = splitPatch(tx, owed, people);
+    const { error } = await supabase.from("expenses").update(patch).eq("id", tx.id);
+    if (error) { showToast("Couldn't save the split. Please try again.", undefined, undefined, true); return false; }
+    setTransactions((prev) => prev.map((t) => (t.id === tx.id ? { ...t, ...patch } : t)));
+    showToast(patch.split_owed > 0 ? `Split. Your share is ${txMoney(tx.amount - patch.refund_amount, tx.currency)}` : "Split undone. The full amount counts again");
+    return true;
+  }, [splitTx, showToast]);
 
   const handleDeleteRef = useRef<((tx: Transaction) => Promise<void>) | null>(null);
 
@@ -2428,6 +2472,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           categoryNeeds={categoryNeeds}
           bill={billOffer && { already: billOffer.already?.description ?? null, likely: billOffer.likely?.id ? { id: billOffer.likely.id, name: billOffer.likely.description ?? "Bill" } : null,
             day: Number(billOffer.due.slice(8, 10)), onMake: makeBill }}
+          split={splitTx && { paid: splitTx.amount - Math.max(0, (splitTx.refund_amount || 0) - (splitTx.split_owed || 0)), owed: splitTx.split_owed || 0, people: splitTx.split_count ?? null, onSave: saveSplit }}
         />
       </MobileDrawer>
 
