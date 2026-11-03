@@ -496,7 +496,7 @@ Source: John's Gmail, last 90 days. Only free actions; paid offers skipped.
 | Clapstorm | `live-nofollow` | https://www.clapstorm.com/p/untilfire | Live 2026-10-25. Issued badge is `rel="nofollow noopener"`; added to the homepage tray exactly as issued. |
 | Indie Scroll | `live-unverified` | https://indiescroll.com/projects/untilfire/badges | Top 2 winner 2026-10-06. Dofollow activates after badge is placed and site URL emailed to product@focusapps.app. Badge page needs login; John to copy code. |
 | Build Finds | `live-unverified` | https://buildfinds.com/projects/untilfire/badges | Top 3 winner 2026-09-11. Same owner and activation flow as Indie Scroll. |
-| TrueTier | `live-unverified` | https://www.truetier.app/p/fire-calculator | Auto-listed as "FIRE Calculator". Free claim by domain proof; John to claim and rename. |
+| TrueTier | `live-unverified` | https://www.truetier.app/p/fire-calculator | Auto-listed as "FIRE Calculator". Free claim by domain proof: `public/verify-39085c0b20be277a76d4f664.txt` added 2026-11-03 (keep it; TrueTier may recheck). John to press "Check and claim" after deploy, then rename to UntilFire. |
 | Startup Buffer | `live-unverified` | https://startupbuffer.com | 90-day founder confirmation overdue since 2026-09-20; John to confirm free in dashboard. |
 | PWA Directory | `live-unverified` | https://pwa.directory | Published 2026-10-31 by email. |
 | SaaSolution | `live-unverified` | https://saasolution.io/tool/untilfire/ | Listed 2026-10-28 by email. |
