@@ -118,6 +118,28 @@ const badges: {
       "data-launchpadly-badge-variant": "minimal",
     },
   },
+  {
+    name: "SaaS City",
+    href: "https://saascity.io/live/untilfire",
+    src: "https://saascity.io/badges/featured-dark.svg",
+  },
+  {
+    name: "Wired Business",
+    href: "https://wired.business",
+    src: "https://wired.business/badge0-dark.svg",
+  },
+  {
+    name: "KittyLaunch",
+    href: "https://kittylaunch.com/p/untilfire",
+    src: "https://kittylaunch.com/api/public/badges/launch_badge.svg?theme=light&name=UntilFire",
+    data: { "data-kittylaunch-badge": "1" },
+  },
+  {
+    name: "Clapstorm",
+    href: "https://www.clapstorm.com/p/untilfire",
+    src: "https://www.clapstorm.com/badge?slug=untilfire&variant=featured&theme=dark",
+    rel: "nofollow noopener",
+  },
 ];
 
 export default function DirectoryBadges() {
