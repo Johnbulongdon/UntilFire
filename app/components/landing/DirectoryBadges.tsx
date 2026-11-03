@@ -133,6 +133,7 @@ const badges: {
     name: "Startups of the World",
     href: "https://startupsoftheworld.com/?s=untilfire-ram8bv&ref=badge",
     src: "https://startupsoftheworld.com/badge/untilfire-ram8bv.svg",
+    srcDark: "https://startupsoftheworld.com/badge/untilfire-ram8bv.svg?theme=dark",
   },
   {
     name: "KittyLaunch",
