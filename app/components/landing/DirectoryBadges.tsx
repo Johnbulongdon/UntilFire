@@ -130,6 +130,11 @@ const badges: {
     srcDark: "https://indiescroll.com/indiescroll/images/badges/top2-dark.svg",
   },
   {
+    name: "Startups of the World",
+    href: "https://startupsoftheworld.com/?s=untilfire-ram8bv&ref=badge",
+    src: "https://startupsoftheworld.com/badge/untilfire-ram8bv.svg",
+  },
+  {
     name: "KittyLaunch",
     href: "https://kittylaunch.com/p/untilfire",
     src: "https://kittylaunch.com/api/public/badges/launch_badge.svg?theme=light&name=UntilFire",
