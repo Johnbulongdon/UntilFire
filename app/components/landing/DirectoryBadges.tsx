@@ -9,6 +9,8 @@ const badges: {
   name: string;
   href: string;
   src: string;
+  /** Optional dark-mode image; `src` is then the light-mode one. */
+  srcDark?: string;
   rel?: string;
   data?: Record<string, string>;
 }[] = [
@@ -101,6 +103,13 @@ const badges: {
     src: "https://www.showmysites.com/static/backlink/gray_border.webp",
   },
   {
+    name: "DodoLaunch",
+    href: "https://dodolaunch.com/p/untilfire?ref=badge",
+    src: "https://dodolaunch.com/badge/untilfire?theme=light",
+    srcDark: "https://dodolaunch.com/badge/untilfire?theme=dark",
+    rel: "dofollow",
+  },
+  {
     name: "Launchpadly",
     href: "https://launchpadly.co/startup/untilfire?ref=badge",
     src: "https://launchpadly.co/embed/badges/startup/untilfire.svg?variant=minimal",
@@ -132,8 +141,19 @@ export default function DirectoryBadges() {
                 alt={`Featured on ${b.name}`}
                 height={36}
                 loading="lazy"
+                className={b.srcDark ? "nh-badge-light" : undefined}
                 onError={() => setFailed((old) => new Set(old).add(b.name))}
               />
+              {b.srcDark && (
+                <img
+                  src={b.srcDark}
+                  alt={`Featured on ${b.name}`}
+                  height={36}
+                  loading="lazy"
+                  className="nh-badge-dark"
+                  onError={() => setFailed((old) => new Set(old).add(b.name))}
+                />
+              )}
               <span className="nh-badge-fallback">{b.name}</span>
             </a>
           </li>
