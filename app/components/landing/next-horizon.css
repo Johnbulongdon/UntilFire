@@ -240,6 +240,14 @@
 .dark .nh-listed img.nh-badge-dark {
   display: block;
 }
+/* HTML badges (launched.tools) switch theme on their list item. */
+.nh-listed ul li.nh-badge-dark,
+.dark .nh-listed ul li.nh-badge-light {
+  display: none;
+}
+.dark .nh-listed ul li.nh-badge-dark {
+  display: flex;
+}
 .nh-listed .nh-listed-text {
   font-size: 13px;
   color: #4a4f57;

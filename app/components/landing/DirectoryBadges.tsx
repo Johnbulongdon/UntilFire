@@ -192,6 +192,51 @@ export default function DirectoryBadges() {
             </a>
           </li>
         ))}
+        {/* launched.tools issues an HTML badge (no image); markup kept as issued. */}
+        {(["dark", "light"] as const).map((t) => (
+          <li key={`launched-${t}`} className={t === "dark" ? "nh-badge-dark" : "nh-badge-light"}>
+            <a
+              href="https://launched.tools/tools/untilfire"
+              target="_blank"
+              rel="noopener"
+              title="UntilFire on launched.tools"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                background: t === "dark" ? "#15170F" : "#FFFFFF",
+                border: "1px solid #D4D7C9",
+                borderRadius: 10,
+                padding: "8px 12px",
+                textDecoration: "none",
+                fontFamily: "sans-serif",
+              }}
+            >
+              <span
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 6,
+                  background: "#C6F94E",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <svg width="13" height="13" viewBox="128 120 264 264" aria-hidden="true">
+                  <path d="M214 120 L392 120 L392 298 Z" fill="#15170F" />
+                  <path d="M156 356 L322 190" stroke="#15170F" strokeWidth="78" fill="none" />
+                </svg>
+              </span>
+              <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+                <span style={{ fontWeight: 700, fontSize: 12, color: t === "dark" ? "#F5F6F0" : "#15170F" }}>
+                  Featured on launched.tools
+                </span>
+                <span style={{ fontSize: 10, color: "#878C79" }}>REVIEWED ✓</span>
+              </span>
+            </a>
+          </li>
+        ))}
         <li>
           <a
             href="https://curlship.com"
