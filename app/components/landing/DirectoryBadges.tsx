@@ -124,9 +124,10 @@ const badges: {
     src: "https://saascity.io/badges/featured-dark.svg",
   },
   {
-    name: "Wired Business",
-    href: "https://wired.business",
-    src: "https://wired.business/badge0-dark.svg",
+    name: "Indie Scroll",
+    href: "https://indiescroll.com/projects/untilfire",
+    src: "https://indiescroll.com/indiescroll/images/badges/top2-light.svg",
+    srcDark: "https://indiescroll.com/indiescroll/images/badges/top2-dark.svg",
   },
   {
     name: "KittyLaunch",
