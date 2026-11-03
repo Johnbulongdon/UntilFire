@@ -513,5 +513,5 @@ Source: John's Gmail, last 90 days. Only free actions; paid offers skipped.
 | InvestToFire roundup | `pending` | Editorial (Raj Thapa) | John replied with a description 2026-10-26; no publish confirmation yet. |
 | Joinly.xyz | `not-submitted` | https://joinly.xyz | Paid only; skipped (free-only rule, 2026-11-03). |
 | StartupList.ing | `not-submitted` | https://startuplist.ing | $4 fee; skipped (free-only rule). |
-| launched.tools | `not-submitted` | https://launched.tools/submit | Free but AI-tools only; skipped to avoid AI-first positioning (same reason as MakerHunt). |
+| launched.tools | `live-unverified` | https://launched.tools/tools/untilfire | John submitted free 2026-11-03, describing the real AI transaction categoriser (app/api/categorise). HTML badge (light+dark) added to the homepage tray. Site-claimed DR 50 dofollow. |
 | Wired Business (recheck) | `not-submitted` | https://wired.business/submit-your-website | 2026-11-03: John found no free submission option; badge removed from the homepage tray. |
