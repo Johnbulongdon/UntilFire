@@ -124,9 +124,21 @@ const badges: {
     src: "https://saascity.io/badges/featured-dark.svg",
   },
   {
-    name: "Wired Business",
-    href: "https://wired.business",
-    src: "https://wired.business/badge0-dark.svg",
+    name: "Indie Scroll",
+    href: "https://indiescroll.com/projects/untilfire",
+    src: "https://indiescroll.com/indiescroll/images/badges/top2-light.svg",
+    srcDark: "https://indiescroll.com/indiescroll/images/badges/top2-dark.svg",
+  },
+  {
+    name: "Build Finds",
+    href: "https://buildfinds.com/projects/untilfire",
+    src: "https://buildfinds.com/buildfinds/images/badges/top3-dark.svg",
+  },
+  {
+    name: "Startups of the World",
+    href: "https://startupsoftheworld.com/?s=untilfire-ram8bv&ref=badge",
+    src: "https://startupsoftheworld.com/badge/untilfire-ram8bv.svg",
+    srcDark: "https://startupsoftheworld.com/badge/untilfire-ram8bv.svg?theme=dark",
   },
   {
     name: "KittyLaunch",
