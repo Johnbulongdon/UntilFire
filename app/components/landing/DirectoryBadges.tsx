@@ -130,6 +130,11 @@ const badges: {
     srcDark: "https://indiescroll.com/indiescroll/images/badges/top2-dark.svg",
   },
   {
+    name: "Build Finds",
+    href: "https://buildfinds.com/projects/untilfire",
+    src: "https://buildfinds.com/buildfinds/images/badges/top3-dark.svg",
+  },
+  {
     name: "Startups of the World",
     href: "https://startupsoftheworld.com/?s=untilfire-ram8bv&ref=badge",
     src: "https://startupsoftheworld.com/badge/untilfire-ram8bv.svg",
