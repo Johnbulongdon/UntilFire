@@ -232,6 +232,14 @@
   height: 36px;
   width: auto;
 }
+/* Badges issued in light and dark versions show the one matching the theme. */
+.nh-listed img.nh-badge-dark,
+.dark .nh-listed img.nh-badge-light {
+  display: none;
+}
+.dark .nh-listed img.nh-badge-dark {
+  display: block;
+}
 .nh-listed .nh-listed-text {
   font-size: 13px;
   color: #4a4f57;
