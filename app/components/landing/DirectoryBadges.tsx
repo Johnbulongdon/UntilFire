@@ -237,6 +237,42 @@ export default function DirectoryBadges() {
             </a>
           </li>
         ))}
+        {/* Tools Network issues an HTML badge (no image); markup kept as issued. */}
+        {(["dark", "light"] as const).map((t) => (
+          <li key={`toolsnetwork-${t}`} className={t === "dark" ? "nh-badge-dark" : "nh-badge-light"}>
+            <a
+              href="https://toolsnetwork.co/tools/untilfire"
+              target="_blank"
+              rel="noopener"
+              title="UntilFire on Tools Network"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "9px 13px",
+                borderRadius: 10,
+                fontFamily: "system-ui,-apple-system,sans-serif",
+                fontSize: 13,
+                fontWeight: 600,
+                textDecoration: "none",
+                background: t === "dark" ? "#0b0c11" : "#ffffff",
+                border: t === "dark" ? "1px solid #292b38" : "1px solid #e5e5df",
+                color: t === "dark" ? "#ffffff" : "#111111",
+              }}
+            >
+              <svg width="18" height="18" viewBox="0 0 32 32" aria-hidden="true" style={{ flex: "0 0 auto", display: "block" }}>
+                <rect width="32" height="32" rx="7" fill="#7c5cff" />
+                <path d="M10 10 L22 11 L16 22 Z" fill="none" stroke="#fff" strokeWidth="1.7" strokeLinejoin="round" />
+                <circle cx="10" cy="10" r="2.7" fill="#fff" />
+                <circle cx="22" cy="11" r="2.7" fill="#fff" />
+                <circle cx="16" cy="22" r="2.7" fill="#fff" />
+              </svg>
+              <span>
+                Featured on <b>Tools Network</b>
+              </span>
+            </a>
+          </li>
+        ))}
         <li>
           <a
             href="https://curlship.com"
