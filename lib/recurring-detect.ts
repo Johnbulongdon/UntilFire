@@ -172,7 +172,13 @@ function tokens(s: string): string[] {
 export function sameMerchant(a: string, b: string): boolean {
   const ta = tokens(a);
   const tb = tokens(b);
-  if (ta.length === 0 || tb.length === 0) return false;
+  // Short names ("PG&E", "BP") have no token long enough; compare them whole,
+  // or Calendar kept offering a bill that was already on it (walkthrough 3 Nov 2026).
+  if (ta.length === 0 || tb.length === 0) {
+    const flat = (s: string) => s.normalize("NFKD").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+    const fa = flat(a), fb = flat(b);
+    return fa.length >= 2 && (fa === fb || (fa.length >= 3 && (fb.startsWith(fa) || fa.startsWith(fb)) && Math.min(fa.length, fb.length) >= 3));
+  }
 
   const sa = new Set(ta);
   const sb = new Set(tb);

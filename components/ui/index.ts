@@ -40,7 +40,7 @@ export type { SliderProps } from "./Slider";
 export { default as Stat } from "./Stat";
 export type { StatProps, StatTone, StatSize } from "./Stat";
 
-export { default as Money } from "./Money";
+export { default as Money, MoneyDisplay } from "./Money";
 export type { MoneyProps, MoneyTone } from "./Money";
 
 export { default as Delta } from "./Delta";

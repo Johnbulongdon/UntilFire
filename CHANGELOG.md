@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-03 — Smoother first visit and matching numbers
+
+- Home, Transactions and Budget now show the same "left" number for this month.
+- The calculator is readable in dark mode, and its "save a little more" answer says "4½ years earlier" instead of a long month count.
+- Coming from the calculator, Home explains why its freedom date can differ: cash doesn't grow like investments.
+- Euro and other non-dollar plans show their own currency on Plan, Contributions and "What would this cost me".
+- Today counts from your first day ("1 of 1 days"), and a brand-new account says "Nothing to check yet".
+- The same rent every month is no longer flagged as unusually large, and Calendar no longer suggests groceries or petrol as bills.
+- Contributions without a linked bank uses your plan's leftover money instead of $0.
+- Smaller fixes: "Under pace" wording, a full safety pot says "Full", no US average for non-US users, plain error messages on Offers, and Pro no longer promises "priority AI".
+
 ## 2026-11-02 — Past months in Calendar show real In and Out
 
 - On the website Calendar's Month view, going back to a past month showed In $0 and Out $0. Now a past month shows what really came in and went out, from your transactions, counted the same way as Transactions (transfers, card bill payments and likely copies left out, refunds taken off).

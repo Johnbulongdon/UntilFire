@@ -8,6 +8,15 @@ import { savingsSliderAmount, savingsDisplayUSD } from '@/lib/savings-slider';
 import { savingsPace, paceDate } from '@/lib/savings-pace';
 import type { CalculatorPrefill } from '@/lib/journey';
 
+/** "56 months" reads as noise; past a year, say it in years and halves. */
+function spanWords(months: number) {
+  if (months < 12) return `${months} ${months === 1 ? 'month' : 'months'}`;
+  const years = Math.round(months / 6) / 2;
+  const whole = Math.floor(years);
+  const text = years === whole ? String(whole) : whole === 0 ? '½' : `${whole}½`;
+  return `${text} ${years === 1 ? 'year' : 'years'}`;
+}
+
 export default function SavingsPace({ prefill, value, onUse, onBack }: {
   prefill: CalculatorPrefill; value: number; onUse: (plan: CalculatorPrefill) => void; onBack: () => void;
 }) {
@@ -24,7 +33,7 @@ export default function SavingsPace({ prefill, value, onUse, onBack }: {
   const months = baseline.result.years !== null && pace.result.years !== null ? Math.round((baseline.result.years - pace.result.years) * 12) : null;
   const difference = !pace.changed ? 'Your current plan' : months === null
     ? pace.result.years === null ? 'Not reached within 65 years' : 'A reachable projection'
-    : months === 0 ? 'Less than a month apart' : `${Math.abs(months)} ${Math.abs(months) === 1 ? 'month' : 'months'} ${months > 0 ? 'earlier' : 'later'}`;
+    : months === 0 ? 'Less than a month apart' : `${spanWords(Math.abs(months))} ${months > 0 ? 'earlier' : 'later'}`;
   return <section className="pace-page">
     <style>{`
       .pace-page{min-height:100svh;background:var(--uf-ground);color:var(--uf-ink);padding:24px clamp(16px,4vw,40px);font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box}
@@ -49,9 +58,9 @@ export default function SavingsPace({ prefill, value, onUse, onBack }: {
       .pace-original{color:var(--uf-ink-2);font-size:24px;margin:0 0 24px}
       .pace-date{font-family:var(--uf-font-display);font-weight:800;font-size:clamp(40px,5vw,72px);line-height:1.15;letter-spacing:-.03em;margin:0;text-wrap:balance}
       .pace-difference{font-family:var(--uf-font-display);font-weight:700;font-size:clamp(24px,3.5vw,40px);line-height:1.2;margin:20px 0 0;color:var(--uf-teal)}
-      .pace-submit{display:block;min-height:52px;width:min(100%,520px);margin:0 auto 40px;border:0;border-radius:999px;background:var(--uf-green);color:var(--uf-on-green,#fff);padding:16px;font:800 17px Inter,sans-serif;cursor:pointer}
+      .pace-submit{display:block;min-height:52px;width:min(100%,520px);margin:0 auto 40px;border:0;border-radius:999px;background:var(--uf-green);color:var(--uf-card);padding:16px;font:800 17px Inter,sans-serif;cursor:pointer}
       .pace-submit:disabled{opacity:.5;cursor:not-allowed}
-      .pace-page :is(button,input):focus-visible{outline:3px solid var(--uf-green);outline-offset:4px}
+      .pace-page button:focus-visible{outline:3px solid var(--uf-green);outline-offset:4px}.pace-amount input:focus,.pace-amount input:focus-visible{outline:none}.pace-amount:focus-within{border-color:var(--uf-ink);box-shadow:0 0 0 2px var(--uf-ink)}
       @media(max-width:640px){.pace-page{padding-top:16px}.pace-progress{max-width:140px;gap:4px}.pace-main{grid-template-columns:1fr;gap:32px;padding:44px 0 32px}.pace-input label{font-size:20px}.pace-result{border-left:0;border-top:1px solid var(--uf-border);padding:28px 0 0}.pace-original{font-size:20px;margin-bottom:16px}.pace-date{font-size:44px}.pace-difference{font-size:28px}.pace-submit{margin-bottom:16px}.pace-summary{font-size:14px;margin-top:20px}}
     `}</style>
     <header className="pace-header">
@@ -61,7 +70,7 @@ export default function SavingsPace({ prefill, value, onUse, onBack }: {
     </header>
     <main className="pace-main">
       <div className="pace-input">
-        <label htmlFor={id}>Try one improvement.</label>
+        <label htmlFor={id}>Try saving a little more each month.</label>
         <div className="pace-amount"><span aria-hidden="true">{new Intl.NumberFormat("en-US", { style: "currency", currency: prefill.defaultCurrency ?? "USD" }).formatToParts(0).find(p => p.type === "currency")?.value}</span><input id={id} type="number" inputMode="numeric" min={0} max={Math.round(income * displayRate)} step="1" value={amount} aria-describedby={`${id}-summary${valid ? '' : ` ${id}-error`}`} aria-invalid={!valid} onChange={e => setAmount(e.target.value)} onBlur={()=>{if(amount.trim()!==''&&Number.isFinite(Number(amount)))setAmount(String(savingsSliderAmount(Number(amount),original*displayRate,income*displayRate)))}} /><span>/month</span></div>
         {!valid && <p id={`${id}-error`} role="alert">Enter a whole amount from {money(0)} to {money(income)}.</p>}
         <div className="pace-range">

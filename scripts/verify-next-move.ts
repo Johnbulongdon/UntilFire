@@ -37,5 +37,7 @@ assert.equal(quietDayToMark([], 0, now), "2026-10-18", "nothing to answer: today
 assert.equal(quietDayToMark(["2026-10-18"], 0, now), null, "already counted");
 assert.equal(quietDayToMark([], 1, now), null, "something still to answer");
 assert.deepEqual(monthCount(["2026-09-30", "2026-10-01", "2026-10-17"], now), { done: 2, of: 18 });
+// A first visit counts from that day: one quiet day marked on the 3rd is "1 of 1", not "1 of 3".
+assert.deepEqual(monthCount(["2026-10-18"], now), { done: 1, of: 1 });
 
 console.log("Next move and Today checks passed.");

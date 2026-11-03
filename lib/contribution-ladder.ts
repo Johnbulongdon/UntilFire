@@ -12,6 +12,7 @@
  */
 
 import type { ExpenseSource, StoredLadder, StoredPlan } from "./contribution.ts";
+import { recurrenceToMonthly } from "./recurring-detect.ts";
 import {
   buildLadder, fillWaterfall, DEFAULT_THRESHOLD_PCT,
   type Debt, type RungFill, type WaterfallResult,
@@ -205,7 +206,20 @@ export function buildLadderView(
   const today = facts.today ?? new Date();
   const items = facts.expectedItems ?? [];
   const allowanceBasis = dayToDayAllowance(facts, items, ladder.allowanceExclusions ?? []);
-  const forecast = buildForecast(sumBalances(contributable), items, schedule, today, allowanceBasis?.perDay ?? 0);
+  const measured = buildForecast(sumBalances(contributable), items, schedule, today, allowanceBasis?.perDay ?? 0);
+  /* No linked cash account: the opening balance is unknown, not $0. Read from
+     $0, every bill looked like a shortfall and the plan said "$0" for people
+     saving every month (walkthrough 3 Nov 2026). Without a balance, the cycle's
+     amount is what the plan leaves over: repeating income less repeating bills
+     and the day-to-day estimate, for one cycle. */
+  const noCash = facts.cashAccounts.length === 0;
+  const monthlyOf = (type: "income" | "expense") => items.filter((i) => i.type === type)
+    .reduce((t, i) => t + recurrenceToMonthly(i.amountUSD, i.recurrence), 0);
+  const everydayMonthly = allowanceBasis?.monthly ?? 0;
+  const planLeftover = Math.max(0, (monthlyOf("income") - monthlyOf("expense") - everydayMonthly) * monthsPerCycle(schedule));
+  const forecast = noCash && items.some((i) => i.type === "income")
+    ? { ...measured, shortBefore: null, safeToContribute: planLeftover }
+    : measured;
   const nextDate = nextContributionDate(schedule, today);
   const done = facts.contributionDone?.iso === forecast.contributionIso ? facts.contributionDone : null;
   const available: AvailableToContribute = {

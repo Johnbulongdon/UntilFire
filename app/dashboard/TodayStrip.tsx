@@ -193,7 +193,7 @@ export function TodayList({ items, count, perDay, fmt, onAnswer, onOpen, onWhatI
       </div>
       {finished ? (
         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", color: "var(--uf-teal)", fontWeight: 700 }}>
-          <DoneCheck play={justFinished} />Today&apos;s done
+          <DoneCheck play={justFinished} />{count.done <= 1 && count.of === 1 && !justFinished ? "Nothing to check yet" : <>Today&apos;s done</>}
         </div>
       ) : (
         <div style={{ display: "grid" }}>

@@ -587,7 +587,7 @@ export default function ContributionsTab({
                   <div className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>{f.why}</div>
                 </div>
                 <span style={{ ...mono, fontWeight: 700, whiteSpace: "nowrap" }}>
-                  {off ? "—" : f.amount > 0 ? <Money amount={f.amount} decimals={f.amount < 100 ? 2 : 0} /> : <span style={{ color: "var(--uf-ink-3)" }}>$0</span>}
+                  {off ? "—" : f.amount > 0 ? <Money amount={f.amount} decimals={f.amount < 100 ? 2 : 0} /> : <Money amount={0} tone="muted" />}
                 </span>
                 {(f.capacity > 0 || disabled.includes(f.kind)) ? (
                   <Button variant="ghost" size="sm" aria-label={`${off ? "Turn on" : "Turn off"} ${f.label}`}

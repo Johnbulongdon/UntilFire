@@ -99,8 +99,12 @@ export function quietDayToMark(done: string[], openItems: number, now = new Date
   return openItems === 0 && !done.includes(today) ? today : null;
 }
 
-/** Finished days this month, for "11 of 13 days". */
+/** Finished days this month, for "11 of 13 days". Someone who started this
+ * month counts from their first day, not the 1st: a new account read "1 of 3
+ * days" on its first visit (walkthrough 3 Nov 2026). */
 export function monthCount(done: string[], now = new Date()) {
   const month = isoDay(now).slice(0, 7);
-  return { done: done.filter((d) => d.startsWith(month)).length, of: now.getDate() };
+  const first = [...done].sort()[0];
+  const startDay = first && first.startsWith(month) ? Number(first.slice(8, 10)) : 1;
+  return { done: done.filter((d) => d.startsWith(month)).length, of: Math.max(1, now.getDate() - startDay + 1) };
 }

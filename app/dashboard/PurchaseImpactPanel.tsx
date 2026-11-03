@@ -17,19 +17,26 @@ export default function PurchaseImpactPanel({
   monthlyContribution,
   fireTarget,
   annualReturn = 0.07,
+  symbol = "$",
+  toUSD = (n: number) => n,
+  fmtMoney = formatFV,
 }: {
   currentSavings: number;
   monthlyContribution: number;
   fireTarget: number;
   annualReturn?: number;
+  /** The person's currency: the price is typed in it and the answer is shown in it (walkthrough 3 Nov 2026). */
+  symbol?: string;
+  toUSD?: (local: number) => number;
+  fmtMoney?: (usd: number) => string;
 }) {
   const [price, setPrice] = useState("");
 
   const result = useMemo(() => {
     const p = parseFloat(price.replace(/[^0-9.]/g, ""));
     if (!p || p <= 0) return null;
-    return calcPurchaseImpact(p, currentSavings, monthlyContribution, fireTarget, annualReturn);
-  }, [price, currentSavings, monthlyContribution, fireTarget, annualReturn]);
+    return calcPurchaseImpact(toUSD(p), currentSavings, monthlyContribution, fireTarget, annualReturn);
+  }, [price, currentSavings, monthlyContribution, fireTarget, annualReturn, toUSD]);
 
   const hasProfile = fireTarget > 0 && monthlyContribution > 0;
 
@@ -40,9 +47,9 @@ export default function PurchaseImpactPanel({
         <label style={{ display: "grid", gap: 8 }}>
           <span className="uf-t-body">Thinking of buying something?</span>
           <span style={{ position: "relative", maxWidth: 220 }}>
-            <span aria-hidden style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", ...mono, color: "var(--uf-ink-3)" }}>$</span>
+            <span aria-hidden style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", ...mono, color: "var(--uf-ink-3)" }}>{symbol}</span>
             <input type="text" inputMode="decimal" autoComplete="off" aria-label="Purchase price" placeholder="Price" value={price} onChange={(e) => setPrice(e.target.value.replace(/[^\d.,]/g, ""))}
-              style={{ width: "100%", ...mono, fontSize: 18, padding: "10px 12px 10px 26px", borderRadius: 10, border: "1px solid var(--uf-border-2)", background: "var(--uf-bg)", color: "var(--uf-ink)", boxSizing: "border-box" }} />
+              style={{ width: "100%", ...mono, fontSize: 18, padding: `10px 12px 10px ${12 + symbol.length * 11}px`, borderRadius: 10, border: "1px solid var(--uf-border-2)", background: "var(--uf-bg)", color: "var(--uf-ink)", boxSizing: "border-box" }} />
           </span>
         </label>
         {result
@@ -54,7 +61,7 @@ export default function PurchaseImpactPanel({
           {!hasProfile
             ? "Add income, savings and expenses for your own numbers."
             : result
-              ? <>Invested instead, it would be worth <b style={{ ...mono, color: "var(--uf-ink-2)" }}>{formatFV(result.futureValue)}</b> by your freedom date, at {Math.round(annualReturn * 1000) / 10}% a year after inflation.</>
+              ? <>Invested instead, it would be worth <b style={{ ...mono, color: "var(--uf-ink-2)" }}>{fmtMoney(result.futureValue)}</b> by your freedom date, at {Math.round(annualReturn * 1000) / 10}% a year after inflation.</>
               : "Type a price to see what it costs you in time."}
         </span>
       </div>

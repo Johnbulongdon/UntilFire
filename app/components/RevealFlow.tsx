@@ -298,7 +298,7 @@ export default function RevealFlow(props: RevealFlowProps) {
               <div style={subtle}>{isAlreadyFire?'Your entered savings cover your freedom number.':ageWasAssumed?'At your current saving pace.': 'Work could become optional at '+freedomAge+'.'}</div>
               <div style={{fontSize:'clamp(72px,9vw,120px)',fontWeight:800,letterSpacing:'-.06em',lineHeight:1,...anim('rf-pop .35s ease both')}}>{isAlreadyFire?'Now':ageText}</div>
               <div style={subtle}>{isAlreadyFire?'Check your bills and balances before making plans.':'More choices ahead.'}</div>
-              <button onClick={next} style={{justifySelf:'start',marginTop:12,border:0,borderRadius:999,padding:'17px 28px',background:'#151719',color:'#FFFFFF',font:'700 16px Inter,sans-serif',cursor:'pointer'}}>Continue →</button>
+              <button onClick={next} style={{justifySelf:'start',marginTop:12,border:0,borderRadius:999,padding:'17px 28px',background:'var(--uf-green)',color:'var(--uf-card)',font:'700 16px Inter,sans-serif',cursor:'pointer'}}>Continue →</button>
             </div>
             <RevealCurve prefill={prefill} target={fireTarget} years={yearsToFire??0} returnPct={returnPct} format={formatCompact}/>
           </>}
@@ -319,7 +319,7 @@ export default function RevealFlow(props: RevealFlowProps) {
                 {isAlreadyFire
                   ? <>You&apos;ve already bought back <b style={{ color: TEAL }}>{freeYears} free years</b> — assuming you live to 100.</>
                   : ageWasAssumed
-                    ? <>Freedom in {working} years buys back <b style={{ color: TEAL }}>{freeYears} free years</b>. This uses an assumed age of {lived}, since you skipped it.</>
+                    ? <>Freedom in {working} years buys back <b style={{ color: TEAL }}>{freeYears} free years</b>. This uses an assumed age of {lived}, since you skipped it, and assumes you live to 100.</>
                     : <>Retiring at {freedomAge} buys back <b style={{ color: TEAL }}>{freeYears} free years</b> — assuming you live to 100.</>}
               </div>
             </div>
@@ -356,7 +356,7 @@ export default function RevealFlow(props: RevealFlowProps) {
             <div style={{width:'100%',maxWidth:560,display:'grid',gap:24,...anim('rf-up .3s ease both')}}>
               <div style={eyebrow}>YOUR MONTHLY PICTURE</div>
               <div style={{fontSize:'clamp(32px,5vw,56px)',fontWeight:800,letterSpacing:'-.04em'}}>{savingsRatePct}% saved</div>
-              <div style={{display:'flex',height:24,borderRadius:999,overflow:'hidden',background:'var(--uf-border)'}}><div style={{width:Math.min(100,Math.max(0,100-savingsRatePct))+'%',background:'#151719'}}/><div style={{flex:1,background:'#B9E7D6'}}/></div>
+              <div style={{display:'flex',height:24,borderRadius:999,overflow:'hidden',background:'var(--uf-border)'}}><div style={{width:Math.min(100,Math.max(0,100-savingsRatePct))+'%',background:'var(--uf-ink)'}}/><div style={{flex:1,background:'#B9E7D6'}}/></div>
               <div style={{display:'flex',justifyContent:'space-between',gap:24}}><div><div style={subtle}>Expenses</div><strong style={{fontSize:28}}>{monthlyMoney(prefill.monthlySpendEstimate ?? (prefill.annualCost ?? 0)/12)}</strong></div><div style={{textAlign:'right'}}><div style={subtle}>Saved each month</div><strong style={{fontSize:28}}>{monthlyMoney(prefill.monthlySavings ?? 0)}</strong></div></div>
               <div style={subtle}>Your starting point. Small changes can move your date.</div>
             </div>
@@ -389,7 +389,7 @@ export default function RevealFlow(props: RevealFlowProps) {
           <button onClick={back} style={{ background: "none", border: "none", color: "var(--uf-ink-2)", font: "600 14px Inter, sans-serif", cursor: "pointer", padding: 10 }}>← Back</button>
         )}
         {step > 2 && step < 7 && (
-          <button onClick={next} style={{ background: "#151719", border: "1px solid #151719", color: "#FFFFFF", borderRadius: 999, padding: "17px 40px", font: "700 16px Inter, sans-serif", cursor: "pointer" }}>
+          <button onClick={next} style={{ background: "var(--uf-green)", border: "1px solid var(--uf-green)", color: "var(--uf-card)", borderRadius: 999, padding: "17px 40px", font: "700 16px Inter, sans-serif", cursor: "pointer" }}>
             {step === 5 ? "Try one improvement →" : "Continue →"}
           </button>
         )}

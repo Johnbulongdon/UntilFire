@@ -92,6 +92,12 @@ queue: reconcile its scope and dependencies before starting overlapping changes.
 
 ### Completed / disposition record
 
+- **3 November 2026 — Completed (pending merge):** user walkthrough fixes on web.
+  Home, Transactions and Budget now show one "left" number; calculator dark mode
+  readable; euro plans show € on Plan, Contributions and purchase impact; Today
+  counts from the first day; regular rent no longer flagged; no-bank plans no
+  longer read $0 on Contributions. Findings and screenshots in project files
+  `untilfire/user-walkthrough-2026-11-03/`.
 - **1 November 2026 — Completed (pending merge):** buttons and popups style sync;
   old teal/slate popups, browser confirms, public calculator pages and share
   images moved to Next Horizon tokens. Findings and screenshots in project files
