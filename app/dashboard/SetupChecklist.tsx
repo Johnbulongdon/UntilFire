@@ -67,7 +67,7 @@ function Ring({ done, total, size = 40 }: { done: number; total: number; size?: 
  * data (lib/setup-steps), folds to a pill, shows what each step changed, turns
  * bank findings into one-tap confirms, celebrates once, then is gone for good.
  */
-export default function SetupChecklist({ userId, facts, freedomYear, untilPaydayUSD, fmt, transactions, rates, onAdded, onOpen, quiet = false }: {
+export default function SetupChecklist({ userId, facts, freedomYear, untilPaydayUSD, fmt, transactions, rates, onAdded, onOpen }: {
   userId: string | null;
   facts: SetupFacts;
   freedomYear: number | null;
@@ -77,8 +77,6 @@ export default function SetupChecklist({ userId, facts, freedomYear, untilPayday
   rates: Record<string, number>;
   onAdded: (rows: AddedExpected[]) => void;
   onOpen: (step: SetupStepId) => void;
-  /** Home's next move is already this checklist's next step: the folded pill would ask twice (walkthrough 3 Nov 2026). */
-  quiet?: boolean;
 }) {
   const steps = useMemo(() => setupSteps(facts), [facts]);
   const doneIds = useMemo(() => steps.filter((s) => s.done).map((s) => s.id), [steps]);
@@ -188,7 +186,6 @@ export default function SetupChecklist({ userId, facts, freedomYear, untilPayday
 
   const count = <><span style={mono}>{doneIds.length}</span> of <span style={mono}>{total}</span> done</>;
 
-  if (folded && !celebrate && quiet) return null;
   if (folded && !celebrate) {
     return (
       <div className="uf-setup-dock">

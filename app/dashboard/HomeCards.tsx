@@ -277,8 +277,19 @@ function TileHead({ label }: { label: string; to: "money" | "plan" }) {
   );
 }
 
-export function GlanceRow({ netWorth, invested, safety, savingsRate, fmt, onNetWorth, onSafety, onSavings, usAverage = true }: {
-  netWorth: number;
+export function HomeCardPrompt({ description, action }: { description: string; action: string }) {
+  return (
+    <>
+      <span className="uf-t-small" style={muted}>{description}</span>
+      <span className="uf-t-small" style={{ fontWeight: 700 }}>{action} <span aria-hidden>→</span></span>
+    </>
+  );
+}
+
+export function GlanceRow({ netWorth, invested, safety, savingsRate, fmt, onNetWorth, onSafety, onSavings, safetySetup, savingsSetup, usAverage = true }: {
+  netWorth: number | null;
+  safetySetup?: { description: string; action: string };
+  savingsSetup?: { description: string; action: string };
   /** Invested at each month end, oldest first, up to 12 (the snapshots behind the curve); fewer than 2 draws no line. */
   invested: number[];
   /** Months of needs in the safety pot, and the target; null without spending to measure. */
@@ -303,8 +314,9 @@ export function GlanceRow({ netWorth, invested, safety, savingsRate, fmt, onNetW
   return (
     <Card style={{ padding: 0, overflow: "hidden" }}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))" }}>
-        <button type="button" onClick={onNetWorth} aria-label="Net worth, open Money" style={cell}>
+        <button type="button" onClick={onNetWorth} aria-label={netWorth == null ? undefined : "Net worth, open Money"} style={cell}>
           <TileHead label="Net worth" to="money" />
+          {netWorth == null ? <HomeCardPrompt description="Add your account balances." action="Add balances" /> : <>
           <b style={{ ...mono, fontSize: 22, color: netWorth < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink)" }}>{fmt(netWorth)}</b>
           <span style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
             {change != null && (
@@ -314,8 +326,9 @@ export function GlanceRow({ netWorth, invested, safety, savingsRate, fmt, onNetW
             )}
             {invested.length >= 2 && <Sparkline values={invested} />}
           </span>
+          </>}
         </button>
-        {safety && (
+        {safety ? (
           <button type="button" onClick={onSafety} aria-label="Safety pot, open Money" style={cell}>
             <TileHead label="Safety pot" to="money" />
             <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -332,8 +345,13 @@ export function GlanceRow({ netWorth, invested, safety, savingsRate, fmt, onNetW
               })}
             </div>
           </button>
+        ) : safetySetup && (
+          <button type="button" onClick={onSafety} style={cell}>
+            <TileHead label="Safety pot" to="money" />
+            <HomeCardPrompt {...safetySetup} />
+          </button>
         )}
-        {savingsRate != null && (
+        {savingsRate != null ? (
           <button type="button" onClick={onSavings} aria-label="Savings rate, open Plan" style={cell}>
             <TileHead label="Savings rate" to="plan" />
             <b style={{ ...mono, fontSize: 22 }}>{Math.round(savingsRate)}%</b>
@@ -345,6 +363,11 @@ export function GlanceRow({ netWorth, invested, safety, savingsRate, fmt, onNetW
                 </span>
               ))}
             </div>
+          </button>
+        ) : savingsSetup && (
+          <button type="button" onClick={onSavings} style={cell}>
+            <TileHead label="Savings rate" to="plan" />
+            <HomeCardPrompt {...savingsSetup} />
           </button>
         )}
       </div>

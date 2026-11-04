@@ -47,7 +47,7 @@ import type { IconName } from "@/components/ui";
 import type { NextMove } from "@/lib/next-move";
 import type { RawTx } from "@/lib/recurring-detect";
 import { FreedomCurve } from "./FreedomCurve";
-import { FreedomCard, MonthCard, GlanceRow, NextMoveCard, UntilPaydayCard, type MonthCategory } from "./HomeCards";
+import { FreedomCard, MonthCard, GlanceRow, HomeCardPrompt, NextMoveCard, UntilPaydayCard, type MonthCategory } from "./HomeCards";
 import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, MoneyTrack, Fig, StackBar, PaceBar, MonthCalendar, BankLogo } from "./MoneyCards";
 import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
 import { connectedDebt, connectedBalance, accountInUSD, daysSinceSync, STALE_AFTER_DAYS, type ConvertedFields } from "@/lib/account-currency";
@@ -1243,6 +1243,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   // Net worth is everything owned less everything owed, all cash and a typed home included, the same
   // figure as the Net worth tab and the phone (lib/net-worth). `investable` leaves out the safety pot (audit round 3).
   const ownedNow = effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts });
+  const hasBalanceInputs = plaidAccounts.some((a) => a.balance_current != null)
+    || [k401, rothIRA, taxable, cashSavings, homeValue, totalDebt, mortgageBalance].some((balance) => balance !== 0);
+  const hasCashBalance = cashSavings !== 0 || plaidAccounts.some((a) => a.type === "depository" && a.balance_current != null);
   const currentNetWorth = ownedNow.k401 + ownedNow.rothIRA + ownedNow.taxable + ownedNow.cashSavings + homeValue - debtsNow.otherDebt - debtsNow.mortgage - debtsNow.cards;
   // The one "left", the same as Budget and the phone (lib/everyday-left, audit round 3).
   const monthKeyNow = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
@@ -1275,22 +1278,35 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   // While Get set up is open, its next step is Home's next move: one ask, not two.
   const [setupFinished, setSetupFinished] = useState<boolean | null>(null);
   useEffect(() => { try { setSetupFinished(localStorage.getItem(SETUP_FINISHED_KEY) === "1"); } catch { setSetupFinished(false); } }, []);
-  const setupMove = useMemo<{ step: SetupStepId; move: NextMove } | null>(() => {
+  const setupMove = useMemo<{ step: SetupStepId | "transactions"; move: NextMove } | null>(() => {
     if (setupFinished !== false) return null;
     const steps = setupSteps(setupFacts);
     const at = steps.findIndex((s) => !s.done);
     if (at < 0) return null;
     const step = steps[at].id;
+    if (step === "bank" && transactionHistory === "empty") {
+      return { step: "transactions", move: {
+        key: "setup:transactions", title: "Add your first transaction", payoff: null,
+        door: "money", tab: "cashflow", button: "Add or import",
+      } };
+    }
     return { step, move: {
       key: `setup:${step}`, title: SETUP_LABEL[step], payoff: `${steps.filter((x) => x.done).length} of ${steps.length} done`,
       door: "money", tab: "cashflow", button: SETUP_BUTTON[step],
     } };
-  }, [setupFinished, setupFacts]);
+  }, [setupFinished, setupFacts, transactionHistory]);
   const setupTxns = useMemo<RawTx[]>(() => recentTransactions
     .filter((t) => t.transaction_type === "expense" || t.transaction_type === "income")
     .map((t, i) => ({ id: String(i), date: t.date.slice(0, 10), amount: t.transaction_type === "expense" ? netAmt(t) : t.amount,
       currency: t.currency, description: t.description ?? "", category: t.category ?? "", transaction_type: t.transaction_type as "expense" | "income" })),
   [recentTransactions]);
+  const missingPayday = freeResult?.payday.source !== "paycheck";
+  const paydaySetup = missingPayday
+    ? { description: "Add your next payday to see what’s left.", action: "Set up payday" }
+    : { description: "Connect the account you spend from.", action: "Connect a bank" };
+  const savingsSetup = income <= 0
+    ? { description: "Add your take-home income.", action: "Add income" }
+    : { description: "Add your monthly spending.", action: "Set budget" };
   // Its line (lib/payday-line): the counted accounts' rows since last pay, then the bills ahead.
   const paydayLineView = useMemo(() => {
     if (!paydayView || !freeResult?.cash) return null;
@@ -1700,9 +1716,14 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
             fmt={(n) => fmtMoney(n)}
             onOpen={() => onTabChange?.("cashflow")}
           />
-        ) : transactionHistory === "empty" ? (
-          <TransactionStartCard title="Track your spending" description="See what you’ve spent and what’s left this month."
-            onOpenTransactions={onOpenTransactions} />
+        ) : (transactionHistory === "empty" || (transactionHistory === "ready" && monthLeft.everydayBudget <= 0 && !hasActuals && bills.length === 0)) ? (
+          <div className="uf-card" style={{ display: "grid", justifyItems: "start", gap: 4 }}>
+            <h2 className="uf-t-body" style={{ fontWeight: 700, margin: 0 }}>Until payday</h2>
+            <Button size="sm" variant="ghost" onClick={() => onSetupStep?.(missingPayday ? "payday" : "bank")}
+              style={{ paddingInline: 0, height: "auto", minHeight: 44, textAlign: "left", whiteSpace: "normal", display: "grid", justifyItems: "start", gap: 4 }}>
+              <HomeCardPrompt {...paydaySetup} />
+            </Button>
+          </div>
         ) : transactionHistory !== "ready" ? <TransactionHistoryNotice status={transactionHistory} /> : <MonthCard
           spent={monthLeft.everydaySpent}
           budget={monthLeft.everydayBudget}
@@ -1719,14 +1740,18 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       <HomeSlot id="glance">
         <GlanceRow
           usAverage={displayCurrency === "USD"}
-          netWorth={currentNetWorth}
+          netWorth={hasBalanceInputs ? currentNetWorth : null}
           invested={investedByMonth}
-          safety={efMonthlyBase > 0 ? { months: emergencyFundPlan.coverageMonths, target: EMERGENCY_FUND_TARGET_MONTHS } : null}
-          savingsRate={income > 0 ? (annualSavings / (income * 12)) * 100 : null}
+          safety={efMonthlyBase > 0 && hasCashBalance ? { months: emergencyFundPlan.coverageMonths, target: EMERGENCY_FUND_TARGET_MONTHS } : null}
+          safetySetup={hasCashBalance
+            ? { description: "Add your monthly essentials.", action: "Set budget" }
+            : { description: "Add your emergency savings.", action: "Add savings" }}
+          savingsRate={income > 0 && monthlyExpenses > 0 ? (annualSavings / (income * 12)) * 100 : null}
+          savingsSetup={savingsSetup}
           fmt={(n) => fmtMoney(n)}
           onNetWorth={() => onTabChange?.("assets")}
-          onSafety={() => onTabChange?.("assets")}
-          onSavings={() => onTabChange?.("contributions")}
+          onSafety={() => hasCashBalance && efMonthlyBase <= 0 ? onSetupStep?.("budget") : onTabChange?.("assets")}
+          onSavings={() => income <= 0 ? onSetupStep?.("income") : monthlyExpenses <= 0 ? onSetupStep?.("budget") : onTabChange?.("contributions")}
         />
       </HomeSlot>
       </div>
@@ -1777,8 +1802,14 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       <div className="uf-home-in" style={{ order: 3, animationDelay: "100ms" }}>
       <HomeSlot id="contribution">
       {setupMove && !isSnoozed(setupMove.move.key) ? (
-        <NextMoveCard move={setupMove.move} because={SETUP_WHY[setupMove.step]} icon={SETUP_ICON[setupMove.step]} fmt={(n) => fmtMoney(n)}
-          onOpen={() => onSetupStep?.(setupMove.step)}
+        <NextMoveCard move={setupMove.move}
+          because={setupMove.step === "transactions" ? undefined : SETUP_WHY[setupMove.step]}
+          icon={setupMove.step === "transactions" ? undefined : SETUP_ICON[setupMove.step]}
+          fmt={(n) => fmtMoney(n)}
+          onOpen={() => {
+            if (setupMove.step === "transactions") onOpenTransactions();
+            else onSetupStep?.(setupMove.step);
+          }}
           onSnooze={() => { snooze(setupMove.move.key); setSnoozeTick((t) => t + 1); }} />
       ) : nextMove ? (
         <NextMoveCard move={nextMove} fmt={(n) => fmtMoney(n)}
@@ -1801,7 +1832,6 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         rates={displayRates}
         onAdded={(rows) => onExpectedAdded?.(rows)}
         onOpen={(step) => onSetupStep?.(step)}
-        quiet={!!setupMove && !isSnoozed(setupMove.move.key)}
       />
       </div>
       </div>
