@@ -76,18 +76,29 @@ export default function FreeToSpendRunway({ result, fmt, allAccounts, toggles, o
       {allAccounts.some((a) => a.type === "depository") && (
         <details>
           <summary className="uf-t-small" style={{ cursor: "pointer", color: "var(--uf-ink-2)" }}>Which accounts count</summary>
-          <div style={{ display: "grid", gap: 6, marginTop: "var(--uf-s2)" }}>
-            {allAccounts.filter((a) => a.type === "depository").map((a) => (
-              <label key={a.id} className="uf-t-small" style={{ display: "flex", gap: "var(--uf-s2)", alignItems: "center", color: "var(--uf-ink-2)" }}>
-                <Checkbox checked={toggles[a.id] ?? countsByDefault(a)} onChange={(e) => onToggle(a.id, e.target.checked)} />
-                <span>{a.name}</span>
-                <span style={{ ...mono, marginLeft: "auto" }}>{fmt(a.balanceUSD)}</span>
-              </label>
-            ))}
-          </div>
+          <SpendingAccountChoices accounts={allAccounts} fmt={fmt} toggles={toggles} onToggle={onToggle} />
         </details>
       )}
     </Card>
+  );
+}
+
+export function SpendingAccountChoices({ accounts, fmt, toggles, onToggle }: {
+  accounts: SpendAccount[];
+  fmt: (usd: number) => string;
+  toggles: Record<string, boolean>;
+  onToggle: (id: string, on: boolean) => void;
+}) {
+  return (
+    <div style={{ display: "grid", gap: 6, marginTop: "var(--uf-s2)" }}>
+      {accounts.filter((a) => a.type === "depository").map((a) => (
+        <label key={a.id} className="uf-t-small" style={{ display: "flex", gap: "var(--uf-s2)", alignItems: "center", color: "var(--uf-ink-2)" }}>
+          <Checkbox checked={toggles[a.id] ?? countsByDefault(a)} onChange={(e) => onToggle(a.id, e.target.checked)} />
+          <span>{a.name}</span>
+          <span style={{ ...mono, marginLeft: "auto" }}>{fmt(a.balanceUSD)}</span>
+        </label>
+      ))}
+    </div>
   );
 }
 

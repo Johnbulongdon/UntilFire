@@ -674,6 +674,9 @@ export default function ExpectedPaymentsTab({
                 <option key={k} value={k}>{RECURRENCE_LABEL[k]}</option>
               ))}
             </select>
+            {guided && <p className="uf-t-small" style={{ margin: "6px 0 0", color: "var(--uf-ink-2)" }}>
+              Until payday uses repeating paychecks. One-time pay appears on your calendar.
+            </p>}
           </div>
 
           {saveError && <p role="alert" className="uf-t-small" style={{ margin: 0, color: "var(--uf-neg-ink)" }}>{saveError}</p>}

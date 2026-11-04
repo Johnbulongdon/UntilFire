@@ -38,7 +38,7 @@ import type { Recurrence } from "@/lib/cashflow-forecast";
 import { freeToSpend, nextPayday, untilPayday, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
 import { paydayLine } from "@/lib/payday-line";
 import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, occurrences, paidByName, presumePaid, rateSoFar, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
-import FreeToSpendRunway from "./FreeToSpendRunway";
+import FreeToSpendRunway, { SpendingAccountChoices } from "./FreeToSpendRunway";
 import FreeToSpendHome from "./FreeToSpendHome";
 import SetupChecklist, { type AddedExpected } from "./SetupChecklist";
 import { freedomProgress, progressPercent } from "@/lib/freedom-progress";
@@ -734,7 +734,10 @@ function TransactionHistoryNotice({ status }: { status: "loading" | "error" }) {
   );
 }
 
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, onOpenNeeds, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60, budget = {}, expectedRows = [], onExpectedAdded, onSetupStep, transactionHistory, onOpenTransactions, hasUpcomingPayday }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, onOpenNeeds, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60, budget = {}, expectedRows = [], onExpectedAdded, onSetupStep, transactionHistory, onOpenTransactions, hasUpcomingPayday, spendingAccounts, onSpendToggle, onOpenBankSetup }: {
+  spendingAccounts: SpendAccount[];
+  onSpendToggle: (id: string, on: boolean) => void;
+  onOpenBankSetup: () => void;
   hasUpcomingPayday: boolean;
   transactionHistory: TransactionHistoryStatus;
   onOpenTransactions: () => void;
@@ -1302,9 +1305,18 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       currency: t.currency, description: t.description ?? "", category: t.category ?? "", transaction_type: t.transaction_type as "expense" | "income" })),
   [recentTransactions]);
   const missingPayday = !hasUpcomingPayday;
+  const hasSpendingChoices = spendingAccounts.some((account) => account.type === "depository");
+  const [choosingSpendingAccounts, setChoosingSpendingAccounts] = useState(false);
   const paydaySetup = missingPayday
     ? { description: "Add your next payday to see what’s left.", action: "Set up payday" }
-    : { description: "Connect the account you spend from.", action: "Connect a bank" };
+    : hasSpendingChoices
+      ? { description: "Choose which linked accounts you spend from.", action: "Choose spending accounts" }
+      : { description: "Connect the account you spend from.", action: "Connect a bank" };
+  const openPaydaySetup = () => {
+    if (missingPayday) onSetupStep?.("payday");
+    else if (hasSpendingChoices) setChoosingSpendingAccounts(true);
+    else onOpenBankSetup();
+  };
   const savingsSetup = income <= 0
     ? { description: "Add your take-home income.", action: "Add income" }
     : { description: "Add your monthly spending.", action: "Set budget" };
@@ -1717,15 +1729,19 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
             fmt={(n) => fmtMoney(n)}
             onOpen={() => onTabChange?.("cashflow")}
           />
-        ) : (transactionHistory === "empty" || (transactionHistory === "ready" && monthLeft.everydayBudget <= 0 && !hasActuals && bills.length === 0)) ? (
+        ) : <>
+          {(hasUpcomingPayday || transactionHistory === "empty" || (transactionHistory === "ready" && monthLeft.everydayBudget <= 0 && !hasActuals && bills.length === 0)) && (
           <div className="uf-card" style={{ display: "grid", justifyItems: "start", gap: 4 }}>
             <h2 className="uf-t-body" style={{ fontWeight: 700, margin: 0 }}>Until payday</h2>
-            <Button size="sm" variant="ghost" onClick={() => onSetupStep?.(missingPayday ? "payday" : "bank")}
+            <Button size="sm" variant="ghost" onClick={openPaydaySetup} aria-expanded={!missingPayday && hasSpendingChoices ? choosingSpendingAccounts : undefined}
               style={{ paddingInline: 0, height: "auto", minHeight: 44, textAlign: "left", whiteSpace: "normal", display: "grid", justifyItems: "start", gap: 4 }}>
               <HomeCardPrompt {...paydaySetup} />
             </Button>
           </div>
-        ) : transactionHistory !== "ready" ? <TransactionHistoryNotice status={transactionHistory} /> : <MonthCard
+          )}
+          {transactionHistory === "ready" && (monthLeft.everydayBudget > 0 || hasActuals || bills.length > 0) && (
+            <div style={{ marginTop: hasUpcomingPayday ? 8 : undefined }}>
+              <MonthCard
           spent={monthLeft.everydaySpent}
           budget={monthLeft.everydayBudget}
           left={monthLeft.left}
@@ -1733,8 +1749,19 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           monthDays={monthDays}
           nextBills={nextBills}
           fmt={(n) => fmtMoney(n)}
-          onOpen={() => onTabChange?.("cashflow")}
-        />}
+          onOpen={onOpenTransactions}
+        />
+            </div>
+          )}
+          {!hasUpcomingPayday && (transactionHistory === "loading" || transactionHistory === "error") && <TransactionHistoryNotice status={transactionHistory} />}
+        </>}
+        {choosingSpendingAccounts && hasSpendingChoices && (
+          <section className="uf-card" style={{ marginTop: 8 }} aria-label="Choose spending accounts">
+            <h2 className="uf-t-body" style={{ fontWeight: 700, margin: 0 }}>Which accounts do you spend from?</h2>
+            <SpendingAccountChoices accounts={spendingAccounts} fmt={fmtMoney} toggles={spendToggles} onToggle={onSpendToggle} />
+            <Button type="button" size="sm" variant="secondary" style={{ marginTop: 8 }} onClick={() => setChoosingSpendingAccounts(false)}>Done</Button>
+          </section>
+        )}
       </HomeSlot>
       </div>
       <div className="uf-home-in" style={{ order: 6, animationDelay: "200ms" }}>
@@ -3338,7 +3365,7 @@ function PortfolioOverviewTab({ k401, rothIRA, taxable, cashSavings = 0, totalDe
 }
 
 // ─── Assets Tab ───────────────────────────────────────────────────────────────
-function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, totalDebt = 0, mortgageBalance = 0, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, onUpgradeClick, emergencyFundMonthlyBase = 0, efOverride = null, plaidHoldings = [], plaidSecurities = {}, holdingsNeedsReconnect = [], holdingsLoading = false, accountShares = {}, onShareToggle }: {
+function AssetsTab({ focusBankSetup, k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, cashSavings, setCashSavings, totalDebt = 0, mortgageBalance = 0, growthRate: _growthRate, setGrowthRate: _setGrowthRate, withdrawalRate: _withdrawalRate, setWithdrawalRate: _setWithdrawalRate, actualNetCashflow = 0, displayCurrency, displayRates, plaidAccounts = [], onRefreshAccounts, onUpgradeClick, emergencyFundMonthlyBase = 0, efOverride = null, plaidHoldings = [], plaidSecurities = {}, holdingsNeedsReconnect = [], holdingsLoading = false, accountShares = {}, onShareToggle }: {
   accountShares?: AccountShares; onShareToggle?: (plaidAccountId: string, shared: boolean) => void;
   /** An emergency fund amount set by hand on Contributions, which counts here too (D-37). */
   efOverride?: number | null;
@@ -3347,6 +3374,7 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   k401: number; setK401: (v: number) => void;
   rothIRA: number; setRothIRA: (v: number) => void;
   taxable: number; setTaxable: (v: number) => void;
+  focusBankSetup?: boolean;
   cashSavings: number; setCashSavings: (v: number) => void;
   growthRate: number; setGrowthRate: (v: number) => void;
   withdrawalRate: number; setWithdrawalRate: (v: number) => void;
@@ -3543,6 +3571,13 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
   // Calm Net Worth (D-53): one row per account with its bank's logo, a typed
   // row only for a kind with nothing connected (connected replaces typed, as
   // in the headline), the emergency fund as one row, banks as rows.
+  const bankSetupRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!focusBankSetup) return;
+    const target = bankSetupRef.current;
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: "start" });
+  }, [focusBankSetup]);
   const [banks, setBanks] = useState<PlaidItem[]>([]);
   const [openRow, setOpenRow] = useState<string | null>(null);
   const toggleRow = (k: string) => setOpenRow((o) => (o === k ? null : k));
@@ -3680,7 +3715,9 @@ function AssetsTab({ k401, setK401, rothIRA, setRothIRA, taxable, setTaxable, ca
       </>}
 
       {nwSection("Banks")}
-      <PlaidConnect layout="rows" onItems={setBanks} onTransactionsImported={onRefreshAccounts} onUpgradeClick={onUpgradeClick} />
+      <div tabIndex={-1} ref={bankSetupRef}>
+        <PlaidConnect layout="rows" onItems={setBanks} onTransactionsImported={onRefreshAccounts} onUpgradeClick={onUpgradeClick} />
+      </div>
       <style>{`
         .uf-nw-ef { display: flex; align-items: center; gap: 10px; min-height: 36px; font-size: 14px; color: var(--uf-ink-2); cursor: pointer; }
         .uf-nw-ef:has(input:checked) { color: var(--uf-ink); }
@@ -4766,6 +4803,8 @@ export default function Dashboard() {
   }, []);
   const [cashflowSubTab, setCashflowSubTab] = useState<CashflowSubTab>("cashflow");
   const [paydaySetupOpen, setPaydaySetupOpen] = useState(false);
+  const [bankSetupRequested, setBankSetupRequested] = useState(false);
+  useEffect(() => { if (tab !== "assets") setBankSetupRequested(false); }, [tab]);
   useEffect(() => { if (tab !== "cashflow" || cashflowSubTab !== "expected") setPaydaySetupOpen(false); }, [tab, cashflowSubTab]);
   const [budgetKey, setBudgetKey] = useState(0);
   const [categoriesStart, setCategoriesStart] = useState<"categories" | "needs" | null>(null);
@@ -6287,6 +6326,9 @@ export default function Dashboard() {
                 contributionFacts={contributionFacts}
                 freeResult={freeResult}
                 hasUpcomingPayday={nextPayday(contributionItems, new Date()).source === "paycheck"}
+                spendingAccounts={spendAccounts}
+                onSpendToggle={setSpendToggle}
+                onOpenBankSetup={() => { setBankSetupRequested(true); openDashboardTab("assets"); }}
                 bills={homeBills}
                 onOpenFreeToSpend={() => { setCashflowSubTab("budgets"); setTab("cashflow"); }}
                 onOpenNeeds={() => { setCategoriesStart("needs"); setBudgetKey((k) => k + 1); setCashflowSubTab("budgets"); setTab("cashflow"); }}
@@ -6375,7 +6417,7 @@ export default function Dashboard() {
                   displayRates={rates}
                   plaidAccounts={plaidAccounts}
                 />
-                <AssetsTab accountShares={accountShares} onShareToggle={setAccountShared}
+                <AssetsTab focusBankSetup={bankSetupRequested} accountShares={accountShares} onShareToggle={setAccountShared}
                   totalDebt={totalDebt} mortgageBalance={mortgageBalance}
                   k401={k401} setK401={setK401}
                   rothIRA={rothIRA} setRothIRA={setRothIRA}
