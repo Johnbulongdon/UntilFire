@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-04 — First transaction guidance
+
+- Home, Transactions, Budget and Insights show how to get started before you have transaction history. Add or import transactions, or connect a bank from Transactions.
+
 ## 2026-11-03 — Smoother first visit and matching numbers
 
 - Home, Transactions and Budget now show the same "left" number for this month.
