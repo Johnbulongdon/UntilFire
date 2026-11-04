@@ -689,7 +689,7 @@ export default function ExpectedPaymentsTab({
 
   if (paydaySetup) {
     return (
-      <section style={{ display: "grid", gap: 12, maxWidth: 540 }}>
+      <section style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 12, width: "100%", maxWidth: 540, minWidth: 0 }}>
         <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>Money → Expected payments</p>
         {savedPayday ? (
           <div className="uf-card" style={{ display: "grid", gap: 10, justifyItems: "start" }}>
