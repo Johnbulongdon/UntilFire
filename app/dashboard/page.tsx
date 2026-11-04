@@ -4765,6 +4765,8 @@ export default function Dashboard() {
     supabase.auth.getSession().then(({ data: { session } }) => { if (session) stampActive(supabase as never, session.user.id); });
   }, []);
   const [cashflowSubTab, setCashflowSubTab] = useState<CashflowSubTab>("cashflow");
+  const [paydaySetupOpen, setPaydaySetupOpen] = useState(false);
+  useEffect(() => { if (tab !== "cashflow" || cashflowSubTab !== "expected") setPaydaySetupOpen(false); }, [tab, cashflowSubTab]);
   const [budgetKey, setBudgetKey] = useState(0);
   const [categoriesStart, setCategoriesStart] = useState<"categories" | "needs" | null>(null);
   // Home's Needs & wants link opens the editor once; Budget opens normally after that.
@@ -6331,7 +6333,11 @@ export default function Dashboard() {
                 onSetupStep={(step) => {
                   if (step === "income") setTab("income");
                   else if (step === "bank") setTab("assets");
-                  else { setCashflowSubTab(step === "budget" ? "budgets" : "expected"); setTab("cashflow"); }
+                  else {
+                    setPaydaySetupOpen(step === "payday");
+                    setCashflowSubTab(step === "budget" ? "budgets" : "expected");
+                    openDashboardTab("cashflow");
+                  }
                 }}
               />
             )}
@@ -6342,7 +6348,10 @@ export default function Dashboard() {
                   <PillTabs label="Cashflow" options={CASHFLOW_SUB_TABS} value={cashflowSubTab} onChange={setCashflowSubTab} />
                 </div>
                 {cashflowSubTab === "cashflow" && <TransactionsTab categoryNeeds={categoryNeeds} budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} homeLeft={homeLeft} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
-                {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} plan={sharedPlan} facts={contributionFacts} billDue={billDue} onMarkDone={setContributionDone} onOpenTransactions={() => setCashflowSubTab("cashflow")} />}
+                {cashflowSubTab === "expected" && <ExpectedPaymentsTab key={paydaySetupOpen ? "payday-setup" : "expected-payments"} paydaySetup={paydaySetupOpen ? {
+                  onSaved: (row) => setCommittedRows((prev) => [...prev.filter((item) => item.id !== row.id), row]),
+                  onReturnHome: () => openDashboardTab("overview"),
+                } : undefined} userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} plan={sharedPlan} facts={contributionFacts} billDue={billDue} onMarkDone={setContributionDone} onOpenTransactions={() => setCashflowSubTab("cashflow")} />}
                 {cashflowSubTab === "budgets" && (
                   <BudgetTab transactionHistory={transactionHistory} onOpenTransactions={openTransactions} income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} spreadCategories={spreadCategories} categoryNeeds={categoryNeeds}
                     key={budgetKey} onCategoryNeeds={setCategoryNeeds} manageStart={categoriesStart}

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-05 — Set up payday from Home
+
+- Home opens the payday form directly. Save your paycheck and return to Home to see what’s left until payday when a spending account is available.
+
 ## 2026-11-04 — First transaction guidance
 
 - Home shows a compact setup checklist and card-specific prompts when payday, balances, emergency savings or plan inputs are missing. Transactions, Budget and Insights also guide you when you have no transaction history. Add or import transactions, or connect a bank from Transactions.

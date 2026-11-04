@@ -2,6 +2,8 @@
 
 ## Current priorities
 
+N2 follow-up — Home payday setup, Codex, 5 November 2026. In review in [PR #385](https://github.com/Johnbulongdon/UntilFire/pull/385). Next: verify web deployment and signed-in setup.
+
 N2 follow-up — Web first transaction guidance, Codex, 4 November 2026. In review in [PR #384](https://github.com/Johnbulongdon/UntilFire/pull/384). Next: signed-in browser acceptance and review.
 
 N2 follow-up — Phone appearance, Codex, 2 November 2026: [PR #369](https://github.com/Johnbulongdon/UntilFire/pull/369) in review: approved System/Light/Dark control in Profile Settings, device persistence and common effective theme. Types, lint, preference race/failure tests and Android/iOS/web exports passed; physical-device acceptance pending. No money/native configuration changes. Merge and installed-phone rollout remain pending.
