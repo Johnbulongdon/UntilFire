@@ -560,7 +560,7 @@ export default function ExpectedPaymentsTab({
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "10px 12px", borderRadius: 10,
     border: "1.5px solid var(--uf-border)", fontSize: 14, fontFamily: "inherit",
-    outline: "none", background: "var(--uf-card)", boxSizing: "border-box",
+    color: "var(--uf-ink)", background: "var(--uf-card)", boxSizing: "border-box",
   };
   const selectStyle: React.CSSProperties = { ...inputStyle, cursor: "pointer" };
   const labelStyle: React.CSSProperties = { display: "block", marginBottom: 6, color: "var(--uf-ink-2)", fontWeight: 600 };
