@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-05 — Finish payday setup from Home
+
+- Choose an existing spending account right from Home, or jump to bank connections. Payday setup explains repeating paychecks before you save.
+
 ## 2026-11-05 — Set up payday from Home
 
 - Home opens the payday form directly. Save your paycheck and return to Home to see what’s left until payday when a spending account is available.
