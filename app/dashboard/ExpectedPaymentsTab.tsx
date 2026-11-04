@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useId } from "react";
 import { supabase } from "@/lib/supabase";
 import { fetchAllPages } from "@/lib/supabase-pages";
 import { FALLBACK_RATES, SUPPORTED_CURRENCIES } from "@/lib/currency";
-import { formatUSDInCurrency } from "@/lib/money";
+import { formatMoney, formatUSDInCurrency } from "@/lib/money";
 import { addRecurrence, isoDay } from "@/lib/cashflow-forecast";
 import ExpectedMonth from "./ExpectedMonth";
 import CalendarMonth from "./CalendarMonth";
@@ -223,7 +223,7 @@ function PaymentRow({
 
 export default function ExpectedPaymentsTab({
   userId, defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [],
-  budgetMonthlySpending = 0, lastMonthSpending, targetMultiple = 25, plan = null, facts, billDue = {}, onMarkDone, onOpenTransactions,
+  budgetMonthlySpending = 0, lastMonthSpending, targetMultiple = 25, plan = null, facts, billDue = {}, onMarkDone, onOpenTransactions, paydaySetup,
 }: {
   /** The contribution plan and account facts, for the month's cash balances (D-61). */
   plan?: StoredPlan | null;
@@ -233,6 +233,7 @@ export default function ExpectedPaymentsTab({
   billDue?: Record<string, { from: string; due: string | null }>;
   onMarkDone?: (done: { iso: string; amount: number } | null) => void;
   onOpenTransactions?: () => void;
+  paydaySetup?: { onSaved: (row: ExpectedPayment) => void; onReturnHome: () => void };
   /** FIRE target per dollar of a year's spending, as the freedom date uses it (D-35). */
   targetMultiple?: number;
   userId: string;
@@ -245,22 +246,24 @@ export default function ExpectedPaymentsTab({
   lastMonthSpending?: AccountFacts["lastMonthSpending"];
 }) {
   const [payments, setPayments] = useState<ExpectedPayment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!paydaySetup);
+  const guided = Boolean(paydaySetup);
+  const formId = useId();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
   const [view, setView] = useState<"month" | "list">("month");
   const [selected, setSelected] = useState<string | null>(null);
 
-  const [formDesc, setFormDesc] = useState("");
+  const [formDesc, setFormDesc] = useState(guided ? "Paycheck" : "");
   const [formAmount, setFormAmount] = useState("");
   const [formCurrency, setFormCurrency] = useState(defaultCurrency);
   const [formType, setFormType] = useState<TransactionType>("income");
-  const [formDueDate, setFormDueDate] = useState(todayStr());
-  const [formRecurrence, setFormRecurrence] = useState<Recurrence>("none");
+  const [formDueDate, setFormDueDate] = useState(() => guided ? "" : todayStr());
+  const [formRecurrence, setFormRecurrence] = useState<Recurrence>(guided ? "biweekly" : "none");
   // Category and sub-category, as on a transaction, so the bill can be matched
   // to its payment when it arrives. Guessed from the name until picked.
-  const [formCategory, setFormCategory] = useState("");
+  const [formCategory, setFormCategory] = useState(guided ? "salary" : "");
   const [formSubCategory, setFormSubCategory] = useState("");
   // The lease, asked only on a bill tagged Housing › Rent.
   const [formLeaseEnds, setFormLeaseEnds] = useState("");
@@ -273,12 +276,21 @@ export default function ExpectedPaymentsTab({
   const catLabel = (key: string) => [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES, ...customCats].find((c) => c.key === key)?.label ?? key;
   const needsCategory = formType === "expense" && !formCategory;
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [saveError, setSaveError] = useState("");
+  const [savedPayday, setSavedPayday] = useState<ExpectedPayment | null>(null);
+  const amount = Number(formAmount);
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const earliestPayday = isoDay(tomorrow);
+  const canSave = !!(userId && formDesc.trim() && Number.isFinite(amount) && amount > 0 && formDueDate
+    && !needsCategory && (!guided || formDueDate >= earliestPayday));
   const [suggestions, setSuggestions] = useState<DetectedItem[]>([]);
   const [history, setHistory] = useState<(RawTx & FlagTx)[]>([]);
   const [dismissed, setDismissed] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || guided) return;
     let cancelled = false;
 
     (async () => {
@@ -318,7 +330,7 @@ export default function ExpectedPaymentsTab({
     })();
 
     return () => { cancelled = true; };
-  }, [userId, displayRates]);
+  }, [userId, displayRates, guided]);
 
   function openAddForm(on?: string) {
     setEditingId(null);
@@ -343,14 +355,16 @@ export default function ExpectedPaymentsTab({
   }
 
   function closeForm() {
+    setSaveError("");
     setShowForm(false);
     setEditingId(null);
   }
 
   async function saveForm() {
-    const amount = parseFloat(formAmount);
-    if (!formDesc.trim() || !amount || !formDueDate || needsCategory) return;
+    if (!canSave || savingRef.current) return;
+    savingRef.current = true;
     setSaving(true);
+    setSaveError("");
     const payload = {
       user_id: userId,
       description: formDesc.trim(),
@@ -365,15 +379,28 @@ export default function ExpectedPaymentsTab({
       sub_category: formSubCategory || null,
       ...leaseFields(),
     };
-    if (editingId) {
-      const { data } = await supabase.from("expected_payments").update(payload).eq("id", editingId).select().single();
-      if (data) setPayments(prev => prev.map(p => p.id === editingId ? (data as ExpectedPayment) : p));
-    } else {
-      const { data } = await supabase.from("expected_payments").insert(payload).select().single();
-      if (data) setPayments(prev => [...prev, data as ExpectedPayment].sort((a, b) => a.due_date.localeCompare(b.due_date)));
+    try {
+      const query = supabase.from("expected_payments");
+      const { data, error } = await (editingId ? query.update(payload).eq("id", editingId) : query.insert(payload))
+        .select(SELECT_COLUMNS).single();
+      if (error || !data) {
+        setSaveError(guided ? "Couldn’t save your payday. Try again." : "Couldn’t save this payment. Try again.");
+        return;
+      }
+      const row = data as ExpectedPayment;
+      if (paydaySetup) {
+        paydaySetup.onSaved(row);
+        setSavedPayday(row);
+      } else {
+        setPayments(prev => [...prev.filter(p => p.id !== row.id), row].sort((a, b) => a.due_date.localeCompare(b.due_date)));
+        closeForm();
+      }
+    } catch {
+      setSaveError(guided ? "Couldn’t save your payday. Try again." : "Couldn’t save this payment. Try again.");
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
     }
-    setSaving(false);
-    closeForm();
   }
 
   /** Lease columns for the save: kept on a Rent bill with an end date, cleared otherwise. A new end date asks Today again. */
@@ -558,17 +585,18 @@ export default function ExpectedPaymentsTab({
     );
   }
 
-  const inPanel = view === "month";
+  const inPanel = !guided && view === "month";
+  const dueLabel = guided ? "Next payday" : formRecurrence === "none" ? "Due date" : "Next due";
   const formNode = (
         <div style={inPanel ? { display: "flex", flexDirection: "column", gap: 12, borderTop: "1px solid var(--uf-border)", paddingTop: 12 }
           : { background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
-          <div className="uf-t-h3" style={{ margin: 0 }}>
+          {!guided && <div className="uf-t-h3" style={{ margin: 0 }}>
             {editingId ? "Edit upcoming payment" : "Add upcoming payment"}
-          </div>
+          </div>}
 
           <div>
-            <label className="uf-t-small" style={labelStyle}>Description</label>
-            <input type="text" value={formDesc} onChange={e => {
+            <label htmlFor={formId + "-name"} className="uf-t-small" style={labelStyle}>{guided ? "Name" : "Description"}</label>
+            <input id={formId + "-name"} type="text" value={formDesc} onChange={e => {
               setFormDesc(e.target.value);
               if (!catPicked && formType === "expense") { setFormCategory(guessBillCategory(e.target.value) ?? ""); setFormSubCategory(""); }
             }} placeholder="e.g. Client invoice, Tax refund, Car repair" style={inputStyle} />
@@ -576,12 +604,12 @@ export default function ExpectedPaymentsTab({
 
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 110px", gap: 12 }}>
             <div>
-              <label className="uf-t-small" style={labelStyle}>Amount</label>
-              <input type="number" value={formAmount} onChange={e => setFormAmount(e.target.value)} placeholder="0" min="0" step="any" style={inputStyle} />
+              <label htmlFor={formId + "-amount"} className="uf-t-small" style={labelStyle}>{guided ? "Take-home amount" : "Amount"}</label>
+              <input id={formId + "-amount"} type="number" value={formAmount} onChange={e => setFormAmount(e.target.value)} placeholder="0" min="0" step="any" style={inputStyle} />
             </div>
             <div>
-              <label className="uf-t-small" style={labelStyle}>Currency</label>
-              <select value={formCurrency} onChange={e => setFormCurrency(e.target.value)} style={selectStyle}>
+              <label htmlFor={formId + "-currency"} className="uf-t-small" style={labelStyle}>Currency</label>
+              <select id={formId + "-currency"} value={formCurrency} onChange={e => setFormCurrency(e.target.value)} style={selectStyle}>
                 {(preferredCurrencies.length > 0 ? preferredCurrencies : [...SUPPORTED_CURRENCIES]).map(c => (
                   <option key={c} value={c}>{c}</option>
                 ))}
@@ -589,19 +617,19 @@ export default function ExpectedPaymentsTab({
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: inPanel ? "minmax(0, 1fr)" : "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: inPanel || guided ? "minmax(0, 1fr)" : "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
             <div>
-              <label className="uf-t-small" style={labelStyle}>{formRecurrence === "none" ? "Due date" : "Next due"}</label>
-              <DateField value={formDueDate} onChange={setFormDueDate} aria-label={formRecurrence === "none" ? "Due date" : "Next due"} style={inputStyle} />
+              <label htmlFor={formId + "-date"} className="uf-t-small" style={labelStyle}>{dueLabel}</label>
+              <DateField id={formId + "-date"} value={formDueDate} onChange={setFormDueDate} aria-label={dueLabel} min={guided ? earliestPayday : undefined} style={inputStyle} />
             </div>
-            <div>
+            {!guided && <div>
               <label className="uf-t-small" style={labelStyle}>Type</label>
               <PillTabs label="Type" value={formType} options={[{ key: "income", label: "Income" }, { key: "expense", label: "Expense" }]}
                 onChange={(t) => { setFormType(t); setFormSubCategory(""); setCatPicked(false); setFormCategory(t === "expense" ? guessBillCategory(formDesc) ?? "" : ""); }} />
-            </div>
+            </div>}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
+          {!guided && <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 12 }}>
             <div>
               <label className="uf-t-small" style={labelStyle}>Category</label>
               <select value={formCategory} onChange={e => { setFormCategory(e.target.value); setFormSubCategory(""); setCatPicked(true); }} style={selectStyle}>
@@ -616,7 +644,7 @@ export default function ExpectedPaymentsTab({
                 {subOptions.map(sc => <option key={sc} value={sc}>{sc}</option>)}
               </select>
             </div>
-          </div>
+          </div>}
 
           {formType === "expense" && isRent({ category: formCategory, sub_category: formSubCategory }) && (
             <div style={{ display: "grid", gridTemplateColumns: inPanel ? "minmax(0, 1fr)" : "repeat(3, minmax(0, 1fr))", gap: 12 }}>
@@ -640,22 +668,47 @@ export default function ExpectedPaymentsTab({
           )}
 
           <div>
-            <label className="uf-t-small" style={labelStyle}>Repeats</label>
-            <select value={formRecurrence} onChange={e => setFormRecurrence(e.target.value as Recurrence)} style={selectStyle}>
+            <label htmlFor={formId + "-repeat"} className="uf-t-small" style={labelStyle}>Repeats</label>
+            <select id={formId + "-repeat"} value={formRecurrence} onChange={e => setFormRecurrence(e.target.value as Recurrence)} style={selectStyle}>
               {(Object.keys(RECURRENCE_LABEL) as Recurrence[]).map(k => (
                 <option key={k} value={k}>{RECURRENCE_LABEL[k]}</option>
               ))}
             </select>
           </div>
 
-          <div style={{ display: "flex", gap: 8, justifyContent: inPanel ? "flex-end" : "flex-start" }}>
-            {inPanel && <Button variant="ghost" onClick={closeForm}>Cancel</Button>}
-            <Button variant="primary" onClick={saveForm} disabled={saving || !formDesc.trim() || !formAmount || !formDueDate || needsCategory}>
-              {editingId ? "Save changes" : "Add payment"}
+          {saveError && <p role="alert" className="uf-t-small" style={{ margin: 0, color: "var(--uf-neg-ink)" }}>{saveError}</p>}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: inPanel ? "flex-end" : "flex-start" }}>
+            {inPanel && <Button type="button" variant="ghost" disabled={saving} onClick={closeForm}>Cancel</Button>}
+            <Button type={guided ? "submit" : "button"} variant="primary" onClick={guided ? undefined : saveForm} disabled={saving || !canSave}>
+              {saving ? "Saving…" : guided ? "Save payday" : editingId ? "Save changes" : "Add payment"}
             </Button>
+            {paydaySetup && <Button type="button" variant="secondary" disabled={saving} onClick={paydaySetup.onReturnHome}>Cancel</Button>}
           </div>
         </div>
   );
+
+  if (paydaySetup) {
+    return (
+      <section style={{ display: "grid", gap: 12, maxWidth: 540 }}>
+        <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>Money → Expected payments</p>
+        {savedPayday ? (
+          <div className="uf-card" style={{ display: "grid", gap: 10, justifyItems: "start" }}>
+            <h1 className="uf-t-h2" style={{ margin: 0 }}>Payday saved</h1>
+            <p className="uf-t-body" role="status" style={{ margin: 0 }}>
+              {savedPayday.description} · {formatMoney(savedPayday.amount, { currency: savedPayday.currency })} · {parseIsoDate(savedPayday.due_date)?.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) ?? savedPayday.due_date}
+            </p>
+            {savedPayday.recurrence === "none" && <p className="uf-t-small" style={{ margin: 0 }}>One-time pay is on your calendar. Until payday uses a repeating paycheck.</p>}
+            <Button type="button" variant="primary" onClick={paydaySetup.onReturnHome}>Back to Home</Button>
+          </div>
+        ) : (
+          <>
+            <h1 className="uf-t-h2" style={{ margin: 0 }}>Set up payday</h1>
+            <form onSubmit={(event) => { event.preventDefault(); void saveForm(); }}>{formNode}</form>
+          </>
+        )}
+      </section>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
