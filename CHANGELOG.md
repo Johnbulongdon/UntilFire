@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-04 — First transaction guidance
+
+- Home shows a compact setup checklist and card-specific prompts when payday, balances, emergency savings or plan inputs are missing. Transactions, Budget and Insights also guide you when you have no transaction history. Add or import transactions, or connect a bank from Transactions.
+
 ## 2026-11-03 — Smoother first visit and matching numbers
 
 - Home, Transactions and Budget now show the same "left" number for this month.

@@ -35,7 +35,7 @@ import NeedsWantsDonut, { NEEDS_COLOR, WANTS_COLOR } from "./NeedsWantsDonut";
 import { saveProfile } from "./NeedsWantsPanel";
 import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
-import { freeToSpend, untilPayday, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
+import { freeToSpend, nextPayday, untilPayday, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
 import { paydayLine } from "@/lib/payday-line";
 import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, occurrences, paidByName, presumePaid, rateSoFar, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
 import FreeToSpendRunway from "./FreeToSpendRunway";
@@ -47,10 +47,11 @@ import type { IconName } from "@/components/ui";
 import type { NextMove } from "@/lib/next-move";
 import type { RawTx } from "@/lib/recurring-detect";
 import { FreedomCurve } from "./FreedomCurve";
-import { FreedomCard, MonthCard, GlanceRow, NextMoveCard, UntilPaydayCard, type MonthCategory } from "./HomeCards";
+import { FreedomCard, MonthCard, GlanceRow, HomeCardPrompt, NextMoveCard, UntilPaydayCard, type MonthCategory } from "./HomeCards";
 import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, MoneyTrack, Fig, StackBar, PaceBar, MonthCalendar, BankLogo } from "./MoneyCards";
 import { describeAccounts, isSavingsAccount, toCashAccounts } from "@/lib/emergency-fund-accounts";
 import { connectedDebt, connectedBalance, accountInUSD, daysSinceSync, STALE_AFTER_DAYS, type ConvertedFields } from "@/lib/account-currency";
+import TransactionStartCard from "./TransactionStartCard";
 import { fetchAllPages } from "@/lib/supabase-pages";
 import CategoriesTab from "./CategoriesTab";
 import ExpectedPaymentsTab from "./ExpectedPaymentsTab";
@@ -723,7 +724,20 @@ function SectionLabel({ icon, text, color = "var(--uf-ink)" }: { icon: string; t
 // ─── Dashboard Overview Tab ───────────────────────────────────────────────────
 const SETUP_ICON: Record<SetupStepId, IconName> = { income: "money", bank: "bank", payday: "calendar", bills: "card", budget: "target" };
 
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, onOpenNeeds, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60, budget = {}, expectedRows = [], onExpectedAdded, onSetupStep }: {
+type TransactionHistoryStatus = "loading" | "empty" | "ready" | "error";
+
+function TransactionHistoryNotice({ status }: { status: "loading" | "error" }) {
+  return (
+    <div className="uf-card uf-t-small" role={status === "error" ? "alert" : "status"}>
+      {status === "error" ? "Couldn’t load your spending. Refresh the page to try again." : "Loading your spending…"}
+    </div>
+  );
+}
+
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, onOpenNeeds, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60, budget = {}, expectedRows = [], onExpectedAdded, onSetupStep, transactionHistory, onOpenTransactions, hasUpcomingPayday }: {
+  hasUpcomingPayday: boolean;
+  transactionHistory: TransactionHistoryStatus;
+  onOpenTransactions: () => void;
   spreadCategories?: string[];
   /** Typed on the phone; in net worth only (audit round 2). */
   homeValue?: number;
@@ -1230,6 +1244,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   // Net worth is everything owned less everything owed, all cash and a typed home included, the same
   // figure as the Net worth tab and the phone (lib/net-worth). `investable` leaves out the safety pot (audit round 3).
   const ownedNow = effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts });
+  const hasBalanceInputs = plaidAccounts.some((a) => a.balance_current != null)
+    || [k401, rothIRA, taxable, cashSavings, homeValue, totalDebt, mortgageBalance].some((balance) => balance !== 0);
+  const hasCashBalance = cashSavings !== 0 || plaidAccounts.some((a) => a.type === "depository" && a.balance_current != null);
   const currentNetWorth = ownedNow.k401 + ownedNow.rothIRA + ownedNow.taxable + ownedNow.cashSavings + homeValue - debtsNow.otherDebt - debtsNow.mortgage - debtsNow.cards;
   // The one "left", the same as Budget and the phone (lib/everyday-left, audit round 3).
   const monthKeyNow = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
@@ -1262,22 +1279,35 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   // While Get set up is open, its next step is Home's next move: one ask, not two.
   const [setupFinished, setSetupFinished] = useState<boolean | null>(null);
   useEffect(() => { try { setSetupFinished(localStorage.getItem(SETUP_FINISHED_KEY) === "1"); } catch { setSetupFinished(false); } }, []);
-  const setupMove = useMemo<{ step: SetupStepId; move: NextMove } | null>(() => {
+  const setupMove = useMemo<{ step: SetupStepId | "transactions"; move: NextMove } | null>(() => {
     if (setupFinished !== false) return null;
     const steps = setupSteps(setupFacts);
     const at = steps.findIndex((s) => !s.done);
     if (at < 0) return null;
     const step = steps[at].id;
+    if (step === "bank" && transactionHistory === "empty") {
+      return { step: "transactions", move: {
+        key: "setup:transactions", title: "Add your first transaction", payoff: null,
+        door: "money", tab: "cashflow", button: "Add or import",
+      } };
+    }
     return { step, move: {
       key: `setup:${step}`, title: SETUP_LABEL[step], payoff: `${steps.filter((x) => x.done).length} of ${steps.length} done`,
       door: "money", tab: "cashflow", button: SETUP_BUTTON[step],
     } };
-  }, [setupFinished, setupFacts]);
+  }, [setupFinished, setupFacts, transactionHistory]);
   const setupTxns = useMemo<RawTx[]>(() => recentTransactions
     .filter((t) => t.transaction_type === "expense" || t.transaction_type === "income")
     .map((t, i) => ({ id: String(i), date: t.date.slice(0, 10), amount: t.transaction_type === "expense" ? netAmt(t) : t.amount,
       currency: t.currency, description: t.description ?? "", category: t.category ?? "", transaction_type: t.transaction_type as "expense" | "income" })),
   [recentTransactions]);
+  const missingPayday = !hasUpcomingPayday;
+  const paydaySetup = missingPayday
+    ? { description: "Add your next payday to see what’s left.", action: "Set up payday" }
+    : { description: "Connect the account you spend from.", action: "Connect a bank" };
+  const savingsSetup = income <= 0
+    ? { description: "Add your take-home income.", action: "Add income" }
+    : { description: "Add your monthly spending.", action: "Set budget" };
   // Its line (lib/payday-line): the counted accounts' rows since last pay, then the bills ahead.
   const paydayLineView = useMemo(() => {
     if (!paydayView || !freeResult?.cash) return null;
@@ -1687,7 +1717,15 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
             fmt={(n) => fmtMoney(n)}
             onOpen={() => onTabChange?.("cashflow")}
           />
-        ) : <MonthCard
+        ) : (transactionHistory === "empty" || (transactionHistory === "ready" && monthLeft.everydayBudget <= 0 && !hasActuals && bills.length === 0)) ? (
+          <div className="uf-card" style={{ display: "grid", justifyItems: "start", gap: 4 }}>
+            <h2 className="uf-t-body" style={{ fontWeight: 700, margin: 0 }}>Until payday</h2>
+            <Button size="sm" variant="ghost" onClick={() => onSetupStep?.(missingPayday ? "payday" : "bank")}
+              style={{ paddingInline: 0, height: "auto", minHeight: 44, textAlign: "left", whiteSpace: "normal", display: "grid", justifyItems: "start", gap: 4 }}>
+              <HomeCardPrompt {...paydaySetup} />
+            </Button>
+          </div>
+        ) : transactionHistory !== "ready" ? <TransactionHistoryNotice status={transactionHistory} /> : <MonthCard
           spent={monthLeft.everydaySpent}
           budget={monthLeft.everydayBudget}
           left={monthLeft.left}
@@ -1703,14 +1741,18 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       <HomeSlot id="glance">
         <GlanceRow
           usAverage={displayCurrency === "USD"}
-          netWorth={currentNetWorth}
+          netWorth={hasBalanceInputs ? currentNetWorth : null}
           invested={investedByMonth}
-          safety={efMonthlyBase > 0 ? { months: emergencyFundPlan.coverageMonths, target: EMERGENCY_FUND_TARGET_MONTHS } : null}
-          savingsRate={income > 0 ? (annualSavings / (income * 12)) * 100 : null}
+          safety={efMonthlyBase > 0 && hasCashBalance ? { months: emergencyFundPlan.coverageMonths, target: EMERGENCY_FUND_TARGET_MONTHS } : null}
+          safetySetup={hasCashBalance
+            ? { description: "Add your monthly essentials.", action: "Set budget" }
+            : { description: "Add your emergency savings.", action: "Add savings" }}
+          savingsRate={income > 0 && monthlyExpenses > 0 ? (annualSavings / (income * 12)) * 100 : null}
+          savingsSetup={savingsSetup}
           fmt={(n) => fmtMoney(n)}
           onNetWorth={() => onTabChange?.("assets")}
-          onSafety={() => onTabChange?.("assets")}
-          onSavings={() => onTabChange?.("contributions")}
+          onSafety={() => hasCashBalance && efMonthlyBase <= 0 ? onSetupStep?.("budget") : onTabChange?.("assets")}
+          onSavings={() => income <= 0 ? onSetupStep?.("income") : monthlyExpenses <= 0 ? onSetupStep?.("budget") : onTabChange?.("contributions")}
         />
       </HomeSlot>
       </div>
@@ -1761,8 +1803,14 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       <div className="uf-home-in" style={{ order: 3, animationDelay: "100ms" }}>
       <HomeSlot id="contribution">
       {setupMove && !isSnoozed(setupMove.move.key) ? (
-        <NextMoveCard move={setupMove.move} because={SETUP_WHY[setupMove.step]} icon={SETUP_ICON[setupMove.step]} fmt={(n) => fmtMoney(n)}
-          onOpen={() => onSetupStep?.(setupMove.step)}
+        <NextMoveCard move={setupMove.move}
+          because={setupMove.step === "transactions" ? undefined : SETUP_WHY[setupMove.step]}
+          icon={setupMove.step === "transactions" ? undefined : SETUP_ICON[setupMove.step]}
+          fmt={(n) => fmtMoney(n)}
+          onOpen={() => {
+            if (setupMove.step === "transactions") onOpenTransactions();
+            else onSetupStep?.(setupMove.step);
+          }}
           onSnooze={() => { snooze(setupMove.move.key); setSnoozeTick((t) => t + 1); }} />
       ) : nextMove ? (
         <NextMoveCard move={nextMove} fmt={(n) => fmtMoney(n)}
@@ -1785,7 +1833,6 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         rates={displayRates}
         onAdded={(rows) => onExpectedAdded?.(rows)}
         onOpen={(step) => onSetupStep?.(step)}
-        quiet={!!setupMove && !isSnoozed(setupMove.move.key)}
       />
       </div>
       </div>
@@ -2257,7 +2304,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
 }
 
 // ─── Budget Tracker Tab ───────────────────────────────────────────────────────
-function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], bills = [], onOpenUpcoming, spreadCategories = [], categoryNeeds = {}, onCategoryNeeds, manageStart = null, renderCategories }: {
+function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committedRemaining: _committedRemaining = 0, committedByCat = {}, freeResult = null, spendAccounts = [], spendToggles = {}, onSpendToggle, displayCurrency, displayRates, recentTransactions = [], bills = [], onOpenUpcoming, spreadCategories = [], categoryNeeds = {}, onCategoryNeeds, manageStart = null, renderCategories, transactionHistory, onOpenTransactions }: {
+  transactionHistory: TransactionHistoryStatus;
+  onOpenTransactions: () => void;
   income: number; setIncome: (v: number) => void;
   expenses: Expenses; setExpenses: (e: Expenses) => void;
   actuals: Record<string, number>;
@@ -2564,7 +2613,10 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
   for (const t of monthTxns) if ((t.transaction_type ?? "expense") === "expense" && !billCats.has(t.category ?? "other") && !spreadCats.has(t.category ?? "other")) spentByDay[t.date.slice(0, 10)] = (spentByDay[t.date.slice(0, 10)] ?? 0) + toUSD(netAmt(t), t.currency, displayRates);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <MoneyHead
+      {transactionHistory === "empty" ? (
+        <TransactionStartCard title="See how your budget is going" description="Compare your actual spending with your budget."
+          onOpenTransactions={onOpenTransactions} />
+      ) : transactionHistory !== "ready" ? <TransactionHistoryNotice status={transactionHistory} /> : <MoneyHead
         label={`Left to spend in ${monthName}`}
         value={<span style={{ fontSize: 44, color: leftInBudget < 0 ? "var(--uf-neg-ink)" : undefined }}>{leftInBudget < 0 ? `Over by ${fmtMoney(-leftInBudget)}` : fmtMoney(leftInBudget)}</span>}
         sub={leftInBudget > 0
@@ -2585,7 +2637,7 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
           </button>,
         ]} />
         {showMonth && <MonthCalendar today={now} spentByDay={spentByDay} bills={bills} perDay={leftInBudget > 0 ? leftInBudget / daysLeftInMonth : 0} fmt={fmtMoney} />}
-      </MoneyHead>
+      </MoneyHead>}
       {starterCard}
 
       {editAll ? (
@@ -2601,6 +2653,11 @@ function BudgetTab({ income, setIncome, expenses, setExpenses, actuals, committe
             {[...activeCats].sort((x, y) => (expenses[y.key] || 0) - (expenses[x.key] || 0)).map(renderRow)}
           </MoneyList>
         </>
+      ) : transactionHistory !== "ready" ? (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Button variant="secondary" size="sm" onClick={() => setEditAll(true)}>Edit budget</Button>
+          {editCategoriesButton}
+        </div>
       ) : (
         <>
           <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>Needs attention</div>
@@ -4924,6 +4981,7 @@ export default function Dashboard() {
     sub_category?: string | null; lease_ends_on?: string | null; lease_rise_pct?: number | null };
   const [committedRows, setCommittedRows] = useState<CommittedRow[]>([]);
   const [rawPrevActuals, setRawPrevActuals] = useState<{ category: string; amount: number; refund_amount: number; currency: string; transaction_type?: string }[]>([]);
+  const [transactionHistory, setTransactionHistory] = useState<TransactionHistoryStatus>("loading");
   const [recentTransactions, setRecentTransactions] = useState<{ date: string; amount: number; refund_amount: number; currency: string; transaction_type?: string; tags?: string[]; category?: string; description?: string; sub_category?: string | null; plaid_account_id?: string | null }[]>([]);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   /* The budget as typed in the account's own currency (D-86). USD stays stored
@@ -5461,6 +5519,11 @@ export default function Dashboard() {
     try { localStorage.setItem('uf_tour_done', '1') } catch {}
   }
 
+  const openTransactions = () => {
+    setCashflowSubTab("cashflow");
+    openDashboardTab("cashflow");
+  };
+
   const openDashboardTab = (nextTab: TabKey) => {
     setTab(nextTab);
     if (nextTab !== "fire-calculator") setFireCalcSubTab("menu");
@@ -5480,6 +5543,82 @@ export default function Dashboard() {
     return tab === "profile";
   };
 
+
+  // Refresh actuals when returning from Transactions, including after the first add or import.
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+
+    // Fetch current-month and previous-month actuals
+    // Use gte/lt instead of LIKE — more reliable on PostgreSQL date columns
+    const nowD = new Date();
+    const thisStart = `${nowD.getFullYear()}-${String(nowD.getMonth() + 1).padStart(2, '0')}-01`;
+    const nextMonthD = new Date(nowD.getFullYear(), nowD.getMonth() + 1, 1);
+    const thisEnd = `${nextMonthD.getFullYear()}-${String(nextMonthD.getMonth() + 1).padStart(2, '0')}-01`;
+    const prevD = new Date(nowD.getFullYear(), nowD.getMonth() - 1, 1);
+    const prevStart = `${prevD.getFullYear()}-${String(prevD.getMonth() + 1).padStart(2, '0')}-01`;
+
+    fetchAllPages((from, to) => supabase.from("expenses").select("category, amount, refund_amount, currency, transaction_type")
+      .eq("user_id", userId)
+      .gte("date", thisStart)
+      .lt("date", thisEnd)
+      .order("id")
+      .range(from, to))
+      .then(({ data: expData }) => {
+        if (active && expData) {
+          setRawActuals(expData.map(e => ({ category: e.category, amount: e.amount, refund_amount: e.refund_amount || 0, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
+        }
+      });
+
+    fetchAllPages((from, to) => supabase.from("expenses").select("category, amount, refund_amount, currency, transaction_type")
+      .eq("user_id", userId)
+      .gte("date", prevStart)
+      .lt("date", thisStart)
+      .order("id")
+      .range(from, to))
+      .then(({ data: prevData }) => {
+        if (active && prevData) {
+          setRawPrevActuals(prevData.map(e => ({ category: e.category, amount: e.amount, refund_amount: e.refund_amount || 0, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
+        }
+      });
+
+    const historyStartDate = new Date(nowD.getFullYear(), nowD.getMonth() - 36, nowD.getDate());
+    const historyStart = `${historyStartDate.getFullYear()}-${String(historyStartDate.getMonth() + 1).padStart(2, '0')}-${String(historyStartDate.getDate()).padStart(2, '0')}`;
+    // Every page: this read used to stop at the first 1,000 rows, oldest
+    // first, so a busy account never loaded its recent months at all.
+    fetchAllPages((from, to) => supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type, tags, category, sub_category, description, plaid_account_id")
+      .eq("user_id", userId)
+      .gte("date", historyStart)
+      .order("date", { ascending: true })
+      .order("id")
+      .range(from, to))
+      .then(async ({ data: txData }) => {
+        if (!active) return;
+        if (!txData) { setTransactionHistory("error"); return; }
+        if (txData.length === 0) {
+          const { data: olderRows } = await supabase.from("expenses").select("id")
+            .eq("user_id", userId).limit(1);
+          if (!active) return;
+          setTransactionHistory(olderRows ? olderRows.length === 0 ? "empty" : "ready" : "error");
+        } else {
+          setTransactionHistory("ready");
+        }
+        setRecentTransactions(txData.map(tx => ({
+          date: tx.date,
+          amount: tx.amount,
+          refund_amount: tx.refund_amount || 0,
+          currency: tx.currency ?? "USD",
+          transaction_type: tx.transaction_type ?? "expense",
+          tags: tx.tags || [],
+          category: tx.category ?? "other",
+          description: tx.description ?? "",
+          sub_category: tx.sub_category ?? null,
+          plaid_account_id: tx.plaid_account_id ?? null,
+        })));
+      });
+
+    return () => { active = false; };
+  }, [userId, tab, cashflowSubTab]);
 
   // Load from Supabase on mount
   useEffect(() => {
@@ -5539,27 +5678,6 @@ export default function Dashboard() {
         }
       });
 
-      // Fetch current-month and previous-month actuals
-      // Use gte/lt instead of LIKE — more reliable on PostgreSQL date columns
-      const nowD = new Date();
-      const thisStart = `${nowD.getFullYear()}-${String(nowD.getMonth() + 1).padStart(2, '0')}-01`;
-      const nextMonthD = new Date(nowD.getFullYear(), nowD.getMonth() + 1, 1);
-      const thisEnd = `${nextMonthD.getFullYear()}-${String(nextMonthD.getMonth() + 1).padStart(2, '0')}-01`;
-      const prevD = new Date(nowD.getFullYear(), nowD.getMonth() - 1, 1);
-      const prevStart = `${prevD.getFullYear()}-${String(prevD.getMonth() + 1).padStart(2, '0')}-01`;
-
-      fetchAllPages((from, to) => supabase.from("expenses").select("category, amount, refund_amount, currency, transaction_type")
-        .eq("user_id", session.user.id)
-        .gte("date", thisStart)
-        .lt("date", thisEnd)
-        .order("id")
-        .range(from, to))
-        .then(({ data: expData }) => {
-          if (expData) {
-            setRawActuals(expData.map(e => ({ category: e.category, amount: e.amount, refund_amount: e.refund_amount || 0, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
-          }
-        });
-
       // Bills already committed for the rest of this month. Budget "remaining"
       // is misleading without them: money earmarked for rent is not money you
       // can spend, and until now the two tabs never spoke to each other.
@@ -5576,45 +5694,6 @@ export default function Dashboard() {
         // needs, exactly as it does in the month view in Expected.
         .then(({ data: cmt }) => {
           if (cmt) setCommittedRows(cmt as CommittedRow[]);
-        });
-
-      fetchAllPages((from, to) => supabase.from("expenses").select("category, amount, refund_amount, currency, transaction_type")
-        .eq("user_id", session.user.id)
-        .gte("date", prevStart)
-        .lt("date", thisStart)
-        .order("id")
-        .range(from, to))
-        .then(({ data: prevData }) => {
-          if (prevData) {
-            setRawPrevActuals(prevData.map(e => ({ category: e.category, amount: e.amount, refund_amount: e.refund_amount || 0, currency: e.currency ?? "USD", transaction_type: e.transaction_type ?? "expense" })));
-          }
-        });
-
-      const historyStartDate = new Date(nowD.getFullYear(), nowD.getMonth() - 36, nowD.getDate());
-      const historyStart = `${historyStartDate.getFullYear()}-${String(historyStartDate.getMonth() + 1).padStart(2, '0')}-${String(historyStartDate.getDate()).padStart(2, '0')}`;
-      // Every page: this read used to stop at the first 1,000 rows, oldest
-      // first, so a busy account never loaded its recent months at all.
-      fetchAllPages((from, to) => supabase.from("expenses").select("date, amount, refund_amount, currency, transaction_type, tags, category, sub_category, description, plaid_account_id")
-        .eq("user_id", session.user.id)
-        .gte("date", historyStart)
-        .order("date", { ascending: true })
-        .order("id")
-        .range(from, to))
-        .then(({ data: txData }) => {
-          if (txData) {
-            setRecentTransactions(txData.map(tx => ({
-              date: tx.date,
-              amount: tx.amount,
-              refund_amount: tx.refund_amount || 0,
-              currency: tx.currency ?? "USD",
-              transaction_type: tx.transaction_type ?? "expense",
-              tags: tx.tags || [],
-              category: tx.category ?? "other",
-              description: tx.description ?? "",
-              sub_category: tx.sub_category ?? null,
-              plaid_account_id: tx.plaid_account_id ?? null,
-            })));
-          }
         });
 
       // Fetch Plaid account balances
@@ -6205,6 +6284,7 @@ export default function Dashboard() {
                 plan={plan}
                 contributionFacts={contributionFacts}
                 freeResult={freeResult}
+                hasUpcomingPayday={nextPayday(contributionItems, new Date()).source === "paycheck"}
                 bills={homeBills}
                 onOpenFreeToSpend={() => { setCashflowSubTab("budgets"); setTab("cashflow"); }}
                 onOpenNeeds={() => { setCategoriesStart("needs"); setBudgetKey((k) => k + 1); setCashflowSubTab("budgets"); setTab("cashflow"); }}
@@ -6240,6 +6320,8 @@ export default function Dashboard() {
                 taxEnabled={taxEnabled}
                 retirementTaxRate={retirementTaxRate}
                 rothPct={rothPct}
+                transactionHistory={transactionHistory}
+                onOpenTransactions={openTransactions}
                 onTabChange={setTab}
                 onOpenCompare={() => { setTab("fire-calculator"); setFireCalcSubTab("compare"); }}
                 onFreedomDateChange={setFreedomDate}
@@ -6262,7 +6344,7 @@ export default function Dashboard() {
                 {cashflowSubTab === "cashflow" && <TransactionsTab categoryNeeds={categoryNeeds} budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} homeLeft={homeLeft} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
                 {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} plan={sharedPlan} facts={contributionFacts} billDue={billDue} onMarkDone={setContributionDone} onOpenTransactions={() => setCashflowSubTab("cashflow")} />}
                 {cashflowSubTab === "budgets" && (
-                  <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} spreadCategories={spreadCategories} categoryNeeds={categoryNeeds}
+                  <BudgetTab transactionHistory={transactionHistory} onOpenTransactions={openTransactions} income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} spreadCategories={spreadCategories} categoryNeeds={categoryNeeds}
                     key={budgetKey} onCategoryNeeds={setCategoryNeeds} manageStart={categoriesStart}
                     renderCategories={(start) => <CategoriesTab displayCurrency={defaultCurrency} displayRates={rates} startOn={start} onCategoryNeeds={setCategoryNeeds} />} />
                 )}
@@ -6483,7 +6565,7 @@ export default function Dashboard() {
               </div>
             )}
             {tab === "citizenship" && (TAX_ESTIMATES_AVAILABLE ? <CitizenshipTab onOpenExpat={() => openDashboardTab("expat-fire")} /> : <div className="uf-card" style={{ padding: 24 }}>Passport tax comparisons are unavailable while we test them.</div>)}
-            {tab === "reports" && <ReportsTab displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar} />}
+            {tab === "reports" && <ReportsTab onOpenTransactions={openTransactions} displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar} />}
             {tab === "offers" && <OffersTab />}
             {tab === "account-setup" && <AccountSetupTab />}
             {tab === "learning-hub" && <LearnTab recommendedStageId={learnPlace.stage} progress={learnPlace.progress} yearsToGo={learnPlace.years} onOpenTab={openDashboardTab} />}

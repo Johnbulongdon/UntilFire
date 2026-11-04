@@ -58,7 +58,7 @@ function CategoryBar({ r, fmt }: { r: { now: number; due: number; budget: number
   );
 }
 
-export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategories, onToggleCategory, onClearFilters, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel, expectedIncome = 0, bills = [], calendarItems = [], compact = fmt }: {
+export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategories, onToggleCategory, onClearFilters, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel, expectedIncome = 0, bills = [], calendarItems = [], compact = fmt, calendarOnly = false }: {
   transactions: Tx[]; range: DateRange; today: string;
   toUSD: (amount: number, currency: string) => number; fmt: (usd: number) => string;
   expenseCats: CatDisplay[]; incomeCats: CatDisplay[];
@@ -73,6 +73,7 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
   /** Upcoming expense bills (USD, next due date), which date the forecast and budget line. */
   bills?: Bill[];
   calendarItems?: ScheduledCalendarItem[];
+  calendarOnly?: boolean;
   compact?: (usd:number)=>string;
 }) {
   const calendarEvents=useMemo(()=>markedCalendarEntries({start:range.start,end:range.end,today,items:calendarItems}).filter(e=>!selectedCategories.length||selectedCategories.includes(e.category??'')),[range.start,range.end,today,calendarItems,selectedCategories]);
@@ -209,6 +210,17 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
 
   const seg = (on: boolean): React.CSSProperties => ({ border: "none", borderRadius: 999, padding: "5px 12px", cursor: "pointer", font: "inherit", fontSize: 13, fontWeight: 700,
     background: on ? "var(--uf-card)" : "transparent", color: on ? "var(--uf-ink)" : "var(--uf-ink-3)", boxShadow: on ? "var(--uf-e1)" : "none" });
+
+  if (calendarOnly) return (
+    <Card>
+      <h2 className="uf-t-body" style={{ fontWeight: 700 }}>Bills and payday</h2>
+      {calOk
+        ? <CalendarView range={range} today={today} daily={daily} fmt={fmt} selectedDay={selectedDay}
+            onSelectDay={onSelectDay} onZoomMonth={onZoomMonth} events={calendarEvents} compact={compact}
+            colorFor={category => expenseCats.find(c => c.key === category)?.color} />
+        : <p className="uf-t-small">Choose a shorter date range to see the calendar.</p>}
+    </Card>
+  );
 
   return (
     <Card style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 24 }}>
