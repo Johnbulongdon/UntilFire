@@ -35,7 +35,7 @@ import NeedsWantsDonut, { NEEDS_COLOR, WANTS_COLOR } from "./NeedsWantsDonut";
 import { saveProfile } from "./NeedsWantsPanel";
 import { useSavedEmergencyAccountIds } from "@/lib/contribution-store";
 import type { Recurrence } from "@/lib/cashflow-forecast";
-import { freeToSpend, untilPayday, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
+import { freeToSpend, nextPayday, untilPayday, type FreeToSpend, type SpendAccount } from "@/lib/free-to-spend";
 import { paydayLine } from "@/lib/payday-line";
 import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, occurrences, paidByName, presumePaid, rateSoFar, settleBill, unlinkedBillPayments } from "@/lib/spend-forecast";
 import FreeToSpendRunway from "./FreeToSpendRunway";
@@ -734,7 +734,8 @@ function TransactionHistoryNotice({ status }: { status: "loading" | "error" }) {
   );
 }
 
-function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, onOpenNeeds, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60, budget = {}, expectedRows = [], onExpectedAdded, onSetupStep, transactionHistory, onOpenTransactions }: {
+function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, mortgageMonthly, growthRate, withdrawalRate, actuals: _actuals = {}, actualIncome = 0, actualExpenses = 0, cityName = "", prevIncome = 0, prevExpenses = 0, userName = "", displayCurrency, displayRates, plaidAccounts = [], retirementCityCol = 0, retirementCityName = "", lifestyleMultiplier = 1.0, fireAge = 0, nwSnapshots = [], recentTransactions = [], plaidHoldings = [], budgetMode = "manual", histMonthsCount = 0, userJoinedAt = "", freeResult = null, bills = [], onOpenFreeToSpend, onOpenNeeds, monthlyNeedsExpenses, monthlyWorkCosts, taxEnabled = false, retirementTaxRate = 0, rothPct = 0, contributionFacts, onTabChange, onOpenCompare, onFreedomDateChange, plan, spendToggles = {}, homeValue = 0, spreadCategories = [], coastRetireAge = 60, budget = {}, expectedRows = [], onExpectedAdded, onSetupStep, transactionHistory, onOpenTransactions, hasUpcomingPayday }: {
+  hasUpcomingPayday: boolean;
   transactionHistory: TransactionHistoryStatus;
   onOpenTransactions: () => void;
   spreadCategories?: string[];
@@ -1300,7 +1301,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     .map((t, i) => ({ id: String(i), date: t.date.slice(0, 10), amount: t.transaction_type === "expense" ? netAmt(t) : t.amount,
       currency: t.currency, description: t.description ?? "", category: t.category ?? "", transaction_type: t.transaction_type as "expense" | "income" })),
   [recentTransactions]);
-  const missingPayday = freeResult?.payday.source !== "paycheck";
+  const missingPayday = !hasUpcomingPayday;
   const paydaySetup = missingPayday
     ? { description: "Add your next payday to see what’s left.", action: "Set up payday" }
     : { description: "Connect the account you spend from.", action: "Connect a bank" };
@@ -6283,6 +6284,7 @@ export default function Dashboard() {
                 plan={plan}
                 contributionFacts={contributionFacts}
                 freeResult={freeResult}
+                hasUpcomingPayday={nextPayday(contributionItems, new Date()).source === "paycheck"}
                 bills={homeBills}
                 onOpenFreeToSpend={() => { setCashflowSubTab("budgets"); setTab("cashflow"); }}
                 onOpenNeeds={() => { setCategoriesStart("needs"); setBudgetKey((k) => k + 1); setCashflowSubTab("budgets"); setTab("cashflow"); }}
