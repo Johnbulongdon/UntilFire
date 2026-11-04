@@ -2,7 +2,7 @@
 
 ## Current priorities
 
-N2 follow-up — Home payday setup, Codex, 5 November 2026. In review on `codex/home-payday-setup`. Next: verify web deployment and signed-in setup.
+N2 follow-up — Home payday setup, Codex, 5 November 2026. In review in [PR #385](https://github.com/Johnbulongdon/UntilFire/pull/385). Next: verify web deployment and signed-in setup.
 
 N2 follow-up — Web first transaction guidance, Codex, 4 November 2026. In review in [PR #384](https://github.com/Johnbulongdon/UntilFire/pull/384). Next: signed-in browser acceptance and review.
 
