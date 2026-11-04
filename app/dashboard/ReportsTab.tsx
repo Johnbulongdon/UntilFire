@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import TransactionStartCard from "./TransactionStartCard";
+import { Button } from "@/components/ui";
 import { fetchAllPages } from "@/lib/supabase-pages";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -86,15 +88,18 @@ function ChartTooltip({ active, payload, label, displayCurrency, displayRates }:
 }
 
 // ─── Root Component ───────────────────────────────────────────────────────────
-export default function ReportsTab({ displayCurrency = "USD", displayRates = FALLBACK_RATES, targetMultiple }: {
+export default function ReportsTab({ displayCurrency = "USD", displayRates = FALLBACK_RATES, targetMultiple, onOpenTransactions }: {
   displayCurrency?: string;
   displayRates?: Record<string, number>;
   /** FIRE target per dollar of a year's spending, as the freedom date uses it. */
   targetMultiple?: number;
+  onOpenTransactions: () => void;
 }) {
   const { customCats } = useCustomCategories();
   const [transactions, setTransactions] = useState<RawTx[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [retry, setRetry] = useState(0);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [ratesFallback, setRatesFallback] = useState(false);
   const [period, setPeriod] = useState<3 | 6 | 12>(6);
@@ -108,7 +113,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
       .catch(() => setRatesFallback(true));
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) { setLoading(false); return; }
+      if (!session) { setLoadFailed(true); setLoading(false); return; }
       fetchAllPages((from, to) => supabase
         .from("expenses")
         .select("id, date, amount, refund_amount, currency, category, transaction_type")
@@ -117,11 +122,12 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
         .order("id")
         .range(from, to))
         .then(({ data }) => {
+          setLoadFailed(data === null);
           if (data) setTransactions(data as RawTx[]);
           setLoading(false);
         });
     });
-  }, []);
+  }, [retry]);
 
   const months = useMemo(() => lastNMonths(period), [period]);
 
@@ -195,6 +201,13 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
     );
   }
 
+  if (loadFailed) return (
+    <div className="uf-card" role="alert">
+      <p>Couldn&apos;t load your reports.</p>
+      <Button size="sm" onClick={() => { setLoading(true); setRetry((n) => n + 1); }}>Try again</Button>
+    </div>
+  );
+
   if (!hasAny) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -206,16 +219,8 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
             Understand one month, then see the trend.
           </p>
         </div>
-        <div style={{
-          background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16,
-          padding: "64px 32px", textAlign: "center",
-        }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
-          <div style={{ fontWeight: 700, fontSize: 18, color: "var(--uf-text)", marginBottom: 8 }}>No data yet</div>
-          <div style={{ fontSize: 14, color: "var(--uf-text-2)", maxWidth: 340, margin: "0 auto", lineHeight: 1.7 }}>
-            Add some transactions in <strong>Cashflow</strong> to see your monthly spending reports here.
-          </div>
-        </div>
+        <TransactionStartCard title="See where your money goes" description="See your monthly income, spending, and savings."
+          onOpenTransactions={onOpenTransactions} />
       </div>
     );
   }

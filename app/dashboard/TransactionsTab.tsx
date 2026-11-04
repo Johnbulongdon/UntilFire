@@ -1732,6 +1732,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
 }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showImport, setShowImport] = useState(false);
   const [isClassifying, setIsClassifying] = useState(false);
@@ -1839,6 +1840,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         .order("id")
         .range(from, to))
         .then(({ data }) => {
+          setLoadFailed(data === null);
           if (data) setTransactions(data);
           setLoading(false);
         });
@@ -2328,9 +2330,21 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
     setToast(null);
   }, [showToast, toast, transactions]);
 
-  if (loading) {
-    return <TransactionsLoading />;
-  }
+  if (loading) return <TransactionsLoading />;
+  if (loadFailed) return (
+    <div className="uf-card" role="alert">
+      <p>Couldn&apos;t load your transactions.</p>
+      <Button size="sm" onClick={() => { setLoading(true); setRefreshKey((k) => k + 1); }}>Try again</Button>
+    </div>
+  );
+
+  const firstUse = transactions.length === 0;
+  const showSpendingOrCalendar = !firstUse || calendarItems.length > 0;
+  const openAdd = () => {
+    setEditingId(null);
+    setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency });
+    setDrawerOpen(true);
+  };
 
   return (
     <>
@@ -2360,39 +2374,49 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         }
       `}</style>
 
-      {/* Top bar: one date control, and the import action */}
-      <div style={{
+      {firstUse && (
+        <section className="uf-card" style={{ marginBottom: 16 }}>
+          <h2 className="uf-t-body" style={{ fontWeight: 700, margin: 0 }}>Add your first transaction</h2>
+          <p className="uf-t-small" style={{ color: "var(--uf-text-2)", margin: "4px 0 12px" }}>Start tracking what you earn, spend, and save. You can also connect a bank below.</p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <Button size="sm" onClick={openAdd}>Add a transaction</Button>
+            <Button size="sm" variant="secondary" onClick={() => setShowImport(true)}>Import transactions</Button>
+          </div>
+        </section>
+      )}
+
+      {/* Top bar: date control */}
+      {showSpendingOrCalendar && <div style={{
         position: "sticky", top: 0, zIndex: 10, background: "var(--uf-bg)",
         padding: "8px 0", marginBottom: 12, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
       }}>
         <SpendRangePill preset={rangePreset} endMonth={rangeEnd} currentMonth={currentMonth}
           onChange={(p, end) => { setRange(p, end); setSelectedDay(null); trackTxRangeChanged({ preset: p, months: rangeFor(p, end).months.length }); }} />
-        {/* Import lives once, in the floating Add bar (Oct 2026 audit). */}
-      </div>
+      </div>}
 
       <div style={{ display: "grid", gap: 16, marginBottom: 20 }}>
-        <SpendCard transactions={counted} range={range} today={today} toUSD={usd} fmt={fmtDisplay}
+        {showSpendingOrCalendar && <SpendCard calendarOnly={firstUse} transactions={counted} range={range} today={today} toUSD={usd} fmt={fmtDisplay}
           expenseCats={expenseCatDisplay} incomeCats={incomeCatDisplay}
           selectedCategories={selectedCategories} onToggleCategory={toggleCategory}
           onClearFilters={() => { setSelectedCategories([]); setSelectedDay(null); }}
           selectedDay={selectedDay} onSelectDay={setSelectedDay}
           onZoomMonth={(m) => { setRange(1, m); setSelectedDay(null); }}
           palette={COLOR_PALETTE} onColor={handleCategoryColor}
-          budgets={budgets} expectedIncome={expectedIncome} bills={bills} calendarItems={calendarItems} compact={n=>formatUSDInCurrency(n,displayCurrency,displayRates,{compact:true})} periodLabel={rangePreset === 1 && rangeEnd === currentMonth ? "This month" : rangeLabel(rangePreset, rangeEnd)} />
-        <WorthALook flags={flags} notes={billNotes} rows={transactions} fmt={fmtDisplay} toUSD={usd} displayCurrency={displayCurrency}
+          budgets={budgets} expectedIncome={expectedIncome} bills={bills} calendarItems={calendarItems} compact={n=>formatUSDInCurrency(n,displayCurrency,displayRates,{compact:true})} periodLabel={rangePreset === 1 && rangeEnd === currentMonth ? "This month" : rangeLabel(rangePreset, rangeEnd)} />}
+        {!firstUse && <WorthALook flags={flags} notes={billNotes} rows={transactions} fmt={fmtDisplay} toUSD={usd} displayCurrency={displayCurrency}
           twins={twins} onDeleteCopies={deleteCopies}
-          onYes={(r, k) => resolveFlag(r, k, true)} onNo={(r, k) => resolveFlag(r, k, false)} />
+          onYes={(r, k) => resolveFlag(r, k, true)} onNo={(r, k) => resolveFlag(r, k, false)} />}
         {/* Money first: the chart opens the page, the review and bank rows follow (Oct 2026 audit). */}
-        <ReviewPill filed={reviewCounts.filed} need={reviewCounts.need} busy={isClassifying}
+        {!firstUse && <ReviewPill filed={reviewCounts.filed} need={reviewCounts.need} busy={isClassifying}
           fmt={fmtDisplay} spentThisMonth={spentThisMonth}
           free={homeLeft && range.months.includes(currentMonth) ? homeLeft : null}
           onReview={() => { trackTxReviewOpened({ needCount: reviewCounts.need, months: range.months.length }); handleAiClassify(); }}
-          bank={bankStatus} banksOpen={banksOpen} onToggleBanks={() => setBanksOpen((v) => !v)} />
+          bank={bankStatus} banksOpen={banksOpen} onToggleBanks={() => setBanksOpen((v) => !v)} />}
         <PlaidConnect onTransactionsImported={() => setRefreshKey((k) => k + 1)} onUpgradeClick={onUpgradeClick}
-          collapsed={!banksOpen} onStatus={setBankStatus} />
+          collapsed={!firstUse && !banksOpen} onStatus={setBankStatus} />
       </div>
 
-      <TransactionList
+      {!firstUse && <TransactionList
         transactions={listTxns}
         editingId={editingId}
         justAddedId={justAddedId}
@@ -2405,14 +2429,14 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         expenseCategories={allExpenseCats}
         categoryNeeds={categoryNeeds}
         uncounted={uncounted}
-      />
+      />}
       {/* Room for the floating Add bar, so the last row is never under it. */}
       <div aria-hidden style={{ height: 72 }} />
 
-      <MobileBar
-        onOpen={() => { setEditingId(null); setDraft({ ...EMPTY_DRAFT(), currency: defaultCurrency }); setDrawerOpen(true); }}
+      {!firstUse && <MobileBar
+        onOpen={openAdd}
         onImport={() => setShowImport(true)}
-      />
+      />}
       <MobileDrawer open={drawerOpen} onClose={() => { setDrawerOpen(false); if (editingId) handleCancelEdit(); }}>
         <QuickAddForm
           draft={draft}
