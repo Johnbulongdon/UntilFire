@@ -277,7 +277,7 @@ export default function ProfileTab({
         ) : (
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <Button variant="primary" size="sm" onClick={onUpgradeClick}>Try Pro, {trialLabel}</Button>
-            <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Then {PRO_MONTHLY_LABEL} a month or {PRO_ANNUAL_LABEL} a year. Unlimited bank connections and priority AI.</span>
+            <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>Then {PRO_MONTHLY_LABEL} a month or {PRO_ANNUAL_LABEL} a year. Connect as many banks as you like.</span>
           </div>
         )}
       </MoneyHead>

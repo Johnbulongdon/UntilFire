@@ -234,7 +234,7 @@ export function PaceBar({ spent, budget, day, daysInMonth, fmt }: {
       <div className="uf-t-small" style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", color: "var(--uf-ink-2)" }}>
         <span>Day-to-day <b style={{ ...moneyMono, color: "var(--uf-ink)" }}>{fmt(spent)}</b> of <span style={moneyMono}>{fmt(budget)}</span></span>
         {judge && (gap > 0
-          ? <b style={{ color: "var(--uf-warn-ink)" }}>▲ {fmt(gap)} ahead of pace</b>
+          ? <b style={{ color: "var(--uf-warn-ink)" }}>▲ {fmt(gap)} over pace</b>
           : <b style={{ color: "var(--uf-pos-ink)" }}>▼ {fmt(-gap)} under pace</b>)}
       </div>
     </div>

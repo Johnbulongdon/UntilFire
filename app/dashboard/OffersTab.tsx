@@ -9,6 +9,14 @@ import { isSetupGoal, type SetupGoal } from "@/lib/account-setup";
 import { useToolsAPI } from "./useToolsAPI";
 import type { PlanAccountPicker } from "@/lib/account-tools-navigation";
 import s from "./AccountsTools.module.css";
+/** Browser and parser errors ("Unexpected end of JSON input") read as plain words; the server's own messages stay. */
+function plainError(e: unknown) {
+  const m = e instanceof Error ? e.message : "";
+  return !m || /json|failed to (fetch|execute)|networkerror|unexpected|load failed|typeerror/i.test(m)
+    ? "We couldn't load this. Check your connection and try again."
+    : m;
+}
+
 export default function OffersTab({ plan }: { plan?: PlanAccountPicker } = {}) {
   const { owner } = useToolsAPI();
   const params = useSearchParams();
@@ -46,7 +54,7 @@ function OffersBrowser({ plan }: { plan?: PlanAccountPicker }) {
         setError("");
       }
     } catch (e) {
-      if (n === generation.current) setError((e as Error).message);
+      if (n === generation.current) setError(plainError(e));
     }
   }, [api, owner]);
   const cancelLoad = useCallback(() => {
@@ -68,7 +76,7 @@ function OffersBrowser({ plan }: { plan?: PlanAccountPicker }) {
       if (popup) popup.location.href = href;
     } catch (e) {
       popup?.close();
-      setError((e as Error).message);
+      setError(plainError(e));
       await load();
     } finally {
       setBusy(false);

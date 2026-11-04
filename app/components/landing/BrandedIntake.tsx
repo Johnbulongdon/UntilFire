@@ -348,9 +348,9 @@ export default function BrandedIntake({
           max="100"
           value={age}
           onChange={(e) => setAge(e.target.value)}
-          placeholder="32"
+          placeholder="e.g. 32"
         />
-        <small>Optional. Your age at freedom.</small>
+        <small>Optional. We use it to show how old you&apos;ll be when you&apos;re free.</small>
       </label>
     );
   if (step === 7)

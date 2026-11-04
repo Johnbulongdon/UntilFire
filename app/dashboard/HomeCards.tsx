@@ -41,7 +41,7 @@ export function DoorChip({ to, onClick }: { to: "plan" | "money"; onClick: () =>
 /** A card's name, sentence case: one label style across Home (D-108). */
 const cardLabel: React.CSSProperties = { fontSize: 14, fontWeight: 600, color: "var(--uf-ink-2)" };
 
-export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, progress, children }: {
+export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, progress, note, children }: {
   /** "March 2041"; null until the plan has enough to project. */
   dateLabel: string | null;
   yearsAway: number | null;
@@ -52,6 +52,8 @@ export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, progress
   route?: { from: string; fromFlag?: string; to: string; toFlag?: string; when: string; onOpen: () => void };
   /** How far you've come (lib/freedom-progress): "23%", 0–1, the next mark, and today's invested total ("$6.6k"). */
   progress?: { pct: string; share: number; next: string; today?: string };
+  /** One-time line after sign-up: why this date differs from the calculator's. */
+  note?: { text: string; onDismiss: () => void };
   /** The curve, drawn by the dashboard from the same projection as the date. */
   children: React.ReactNode;
 }) {
@@ -90,6 +92,12 @@ export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, progress
         </div>
         <DoorChip to="plan" onClick={onOpen} />
       </div>
+      {note && (
+        <div role="note" style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", background: "var(--uf-card)", borderRadius: 16, padding: "10px 14px" }}>
+          <span className="uf-t-small" style={{ flex: "1 1 220px", color: "var(--uf-ink)" }}>{note.text}</span>
+          <Button size="sm" variant="secondary" onClick={note.onDismiss}>Got it</Button>
+        </div>
+      )}
       {children}
     </Card>
   );
@@ -200,7 +208,7 @@ export function MonthCard({ spent, budget, left, paceSoFar, monthDays, nextBills
   const evenSoFar = budget * (paceSoFar.length / Math.max(1, monthDays));
   // Within 5% of the budget either side of even pace reads as "on pace".
   const gap = spent - evenSoFar;
-  const pace = Math.abs(gap) <= budget * 0.05 ? "On pace" : gap < 0 ? "A bit ahead of pace" : "Spending faster than pace";
+  const pace = Math.abs(gap) <= budget * 0.05 ? "On pace" : gap < 0 ? "Under pace" : "Over pace";
   return (
     <Card style={{ display: "grid", gap: 10, alignContent: "start" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -269,7 +277,7 @@ function TileHead({ label }: { label: string; to: "money" | "plan" }) {
   );
 }
 
-export function GlanceRow({ netWorth, invested, safety, savingsRate, fmt, onNetWorth, onSafety, onSavings }: {
+export function GlanceRow({ netWorth, invested, safety, savingsRate, fmt, onNetWorth, onSafety, onSavings, usAverage = true }: {
   netWorth: number;
   /** Invested at each month end, oldest first, up to 12 (the snapshots behind the curve); fewer than 2 draws no line. */
   invested: number[];
@@ -281,13 +289,15 @@ export function GlanceRow({ netWorth, invested, safety, savingsRate, fmt, onNetW
   onNetWorth: () => void;
   onSafety: () => void;
   onSavings: () => void;
+  /** The US average bar means nothing to someone saving in euros (walkthrough 3 Nov 2026). */
+  usAverage?: boolean;
 }) {
   const change = invested.length >= 2 ? invested[invested.length - 1] - invested[invested.length - 2] : null;
   const full = safety ? safety.months >= safety.target : false;
   const rates = savingsRate != null ? [
     { label: "You", pct: savingsRate, you: true },
     { label: "FIRE saver", pct: FIRE_SAVER_RATE, you: false },
-    { label: "US", pct: US_SAVING_RATE, you: false },
+    ...(usAverage ? [{ label: "US", pct: US_SAVING_RATE, you: false }] : []),
   ] : [];
   const maxRate = Math.max(1, ...rates.map((r) => r.pct));
   return (
@@ -309,8 +319,10 @@ export function GlanceRow({ netWorth, invested, safety, savingsRate, fmt, onNetW
           <button type="button" onClick={onSafety} aria-label="Safety pot, open Money" style={cell}>
             <TileHead label="Safety pot" to="money" />
             <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <b style={{ ...mono, fontSize: 22 }}>{Math.min(safety.months, 99).toFixed(1)}</b>
-              <span className="uf-t-small" style={muted}>of {safety.target} months</span>
+              {/* Over target read "16.0 of 6 months"; a full pot just says so (walkthrough 3 Nov 2026). */}
+              {full
+                ? <><b style={{ fontSize: 22 }}>Full</b><span className="uf-t-small" style={muted}><span style={mono}>{Math.min(safety.months, 99).toFixed(0)}</span> months saved</span></>
+                : <><b style={{ ...mono, fontSize: 22 }}>{safety.months.toFixed(1)}</b><span className="uf-t-small" style={muted}>of {safety.target} months</span></>}
               {full && <span style={{ color: "var(--uf-teal)" }}><Icon name="positive" size={18} /></span>}
             </span>
             <div role="img" aria-label={`${safety.months.toFixed(1)} of ${safety.target} months of needs saved`} style={{ display: "flex", gap: 3 }}>

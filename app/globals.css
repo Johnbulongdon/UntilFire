@@ -686,12 +686,11 @@ button,input,select,textarea{font-family:inherit}h1,h2{font-weight:800;letter-sp
 /* Role aliases are retained for feature compatibility, not as new palette names. */
 .uf-freedom-panel{--uf-ink:#151719;--uf-ink-2:#5C5130;--uf-ink-3:#655A39;--uf-teal:#151719;--uf-teal-deep:#151719;--uf-green:#151719;--uf-green-50:#FFFFFF75;--uf-card:#FFFFFF}
 .uf-freedom-panel .uf-t-small{color:#5C5130}
-.rf-root[data-brand-step="2"]{background:#FFE58A!important;--uf-ink:#151719;--uf-ink-2:#5C5130;--uf-ink-3:#655A39;--uf-teal:#151719;--uf-green:#151719;--uf-border:#D6C681}
-.rf-root[data-brand-step="2"] .uf-brand-mark-light{display:block}.rf-root[data-brand-step="2"] .uf-brand-mark-dark{display:none}
+/* Step 2 is the yellow freedom card: dark ink inside the card only, so the page around it follows the theme. */
+.rf-root[data-brand-step="2"] .rf-stage{--uf-ink:#151719;--uf-ink-2:#5C5130;--uf-ink-3:#655A39;--uf-teal:#151719;--uf-green:#151719;--uf-card:#FFFFFF;--uf-border:#D6C681;color:#151719}
 .rf-root[data-brand-step="3"]{background:var(--uf-mint)!important}.rf-root[data-brand-step="5"]{background:var(--uf-blue)!important}
 /* Reveal follows the same rounded desktop canvas as the questions. */
 .rf-root[data-brand-step]{background:var(--uf-ground)!important}
-.rf-root[data-brand-step="2"]{background:#F8F8FB!important;--uf-ink:#151719;--uf-ink-2:#5C5130}
 .rf-root[data-brand-step] .rf-stage{border-radius:32px;background:var(--uf-card);padding:48px;min-height:560px;margin-top:32px;margin-bottom:20px}
 .rf-root[data-brand-step="2"] .rf-stage{background:#FFE58A}
 .rf-root[data-brand-step="3"] .rf-stage{background:var(--uf-mint)}

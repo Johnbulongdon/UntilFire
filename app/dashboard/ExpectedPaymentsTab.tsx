@@ -486,8 +486,12 @@ export default function ExpectedPaymentsTab({
 
   // Already-added and dismissed suggestions drop out, matched on description
   // so accepting one does not leave its twin sitting in the strip.
+  // Groceries and rides repeat but are day-to-day spending, not bills: offering
+  // "Whole Foods, weekly" as a bill would take it out of the everyday budget.
+  const EVERYDAY_CATEGORIES = new Set(["food", "transport", "shopping", "entertainment"]);
   const visibleSuggestions = suggestions.filter(
     x => !dismissed.includes(x.key) &&
+         !(x.transaction_type === "expense" && EVERYDAY_CATEGORIES.has(x.category)) &&
          !payments.some(p => sameMerchant(p.description, x.description)),
   );
 

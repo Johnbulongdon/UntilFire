@@ -86,7 +86,7 @@ import { isRent } from "@/lib/lease";
 import { REFERRED_TRIAL_LABEL, TRIAL_LABEL } from "@/lib/pricing";
 import { EXPENSE_CATEGORIES, ACCOUNT_TYPE_COLORS, COLOR_PALETTE, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import { useCustomCategories } from "@/lib/useCustomCategories";
-import { Alert, Button, Checkbox, DateField, ICON_PATHS, Input, SegmentedControl } from "@/components/ui";
+import { Alert, Button, Checkbox, DateField, ICON_PATHS, Input, MoneyDisplay, SegmentedControl } from "@/components/ui";
 import Flag, { flagUri } from "@/app/components/Flag";
 import { stampActive } from "@/lib/last-active";
 import { knownWithdrawalLimit, parseWithdrawalLimit, withdrawalsLeftLabel } from "@/lib/savings-limits";
@@ -1088,6 +1088,16 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   // retirement city (D-82) is marked with its flag.
   const thisYear = new Date().getFullYear();
   const freeYear = exactFreedomDate ? exactFreedomDate.getFullYear() : null;
+  // The calculator's year, kept for one look after sign-up: the calculator grows all savings as
+  // invested, Home grows cash as cash (D-95), so the date can move. Say why instead of leaving it unexplained.
+  const [calcHandoff, setCalcHandoff] = useState<{ year: number; ageAssumed: boolean } | null>(null);
+  useEffect(() => {
+    try { const raw = localStorage.getItem("uf_calc_handoff"); if (raw) setCalcHandoff(JSON.parse(raw)); } catch {}
+  }, []);
+  const dismissHandoff = () => { try { localStorage.removeItem("uf_calc_handoff"); } catch {} setCalcHandoff(null); };
+  useEffect(() => {
+    if (calcHandoff && freeYear != null && calcHandoff.year === freeYear && !calcHandoff.ageAssumed) dismissHandoff();
+  }, [calcHandoff, freeYear]);
   const retireCity = retirementCityName && retirementCityName !== cityName ? retirementCityName : "";
   // An earlier move counts only where the maths can price it (both cities listed), as in moveBeforeFreedomChange.
   const earlyMove = plan?.moveYear && currentCityCol > 0 && retirementCityCol > 0 && (freeYear == null || plan.moveYear < freeYear) ? plan.moveYear : null;
@@ -1225,7 +1235,10 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const monthKeyNow = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
   const monthRowsNow = recentTransactions.filter((t) => t.date.startsWith(monthKeyNow))
     .map((t) => ({ ...t, usd: toUSD(netAmt(t), t.currency ?? displayCurrency, displayRates) }));
-  const monthLeft = everydayLeft({ budget: expenses as Record<string, number>, bills, spreadCategories, monthRows: monthRowsNow });
+  // The budget as typed, not `expenses` (Home gets the freedom-date spending, a 12-month average):
+  // reading that here made Home's "left" differ from Budget's (walkthrough 3 Nov 2026).
+  const typedBudget = useMemo(() => Object.fromEntries(Object.entries(budget).filter((e): e is [string, number] => typeof e[1] === "number")), [budget]);
+  const monthLeft = everydayLeft({ budget: typedBudget, bills, spreadCategories, monthRows: monthRowsNow });
   // The net worth tile's line: invested at each of the last 12 month ends (the snapshots behind the curve).
   const investedByMonth = useMemo(() => {
     const byMonth = new Map<string, number>();
@@ -1256,7 +1269,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     if (at < 0) return null;
     const step = steps[at].id;
     return { step, move: {
-      key: `setup:${step}`, title: SETUP_LABEL[step], payoff: `Step ${at + 1} of ${steps.length}`,
+      key: `setup:${step}`, title: SETUP_LABEL[step], payoff: `${steps.filter((x) => x.done).length} of ${steps.length} done`,
       door: "money", tab: "cashflow", button: SETUP_BUTTON[step],
     } };
   }, [setupFinished, setupFacts]);
@@ -1304,7 +1317,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const nextMove = useMemo(() => {
     void snoozeTick;
     const billKeys = new Set([...billCategorySet(bills), ...(spreadCategories ?? [])]);
-    const budgetMap = expenses as Record<string, number>;
+    const budgetMap = typedBudget;
     const ladder = contributionFacts ? ladderViewFromPlan(contributionPlan, contributionFacts) : null;
     return pickNextMove({
       categories: monthCategories.filter((c) => !billKeys.has(c.key))
@@ -1315,7 +1328,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       fmt: (n) => fmt(n, displayCurrency, displayRates),
       snoozed: (key) => isSnoozed(key),
     });
-  }, [snoozeTick, bills, spreadCategories, expenses, contributionFacts, contributionPlan, monthCategories, bestMove, displayCurrency, displayRates]);
+  }, [snoozeTick, bills, spreadCategories, typedBudget, contributionFacts, contributionPlan, monthCategories, bestMove, displayCurrency, displayRates]);
   const spendingStatusColor = projectedSpendStatus === "Running above plan" ? "var(--uf-neg)" : projectedSpendStatus === "Running below plan" ? "var(--uf-pos)" : "var(--uf-ink-3)";
   const spendingBarColor = projectedSpendStatus === "Running above plan" ? "var(--uf-neg)" : projectedSpendStatus === "Running below plan" ? "var(--uf-pos)" : "var(--uf-green-700)";
   const spendingProgressPct = monthlyExpenses > 0 ? Math.min((actualOrPlannedExpenses / monthlyExpenses) * 100, 100) : 0;
@@ -1689,6 +1702,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
       <div className="uf-home-in" style={{ order: 6, animationDelay: "200ms" }}>
       <HomeSlot id="glance">
         <GlanceRow
+          usAverage={displayCurrency === "USD"}
           netWorth={currentNetWorth}
           invested={investedByMonth}
           safety={efMonthlyBase > 0 ? { months: emergencyFundPlan.coverageMonths, target: EMERGENCY_FUND_TARGET_MONTHS } : null}
@@ -1709,6 +1723,15 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         yearsAway={exactFreedomDate ? Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5)) : fireYear}
         age={fireAge > 0 && exactFreedomDate ? Math.round(fireAge + Math.max(0, (exactFreedomDate.getTime() - Date.now()) / (365.25 * 864e5))) : null}
         onOpen={() => onTabChange?.("fire-calculator")}
+        note={calcHandoff && freeYear != null && (calcHandoff.year !== freeYear || calcHandoff.ageAssumed) ? {
+          text: [
+            calcHandoff.year !== freeYear
+              ? `The calculator showed ${calcHandoff.year} and treated all your savings as invested. Here, ${fmtMoney(balances.cash, true)} is cash, which doesn't grow like investments, so your date is ${freeYear}.`
+              : null,
+            calcHandoff.ageAssumed && fireAge > 0 ? `Your age is set to ${fireAge} for now. Change it in Plan.` : null,
+          ].filter(Boolean).join(" "),
+          onDismiss: dismissHandoff,
+        } : undefined}
         progress={howFar ? {
           pct: progressPercent(howFar.share), share: howFar.share, today: todayPoint ? fmtMoney(todayPoint.value, true) : undefined,
           next: howFar.next ? `Next: ${Math.round(howFar.next.mark * 100)}%${howFar.next.year != null ? ` in ${howFar.next.year}` : `, ${fmtMoney(howFar.next.toGo, true)} to go`}` : "Your freedom number is there",
@@ -1762,6 +1785,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         rates={displayRates}
         onAdded={(rows) => onExpectedAdded?.(rows)}
         onOpen={(step) => onSetupStep?.(step)}
+        quiet={!!setupMove && !isSnoozed(setupMove.move.key)}
       />
       </div>
       </div>
@@ -4477,8 +4501,10 @@ function TaxProfileCard({
  * changing growth, city or lifestyle here visibly did nothing: the date only
  * showed on Home. Same numbers as Home (freedomProjection).
  */
-function PlanFreedomDate({ date, fireAge, years, growthPct, deltaYears, invested = 0, target = 0 }: {
+function PlanFreedomDate({ date, fireAge, years, growthPct, deltaYears, invested = 0, target = 0, fmtCompact }: {
   date: Date | null; fireAge: number; years: number | null; growthPct: number; deltaYears: number | null;
+  /** Short money in the person's currency ("€43k"); a euro plan read "$43k" before (walkthrough 3 Nov 2026). */
+  fmtCompact?: (usd: number) => string;
   /** For the bar to the FIRE number; optional so the summary renders without it. */
   invested?: number; target?: number;
 }) {
@@ -4486,7 +4512,7 @@ function PlanFreedomDate({ date, fireAge, years, growthPct, deltaYears, invested
   const age = date && fireAge > 0 && years !== null ? freedomAgeAt(fireAge, years) : null;
   const share = target > 0 ? Math.min(1, Math.max(0, invested / target)) : null;
   const mono = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" } as const;
-  const compact = (n: number) => n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : `$${Math.round(n / 1000)}k`;
+  const compact = fmtCompact ?? ((n: number) => n >= 1e6 ? `$${(n / 1e6).toFixed(1)}M` : `$${Math.round(n / 1000)}k`);
   // The calm headline (D-42): self-contained, because a test renders it alone.
   return (
     <section aria-live="polite" style={{ background: "var(--uf-card)", borderRadius: 20, padding: 22, boxShadow: "var(--uf-e1)", display: "grid", gap: 12 }}>
@@ -4529,14 +4555,6 @@ function FireCalcMenuTab({
   fireAge: number;
   onOpenInvestSim: () => void;
 }) {
-  const [fireTypeResult, setFireTypeResult] = useState<{ code: string; name: string } | null>(null);
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("uf_fire_type_result");
-      if (raw) setFireTypeResult(JSON.parse(raw));
-    } catch { /* ignore */ }
-  }, []);
-
   // Rows like every other Plan list (D-57), in place of three cards with
   // gradient buttons. Neutral dots: these are links, not money.
   const go = (href: string) => { window.location.href = href; };
@@ -4545,10 +4563,7 @@ function FireCalcMenuTab({
       <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700 }}>More tools</div>
       <MoneyList>
         <MoneyRow dot="var(--uf-ink-3)" icon="📈" name="Investing simulator" meta="Model monthly investing with your own mix and inflation" value="Open ›" onClick={onOpenInvestSim} />
-        <MoneyRow dot="var(--uf-ink-3)" icon="🧭" name={fireTypeResult ? "Your FIRE type" : "FIRE type quiz"}
-          meta={fireTypeResult ? `${fireTypeResult.code} · ${fireTypeResult.name}` : "8 quick questions on how you think about money"}
-          value={fireTypeResult ? "View ›" : "Start ›"}
-          onClick={() => go(`/fire-type?source=dashboard-fire-calc${fireTypeResult ? `&type=${fireTypeResult.code}` : ""}`)} />
+        {/* FIRE type lives in Profile (CLAUDE.md); listing it here too showed it twice. */}
         <MoneyRow dot="var(--uf-ink-3)" icon="🧮" name="All calculators" meta="Coast FIRE, the 4% rule, net worth by age and more" value="Browse ›" onClick={() => go("/calculators")} />
       </MoneyList>
     </div>
@@ -4944,10 +4959,10 @@ export default function Dashboard() {
     [planBase, mortgages, connectedMortgages, mortgageTerms]);
   const [freedomDate, setFreedomDate] = useState<Date | null>(null);
   const freedomDateLabel = freedomDate
-    ? freedomDate.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+    ? freedomDate.toLocaleDateString("en-US", { year: "numeric", month: "long" })
     : null;
   const freedomDateCompactLabel = freedomDate
-    ? freedomDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    ? freedomDate.toLocaleDateString("en-US", { month: "short", year: "numeric" })
     : null;
   /* Real spending per complete month over the last 12 (D-86): what the
      freedom date runs on once there are three months, so trips and yearly
@@ -5384,6 +5399,29 @@ export default function Dashboard() {
       .map(([k, v]) => ({ key: k, label: labels[k] ?? k, budget: v, left: v - (actuals[k] || 0) - (committedByCat[k] || 0) }));
     return freeToSpend({ today: new Date(), accounts: spendAccounts, toggles: spendToggles, expected: contributionItems, budget });
   }, [contributionItems, expenses, actuals, committedByCat, spendAccounts, spendToggles]);
+  /* What Home's money card shows, for the Transactions pill that says it is "the same number as on Home"
+     (walkthrough 3 Nov 2026: it showed the flexible-budget figure instead). With a bank and a paycheck:
+     Until payday, cash after bills less the everyday estimate. Otherwise the everyday budget left this month. */
+  const homeLeft = useMemo((): { amount: number; untilIso: string } | null => {
+    const now = new Date();
+    const view = untilPayday(freeResult, homeBills.map((b) => b.description));
+    if (view) {
+      const rows = recentTransactions.filter((t) => t.transaction_type === "expense")
+        .map((t) => ({ date: t.date.slice(0, 10), usd: toUSD(netAmt(t), t.currency ?? defaultCurrency, rates), description: t.description ?? "", category: t.category ?? "other" }));
+      const monthly = Object.entries(freedomExpenses).filter(([k]) => !k.startsWith("_")).reduce((t, [, v]) => t + ((v as number) || 0), 0);
+      const estimate = paydaySpending({ today: now, days: view.days, rows, bills: homeBills, budget: freedomExpenses as Record<string, number>, monthlyBudget: monthly > 0 ? monthly : null });
+      const remaining = paydayRemainder(view.free, estimate?.amount ?? null, 0);
+      return remaining === null ? null : { amount: remaining, untilIso: view.payday.iso };
+    }
+    const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const monthRows = recentTransactions.filter((t) => t.date.startsWith(key))
+      .map((t) => ({ ...t, usd: toUSD(netAmt(t), t.currency ?? defaultCurrency, rates) }));
+    const typed = Object.fromEntries(Object.entries(expenses).filter((e): e is [string, number] => typeof e[1] === "number"));
+    const left = everydayLeft({ budget: typed, bills: homeBills, spreadCategories, monthRows });
+    if (left.everydayBudget <= 0) return null;
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return { amount: left.left, untilIso: `${key}-${String(end.getDate()).padStart(2, "0")}` };
+  }, [freeResult, homeBills, recentTransactions, rates, defaultCurrency, freedomExpenses, expenses, spreadCategories]);
   const actualIncome = useMemo(
     () => rawActuals
       .filter(e => e.transaction_type === "income")
@@ -5598,6 +5636,10 @@ export default function Dashboard() {
         try {
           const raw = localStorage.getItem("uf_calc_prefill");
           if (raw) { hadPrefill = true; prefill = JSON.parse(raw); localStorage.removeItem("uf_calc_prefill"); }
+        } catch {}
+        // Home explains, once, why its date can differ from the calculator's (walkthrough 3 Nov 2026).
+        try {
+          if (hadPrefill && prefill.retireYear) localStorage.setItem("uf_calc_handoff", JSON.stringify({ year: prefill.retireYear, ageAssumed: !prefill.currentAge }));
         } catch {}
         const prefillIncome = prefill.monthlyIncome ?? prefill.income;
         if (prefill.defaultCurrency) {
@@ -6217,7 +6259,7 @@ export default function Dashboard() {
                 <div className="uf-cashflow-subtab-switch" style={{ marginBottom: 24 }}>
                   <PillTabs label="Cashflow" options={CASHFLOW_SUB_TABS} value={cashflowSubTab} onChange={setCashflowSubTab} />
                 </div>
-                {cashflowSubTab === "cashflow" && <TransactionsTab categoryNeeds={categoryNeeds} budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
+                {cashflowSubTab === "cashflow" && <TransactionsTab categoryNeeds={categoryNeeds} budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} homeLeft={homeLeft} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
                 {cashflowSubTab === "expected" && <ExpectedPaymentsTab userId={userId} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} budgetMonthlySpending={contributionFacts.budgetMonthlySpending ?? 0} lastMonthSpending={lastMonthSpending} targetMultiple={planFacts.targetPerDollar} plan={sharedPlan} facts={contributionFacts} billDue={billDue} onMarkDone={setContributionDone} onOpenTransactions={() => setCashflowSubTab("cashflow")} />}
                 {cashflowSubTab === "budgets" && (
                   <BudgetTab income={income} setIncome={setIncome} expenses={expenses} setExpenses={setExpenses} actuals={actuals} committedRemaining={committedRemainingUSD} committedByCat={committedByCat} displayCurrency={defaultCurrency} freeResult={freeResult} spendAccounts={spendAccounts} spendToggles={spendToggles} onSpendToggle={setSpendToggle} displayRates={rates} recentTransactions={recentTransactions} bills={homeBills} onOpenUpcoming={() => setCashflowSubTab("expected")} spreadCategories={spreadCategories} categoryNeeds={categoryNeeds}
@@ -6314,6 +6356,7 @@ export default function Dashboard() {
                         : null}
                       invested={planFacts.invested}
                       target={planFacts.fireTarget}
+                      fmtCompact={reportCompact}
                     />
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       {planFreedom.exactDate && <Button variant="secondary" size="sm" onClick={openReport}>Share one-page plan</Button>}
@@ -6393,6 +6436,9 @@ export default function Dashboard() {
                       monthlyContribution={planFacts.monthlySavings}
                       fireTarget={planFacts.fireTarget}
                       annualReturn={growthRate}
+                      symbol={new Intl.NumberFormat("en-US", { style: "currency", currency: defaultCurrency }).formatToParts(0).find((x) => x.type === "currency")?.value ?? "$"}
+                      toUSD={(n) => toUSD(n, defaultCurrency, rates)}
+                      fmtMoney={reportCompact}
                     />
 
                     <FireCalcMenuTab
@@ -6427,11 +6473,13 @@ export default function Dashboard() {
             )}
             {tab === "contributions" && (
               <div style={{ display: "grid", gap: 24 }}>
+                <MoneyDisplay currency={defaultCurrency} rates={rates}>
                 <ContributionsTab {...contributionFacts} onChooseAccounts={() => setTab("assets")}
                   onReviewCashflow={() => { setCashflowSubTab("expected"); setTab("cashflow"); }}
                   retirementSettings={<SavingSplitCard plan={planSettings} onChange={setPlanSettings}
                     afterTaxSaving={planFreedom.annualSavings} takeHomeAnnual={effectiveIncome * 12} usTaxHome={usTaxHome}
                     displayCurrency={defaultCurrency} displayRates={rates} onOpenIncome={() => setTab("income")} />} />
+                </MoneyDisplay>
               </div>
             )}
             {tab === "citizenship" && (TAX_ESTIMATES_AVAILABLE ? <CitizenshipTab onOpenExpat={() => openDashboardTab("expat-fire")} /> : <div className="uf-card" style={{ padding: 24 }}>Passport tax comparisons are unavailable while we test them.</div>)}

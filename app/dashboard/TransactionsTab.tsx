@@ -1713,7 +1713,7 @@ function AiReviewModal({
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick, budgets, expectedIncome, freeToSpend, categoryNeeds }: {
+export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick, budgets, expectedIncome, freeToSpend: _freeToSpend, homeLeft = null, categoryNeeds }: {
   categoryNeeds?: NeedOverrides;
   defaultCurrency?: string;
   displayCurrency?: string;
@@ -1727,6 +1727,8 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
   expectedIncome?: number;
   /** Free to spend until payday (D-29), as on Home. */
   freeToSpend?: FreeToSpend | null;
+  /** Home's own money figure, so the pill shows the same number as Home. */
+  homeLeft?: { amount: number; untilIso: string } | null;
 }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -2383,7 +2385,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
         {/* Money first: the chart opens the page, the review and bank rows follow (Oct 2026 audit). */}
         <ReviewPill filed={reviewCounts.filed} need={reviewCounts.need} busy={isClassifying}
           fmt={fmtDisplay} spentThisMonth={spentThisMonth}
-          free={freeToSpend && range.months.includes(currentMonth) ? { amount: freeToSpend.free, untilIso: freeToSpend.payday.iso } : null}
+          free={homeLeft && range.months.includes(currentMonth) ? homeLeft : null}
           onReview={() => { trackTxReviewOpened({ needCount: reviewCounts.need, months: range.months.length }); handleAiClassify(); }}
           bank={bankStatus} banksOpen={banksOpen} onToggleBanks={() => setBanksOpen((v) => !v)} />
         <PlaidConnect onTransactionsImported={() => setRefreshKey((k) => k + 1)} onUpgradeClick={onUpgradeClick}

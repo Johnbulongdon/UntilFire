@@ -240,9 +240,12 @@ function topCategories(rows: Transaction[]): string[] {
 }
 
 /** Finished days this month, for the count ("11 of 13 days"). */
+// Someone who started this month counts from their first day, like the website (lib/today-web).
 export function monthCount(done: string[], now = new Date()) {
   const month = monthOf(isoDay(now))
-  return { done: done.filter(d => d.startsWith(month)).length, of: now.getDate() }
+  const first = [...done].sort()[0]
+  const startDay = first && first.startsWith(month) ? Number(first.slice(8, 10)) : 1
+  return { done: done.filter(d => d.startsWith(month)).length, of: Math.max(1, now.getDate() - startDay + 1) }
 }
 
 /** Save an answer and, when it finishes the list, the day. Keeps the lists short. */

@@ -117,6 +117,13 @@ ok("a new merchant is large only among the person's top 5% and above $250", () =
   assert.equal(f.get(huge.id), "large");
   assert.equal(f.has(small.id), false);
 });
+ok("the same rent every month is not large", () => {
+  const history = Array.from({ length: 40 }, (_, i) => tx(`Shop ${String.fromCharCode(65 + (i % 26))}`, 20 + i * 5, "2026-07-01"));
+  const rents = ["2026-08-01", "2026-09-01", "2026-10-01"].map((d) => tx("Oak Street Rent", 1650, d));
+  const now = tx("Oak Street Rent", 1650, "2026-11-01");
+  const f = findFlags([now], [...history, ...rents, now], usd);
+  assert.equal(f.has(now.id), false);
+});
 ok("income and transfers are never flagged", () => {
   const t = { ...tx("AUTOPAY", 500), transaction_type: "income" as const };
   assert.equal(findFlags([t], [], usd).size, 0);

@@ -40,7 +40,7 @@ export default function ReviewPill({ filed, need, busy, onReview, bank, banksOpe
             <b style={{ ...mono, fontSize: 15 }}>{fmt(Math.abs(free.amount))}</b>
             <span className="uf-t-small uf-free-until" style={{ opacity: 0.75 }}>until {until}</span>
             <style>{`@media (max-width: 480px){.uf-free-until{display:none}}`}</style>
-            <InfoTip label="About free to spend">The same number as on Home: the lower of your cash after bills and your budget left, until payday.</InfoTip>
+            <InfoTip label="About free to spend">The same number as on Home: with a bank and a payday, your cash after bills until payday; otherwise your day-to-day budget left this month.</InfoTip>
           </div>
         </div>
       )}

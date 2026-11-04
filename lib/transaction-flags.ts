@@ -199,10 +199,10 @@ export function findFlags(inView: FlagTx[], history: FlagTx[], toUSD: (amount: n
   // Large: against this merchant's own history when it has one, else the person's top 5%.
   const usd = (t: FlagTx) => toUSD(netAmount(t), t.currency);
   const past = history.filter((t) => t.transaction_type === "expense");
-  const byMerchant = new Map<string, number[]>();
+  const byMerchant = new Map<string, { id: string; v: number }[]>();
   for (const t of past) {
     const k = merchantKey(t.description ?? "");
-    byMerchant.set(k, [...(byMerchant.get(k) ?? []), usd(t)]);
+    byMerchant.set(k, [...(byMerchant.get(k) ?? []), { id: t.id, v: usd(t) }]);
   }
   const all = past.map(usd).sort((a, b) => a - b);
   const p95 = all.length >= 20 ? all[Math.floor(all.length * 0.95)] : Infinity;
@@ -210,7 +210,9 @@ export function findFlags(inView: FlagTx[], history: FlagTx[], toUSD: (amount: n
     if (out.has(t.id) || ok(t, "large")) continue;
     const v = usd(t);
     if (v < LARGE_FLOOR_USD) continue;
-    const seen = (byMerchant.get(merchantKey(t.description ?? "")) ?? []).filter((x) => x !== v);
+    // Leave out this row itself, not every row of the same amount: rent paid at the
+    // same $1,650 each month had no history left and was flagged every month (walkthrough 3 Nov 2026).
+    const seen = (byMerchant.get(merchantKey(t.description ?? "")) ?? []).filter((x) => x.id !== t.id).map((x) => x.v);
     const big = seen.length >= 3 ? v >= 3 * median(seen) : v >= p95;
     if (big) out.set(t.id, "large");
   }
