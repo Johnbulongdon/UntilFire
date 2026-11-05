@@ -40,9 +40,14 @@ function leaseTries(lease: WhatIfLease, ctx: ChangeContext, money: (usd: number)
 }
 
 /** Something the plan is missing, asked for instead of guessing (John, 5 Nov 2026: never generic advice). */
+/** A change built from the person's own months, offered as one tap (John, 5 Nov 2026). */
+export interface WhatIfIdea { item: LifeChangeItem; icon: string; why: string }
+
 export interface WhatIfNeed { key: string; title: string; why: string; button: string; onClick: () => void }
 
-export default function WhatIf({ run, ctx, growth, retireAge, lease, m, saved, onSave, onDelete, onUse, onTrack, needs = [], pensionWord = "pension" }: {
+export default function WhatIf({ run, ctx, growth, retireAge, lease, m, saved, onSave, onDelete, onUse, onTrack, needs = [], pensionWord = "pension", ideas = [] }: {
+  /** Changes from the person's own data: wants spending, extra paydays. */
+  ideas?: WhatIfIdea[];
   /** What retirement money is called where you live: "retirement accounts" in the US, "pension" elsewhere. */
   pensionWord?: string;
   run: (changes: EngineChange[]) => Full;
@@ -90,6 +95,17 @@ export default function WhatIf({ run, ctx, growth, retireAge, lease, m, saved, o
     const a = yearsTo(next.out.exactDate), b = yearsTo(without.exactDate);
     return [c.id, a !== null && b !== null ? a - b : null];
   })), [items, solve, next]);
+
+  // Each idea alone against the plan, most helpful first; ones that change nothing are left out.
+  const tries = useMemo(() => {
+    const leaseIdeas = lease ? leaseTries(lease, ctx, m.money).map((item) => ({ item, icon: "🏠",
+      why: `Your lease ends ${new Date(`${lease.endsOn}T12:00:00`).toLocaleDateString("en-US", { month: "short", year: "numeric" })}` })) : [];
+    const b = yearsTo(base.exactDate);
+    return [...ideas, ...leaseIdeas].map((i) => {
+      const a = yearsTo(solve([i.item]).out.exactDate);
+      return { ...i, effect: a !== null && b !== null ? a - b : null };
+    }).filter((i) => i.effect !== null && Math.abs(i.effect) >= 0.05).sort((x, y) => (x.effect ?? 0) - (y.effect ?? 0));
+  }, [ideas, lease, ctx, m.money, base, solve]);
 
   const by = yearsTo(base.exactDate), ny = yearsTo(next.out.exactDate);
   const delta = by !== null && ny !== null ? ny - by : null;
@@ -177,20 +193,27 @@ export default function WhatIf({ run, ctx, growth, retireAge, lease, m, saved, o
           </section>
         </div>
         <section aria-label="Your changes" style={{ display: "grid", gap: 10, minWidth: 0 }}>
-          {lease && leaseTries(lease, ctx, m.money).length > 0 && <div style={{ display: "grid", gap: 8, padding: 14, borderRadius: 16, background: "var(--uf-surface)" }}>
-            <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>🏠 <b style={{ color: "var(--uf-ink)" }}>Your lease ends {new Date(`${lease.endsOn}T12:00:00`).toLocaleDateString("en-US", { month: "short", year: "numeric" })}.</b> Try either.</span>
-            <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {leaseTries(lease, ctx, m.money).map((t) => {
-                const added = items.some((c) => c.id === t.id);
-                return <Button key={t.id} size="sm" variant={added ? "ghost" : "secondary"} disabled={added} aria-pressed={added}
-                  onClick={() => { setItems([...items.filter((c) => !c.id.startsWith("lease-")), t]); onTrack("added"); }}>{added ? `✓ ${t.name}` : t.name}</Button>;
-              })}
-            </span>
+          {tries.length > 0 && <div style={{ display: "grid", gap: 8, padding: 14, borderRadius: 16, background: "var(--uf-surface)" }}>
+            <span><b className="uf-t-small" style={{ fontWeight: 700, display: "block", color: "var(--uf-ink)" }}>Changes that help you most</b>
+              <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>From your last months. Tap to try.</span></span>
+            {tries.map((t) => {
+              const added = items.some((c) => c.id === t.item.id);
+              const e = t.effect ?? 0;
+              return <button key={t.item.id} type="button" disabled={added} aria-pressed={added}
+                onClick={() => { setItems([...items.filter((c) => c.id !== t.item.id && !(t.item.id.startsWith("lease-") && c.id.startsWith("lease-"))), t.item]); onTrack("added"); }}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 14, border: "1px solid var(--uf-border)", background: "var(--uf-card)", color: "var(--uf-ink)", textAlign: "left", cursor: added ? "default" : "pointer", font: "inherit" }}>
+                <span aria-hidden style={{ fontSize: 18 }}>{t.icon}</span>
+                <span style={{ flex: 1, minWidth: 0 }}><b className="uf-t-small" style={{ fontWeight: 700, display: "block" }}>{t.item.name}</b>
+                  <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>{t.why}</span></span>
+                <span className="uf-t-small" style={{ flexShrink: 0, padding: "3px 10px", borderRadius: 99, fontWeight: 800, background: added ? "transparent" : e < 0 ? "var(--uf-teal-soft)" : "var(--uf-warn-bg)", color: added ? "var(--uf-ink-3)" : e < 0 ? "var(--uf-teal-deep)" : "var(--uf-warn-ink)" }}>
+                  {added ? "✓ Added" : `${Math.abs(e).toFixed(1)} yrs ${e < 0 ? "sooner" : "later"}`}</span>
+              </button>;
+            })}
           </div>}
           {needs.length > 0 && <div style={{ display: "grid", gap: 10, padding: 14, borderRadius: 16, background: "var(--uf-surface)" }}>
             <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}><b style={{ color: "var(--uf-ink)" }}>Add your real numbers first.</b> What if only works from your own money.</span>
             {needs.map((n) => <div key={n.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <span style={{ minWidth: 0 }}><b className="uf-t-small" style={{ display: "block", color: "var(--uf-ink)" }}>{n.title}</b>
+              <span style={{ minWidth: 0 }}><b className="uf-t-small" style={{ fontWeight: 700, display: "block", color: "var(--uf-ink)" }}>{n.title}</b>
                 <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>{n.why}</span></span>
               <Button size="sm" variant="secondary" onClick={n.onClick}>{n.button}</Button>
             </div>)}

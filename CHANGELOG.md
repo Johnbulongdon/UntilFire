@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-05 — Pages that use your own numbers
+
+- Income tells you when a month has an extra payday, how much lands and when, with a button to send it to savings.
+- What if starts with "Changes that help you most", built from your own months: spend 20% less on wants, save your extra paydays, and your lease choices. Each shows how much sooner or later you'd be free. Tap one to try it.
+- Insights now opens on what changed last month: spending against a usual month, the two biggest changes, what one would do to your freedom date, and six months of what was left over. The old averages and tables that repeated Budget are gone; any month is one tap away.
+- Explore opens on where you'd be free sooner: your city, your best three (one a country), and a button to try one in your plan. The globe, list and badges are under "See all".
+- Accounts & tools checks whether your money is in the right place, from your own accounts: idle cash, cards paid in full, retirement accounts in use. The full list is under "See all", and it says plainly that some links pay UntilFire a referral fee.
+
 ## 2026-11-05 — Clearer saving, debts and contributions
 
 - Transactions shows two plain numbers under the month's spending: "Left over this month" and "Usual month". The income figure and the percentage are gone from that line.

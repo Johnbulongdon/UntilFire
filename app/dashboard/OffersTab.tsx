@@ -9,6 +9,7 @@ import { isSetupGoal, type SetupGoal } from "@/lib/account-setup";
 import { useToolsAPI } from "./useToolsAPI";
 import type { PlanAccountPicker } from "@/lib/account-tools-navigation";
 import s from "./AccountsTools.module.css";
+import MoneyCheck, { type MoneyCheckFacts } from "./MoneyCheck";
 /** Browser and parser errors ("Unexpected end of JSON input") read as plain words; the server's own messages stay. */
 function plainError(e: unknown) {
   const m = e instanceof Error ? e.message : "";
@@ -17,12 +18,13 @@ function plainError(e: unknown) {
     : m;
 }
 
-export default function OffersTab({ plan }: { plan?: PlanAccountPicker } = {}) {
+type CheckProps = { check?: MoneyCheckFacts; money?: (usd: number) => string; retirementWord?: string; onLinkBank?: () => void };
+export default function OffersTab({ plan, ...check }: { plan?: PlanAccountPicker } & CheckProps = {}) {
   const { owner } = useToolsAPI();
   const params = useSearchParams();
-  return <OffersBrowser key={(owner ?? "signed-out") + ":" + (plan?.goal ?? params.get("goal") ?? "invest")} plan={plan} />;
+  return <OffersBrowser key={(owner ?? "signed-out") + ":" + (plan?.goal ?? params.get("goal") ?? "invest")} plan={plan} {...check} />;
 }
-function OffersBrowser({ plan }: { plan?: PlanAccountPicker }) {
+function OffersBrowser({ plan, check, money, retirementWord = "Retirement accounts", onLinkBank }: { plan?: PlanAccountPicker } & CheckProps) {
   const params = useSearchParams();
   const rawGoal = params.get("goal");
   const initialGoal = plan?.goal ?? (isSetupGoal(rawGoal) ? rawGoal : "invest");
@@ -41,6 +43,8 @@ function OffersBrowser({ plan }: { plan?: PlanAccountPicker }) {
   const [handoff, setHandoff] = useState<{ slug: string; href: string } | null>(
     null,
   );
+  // With checks from your own accounts, they come first and the full list waits behind "See all".
+  const [all, setAll] = useState(!check || !!plan || !!params.get("goal"));
   const generation = useRef(0);
   const offers = state && state.owner === owner ? state.offers : [];
   const detail = offers.find((o) => o.slug === selected);
@@ -141,7 +145,10 @@ function OffersBrowser({ plan }: { plan?: PlanAccountPicker }) {
           {error} <Button onClick={() => void load()}>Retry</Button>
         </div>
       )}
-      {!detail ? (
+      {!detail && !all && check && money ? (
+        <MoneyCheck facts={check} money={money} retirementWord={retirementWord} onLinkBank={onLinkBank}
+          onCompareSavings={() => { setGoal("save"); setAll(true); }} onSeeAll={() => setAll(true)} />
+      ) : !detail ? (
         <>
           <div className={s.hero}>
             <span className={s.icon}>{goal === "invest" ? "↗" : "↓"}</span>

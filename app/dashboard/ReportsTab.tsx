@@ -5,14 +5,11 @@ import { supabase } from "@/lib/supabase";
 import TransactionStartCard from "./TransactionStartCard";
 import { Button } from "@/components/ui";
 import { fetchAllPages } from "@/lib/supabase-pages";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  Legend, ResponsiveContainer,
-} from "recharts";
 import { FALLBACK_RATES } from "@/lib/currency";
 import { formatUSDInCurrency } from "@/lib/money";
 import { EXPENSE_CATEGORIES, loadCatCustomizations, resolveDisplay } from "@/lib/categories";
 import MonthInsight from "./MonthInsight";
+import WhatChanged from "./WhatChanged";
 import { useCustomCategories } from "@/lib/useCustomCategories";
 
 const toUSD = (amount: number, currency: string, rates: Record<string, number>): number => {
@@ -36,21 +33,7 @@ type RawTx = {
 const netAmt = (t: { amount: number; refund_amount: number }) =>
   Math.max(0, t.amount - (t.refund_amount || 0));
 
-type MonthSummary = {
-  month: string;
-  label: string;
-  income: number;
-  expenses: number;
-  net: number;
-  savingsRate: number;
-};
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function fmtMonth(ym: string): string {
-  const [y, m] = ym.split("-");
-  return new Date(+y, +m - 1, 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
-}
-
 function lastNMonths(n: number): string[] {
   const now = new Date();
   const months: string[] = [];
@@ -62,33 +45,12 @@ function lastNMonths(n: number): string[] {
   return months;
 }
 
-function rateColor(rate: number): string {
-  if (rate >= 30) return "var(--uf-teal)";
-  if (rate >= 10) return "var(--uf-warn-ink)";
-  return "var(--uf-neg-ink)";
-}
-
-// ─── Custom Tooltip ───────────────────────────────────────────────────────────
-function ChartTooltip({ active, payload, label, displayCurrency, displayRates }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string; displayCurrency: string; displayRates: Record<string, number> }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{
-      background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 10,
-      padding: "10px 14px", fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-    }}>
-      <div style={{ fontWeight: 700, color: "var(--uf-text)", marginBottom: 6 }}>{label}</div>
-      {payload.map(p => (
-        <div key={p.name} style={{ display: "flex", justifyContent: "space-between", gap: 16, color: p.color, fontWeight: 600 }}>
-          <span>{p.name}</span>
-          <span>{formatUSDInCurrency(p.value, displayCurrency, displayRates)}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // ─── Root Component ───────────────────────────────────────────────────────────
-export default function ReportsTab({ displayCurrency = "USD", displayRates = FALLBACK_RATES, targetMultiple, onOpenTransactions }: {
+export default function ReportsTab({ displayCurrency = "USD", displayRates = FALLBACK_RATES, targetMultiple, onOpenTransactions, freedomShift, budgets = {} }: {
+  /** Years the freedom date moves if monthly spending changed by this many dollars for good. */
+  freedomShift?: (monthlyUsd: number) => number | null;
+  /** Monthly budget per category, in dollars. */
+  budgets?: Record<string, number>;
   displayCurrency?: string;
   displayRates?: Record<string, number>;
   /** FIRE target per dollar of a year's spending, as the freedom date uses it. */
@@ -102,7 +64,8 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
   const [retry, setRetry] = useState(0);
   const [rates, setRates] = useState<Record<string, number>>(FALLBACK_RATES);
   const [ratesFallback, setRatesFallback] = useState(false);
-  const [period, setPeriod] = useState<3 | 6 | 12>(6);
+  const period = 6;
+  const [detail, setDetail] = useState(false);
   const [catCustomizations] = useState(loadCatCustomizations);
   const fmtDisplay = (n: number) => formatUSDInCurrency(n, displayCurrency, displayRates);
 
@@ -131,40 +94,6 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
 
   const months = useMemo(() => lastNMonths(period), [period]);
 
-  const monthlySummaries: MonthSummary[] = useMemo(() =>
-    months.map(month => {
-      const monthTxns = transactions.filter(t => t.date.startsWith(month));
-      const income = monthTxns
-        .filter(t => t.transaction_type === "income")
-        .reduce((s, t) => s + toUSD(t.amount, t.currency, rates), 0);
-      const expenses = monthTxns
-        .filter(t => t.transaction_type === "expense")
-        .reduce((s, t) => s + toUSD(netAmt(t), t.currency, rates), 0);
-      const net = income - expenses;
-      const savingsRate = income > 0 ? (net / income) * 100 : 0;
-      return { month, label: fmtMonth(month), income, expenses, net, savingsRate };
-    }),
-    [months, transactions, rates]
-  );
-
-  // Averages are over finished months: this month, a week or so in, counted
-  // as a whole month and pulled every average down (D-35). The chart still shows it.
-  const activeMths = useMemo(() =>
-    monthlySummaries.filter(m => m.month !== months[months.length - 1] && (m.income > 0 || m.expenses > 0)),
-    [monthlySummaries, months]
-  );
-
-  const { avgIncome, avgExpenses, avgRate } = useMemo(() => {
-    const n = activeMths.length || 1;
-    let totalInc = 0, totalExp = 0, totalNet = 0;
-    for (const m of activeMths) { totalInc += m.income; totalExp += m.expenses; totalNet += m.net; }
-    return {
-      avgIncome:  totalInc / n,
-      avgExpenses: totalExp / n,
-      avgRate: totalInc > 0 ? (totalNet / totalInc) * 100 : 0,
-    };
-  }, [activeMths]);
-
   const catTotals = useMemo(() => {
     const periodTxns = transactions.filter(
       t => t.date >= months[0] && t.transaction_type === "expense"
@@ -188,11 +117,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
       .sort((a, b) => b.total - a.total);
   }, [months, transactions, rates, catCustomizations, customCats]);
 
-  const grandTotal = catTotals.reduce((s, c) => s + c.total, 0);
-
   const hasAny = transactions.length > 0;
-  const chartData = [...monthlySummaries]; // oldest → newest already
-
   if (loading) {
     return (
       <div style={{ textAlign: "center", padding: "80px 24px", color: "var(--uf-text-3)", fontSize: 14 }}>
@@ -216,7 +141,7 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
             Insights
           </h2>
           <p style={{ color: "var(--uf-text-2)", fontSize: 13, margin: 0 }}>
-            Understand one month, then see the trend.
+            What changed, and what it means for your freedom date.
           </p>
         </div>
         <TransactionStartCard title="See where your money goes" description="See your monthly income, spending, and savings."
@@ -224,14 +149,6 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
       </div>
     );
   }
-
-  const periodBtnStyle = (p: 3 | 6 | 12): React.CSSProperties => ({
-    padding: "6px 14px", borderRadius: 8, fontWeight: 700, fontSize: 13,
-    cursor: "pointer", fontFamily: "inherit", border: "1.5px solid",
-    borderColor: period === p ? "var(--uf-green)" : "var(--uf-border)",
-    background: period === p ? "var(--uf-green)" : "var(--uf-card)",
-    color: period === p ? "var(--uf-card)" : "var(--uf-ink-2)",
-  });
 
   return (
     <div className="uf-reports" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -277,190 +194,25 @@ export default function ReportsTab({ displayCurrency = "USD", displayRates = FAL
             Insights
           </h2>
           <p style={{ color: "var(--uf-text-2)", fontSize: 13, margin: 0 }}>
-            Understand one month, then see the trend.
+            What changed, and what it means for your freedom date.
           </p>
         </div>
-        <div className="uf-report-controls">
-          <div className="uf-report-periods">
-            {([3, 6, 12] as const).map(p => (
-              <button key={p} onClick={() => setPeriod(p)} style={periodBtnStyle(p)}>
-                {p}m
-              </button>
-            ))}
-          </div>
-          {ratesFallback && (
-            <div style={{ fontSize: 11, color: "var(--uf-warn-ink)", fontWeight: 600 }}>
-              ⚠ Estimated rates — live fetch failed
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── One month, with exclusions ───────────────────────────────────
-          Sits above the trend deliberately: "why was this month like that"
-          is the question people arrive with, and the trend only makes sense
-          once the outlier months are explained. */}
-      <MonthInsight
-        targetMultiple={targetMultiple}
-        transactions={transactions}
-        rates={rates}
-        displayCurrency={displayCurrency}
-        displayRates={displayRates}
-      />
-
-      {/* ── KPI row ──────────────────────────────────────────────────────── */}
-      <div className="uf-report-kpi-grid">
-        {activeMths.length === 0 ? (
-          <div className="uf-t-small" style={{ gridColumn: "1 / -1", background: "var(--uf-card)", borderRadius: 16, padding: "24px", textAlign: "center", color: "var(--uf-ink-3)" }}>
-            No transactions in this period — try a wider range or add some in Cashflow.
-          </div>
-        ) : (
-          <>
-            {[
-              { label: "Average monthly income",   value: fmtDisplay(avgIncome),           color: "var(--uf-ink)" },
-              { label: "Average monthly expenses", value: fmtDisplay(avgExpenses),         color: "var(--uf-ink)" },
-              { label: "Average savings rate",     value: avgRate.toFixed(0) + "%", color: rateColor(avgRate) },
-            ].map(kpi => (
-              <div key={kpi.label} className="uf-report-kpi-card">
-                <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginBottom: 4 }}>
-                  {kpi.label}
-                </div>
-                <div style={{ fontSize: 28, fontWeight: 600, color: kpi.color, fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" }}>
-                  {kpi.value}
-                </div>
-                <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", marginTop: 4 }}>
-                  avg over {activeMths.length} month{activeMths.length !== 1 ? "s" : ""}
-                </div>
-              </div>
-            ))}
-          </>
-        )}
-      </div>
-
-      {/* ── Income vs Expenses chart ──────────────────────────────────────── */}
-      <div className="uf-report-card">
-        <div style={{ fontSize: 13, fontWeight: 800, color: "var(--uf-text)", marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-          Income vs Expenses
-        </div>
-        <div className="uf-report-chart">
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: 0 }} barCategoryGap="30%">
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--uf-border)" vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 11, fill: "var(--uf-ink-3)" }} axisLine={false} tickLine={false} />
-            <YAxis
-              tickFormatter={v => formatUSDInCurrency(v, displayCurrency, displayRates, { compact: true })}
-              tick={{ fontSize: 11, fill: "var(--uf-ink-3)" }} axisLine={false} tickLine={false}
-              width={45}
-            />
-              <Tooltip content={<ChartTooltip displayCurrency={displayCurrency} displayRates={displayRates} />} />
-            <Legend
-              wrapperStyle={{ fontSize: 12, fontWeight: 700, paddingTop: 12 }}
-              formatter={(value) => <span style={{ color: "var(--uf-text-2)" }}>{value}</span>}
-            />
-            <Bar dataKey="income"   name="Income"   fill="var(--uf-pos)" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="expenses" name="Expenses" fill="var(--uf-ink-3)" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* ── Category breakdown ────────────────────────────────────────────── */}
-      <div className="uf-report-card">
-        <div style={{ fontSize: 13, fontWeight: 800, color: "var(--uf-text)", marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-          Spending by Category · last {period} months
-        </div>
-        {catTotals.length === 0 ? (
-          <div style={{ fontSize: 13, color: "var(--uf-text-3)", textAlign: "center", padding: "24px 0" }}>
-            No expense transactions in this period
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {catTotals.map(cat => {
-              const pct = grandTotal > 0 ? (cat.total / grandTotal) * 100 : 0;
-              return (
-                <div key={cat.key} className="uf-report-category-row">
-                  {/* Circle */}
-                  <div style={{
-                    width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
-                    background: cat.color, display: "flex", alignItems: "center",
-                    justifyContent: "center", fontSize: 20,
-                  }}>
-                    {cat.emoji}
-                  </div>
-                  {/* Bar */}
-                  <div className="uf-report-category-name">
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--uf-text)", marginBottom: 4 }}>{cat.label}</div>
-                    <div style={{ height: 6, background: "var(--uf-surface-2)", borderRadius: 99, overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${pct}%`, background: cat.color + "88", borderRadius: 99 }} />
-                    </div>
-                  </div>
-                  {/* Pct */}
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--uf-text-3)", textAlign: "right", minWidth: 38 }}>
-                    {pct.toFixed(0)}%
-                  </div>
-                  {/* Amount */}
-                  <div style={{ fontSize: 14, fontWeight: 800, color: "var(--uf-text)", fontFamily: "Inter, sans-serif", textAlign: "right", minWidth: 80 }}>
-                    {fmtDisplay(cat.total)}
-                  </div>
-                </div>
-              );
-            })}
+        {ratesFallback && (
+          <div style={{ fontSize: 11, color: "var(--uf-warn-ink)", fontWeight: 600 }}>
+            ⚠ Estimated rates — live fetch failed
           </div>
         )}
       </div>
 
-      {/* ── Month-by-month table ──────────────────────────────────────────── */}
-      <div className="uf-report-card">
-        <div style={{ fontSize: 13, fontWeight: 800, color: "var(--uf-text)", marginBottom: 20, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-          Month by Month
-        </div>
-        {/* Header */}
-        <div className="uf-report-month-grid uf-report-table-head" style={{
-          padding: "0 0 10px", borderBottom: "1px solid var(--uf-border)",
-          fontSize: 10, fontWeight: 700, color: "var(--uf-text-3)", textTransform: "uppercase", letterSpacing: "0.08em",
-        }}>
-          <span>Month</span>
-          <span style={{ textAlign: "right" }}>Income</span>
-          <span style={{ textAlign: "right" }}>Expenses</span>
-          <span style={{ textAlign: "right" }}>Net</span>
-          <span style={{ textAlign: "right" }}>Rate</span>
-        </div>
-        {/* Rows — newest first */}
-        {[...monthlySummaries].reverse().map(row => {
-          const empty = row.income === 0 && row.expenses === 0;
-          // This month's pay may not have landed yet, so its rate means nothing
-          // until it ends; and a finished month that spent over twice its income
-          // reads as "below −100%", not a three-digit figure.
-          const inProgress = row.month === months[months.length - 1];
-          const rate = empty || row.income === 0 || inProgress ? "—"
-            : row.savingsRate < -100 ? "< −100%" : row.savingsRate.toFixed(0) + "%";
-          return (
-            <div
-              key={row.month}
-              className="uf-report-month-grid uf-report-month-row"
-              style={{
-                padding: "12px 0", borderBottom: "1px solid var(--uf-border)",
-                fontSize: 14, fontFamily: "Inter, sans-serif",
-              }}
-            >
-              <span style={{ fontWeight: 600, color: "var(--uf-text-2)", fontFamily: "Inter, sans-serif", fontSize: 13 }}>
-                {row.label}{inProgress && <span style={{ color: "var(--uf-ink-3)", fontWeight: 500 }}> · so far</span>}
-              </span>
-              <span className="uf-report-money" style={{ textAlign: "right", fontWeight: 700, color: empty ? "var(--uf-ink-3)" : "var(--uf-pos-ink)" }}>
-                {empty ? "—" : fmtDisplay(row.income)}
-              </span>
-              <span className="uf-report-money" style={{ textAlign: "right", fontWeight: 700, color: empty ? "var(--uf-ink-3)" : "var(--uf-ink)" }}>
-                {empty ? "—" : fmtDisplay(row.expenses)}
-              </span>
-              <span className="uf-report-money" style={{ textAlign: "right", fontWeight: 700, color: empty ? "var(--uf-ink-3)" : row.net >= 0 ? "var(--uf-pos-ink)" : "var(--uf-neg-ink)" }}>
-                {empty ? "—" : (row.net >= 0 ? "+" : "") + fmtDisplay(row.net)}
-              </span>
-              <span style={{ textAlign: "right", fontWeight: 700, color: rate === "—" ? "var(--uf-ink-3)" : rateColor(row.savingsRate) }}>
-                {rate}
-              </span>
-            </div>
-          );
-        })}
+      <WhatChanged transactions={transactions} toUsd={(t, a) => toUSD(a, t.currency, rates)} money={fmtDisplay}
+        short={(n) => formatUSDInCurrency(n, displayCurrency, displayRates, { compact: true })}
+        cat={(key) => { const c = catTotals.find((x) => x.key === key); return c ? { label: c.label, emoji: c.emoji } : { label: "Other", emoji: "📦" }; }}
+        shift={freedomShift} budgets={budgets} onOpenTransactions={onOpenTransactions} />
+
+      {/* Any one month, with one-offs left out (the old month view), kept one tap away. */}
+      <div className="uf-report-card" style={{ padding: "12px 16px" }}>
+        <button type="button" aria-expanded={detail} onClick={() => setDetail((v) => !v)} className="uf-t-small" style={{ background: "none", border: 0, padding: 0, fontWeight: 800, color: "var(--uf-ink)", cursor: "pointer" }}>{detail ? "▾" : "▸"} Look at any month</button>
+        {detail && <div style={{ marginTop: 12 }}><MonthInsight targetMultiple={targetMultiple} transactions={transactions} rates={rates} displayCurrency={displayCurrency} displayRates={displayRates} /></div>}
       </div>
 
     </div>

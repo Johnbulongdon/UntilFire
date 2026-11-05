@@ -1,4 +1,5 @@
 "use client";
+import { extraPayMonths } from '@/lib/pay-months';
 import { paydaySpending, paydayRemainder, safeToSpendToday } from '@/lib/payday-spending';
 
 import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
@@ -5172,6 +5173,16 @@ export default function Dashboard() {
       .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates) * shareOf(t.plaid_account_id, accountShares); });
     return Object.entries(byMonth).sort((a, b) => b[0].localeCompare(a[0]));
   }, [recentTransactions, rates, categoryNeeds, accountShares]);
+  // Average a month on wants over the last 12 complete months that have any, for What if's ideas.
+  const wantsMonthly = useMemo(() => {
+    const now = new Date();
+    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const byMonth: Record<string, number> = {};
+    recentTransactions.filter(t => t.transaction_type === "expense" && inLastTwelve(t.date.slice(0, 7), curMonth) && transactionNeed(t, categoryNeeds) === "want")
+      .forEach(t => { const m = t.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + toUSD(netAmt(t), t.currency, rates) * shareOf(t.plaid_account_id, accountShares); });
+    const vals = Object.values(byMonth);
+    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+  }, [recentTransactions, rates, categoryNeeds, accountShares]);
   /* Last complete month's spending, split by tag, in dollars. The
      contribution forecast's day-to-day estimate is built from the needs; the
      wants and untagged totals are shown beside it so it is clear what was
@@ -5293,6 +5304,11 @@ export default function Dashboard() {
   const compareRetireAge = planSettings.accessAge || pensionFor(defaultCurrency, usTaxHome).age || 60;
   const runChanges = useCallback((changes: EngineChange[]) =>
     freedomProjection({ ...planFreedomInputs, growthRate, changes }), [planFreedomInputs, growthRate]);
+  // Years the freedom date moves if monthly spending changed for good (Insights).
+  const freedomShift = useCallback((monthlyUsd: number) => {
+    const a = runChanges([]).exactDate, b = runChanges([{ startYear: 0, annualSpend: Math.max(0, compareSpendNow + monthlyUsd) * 12 }]).exactDate;
+    return a && b ? (b.getTime() - a.getTime()) / (365.25 * 864e5) : null;
+  }, [runChanges, compareSpendNow]);
   const compareCtx = useMemo(() => ({ thisYear: new Date().getFullYear(), currentAge: fireAge, takeHomeMonthly: effectiveIncome, spendMonthly: compareSpendNow }),
     [fireAge, effectiveIncome, compareSpendNow]);
   const planFreedomAtDefault = useMemo(
@@ -5393,6 +5409,22 @@ export default function Dashboard() {
      to decide, and a savings account and a current account are not the same
      kind of money. */
   const contributionCashAccounts = useMemo(() => toCashAccounts(plaidAccounts), [plaidAccounts]);
+  /* Accounts & tools, "Is your money in the right place?" (John, 5 Nov 2026):
+     checks from your own accounts. Idle cash is money in accounts paying
+     under 1% (or a current account with no rate given) beyond one month of
+     spending; cards count as carried only with a rate on Contributions, as Debts reads them. */
+  const moneyCheck = useMemo(() => {
+    const low = contributionCashAccounts.filter((a) => (a.apy != null ? a.apy < 1 : !a.isSavings));
+    const debts = sharedPlan?.ladder?.debts ?? [];
+    const cards = plaidAccounts.filter((a) => a.type === "credit" && (a.balance_current ?? 0) > 0);
+    return {
+      idle: Math.max(0, low.reduce((t, a) => t + a.balance, 0) - compareSpendNow),
+      cards: cards.length,
+      cardsCarried: cards.filter((a) => debts.some((d) => d.name.trim().toLowerCase() === (a.name || "").trim().toLowerCase())).length,
+      retirement: k401 + rothIRA > 0,
+      linked: contributionCashAccounts.length > 0,
+    };
+  }, [contributionCashAccounts, sharedPlan, plaidAccounts, compareSpendNow, k401, rothIRA]);
   /* Expected outgoings in USD with their due dates. What is due before the
      next contribution is money already spoken for, so it is not available to
      invest — the same rule the committed total on Home already applies. */
@@ -5441,6 +5473,8 @@ export default function Dashboard() {
       }];
     });
   }, [committedRows, homeBills, rates]);
+  // Months with a 3rd (or 5th) payday, for Income: money a usual-month budget never counts.
+  const extraPay = useMemo(() => extraPayMonths(contributionItems, new Date()), [contributionItems]);
   // Goals with a date take a rung on the ladder (lib/goal-monthly), the same list Plan -> Goals edits.
   const [ladderGoals, setLadderGoals] = useState<GoalLike[]>([]);
   useEffect(() => {
@@ -6562,7 +6596,8 @@ export default function Dashboard() {
                 usTaxHome={usTaxHome}
                 displayCurrency={defaultCurrency}
                 displayRates={rates}
-                paidThisMonth={actualIncome} paidLastMonth={prevIncome}
+                paidThisMonth={actualIncome} paidLastMonth={prevIncome} extraPay={extraPay}
+                onOpenContributions={() => openDashboardTab("contributions")}
                 onOpenTransactions={openTransactions}
               />
             )}
@@ -6709,6 +6744,13 @@ export default function Dashboard() {
                     onSave={(v) => setComparisons((prev) => [...prev.filter((x) => x.id !== v.id), v].slice(-6))}
                     onDelete={(id) => setComparisons((prev) => prev.filter((x) => x.id !== id))}
                     onTrack={(action) => trackPlanCompare({ action })}
+                    ideas={[
+                      ...(wantsMonthly >= 50 ? [{ icon: "🛍️", why: `You spend about ${fmt(wantsMonthly, defaultCurrency, rates, true)} a month on wants`,
+                        item: { id: "idea-wants", kind: "custom" as const, name: "Spend 20% less on wants", on: true, from: compareCtx.thisYear, monthly: Math.round(wantsMonthly * 0.2) } }] : []),
+                      // A year holds 2 extra paydays when paid every two weeks (26 vs 24), 4 when weekly (52 vs 48).
+                      ...(extraPay.length > 0 ? (n => [{ icon: "🎁", why: `${n} extra paydays a year, about ${fmt(extraPay[0].amount, defaultCurrency, rates, true)} each`,
+                        item: { id: "idea-extra-pay", kind: "custom" as const, name: "Save your extra paydays", on: true, from: compareCtx.thisYear, monthly: Math.round((extraPay[0].amount * n) / 12) } }])(extraPay[0].paydays === 3 ? 2 : 4) : []),
+                    ]}
                     needs={[
                       ...(income > 0 ? [] : [{ key: "income", title: "Your income", why: "Every date here starts from it", button: "Add income", onClick: () => setTab("income") }]),
                       ...(histMonthsCount >= 3 ? [] : [{ key: "spending", title: "Your spending", why: `${histMonthsCount === 0 ? "No" : `Only ${histMonthsCount}`} ${histMonthsCount === 1 ? "month" : "months"} of transactions yet. Three months makes this your real life.`,
@@ -6735,12 +6777,14 @@ export default function Dashboard() {
               </div>
             )}
             {tab === "citizenship" && (TAX_ESTIMATES_AVAILABLE ? <CitizenshipTab onOpenExpat={() => openDashboardTab("expat-fire")} /> : <div className="uf-card" style={{ padding: 24 }}>Passport tax comparisons are unavailable while we test them.</div>)}
-            {tab === "reports" && <ReportsTab onOpenTransactions={openTransactions} displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar} />}
-            {tab === "offers" && <OffersTab />}
+            {tab === "reports" && <ReportsTab onOpenTransactions={openTransactions} displayCurrency={defaultCurrency} displayRates={rates} targetMultiple={planFacts.targetPerDollar}
+              freedomShift={freedomShift} budgets={Object.fromEntries(Object.entries(expenses as Record<string, number>).map(([k, v]) => [k, defaultCurrency === "USD" ? v : v / (rates[defaultCurrency] || 1)]))} />}
+            {tab === "offers" && <OffersTab check={moneyCheck} money={(n) => fmt(n, defaultCurrency, rates, true)} retirementWord={usTaxHome ? "Retirement accounts" : "Pension"} onLinkBank={() => openDashboardTab("assets")} />}
             {tab === "account-setup" && <AccountSetupTab />}
             {tab === "learning-hub" && <LearnTab recommendedStageId={learnPlace.stage} progress={learnPlace.progress} yearsToGo={learnPlace.years} onOpenTab={openDashboardTab} />}
             {tab === "expat-fire" && (
               <ExploreClient appPlan={explorePlan} displayCurrency={defaultCurrency} displayRates={rates}
+                homeKey={CITIES.find(x => x.name === (retirementCityName || cityName))?.key ?? null}
                 onPlanFor={(key) => { const c = CITIES.find(x => x.key === key); if (c) { if (!cityName) setCityName(c.name); setRetirementCityName(c.name); setRetirementCityCol(c.col); } }} />
             )}
             {tab === "profile" && userId && (
