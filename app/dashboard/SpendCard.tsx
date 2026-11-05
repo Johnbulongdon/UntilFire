@@ -58,7 +58,9 @@ function CategoryBar({ r, fmt }: { r: { now: number; due: number; budget: number
   );
 }
 
-export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategories, onToggleCategory, onClearFilters, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel, expectedIncome = 0, bills = [], calendarItems = [], compact = fmt, calendarOnly = false }: {
+export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategories, onToggleCategory, onClearFilters, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel, expectedIncome = 0, bills = [], calendarItems = [], compact = fmt, calendarOnly = false, usualSaving = 0 }: {
+  /** A usual month's saving from the plan (typed pay less 12-month average spending), shown beside a single month's. */
+  usualSaving?: number;
   transactions: Tx[]; range: DateRange; today: string;
   toUSD: (amount: number, currency: string) => number; fmt: (usd: number) => string;
   expenseCats: CatDisplay[]; incomeCats: CatDisplay[];
@@ -241,7 +243,8 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
                 : <>{running ? "Expenses on track for" : "Expenses"} <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(spent)}</b></>}
               {earned > 0 && <>
                 · {running ? "On track to save" : "Saved"} <b style={{ ...mono, color: saved < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink-2)", margin: "0 4px" }}>{saved < 0 ? "−" : ""}{fmt(Math.abs(saved))}{rate != null ? ` (${rate}%)` : ""}</b>
-                <InfoTip label="About saved">Income minus expenses over this range; the percentage is your savings rate.{running ? " While the month is running, expenses are the forecast to its end." : ""}{filled > 0 ? ` *Where income hasn't arrived yet, your expected income from the Budget tab stands in.` : ""}</InfoTip>
+                {range.months.length === 1 && usualSaving > 0 && <>· usual <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(usualSaving)}</b></>}
+                <InfoTip label="About saved">Income minus expenses over this range; the percentage is your savings rate.{usualSaving > 0 ? " Usual is a normal month in your plan: your take-home less your average spending over the last 12 months. Freedom Date and Home use it." : ""}{running ? " While the month is running, expenses are the forecast to its end." : ""}{filled > 0 ? ` *Where income hasn't arrived yet, your expected income from the Budget tab stands in.` : ""}</InfoTip>
               </>}
             </span>
           </div>
