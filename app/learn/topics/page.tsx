@@ -3,6 +3,18 @@ import { learnArticles } from '@/lib/learn'
 
 const TOPIC_GROUPS = [
   {
+    title: 'Emergency savings',
+    description: 'Choose your safety target, decide where to keep it, and rebuild it after an unexpected cost.',
+    articleTitles: [
+      'How Much Should I Keep for Emergencies?',
+      'Where Should I Keep My Emergency Savings?',
+      'When to Use Your Emergency Fund and How to Rebuild It',
+    ],
+    calculatorLinks: [
+      { href: '/dashboard?tab=contributions', label: 'Review emergency savings' },
+    ],
+  },
+  {
     title: 'FIRE Basics',
     description: 'Understand the core math behind financial independence, early retirement, and why savings rate matters.',
     articleTitles: [

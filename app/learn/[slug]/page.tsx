@@ -183,6 +183,14 @@ export default async function LearnArticlePage({ params }: Props) {
             if (node.type === 'fire-number') return <FireNumberQuick key={i} />
             return <p key={i}>{node.text}</p>
           })}
+          {article.sources && article.sources.length > 0 && (
+            <div>
+              <h2>Sources</h2>
+              <ul>
+                {article.sources.map((source) => <li key={source.href}><a href={source.href}>{source.title}</a></li>)}
+              </ul>
+            </div>
+          )}
           {article.faqs && article.faqs.length > 0 && (
             <>
               <h2>Common questions</h2>

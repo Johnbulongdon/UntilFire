@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-05 — A Learn hub for each FIRE stage
+
+- Learn now has stage essentials, a recommended guide, and search across the library. Three new emergency savings guides cover targets, accounts, and rebuilding, with a CFPB source link.
+
 ## 2026-11-05 — Finish payday setup from Home
 
 - Choose an existing spending account right from Home, or jump to bank connections. Payday setup explains repeating paychecks before you save.

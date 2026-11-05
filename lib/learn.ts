@@ -16,6 +16,7 @@ export type LearnArticle = {
   /** Set when the article is revised; published otherwise stands. */
   updatedAt?: string
   body: BodyNode[]
+  sources?: { title: string; href: string }[]
   /** Shown at the end of the article and emitted as FAQPage schema. */
   faqs?: { question: string; answer: string }[]
 }
@@ -58,6 +59,150 @@ function ul(items: string[]): BodyNode { return { type: 'ul', items } }
 function ol(items: string[]): BodyNode { return { type: 'ol', items } }
 
 export const learnArticles: LearnArticle[] = [
+{
+  "slug": "choose-emergency-fund-target",
+  "title": "How Much Should I Keep for Emergencies?",
+  "description": "Choose an emergency savings target using your essential spending and your own circumstances.",
+  "category": "Emergency savings",
+  "publishedAt": "2026-11-05",
+  "readTime": "2 min read",
+  "sources": [
+    {
+      "title": "CFPB guide to building an emergency fund",
+      "href": "https://www.consumerfinance.gov/an-essential-guide-to-building-an-emergency-fund/"
+    }
+  ],
+  "body": [
+    {
+      "type": "h2",
+      "text": "Start with essential spending"
+    },
+    {
+      "type": "p",
+      "text": "An emergency fund covers unplanned costs or a gap in income. The right amount depends on your situation."
+    },
+    {
+      "type": "p",
+      "text": "List the expenses you would still pay if income stopped. Include housing, food, utilities, transport, insurance, and minimum debt payments."
+    },
+    {
+      "type": "h2",
+      "text": "Turn a target into months"
+    },
+    {
+      "type": "p",
+      "text": "Example: essential spending of $2,000 a month and $3,000 in emergency savings means 1.5 months covered. A three-month target would be $6,000, leaving a $3,000 gap. These figures illustrate the arithmetic."
+    },
+    {
+      "type": "h2",
+      "text": "Choose your next step"
+    },
+    {
+      "type": "p",
+      "text": "Think about income stability, dependants, and past unexpected bills. Start with an amount you can build, then review it as circumstances change."
+    },
+    {
+      "type": "p",
+      "text": "In UntilFire, review Emergency savings in Plan → Contributions. Coverage uses the needs amount in your plan. Check that figure before relying on the months shown."
+    }
+  ]
+},
+{
+  "slug": "where-to-keep-emergency-savings",
+  "title": "Where Should I Keep My Emergency Savings?",
+  "description": "Compare access and safety before choosing a home for your emergency cash.",
+  "category": "Emergency savings",
+  "publishedAt": "2026-11-05",
+  "readTime": "2 min read",
+  "sources": [
+    {
+      "title": "CFPB guide to building an emergency fund",
+      "href": "https://www.consumerfinance.gov/an-essential-guide-to-building-an-emergency-fund/"
+    }
+  ],
+  "body": [
+    {
+      "type": "h2",
+      "text": "Make access part of the decision"
+    },
+    {
+      "type": "p",
+      "text": "Choose a place that is safe, accessible, and separate enough from everyday spending to protect the money for emergencies."
+    },
+    {
+      "type": "h2",
+      "text": "Check the account"
+    },
+    {
+      "type": "ul",
+      "items": [
+        "How quickly can you withdraw or transfer money?",
+        "Are there fees, balance requirements, or withdrawal restrictions?",
+        "What deposit protection applies to your account and country?"
+      ]
+    },
+    {
+      "type": "h2",
+      "text": "Name the purpose"
+    },
+    {
+      "type": "p",
+      "text": "A dedicated savings account can make the reserve easier to track. The same money should have one job in your plan."
+    },
+    {
+      "type": "p",
+      "text": "In UntilFire, check your saved and connected balances in Money → Net Worth. Review which accounts belong to your emergency savings in Plan → Contributions."
+    }
+  ]
+},
+{
+  "slug": "rebuild-emergency-fund",
+  "title": "When to Use Your Emergency Fund and How to Rebuild It",
+  "description": "Set a simple rule for unexpected costs and make a manageable refill plan.",
+  "category": "Emergency savings",
+  "publishedAt": "2026-11-05",
+  "readTime": "2 min read",
+  "sources": [
+    {
+      "title": "CFPB guide to building an emergency fund",
+      "href": "https://www.consumerfinance.gov/an-essential-guide-to-building-an-emergency-fund/"
+    }
+  ],
+  "body": [
+    {
+      "type": "h2",
+      "text": "Decide what qualifies"
+    },
+    {
+      "type": "p",
+      "text": "Set a rule for unplanned expenses. A necessary repair or loss of income may qualify. A predictable annual bill belongs in your regular plan."
+    },
+    {
+      "type": "h2",
+      "text": "Use it when needed"
+    },
+    {
+      "type": "p",
+      "text": "Using the reserve for its intended purpose is part of the plan. Afterward, update the balance and choose a manageable refill amount."
+    },
+    {
+      "type": "h2",
+      "text": "Make the refill concrete"
+    },
+    {
+      "type": "p",
+      "text": "Example: if the reserve is $600 below your chosen target, saving $100 a month would close the gap in six months, before interest or further withdrawals."
+    },
+    {
+      "type": "p",
+      "text": "Review bills and spending before setting an automatic transfer so it fits the money actually available."
+    },
+    {
+      "type": "p",
+      "text": "In UntilFire, add the expense in Money → Transactions and check the balance in Net Worth. Then review Emergency savings in Plan → Contributions."
+    }
+  ]
+},
   {
     slug: 'what-is-fire-financial-independence-retire-early',
     title: 'What Does FIRE Mean? Financial Independence, Retire Early',
@@ -639,6 +784,42 @@ export const learnArticles: LearnArticle[] = [
 ]
 
 const articleMetaBySlug: Record<string, LearnArticleMeta> = {
+"choose-emergency-fund-target": {
+  "primaryStage": "starting-out",
+  "secondaryStages": [
+    "building-momentum"
+  ],
+  "relatedCalculators": [
+    {
+      "href": "/dashboard?tab=contributions",
+      "label": "Review your contribution plan"
+    }
+  ]
+},
+"where-to-keep-emergency-savings": {
+  "primaryStage": "starting-out",
+  "secondaryStages": [
+    "building-momentum"
+  ],
+  "relatedCalculators": [
+    {
+      "href": "/dashboard?tab=contributions",
+      "label": "Review your contribution plan"
+    }
+  ]
+},
+"rebuild-emergency-fund": {
+  "primaryStage": "starting-out",
+  "secondaryStages": [
+    "building-momentum"
+  ],
+  "relatedCalculators": [
+    {
+      "href": "/dashboard?tab=contributions",
+      "label": "Review your contribution plan"
+    }
+  ]
+},
   'what-is-fire-financial-independence-retire-early': {
     primaryStage: 'starting-out',
     secondaryStages: ['building-momentum'],
@@ -779,6 +960,9 @@ export const learnStages: LearnStage[] = [
     description: 'Learn the core ideas first: what FIRE is, why savings rate matters, and how compounding and simple rules of thumb shape the journey.',
     whatMattersNow: 'Get the foundations right before you optimize. Learn the language, understand your savings rate, and run your first calculator with confidence.',
     articleSlugs: [
+      'choose-emergency-fund-target',
+      'where-to-keep-emergency-savings',
+      'rebuild-emergency-fund',
       'what-is-fire-financial-independence-retire-early',
       'why-savings-rate-matters-more-than-income',
       'compound-interest-and-fire',
@@ -800,6 +984,9 @@ export const learnStages: LearnStage[] = [
     description: 'You understand the basics. Now learn how to invest: index funds, asset allocation, diversification, and tax efficiency. Then focus on account strategy and tradeoffs that move your FIRE date.',
     whatMattersNow: 'Invest your savings wisely using low-cost index funds. Master your allocation, rebalance annually, and reduce taxes. Combine this with account strategy (401k, Roth) to improve the machine.',
     articleSlugs: [
+      'choose-emergency-fund-target',
+      'where-to-keep-emergency-savings',
+      'rebuild-emergency-fund',
       'index-funds-101-what-to-invest-in',
       'diversification-why-eggs-in-many-baskets',
       'asset-allocation-stocks-vs-bonds',
