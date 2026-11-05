@@ -1,144 +1,119 @@
 "use client";
 
-/**
- * Learn in the calm style (D-47): where you are first, one article to read
- * next, then each stage's reading as rows. What you have opened is kept in
- * this browser only; it is a convenience, not a record.
- */
-
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui";
-import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, Fig } from "./MoneyCards";
+import { Button, Input } from "@/components/ui";
+import { PillTabs, MoneyList, MoneyRow } from "./MoneyCards";
 import { learnStages, learnArticles, getStageArticles, type LearnStageId } from "@/lib/learn";
 
 const READ_KEY = "uf_learn_read";
-
-const CATEGORY: Record<string, { icon: string; color: string }> = {
-  "FIRE Basics": { icon: "🌱", color: "#1baf7a" },
-  Investing: { icon: "📈", color: "#6b5bd2" },
-  Planning: { icon: "🧭", color: "#2a78d6" },
-  "Risk & Strategy": { icon: "🛡️", color: "#eda100" },
-  "Tax & Accounts": { icon: "🧾", color: "#e34948" },
+const STAGE_COPY: Record<LearnStageId, { title: string; description: string }> = {
+  "starting-out": { title: "Build a stable foundation", description: "Start with emergency savings, spending, and the basics of financial freedom." },
+  "building-momentum": { title: "Turn saving into steady progress", description: "Protect your safety pot and understand where your investments go." },
+  "approaching-fire": { title: "Check that your plan can support you", description: "Review your target, spending, and how you would handle a market drop." },
+  "living-in-fire": { title: "Keep your freedom sustainable", description: "Understand withdrawals and keep your plan in step with your life." },
 };
-
+const ESSENTIALS: Record<LearnStageId, string[]> = {
+  "starting-out": ["choose-emergency-fund-target", "where-to-keep-emergency-savings", "rebuild-emergency-fund"],
+  "building-momentum": ["choose-emergency-fund-target", "index-funds-101-what-to-invest-in", "asset-allocation-stocks-vs-bonds"],
+  "approaching-fire": ["how-much-money-do-i-need-to-retire", "sequence-of-returns-risk", "how-fire-assumptions-change-your-retirement-date"],
+  "living-in-fire": ["what-is-the-4-percent-rule", "sequence-of-returns-risk", "rebalancing-your-portfolio-annually"],
+};
 type PlanTab = "fire-calculator" | "contributions" | "expat-fire";
-
-/** Where each stage's numbers live in the app, instead of the public calculators. */
-const STAGE_TOOLS: Record<LearnStageId, { tab: PlanTab; icon: string; name: string; meta: string }[]> = {
-  "starting-out": [
-    { tab: "fire-calculator", icon: "📅", name: "Your freedom date", meta: "See how your saving moves it" },
-    { tab: "contributions", icon: "🪜", name: "Your contribution plan", meta: "Where each month's saving goes" },
-  ],
-  "building-momentum": [
-    { tab: "contributions", icon: "🪜", name: "Your contribution plan", meta: "Where the next dollar goes" },
-    { tab: "fire-calculator", icon: "📅", name: "What moves your date", meta: "Save more, spend less or earn more" },
-  ],
-  "approaching-fire": [
-    { tab: "fire-calculator", icon: "📊", name: "Your assumptions", meta: "Growth, lifestyle and tax in retirement" },
-    { tab: "expat-fire", icon: "🌍", name: "Explore", meta: "Where your money goes further" },
-  ],
-  "living-in-fire": [
-    { tab: "fire-calculator", icon: "📊", name: "Your assumptions", meta: "Withdrawal and growth" },
-    { tab: "expat-fire", icon: "🌍", name: "Explore", meta: "Where your money goes further" },
-  ],
-};
-
-function StageSteps({ at }: { at: number }) {
-  const next = learnStages[at + 1];
-  return (
-    <div style={{ display: "grid", gap: 6 }}>
-      <div aria-hidden style={{ display: "grid", gridTemplateColumns: `repeat(${learnStages.length}, minmax(0, 1fr))`, gap: 6 }}>
-        {learnStages.map((s, i) => <span key={s.id} style={{ height: 8, borderRadius: 99, background: i <= at ? "var(--uf-teal)" : "var(--uf-surface-2)" }} />)}
-      </div>
-      <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>
-        Stage <Fig>{at + 1}</Fig> of <Fig>{learnStages.length}</Fig>{next ? <> · next: {next.shortLabel}</> : " · the last stage"}
-      </span>
-    </div>
-  );
-}
-
-function Section({ t }: { t: string }) {
-  return <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>{t}</div>;
-}
 
 export default function LearnTab({ recommendedStageId, progress, yearsToGo, onOpenTab }: {
   recommendedStageId: LearnStageId;
-  /** Invested as a share of the FIRE number, 0–1, or null without a plan. */
   progress: number | null;
   yearsToGo: number | null;
   onOpenTab: (tab: PlanTab) => void;
 }) {
   const router = useRouter();
-  const [stage, setStage] = useState<LearnStageId>(recommendedStageId);
+  const [stage, setStage] = useState(recommendedStageId);
+  const [query, setQuery] = useState("");
   const [read, setRead] = useState<Set<string>>(new Set());
-
   useEffect(() => {
-    try { setRead(new Set(JSON.parse(localStorage.getItem(READ_KEY) ?? "[]"))); } catch { /* ignore */ }
+    try {
+      const stored: unknown = JSON.parse(localStorage.getItem(READ_KEY) ?? "[]");
+      if (Array.isArray(stored)) setRead(new Set(stored.filter((slug): slug is string => typeof slug === "string")));
+    } catch { /* Reading still works when browser storage is unavailable. */ }
   }, []);
   useEffect(() => { setStage(recommendedStageId); }, [recommendedStageId]);
 
+  const current = learnStages.find((item) => item.id === stage)!;
+  const essentials = ESSENTIALS[stage].flatMap((slug) => {
+    const article = learnArticles.find((item) => item.slug === slug);
+    return article ? [article] : [];
+  });
+  const next = essentials.find((article) => !read.has(article.slug));
+  const articles = useMemo(() => {
+    const search = query.trim().toLocaleLowerCase();
+    return search
+      ? learnArticles.filter((article) => [article.title, article.description, article.category].join(" ").toLocaleLowerCase().includes(search))
+      : getStageArticles(stage);
+  }, [query, stage]);
   function open(slug: string) {
-    const next = new Set(read).add(slug);
-    setRead(next);
-    try { localStorage.setItem(READ_KEY, JSON.stringify([...next])); } catch { /* ignore */ }
-    router.push(`/learn/${slug}`);
+    const updated = new Set(read).add(slug);
+    setRead(updated);
+    try { localStorage.setItem(READ_KEY, JSON.stringify([...updated])); } catch { /* Opening a guide does not depend on storage. */ }
+    router.push("/learn/" + slug);
   }
 
-  const at = Math.max(0, learnStages.findIndex(s => s.id === recommendedStageId));
-  const mine = learnStages[at];
-  const mineArticles = getStageArticles(mine.id);
-  const opened = mineArticles.filter(a => read.has(a.slug)).length;
-  const next = mineArticles.find(a => !read.has(a.slug));
-  const cur = learnStages.find(s => s.id === stage) ?? mine;
-  const articles = getStageArticles(cur.id);
-
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 12 }}>
-      <MoneyHead label="Where you are" value={<span style={{ fontFamily: "var(--uf-font-display)", fontSize: 34 }}>{mine.label}</span>}
-        sub={progress === null
-          ? "Add your income, spending and savings in Plan and this follows your progress."
-          : <>Based on your plan: <Fig>{Math.round(progress * 100)}%</Fig> of your FIRE number{yearsToGo !== null && yearsToGo > 0 ? <>, about <Fig>{Math.round(yearsToGo)}</Fig> {Math.round(yearsToGo) === 1 ? "year" : "years"} to go</> : null}.</>}>
-        <StageSteps at={at} />
-        <MoneyKey items={[<><Fig>{opened}</Fig> of <Fig>{mineArticles.length}</Fig> opened for this stage</>, <>{mine.tagline}</>]} />
-      </MoneyHead>
-
-      {next && <>
-        <Section t="Read next" />
-        <MoneyList>
-          <MoneyRow wrap dot={CATEGORY[next.category]?.color ?? "var(--uf-ink-3)"} icon={CATEGORY[next.category]?.icon} name={next.title}
-            meta={`${next.readTime} · ${next.description}`} value="Read ›" strong onClick={() => open(next.slug)} />
-        </MoneyList>
-      </>}
-
-      <Section t="Reading by stage" />
-      <div style={{ minWidth: 0 }}>
-        <PillTabs label="Stage" value={stage} onChange={setStage}
-          options={learnStages.map(s => ({ key: s.id, label: s.id === mine.id ? `${s.shortLabel} · you` : s.shortLabel }))} />
-      </div>
-      <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>{cur.whatMattersNow}</span>
-      <MoneyList footer={
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Button variant="secondary" size="sm" onClick={() => router.push("/learn/articles")}>All {learnArticles.length} articles</Button>
-          <Button variant="secondary" size="sm" onClick={() => router.push("/learn/topics")}>Topics</Button>
+    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 20 }}>
+      <header>
+        <h1 className="uf-t-h1" style={{ margin: 0 }}>Learn</h1>
+        <p className="uf-t-body" style={{ margin: "4px 0 0", color: "var(--uf-ink-2)" }}>From your first savings to financial freedom.</p>
+      </header>
+      <PillTabs label="FIRE stage" value={stage} onChange={(value) => { setStage(value); setQuery(""); }}
+        options={learnStages.map((item) => ({ key: item.id, label: item.label + (item.id === recommendedStageId ? " · you" : "") }))} />
+      <section className="uf-card" style={{ display: "grid", gap: 12, background: "var(--uf-mint)" }} aria-labelledby="learn-stage-title">
+        <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>{stage === recommendedStageId ? "Your suggested stage" : "Exploring"} · {current.label}</span>
+        <h2 id="learn-stage-title" className="uf-t-h2" style={{ margin: 0 }}>{STAGE_COPY[stage].title}</h2>
+        <p className="uf-t-body" style={{ margin: 0 }}>{STAGE_COPY[stage].description}</p>
+        {stage === recommendedStageId && progress !== null && <p className="uf-t-small" style={{ margin: 0, color: "var(--uf-ink-2)" }}>
+          Based on your plan · {Math.round(progress * 100)}% of your freedom number
+          {yearsToGo !== null && yearsToGo > 0 ? ` · about ${Math.round(yearsToGo)} years to go` : ""}
+        </p>}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <strong className="uf-t-body">{next?.title ?? "You’ve opened every essential for this stage"}</strong>
+          {next && <Button variant="primary" onClick={() => open(next.slug)}>Start here →</Button>}
         </div>
-      }>
-        {articles.map(a => {
-          const done = read.has(a.slug);
-          return (
-            <MoneyRow key={a.slug} wrap dot={CATEGORY[a.category]?.color ?? "var(--uf-ink-3)"} icon={CATEGORY[a.category]?.icon} name={a.title}
-              meta={`${a.readTime.replace(" read", "")} · ${a.category}`}
-              value={done ? "Opened ✓" : "›"} valueTone={done ? "var(--uf-pos-ink)" : "var(--uf-ink-3)"} onClick={() => open(a.slug)} />
-          );
-        })}
-      </MoneyList>
-
-      <Section t="Try it on your numbers" />
-      <MoneyList>
-        {STAGE_TOOLS[cur.id].map(t => (
-          <MoneyRow key={t.name} dot="var(--uf-ink-3)" icon={t.icon} name={t.name} meta={t.meta} value="Open ›" onClick={() => onOpenTab(t.tab)} />
-        ))}
-      </MoneyList>
+      </section>
+      <section aria-labelledby="learn-essentials-title" style={{ display: "grid", gap: 12 }}>
+        <h2 id="learn-essentials-title" className="uf-t-h3" style={{ margin: 0 }}>Essentials for this stage</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))", gap: 12 }}>
+          {essentials.map((article, index) => (
+            <button type="button" key={article.slug} className="uf-card" onClick={() => open(article.slug)}
+              style={{ display: "grid", alignContent: "start", gap: 12, textAlign: "left", color: "var(--uf-ink)", font: "inherit", cursor: "pointer",
+                background: ["var(--uf-lilac)", "var(--uf-blue)", "var(--uf-pink)"][index] }}>
+              <span className="uf-t-small">Essential {index + 1} · {read.has(article.slug) ? "Opened" : article.readTime}</span>
+              <strong className="uf-t-body">{article.title}</strong>
+              <span className="uf-t-small" style={{ fontWeight: 700 }}>Read guide →</span>
+            </button>
+          ))}
+        </div>
+      </section>
+      <section aria-labelledby="learn-library-title" style={{ display: "grid", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+          <h2 id="learn-library-title" className="uf-t-h3" style={{ margin: 0 }}>Explore the library</h2>
+          <Input type="search" aria-label="Search all Learn guides" placeholder="Search all guides" value={query} onChange={(event) => setQuery(event.target.value)} style={{ width: "min(100%, 280px)" }} />
+        </div>
+        <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }} role="status">{articles.length} {articles.length === 1 ? "guide" : "guides"} · {query.trim() ? "all stages" : current.label}</span>
+        <MoneyList footer={<div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Button size="sm" variant="secondary" onClick={() => router.push("/learn/articles")}>All guides</Button>
+          <Button size="sm" variant="secondary" onClick={() => router.push("/learn/topics")}>Topics</Button>
+        </div>}>
+          {articles.map((article) => <MoneyRow key={article.slug} wrap dot="var(--uf-ink-3)" name={article.title}
+            meta={article.readTime + " · " + article.category} value={read.has(article.slug) ? "Opened ✓" : "Read ›"}
+            onClick={() => open(article.slug)} />)}
+          {!articles.length && <div className="uf-t-body" style={{ padding: 16 }}>No guides match this search. Try another word.</div>}
+        </MoneyList>
+      </section>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <Button variant="secondary" size="sm" onClick={() => onOpenTab("contributions")}>Review my contribution plan</Button>
+        <Button variant="ghost" size="sm" onClick={() => onOpenTab("fire-calculator")}>Review my freedom plan</Button>
+        <Button variant="ghost" size="sm" onClick={() => onOpenTab("expat-fire")}>Explore cities</Button>
+      </div>
     </div>
   );
 }

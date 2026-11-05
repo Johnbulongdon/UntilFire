@@ -48,7 +48,7 @@ Plan                          long-term projections and scenarios
   ├ Goals
   ├ Contributions             account setup is a focused step; existing accounts bypass provider referrals
   ├ Explore
-  └ Learn                     a quiet row under the phone's tiles (D-105)
+  └ Learn                     web stage hub, Essentials and searchable guides; phone stage reading (D-105)
 
 Profile                       account, household setup, FIRE personality/type,
                               give a month, creator program card (→ /invite)

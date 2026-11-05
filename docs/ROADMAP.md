@@ -2,6 +2,8 @@
 
 ## Current priorities
 
+N2 follow-up — Learn stage hub, Codex, 5 November 2026. In review on codex/learn-stage-hub. Four stage sections, searchable guides, and emergency savings essentials. Next: browser acceptance and review.
+
 N2 follow-up — Payday setup account selection, Codex, 5 November 2026. In review in [PR #386](https://github.com/Johnbulongdon/UntilFire/pull/386). Next: signed-in acceptance and review.
 
 N2 follow-up — Home payday setup, Codex, 5 November 2026. In review in [PR #385](https://github.com/Johnbulongdon/UntilFire/pull/385). Next: verify web deployment and signed-in setup.
