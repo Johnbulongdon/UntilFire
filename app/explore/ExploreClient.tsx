@@ -19,6 +19,7 @@ import { formatUSDInCurrency } from "@/lib/money";
 import { trackExploreCityOpened, trackExploreModeChanged, trackExplorePlanStarted, trackExploreStarred, trackExploreViewed } from "@/lib/analytics";
 import ExploreMap from "./ExploreMap";
 import ExploreCard from "./ExploreCard";
+import ExploreBest from "./ExploreBest";
 import Flag from "@/app/components/Flag";
 import "./explore.css";
 
@@ -45,7 +46,9 @@ function PlanFields({ onDone, currency, rate }: { onDone: (p: ExplorePlan) => vo
   </form>;
 }
 
-export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, displayRates }: {
+export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, displayRates, homeKey }: {
+  /** In the app: the city your plan uses now, compared against. */
+  homeKey?: string | null;
   /** In the app: your default currency and its rates. Public: the calculator's currency, else USD. */
   displayCurrency?: string;
   displayRates?: Record<string, number>;
@@ -78,6 +81,8 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
   const [panelOpen, setPanelOpen] = useState(true);
   const togglePanel = () => setPanelOpen(o => { write(PANEL_KEY, !o); return !o; });
   const box = useRef<HTMLDivElement>(null);
+  // In the app, your best cities come first; the globe is one tap away.
+  const [all, setAll] = useState(false);
 
   useEffect(() => {
     setStarred(new Set(read<string[]>(STARS_KEY) ?? []));
@@ -165,6 +170,8 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
       : <Link href={`/?start=onboarding&city=${encodeURIComponent(chosen.key)}&source=explore`} onClick={() => trackExplorePlanStarted()} className="uf-explore-action uf-explore-action-main">Plan {chosen.name} →</Link>}
   </>;
   const modes: [PinMode, string, boolean][] = [["monthly", `${getCurrencySymbol(currency)} / month`, true], ["year", "🏁 Year", !!plan], ["age", "🎂 Age", plan?.age != null], ["badge", "🏅 Badges", plan?.age != null]];
+  if (appPlan && !all) return <ExploreBest plan={appPlan} homeKey={homeKey} money={money}
+    onTry={onPlanFor ? (key) => { onPlanFor(key); trackExplorePlanStarted(); } : undefined} onSeeAll={() => setAll(true)} />;
   return <div className="uf-explore" ref={box} style={boxHeight ? { height: boxHeight } : undefined}>
     <aside className="uf-explore-panel" data-open={panelOpen} aria-label="Cities">
     <button type="button" className="uf-explore-fold" onClick={togglePanel} aria-expanded={panelOpen}

@@ -8,6 +8,8 @@ import { convertUSDAmount } from "@/lib/currency";
 import { formatMoney } from "@/lib/money";
 import { paycheck, pensionFor, type PlanSettings } from "@/lib/plan-settings";
 import { MoneyHead, MoneyList, MoneyRow } from "./MoneyCards";
+import Button from "@/components/ui/Button";
+import type { ExtraPayMonth } from "@/lib/pay-months";
 
 /**
  * Money → Income (D-59): your pay, from salary to take-home, and what your
@@ -17,7 +19,10 @@ import { MoneyHead, MoneyList, MoneyRow } from "./MoneyCards";
  * The pension taken before tax and the employer's money are saved too, because
  * neither reaches your take-home but both are saving.
  */
-export default function IncomeTab({ income, setIncome, plan, onPlanChange, taxKey, taxLabel, usTaxHome, displayCurrency, displayRates, paidThisMonth = 0, paidLastMonth = 0, onOpenTransactions }: {
+export default function IncomeTab({ income, setIncome, plan, onPlanChange, taxKey, taxLabel, usTaxHome, displayCurrency, displayRates, paidThisMonth = 0, paidLastMonth = 0, onOpenTransactions, extraPay = [], onOpenContributions }: {
+  /** Months with an extra payday (lib/pay-months), from this month on. */
+  extraPay?: ExtraPayMonth[];
+  onOpenContributions?: () => void;
   /** Income transactions this calendar month and last, in USD: real pay, which goes up and down. */
   paidThisMonth?: number; paidLastMonth?: number;
   onOpenTransactions?: () => void;
@@ -77,6 +82,24 @@ export default function IncomeTab({ income, setIncome, plan, onPlanChange, taxKe
           value={employer > 0 ? `+${money(employer)} ›` : "Add ›"} valueTone={employer > 0 ? "var(--uf-pos-ink)" : undefined}
           onClick={() => toggle("employer")} after={open === "employer" && field("Employer adds a year", employer, (v) => update({ employerAnnual: v }))} />
       </MoneyList>
+      {(() => {
+        const d0 = new Date(), now = `${d0.getFullYear()}-${String(d0.getMonth() + 1).padStart(2, "0")}`;
+        const here = extraPay.find((m) => m.month === now);
+        const next = extraPay.find((m) => m.month > now);
+        const monthName = (ym: string, year = false) => new Date(`${ym}-15T12:00:00`).toLocaleDateString("en-US", { month: "long", ...(year ? { year: "numeric" } : {}) });
+        const day = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        if (here) return (
+          <div style={{ background: "var(--uf-yellow)", color: "#151719", borderRadius: 24, padding: 18, display: "grid", gap: 8 }}>
+            <span className="uf-t-small" style={{ fontWeight: 700, color: "#5C5130" }}>This month</span>
+            <b style={{ fontSize: 18 }}>{monthName(here.month)} has {here.paydays} paydays</b>
+            <span className="uf-t-small" style={{ color: "#5C5130" }}>An extra {money(here.amount)} lands on {day(here.extraDate)}. Your budget only counts on {here.paydays - 1}.</span>
+            {onOpenContributions && <div><Button size="sm" onClick={onOpenContributions}>Send it to savings</Button></div>}
+            {next && <span className="uf-t-small" style={{ color: "#5C5130" }}>Next one: {monthName(next.month, true)}</span>}
+          </div>
+        );
+        if (next) return <MoneyList><MoneyRow dot="var(--uf-ink-3)" icon="🎁" name={`Extra payday in ${monthName(next.month, true)}`} meta={`${money(next.amount)} more than a usual month, on ${day(next.extraDate)}`} value="" /></MoneyList>;
+        return null;
+      })()}
       {income > 0 && (
         <>
           <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>What really came in</div>
