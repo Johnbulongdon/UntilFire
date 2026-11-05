@@ -2978,7 +2978,7 @@ Amends D-89's "Left this month" card; D-86's budget rule is unchanged.
   area under zero striped red. Under it, one pill: bills total and count.
 - **Fallback:** without a balance or a paycheck in Upcoming, the card is
   "This month": day-to-day spent of the day-to-day budget, with the pace line.
-- **Safe to spend today** on the Today strip is Until payday over the days to
+- **Safe to spend today** (amended by D-137) on the Today strip is Until payday over the days to
   payday when it exists, else the budget left over the days left.
 - **"Everyday" reads "Day-to-day"** in the interface; it read like "per day".
 - Names in the "Until …" family (Until payday, UntilFire) are welcome where
@@ -3584,3 +3584,9 @@ adequate sample before claiming a winner. No conversion improvement is assumed.
 **Decision:** Home's bottom row (Net worth, Safety pot, Savings rate) gets a fourth tile, Dividends: "18% of your bills paid", a bar, and "$380 a month · bills $2,140". Dividends are income rows the bank labelled as dividends (Plaid `INCOME_DIVIDENDS`, sub-category "Dividends") or investment income named "dividend", over the last 12 months, divided by the months of history (at least 3). Bills are the repeating Calendar bills at their monthly cost. The tile only appears when there is at least one dividend and one repeating bill; it opens Money → Income. Logic in `lib/dividend-cover.ts`, checked by `npm run test:dividend-cover`.
 **Why:** John wants UntilFire to serve dividend FIRE without a separate dividend page or choices for the user. Real payouts beat an entered yield (prefer actual data), and "share of bills paid" is the progress dividend investors track.
 **Scope:** display only; the freedom date, target and withdrawal rate are unchanged (D-94's fixed layout holds: no reorder or hide controls). The phone does not show it yet; its first place would be Income, since phone Home is full. Interest and pensions are not counted as dividends.
+
+### D-137 — Safe to spend today is the stricter of payday and budget (5 November 2026)
+**Status:** Proposed by Claude from the page rating; waiting on John's pick (decision card in the "Rate every page for usefulness" thread). Amends D-90's Safe to spend today line.
+**Decision:** The Today strip's "Safe to spend today" is the smaller of Until payday over the days to payday and the day-to-day budget left over the days left in the month, rounded like Budget's "about $X a day". With only one known, it uses that one. Logic in `safeToSpendToday` (`lib/payday-spending.ts`), checked by `npm run test:payday-spending`.
+**Why:** with a bank linked, a sample user saw "Safe to spend today $211" on Home and "about $33 a day" on Budget. Until payday is cash left after bills and normal spending, which is the money Contributions plans to save, so calling it safe to spend works against the plan.
+**Scope:** website Today strip only. The Until payday card and Transactions "Free to spend" are unchanged (D-90). Phone not changed.

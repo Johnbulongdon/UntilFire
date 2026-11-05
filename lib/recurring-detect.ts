@@ -70,6 +70,9 @@ export function detectRecurring(
 ): { expenses: DetectedItem[]; income: DetectedItem[] } {
   const groups = new Map<string, RawTx[]>();
   for (const tx of txns) {
+    // Moving money between your own accounts (a monthly transfer to Vanguard)
+    // repeats like a bill but isn't one, so it is never offered as one.
+    if ((tx.transaction_type as string) === "transfer") continue;
     const key = tx.description.toLowerCase().trim();
     if (!key) continue;
     const arr = groups.get(key) ?? [];

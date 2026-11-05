@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { paydaySpending, paydayRemainder, recentRate } from '../lib/payday-spending.ts';
+import { paydaySpending, paydayRemainder, recentRate, safeToSpendToday } from '../lib/payday-spending.ts';
 const close=(a,b)=>assert.ok(Math.abs(a-b)<.000001,`${a} != ${b}`);
 const bill={description:'Rent',category:'housing',usd:1500,due:'2026-11-03',recurrence:'monthly'};
 const base={today:new Date(2026,10,1),days:14,rows:[],bills:[bill],monthlyBudget:2150,budget:{housing:1500,food:650}};
@@ -28,4 +28,10 @@ close(recentRate(recent,[bill],new Date(2026,10,1)),12);
 close(paydaySpending({...base,rows:recent}).amount,12*14);
 assert.equal(recentRate(recent.slice(1),[bill],new Date(2026,10,1)),null); // under 30 days of history
 assert.equal(recentRate(recent.slice(0,6),[bill],new Date(2026,10,1)),null); // too few payments
-console.log('17 payday estimate guards passed');
+// Safe to spend today: the stricter of payday cash and the month's budget.
+assert.equal(safeToSpendToday({payday:{remaining:2116,days:10},budget:{left:855,daysLeft:26}}),33); // matches Budget's "about $33 a day"
+assert.equal(safeToSpendToday({payday:{remaining:300,days:10},budget:{left:855,daysLeft:26}}),30);
+assert.equal(safeToSpendToday({payday:{remaining:2116,days:10},budget:null}),212);
+assert.equal(safeToSpendToday({payday:null,budget:{left:-40,daysLeft:26}}),0);
+assert.equal(safeToSpendToday({payday:{remaining:null,days:10},budget:null}),null);
+console.log('22 payday estimate guards passed');

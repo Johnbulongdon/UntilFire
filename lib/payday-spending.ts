@@ -46,3 +46,21 @@ export function paydayRemainder(afterBills: number, everyday: number | null, cus
   if (everyday === null || !Number.isFinite(everyday) || everyday < 0 || !Number.isFinite(cushion) || cushion < 0) return null;
   return afterBills - everyday - cushion;
 }
+
+/**
+ * "Safe to spend today" on Home: the smaller of what is left until payday per
+ * day and what is left in this month's day-to-day budget per day. Either alone
+ * could promise money the other already counts on: the payday figure is cash
+ * the Contributions plan means to save, and the budget figure ignores bills
+ * landing before payday (page rating, 5 Nov 2026). Null when neither is known.
+ */
+export function safeToSpendToday({ payday, budget }: {
+  payday: { remaining: number | null; days: number } | null;
+  budget: { left: number; daysLeft: number } | null;
+}): number | null {
+  const perDay: number[] = [];
+  if (payday && payday.remaining !== null && payday.days > 0) perDay.push(payday.remaining / payday.days);
+  if (budget && budget.daysLeft > 0) perDay.push(budget.left / budget.daysLeft);
+  if (!perDay.length) return null;
+  return Math.max(0, Math.round(Math.min(...perDay)));
+}

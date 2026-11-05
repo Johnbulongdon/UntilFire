@@ -55,6 +55,11 @@ ok("finds the paycheck and steady bills, skips swinging amounts and ones already
   assert.deepEqual(bills.map((b) => b.description), ["Rent", "Phone"]);
   assert.equal(bills[0].recurrence, "monthly");
 });
+ok("a monthly transfer to your own investing account is never offered as a bill", () => {
+  const transfers = months("Transfer to Vanguard", 500).map((t) => ({ ...t, transaction_type: "transfer" as unknown as "expense" }));
+  const { bills } = setupFinds([...months("Rent", 1450), ...transfers], [], {});
+  assert.deepEqual(bills.map((b) => b.description), ["Rent"]);
+});
 ok("no bank history finds nothing", () => {
   assert.deepEqual(setupFinds([], [], {}), { payday: null, bills: [] });
 });
