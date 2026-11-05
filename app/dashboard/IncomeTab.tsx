@@ -17,7 +17,10 @@ import { MoneyHead, MoneyList, MoneyRow } from "./MoneyCards";
  * The pension taken before tax and the employer's money are saved too, because
  * neither reaches your take-home but both are saving.
  */
-export default function IncomeTab({ income, setIncome, plan, onPlanChange, taxKey, taxLabel, usTaxHome, displayCurrency, displayRates }: {
+export default function IncomeTab({ income, setIncome, plan, onPlanChange, taxKey, taxLabel, usTaxHome, displayCurrency, displayRates, paidThisMonth = 0, paidLastMonth = 0, onOpenTransactions }: {
+  /** Income transactions this calendar month and last, in USD: real pay, which goes up and down. */
+  paidThisMonth?: number; paidLastMonth?: number;
+  onOpenTransactions?: () => void;
   /** Take-home a month, in USD. */
   income: number;
   setIncome: (monthly: number) => void;
@@ -70,10 +73,27 @@ export default function IncomeTab({ income, setIncome, plan, onPlanChange, taxKe
           value={pay ? money(yearTakeHome) : `${money(income)} a month ›`}
           onClick={pay ? undefined : () => toggle("takehome")}
           after={open === "takehome" && !pay && field("Take-home a month", income, (v) => setIncome(Math.round(v ?? 0)))} />
-        <MoneyRow dot="var(--uf-teal)" icon="🏢" name="Employer adds" meta="Into your pension, on top of your pay"
+        <MoneyRow dot="var(--uf-teal)" icon="🏢" name="Employer adds" meta={`Into your ${usTaxHome ? "retirement accounts" : pensionName.toLowerCase()}, on top of your pay`}
           value={employer > 0 ? `+${money(employer)} ›` : "Add ›"} valueTone={employer > 0 ? "var(--uf-pos-ink)" : undefined}
           onClick={() => toggle("employer")} after={open === "employer" && field("Employer adds a year", employer, (v) => update({ employerAnnual: v }))} />
       </MoneyList>
+      {income > 0 && (
+        <>
+          <div className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 700, marginTop: 8 }}>What really came in</div>
+          <MoneyList footer={<span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Pay goes up and down. Your freedom date uses your usual {money(income)} a month.</span>}>
+            {paidThisMonth > 0 || paidLastMonth > 0 ? <>
+              <MoneyRow dot="var(--uf-green)" icon="📅" name="This month so far" meta="Income in your transactions" value={money(paidThisMonth)} />
+              {paidLastMonth > 0 && <MoneyRow dot="var(--uf-ink-3)" icon="🗓️" name="Last month"
+                meta={Math.abs(paidLastMonth - income) < Math.max(1, income * 0.02) ? "Same as usual"
+                  : paidLastMonth > income ? `${money(paidLastMonth - income)} more than usual` : `${money(income - paidLastMonth)} less than usual`}
+                value={money(paidLastMonth)} valueTone={paidLastMonth > income * 1.02 ? "var(--uf-pos-ink)" : undefined} />}
+            </> : (
+              <MoneyRow dot="var(--uf-ink-3)" icon="📥" name="No pay in your transactions yet" meta="Add or import your paychecks to see what really came in"
+                value={onOpenTransactions ? "Add ›" : ""} onClick={onOpenTransactions} />
+            )}
+          </MoneyList>
+        </>
+      )}
     </div>
   );
 }

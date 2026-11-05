@@ -387,6 +387,16 @@ function effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts }: {
   };
 }
 
+/** Net worth as the Net Worth page shows it: everything you have plus a home, less every debt. */
+function fullNetWorth(a: {
+  k401: number; rothIRA: number; taxable: number; cashSavings: number; totalDebt: number; mortgageBalance: number; homeValue: number;
+  plaidAccounts: Pick<PlaidAccount, "type" | "subtype" | "balance_current">[];
+}) {
+  const eff = effectiveBalances(a);
+  const debts = effectiveDebts(a);
+  return eff.k401 + eff.rothIRA + eff.taxable + eff.cashSavings + a.homeValue - debts.otherDebt - debts.mortgage - debts.cards;
+}
+
 // ─── FIRE Engine ──────────────────────────────────────────────────────────────
 function calcProjection({
   annualIncome, monthlyExpenses, k401, rothIRA, taxable, cashSavings = 0,
@@ -3335,7 +3345,9 @@ function UserNav({ onProfileClick, isProfileActive }: { onProfileClick: () => vo
 }
 
 // ─── Portfolio Overview Tab ───────────────────────────────────────────────────
-function PortfolioOverviewTab({ k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, displayCurrency, displayRates, plaidAccounts = [], homeValue = 0 }: {
+function PortfolioOverviewTab({ k401, rothIRA, taxable, cashSavings = 0, totalDebt, mortgageBalance, displayCurrency, displayRates, plaidAccounts = [], homeValue = 0, history = [] }: {
+  /** One net worth per day, oldest first (net_worth_snapshots.net_worth). */
+  history?: { net_worth: number; captured_at: string }[];
   k401: number; rothIRA: number; taxable: number; cashSavings?: number;
   totalDebt: number; mortgageBalance: number;
   displayCurrency: string; displayRates: Record<string, number>;
@@ -3347,10 +3359,9 @@ function PortfolioOverviewTab({ k401, rothIRA, taxable, cashSavings = 0, totalDe
 
   // Connected accounts replace typed balances of the same kind (effectiveBalances), as on Home.
   const eff = effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts });
-  const investable = eff.k401 + eff.rothIRA + eff.taxable + eff.cashSavings;
   // Debts by the same rule as Home (effectiveDebts): connected replaces typed, cards counted once.
   const debts = effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts });
-  const netWorth   = investable + homeValue - debts.otherDebt - debts.mortgage - debts.cards;
+  const netWorth   = fullNetWorth({ k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, homeValue, plaidAccounts });
   const assets = Math.max(eff.k401, 0) + Math.max(eff.rothIRA, 0) + Math.max(eff.taxable, 0) + Math.max(eff.cashSavings, 0) + homeValue;
   const owed = debts.otherDebt + debts.mortgage + debts.cards;
   // Account types are categories here, so they get category colours (D-40).
@@ -3373,7 +3384,44 @@ function PortfolioOverviewTab({ k401, rothIRA, taxable, cashSavings = 0, totalDe
           <span key={t.key}><i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 999, background: t.color, marginRight: 6 }} />{t.label} <Fig>{fmtMoney(t.value)}</Fig></span>
         ))} />
       </MoneyHead>
+      <NetWorthLine history={history} today={netWorth} fmtMoney={fmtMoney} />
+    </div>
+  );
+}
 
+/** A plain line of net worth by day (last value per day), today's figure at the end. */
+function NetWorthLine({ history, today, fmtMoney }: { history: { net_worth: number; captured_at: string }[]; today: number; fmtMoney: (n: number) => string }) {
+  const byDay = new Map<string, number>();
+  for (const h of history) byDay.set(h.captured_at.slice(0, 10), Number(h.net_worth));
+  byDay.set(new Date().toISOString().slice(0, 10), today);
+  const points = [...byDay.entries()].sort((a, b) => a[0].localeCompare(b[0])).slice(-365);
+  const card: React.CSSProperties = { background: "var(--uf-card)", border: "1px solid var(--uf-border)", borderRadius: 16, padding: 16, display: "grid", gap: 8 };
+  if (points.length < 2) {
+    return (
+      <div style={card}>
+        <div className="uf-t-body" style={{ fontWeight: 700 }}>Your net worth over time</div>
+        <div className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Your line starts today. Come back tomorrow to see it move.</div>
+      </div>
+    );
+  }
+  const W = 600, H = 120, pad = 6;
+  const vals = points.map((p) => p[1]);
+  const lo = Math.min(...vals), hi = Math.max(...vals), span = hi - lo || 1;
+  const xy = points.map(([, v], i) => [pad + (i / (points.length - 1)) * (W - 2 * pad), pad + (1 - (v - lo) / span) * (H - 2 * pad)]);
+  const change = vals[vals.length - 1] - vals[0];
+  const since = new Date(points[0][0] + "T12:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  const label = `Net worth ${change >= 0 ? "up" : "down"} ${fmtMoney(Math.abs(change))} since ${since}`;
+  return (
+    <div style={card}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+        <span className="uf-t-body" style={{ fontWeight: 700 }}>Your net worth over time</span>
+        <span className="uf-t-small" style={{ color: change >= 0 ? "var(--uf-pos-ink)" : "var(--uf-neg-ink)", fontWeight: 600 }}>
+          {change >= 0 ? "▲" : "▼"} <span style={{ fontVariantNumeric: "tabular-nums" }}>{fmtMoney(Math.abs(change))}</span> since {since}
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} preserveAspectRatio="none" role="img" aria-label={label}>
+        <polyline points={xy.map((p) => p.join(",")).join(" ")} fill="none" stroke="var(--uf-ink)" strokeWidth={2.5} vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+      </svg>
     </div>
   );
 }
@@ -4939,6 +4987,9 @@ export default function Dashboard() {
   const [lifestyleMultiplier, setLifestyleMultiplier] = useState(1.0);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [nwSnapshots, setNwSnapshots] = useState<{ portfolio_value: number; captured_at: string }[]>([]);
+  // Net worth over time (Net Worth page line): rows that carry net_worth, oldest first.
+  const [nwHistory, setNwHistory] = useState<{ net_worth: number; captured_at: string }[] | null>(null);
+  const [banksLoaded, setBanksLoaded] = useState(false);
   const lastSnapshotRef = useRef<number | null>(null);
   const [userName, setUserName] = useState("");
   const [userId, setUserId] = useState("");
@@ -5759,7 +5810,7 @@ export default function Dashboard() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       }).then(r => r.ok ? r.json() : null).then(d => {
         if (d?.accounts) setPlaidAccounts(d.accounts);
-      }).catch(() => {});
+      }).catch(() => {}).finally(() => setBanksLoaded(true));
 
       supabase.from("user_budget").select("*").eq("user_id", session.user.id).maybeSingle().then(({ data, error }) => {
         if (error) {
@@ -5863,11 +5914,41 @@ export default function Dashboard() {
       supabase.from("net_worth_snapshots")
         .select("portfolio_value, captured_at")
         .eq("user_id", session.user.id)
-        .order("captured_at", { ascending: true })
+        .order("captured_at", { ascending: false })
         .limit(120)
-        .then(({ data: snaps }) => { if (snaps) setNwSnapshots(snaps); });
+        .then(({ data: snaps }) => { if (snaps) setNwSnapshots([...snaps].reverse()); });
+      supabase.from("net_worth_snapshots")
+        .select("net_worth, captured_at")
+        .eq("user_id", session.user.id)
+        .not("net_worth", "is", null)
+        .order("captured_at", { ascending: false })
+        .limit(400)
+        .then(({ data: rows }) => { if (rows) setNwHistory([...rows].reverse() as { net_worth: number; captured_at: string }[]); });
     });
   }, []);
+
+  // One net worth row per day, written once the plan and the banks have loaded
+  // (a figure taken earlier would leave connected accounts out). A changed
+  // figure later the same day adds a row; the line keeps the day's last one.
+  const netWorthToday = fullNetWorth({ k401, rothIRA, taxable, cashSavings, totalDebt, mortgageBalance, homeValue, plaidAccounts });
+  useEffect(() => {
+    if (profileLoading || !banksLoaded || nwHistory === null || !userId) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const last = nwHistory[nwHistory.length - 1];
+    if (last && last.captured_at.slice(0, 10) === today && Math.round(Number(last.net_worth)) === Math.round(netWorthToday)) return;
+    if (!last && netWorthToday === 0) return;
+    const t = setTimeout(() => {
+      const row = { user_id: userId, portfolio_value: effectiveInvested(), net_worth: Math.round(netWorthToday), captured_at: new Date().toISOString() };
+      supabase.from("net_worth_snapshots").insert(row).then(({ error }) => {
+        if (!error) setNwHistory((prev) => [...(prev ?? []), { net_worth: row.net_worth, captured_at: row.captured_at }]);
+      });
+    }, 3000);
+    return () => clearTimeout(t);
+    function effectiveInvested() {
+      const e = effectiveBalances({ k401, rothIRA, taxable, cashSavings, plaidAccounts });
+      return e.k401 + e.rothIRA + e.taxable + e.cashSavings;
+    }
+  }, [profileLoading, banksLoaded, nwHistory, userId, netWorthToday]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Show onboarding modal for new users (income=0, never dismissed)
   useEffect(() => {
@@ -6427,7 +6508,7 @@ export default function Dashboard() {
             )}
             {tab === "assets" && !profileLoading && (
               <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-                <PortfolioOverviewTab homeValue={homeValue}
+                <PortfolioOverviewTab homeValue={homeValue} history={nwHistory ?? []}
                   k401={k401} rothIRA={rothIRA} taxable={taxable} cashSavings={cashSavings}
                   totalDebt={totalDebt} mortgageBalance={mortgageBalance}
                   displayCurrency={defaultCurrency}
@@ -6467,6 +6548,8 @@ export default function Dashboard() {
                 usTaxHome={usTaxHome}
                 displayCurrency={defaultCurrency}
                 displayRates={rates}
+                paidThisMonth={actualIncome} paidLastMonth={prevIncome}
+                onOpenTransactions={openTransactions}
               />
             )}
             {tab === "liabilities" && profileLoading && (
@@ -6605,13 +6688,18 @@ export default function Dashboard() {
                   </div>
                 )}
                 {fireCalcSubTab === "compare" && (
-                  <WhatIf run={runChanges} ctx={compareCtx} growth={growthRate} retireAge={compareRetireAge} lease={compareLease}
+                  <WhatIf pensionWord={usTaxHome ? "retirement accounts" : (n => (n === "Pension" ? "pension" : n))(pensionFor(defaultCurrency, usTaxHome).name)} run={runChanges} ctx={compareCtx} growth={growthRate} retireAge={compareRetireAge} lease={compareLease}
                     m={{ money: (n) => fmt(n, defaultCurrency, rates, true), local: (n) => convertUSDAmount(n, defaultCurrency, rates),
                       toUsd: (n) => (defaultCurrency === "USD" ? n : n / (rates[defaultCurrency] || 1)), currency: defaultCurrency }}
                     saved={comparisons}
                     onSave={(v) => setComparisons((prev) => [...prev.filter((x) => x.id !== v.id), v].slice(-6))}
                     onDelete={(id) => setComparisons((prev) => prev.filter((x) => x.id !== id))}
-                    onTrack={(action) => trackPlanCompare({ action })} />
+                    onTrack={(action) => trackPlanCompare({ action })}
+                    needs={[
+                      ...(income > 0 ? [] : [{ key: "income", title: "Your income", why: "Every date here starts from it", button: "Add income", onClick: () => setTab("income") }]),
+                      ...(histMonthsCount >= 3 ? [] : [{ key: "spending", title: "Your spending", why: `${histMonthsCount === 0 ? "No" : `Only ${histMonthsCount}`} ${histMonthsCount === 1 ? "month" : "months"} of transactions yet. Three months makes this your real life.`,
+                        button: plaidAccounts.length > 0 ? "Add or import" : "Link bank", onClick: () => (plaidAccounts.length > 0 ? openTransactions() : openDashboardTab("assets")) }]),
+                    ]} />
                 )}
                 {fireCalcSubTab === "invest-sim" && (
                   <InvestSimTab onBack={() => setFireCalcSubTab("menu")} />

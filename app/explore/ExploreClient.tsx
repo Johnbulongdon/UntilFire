@@ -190,7 +190,7 @@ export default function ExploreClient({ appPlan, onPlanFor, displayCurrency, dis
               <span aria-hidden>🏁</span><span style={{ flex: 1 }}>Add your numbers to see the year each city sets you free</span><b style={{ color: "var(--uf-green)" }}>Add →</b></button>}
       {mode === "badge" && best && <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontSize: 13, background: "var(--uf-card)", borderRadius: 12, padding: "8px 12px" }}>
         <b>Best badge</b><span>{MEDAL[best.badge.metal]}{"★".repeat(best.badge.stars)}</span><span>{best.count > 1 ? `in ${best.count} cities, like ${best.city.name}` : `in ${best.city.name}`}</span>
-        <span style={{ color: "var(--uf-ink-3)", marginLeft: "auto" }}>by {retireAge} · hover a medal to read it</span></div>}
+        <span style={{ color: "var(--uf-ink-3)", marginLeft: "auto" }}>if you stop work at {retireAge}</span></div>}
       <div className="uf-explore-chips">
         <button type="button" style={chip(view === "all" && !onlyStarred)} onClick={() => { setView("all"); setOnlyStarred(false); }}>🌐 All</button>
         <button type="button" style={chip(view === "us" && !onlyStarred)} onClick={() => { setView("us"); setOnlyStarred(false); }}><Flag emoji="🇺🇸" size={12} /> US</button>

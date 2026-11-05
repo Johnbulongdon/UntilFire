@@ -39,7 +39,12 @@ function leaseTries(lease: WhatIfLease, ctx: ChangeContext, money: (usd: number)
   ];
 }
 
-export default function WhatIf({ run, ctx, growth, retireAge, lease, m, saved, onSave, onDelete, onUse, onTrack }: {
+/** Something the plan is missing, asked for instead of guessing (John, 5 Nov 2026: never generic advice). */
+export interface WhatIfNeed { key: string; title: string; why: string; button: string; onClick: () => void }
+
+export default function WhatIf({ run, ctx, growth, retireAge, lease, m, saved, onSave, onDelete, onUse, onTrack, needs = [], pensionWord = "pension" }: {
+  /** What retirement money is called where you live: "retirement accounts" in the US, "pension" elsewhere. */
+  pensionWord?: string;
   run: (changes: EngineChange[]) => Full;
   lease?: WhatIfLease | null;
   ctx: ChangeContext; growth: number; retireAge: number; m: Money;
@@ -49,6 +54,8 @@ export default function WhatIf({ run, ctx, growth, retireAge, lease, m, saved, o
   /** Make these changes your plan (W4); without it the button is hidden. */
   onUse?: (items: LifeChangeItem[]) => void;
   onTrack: (action: "added" | "saved" | "used" | "discarded") => void;
+  /** Missing data to ask for first: income, or months of real spending. */
+  needs?: WhatIfNeed[];
 }) {
   const [items, setItems] = useState<LifeChangeItem[]>([]);
   const [loaded, setLoaded] = useState<string | null>(null);
@@ -94,11 +101,14 @@ export default function WhatIf({ run, ctx, growth, retireAge, lease, m, saved, o
   const low = drawn.length ? drawn.reduce((a, y) => ((next.out.data[y]?.["Reachable"] ?? 0) < (next.out.data[a]?.["Reachable"] ?? 0) ? y : a), drawn[0]) : null;
   const changed = items.some((c) => c.on);
 
+  // Coast: the point where what you have grows to enough on its own, so saving can stop.
+  const stopSaving = aged ? "Can stop saving at" : "Can stop saving in";
+  const opens = pensionWord.endsWith("s") ? "open" : "opens";
   const milestones: ChartMilestone[] = [
-    ...(coastNext !== null ? [{ key: "coast", icon: "🧭", label: coastBase !== coastNext && coastBase !== null ? `Coast ${label(coastBase)}→${label(coastNext)}` : `Coast ${label(coastNext)}`, at: coastNext, moved: changed && coastBase !== coastNext }] : []),
+    ...(coastNext !== null ? [{ key: "coast", icon: "🧭", label: coastBase !== coastNext && coastBase !== null ? `${stopSaving} ${label(coastBase)}→${label(coastNext)}` : `${stopSaving} ${label(coastNext)}`, at: coastNext, moved: changed && coastBase !== coastNext }] : []),
     ...(by !== null && changed && delta !== null && Math.abs(delta) >= 0.05 ? [{ key: "plan", icon: "🔥", label: `Your plan ${label(by)}`, at: by, moved: false }] : []),
     ...(ny !== null ? [{ key: "free", icon: "🔥", label: `Free ${label(ny)}`, at: ny, moved: changed && delta !== null && Math.abs(delta) >= 0.05 }] : []),
-    ...(pension !== null && pension > 0 ? [{ key: "pension", icon: "🏛️", label: `Pension ${label(pension)}`, at: pension, moved: false }] : []),
+    ...(pension !== null && pension > 0 ? [{ key: "pension", icon: "🏛️", label: `${pensionWord[0].toUpperCase()}${pensionWord.slice(1)} ${label(pension)}`, at: pension, moved: false }] : []),
   ];
   const spans = next.items.filter((c) => c.on).map((c) => ({ key: c.id, icon: templateFor(c.kind).icon, label: c.name,
     from: Math.max(0, c.from - ctx.thisYear),
@@ -107,7 +117,7 @@ export default function WhatIf({ run, ctx, growth, retireAge, lease, m, saved, o
 
   const status = next.out.broke ? `Runs out of money you can reach at ${label(next.out.broke.year)}.`
     : ny === null ? "Not free within the plan's years."
-    : pension !== null && ny > pension ? "Free after your pension opens." : "✓ Never runs out before your pension opens.";
+    : pension !== null && ny > pension ? `Free after your ${pensionWord} ${opens}.` : `✓ Never runs out before your ${pensionWord} ${opens}.`;
   const name = (list: LifeChangeItem[]) => list.filter((c) => c.on).map((c) => c.name).join(" + ") || "No changes";
 
   return (
@@ -176,6 +186,14 @@ export default function WhatIf({ run, ctx, growth, retireAge, lease, m, saved, o
                   onClick={() => { setItems([...items.filter((c) => !c.id.startsWith("lease-")), t]); onTrack("added"); }}>{added ? `✓ ${t.name}` : t.name}</Button>;
               })}
             </span>
+          </div>}
+          {needs.length > 0 && <div style={{ display: "grid", gap: 10, padding: 14, borderRadius: 16, background: "var(--uf-surface)" }}>
+            <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}><b style={{ color: "var(--uf-ink)" }}>Add your real numbers first.</b> What if only works from your own money.</span>
+            {needs.map((n) => <div key={n.key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <span style={{ minWidth: 0 }}><b className="uf-t-small" style={{ display: "block", color: "var(--uf-ink)" }}>{n.title}</b>
+                <span className="uf-t-small" style={{ color: "var(--uf-ink-3)" }}>{n.why}</span></span>
+              <Button size="sm" variant="secondary" onClick={n.onClick}>{n.button}</Button>
+            </div>)}
           </div>}
           <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", fontWeight: 800, letterSpacing: ".06em", textTransform: "uppercase" }}>Your changes</span>
           <WhatIfChanges items={items} onChange={(list) => { if (list.length > items.length) onTrack("added"); setItems(list); }} costs={costs} ctx={ctx} m={m} coast={aged} />
