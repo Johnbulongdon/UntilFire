@@ -46,6 +46,7 @@ import { SETUP_BUTTON, SETUP_FINISHED_KEY, SETUP_LABEL, SETUP_WHY, setupSteps, t
 import type { IconName } from "@/components/ui";
 import type { NextMove } from "@/lib/next-move";
 import type { RawTx } from "@/lib/recurring-detect";
+import { dividendCover } from "@/lib/dividend-cover";
 import { FreedomCurve } from "./FreedomCurve";
 import { FreedomCard, MonthCard, GlanceRow, HomeCardPrompt, NextMoveCard, UntilPaydayCard, type MonthCategory } from "./HomeCards";
 import { PillTabs, MoneyHead, MoneyKey, MoneyList, MoneyRow, MoneyTrack, Fig, StackBar, PaceBar, MonthCalendar, BankLogo } from "./MoneyCards";
@@ -757,7 +758,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   retirementCityCol?: number; retirementCityName?: string; lifestyleMultiplier?: number;
   fireAge?: number;
   nwSnapshots?: { portfolio_value: number; captured_at: string }[];
-  recentTransactions?: { date: string; amount: number; refund_amount?: number; currency: string; transaction_type?: string; tags?: string[]; description?: string; category?: string; plaid_account_id?: string | null }[];
+  recentTransactions?: { date: string; amount: number; refund_amount?: number; currency: string; transaction_type?: string; tags?: string[]; description?: string; category?: string; sub_category?: string | null; plaid_account_id?: string | null }[];
   /** Upcoming expense bills (USD), which date this month's forecast and plan line, as on Transactions. */
   bills?: Bill[];
   /** What the contribution ladder reads: balances, measured needs, the
@@ -1183,6 +1184,11 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   // month gone spread rent across every day: $1,380 on the 2nd became $21,000.
   const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const todayIso = `${monthKey}-${String(now.getDate()).padStart(2, "0")}`;
+  // The Home Dividends tile: real dividend payouts against repeating bills, nothing to set up.
+  const dividends = useMemo(() => dividendCover(
+    recentTransactions.map((t) => ({ ...t, usd: toUSD(t.amount, t.currency ?? displayCurrency, displayRates) })),
+    bills, todayIso,
+  ), [recentTransactions, bills, todayIso, displayCurrency, displayRates]);
   const monthEndIso = `${monthKey}-${String(new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()).padStart(2, "0")}`;
   const spendRows = useMemo(() => recentTransactions.filter((t) => t.transaction_type === "expense")
     .map((t) => ({ date: t.date.slice(0, 10), usd: toUSD(netAmt(t), t.currency ?? displayCurrency, displayRates), description: t.description ?? "", category: t.category ?? "other" })),
@@ -1780,6 +1786,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           onNetWorth={() => onTabChange?.("assets")}
           onSafety={() => hasCashBalance && efMonthlyBase <= 0 ? onSetupStep?.("budget") : onTabChange?.("assets")}
           onSavings={() => income <= 0 ? onSetupStep?.("income") : monthlyExpenses <= 0 ? onSetupStep?.("budget") : onTabChange?.("contributions")}
+          dividends={dividends}
+          onDividends={() => onTabChange?.("income")}
         />
       </HomeSlot>
       </div>
