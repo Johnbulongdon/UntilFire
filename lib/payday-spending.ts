@@ -48,19 +48,22 @@ export function paydayRemainder(afterBills: number, everyday: number | null, cus
 }
 
 /**
- * "Safe to spend today" on Home: the smaller of what is left until payday per
- * day and what is left in this month's day-to-day budget per day. Either alone
- * could promise money the other already counts on: the payday figure is cash
- * the Contributions plan means to save, and the budget figure ignores bills
- * landing before payday (page rating, 5 Nov 2026). Null when neither is known.
+ * The Today strip's two daily figures (D-137). `today` is what is safe to spend
+ * today: Until payday over the days to payday (D-90), or the day-to-day budget
+ * left over the days left without a payday. `onBudget` is the budget's daily
+ * pace, shown beside it as a gentle goal when it is lower, so someone not yet
+ * saving much still sees what is safe, and also what keeps them on budget
+ * (John, 5 Nov 2026). Rounded like Budget's "about $X a day".
  */
 export function safeToSpendToday({ payday, budget }: {
   payday: { remaining: number | null; days: number } | null;
   budget: { left: number; daysLeft: number } | null;
-}): number | null {
-  const perDay: number[] = [];
-  if (payday && payday.remaining !== null && payday.days > 0) perDay.push(payday.remaining / payday.days);
-  if (budget && budget.daysLeft > 0) perDay.push(budget.left / budget.daysLeft);
-  if (!perDay.length) return null;
-  return Math.max(0, Math.round(Math.min(...perDay)));
+}): { today: number | null; onBudget: number | null } {
+  const perDay = (n: number, d: number) => Math.max(0, Math.round(n / d));
+  const fromBudget = budget && budget.daysLeft > 0 ? perDay(budget.left, budget.daysLeft) : null;
+  if (payday) {
+    const today = payday.remaining !== null && payday.days > 0 ? perDay(payday.remaining, payday.days) : null;
+    return { today, onBudget: today !== null && fromBudget !== null && fromBudget < today ? fromBudget : null };
+  }
+  return { today: fromBudget, onBudget: null };
 }

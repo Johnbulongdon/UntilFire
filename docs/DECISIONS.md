@@ -3585,8 +3585,8 @@ adequate sample before claiming a winner. No conversion improvement is assumed.
 **Why:** John wants UntilFire to serve dividend FIRE without a separate dividend page or choices for the user. Real payouts beat an entered yield (prefer actual data), and "share of bills paid" is the progress dividend investors track.
 **Scope:** display only; the freedom date, target and withdrawal rate are unchanged (D-94's fixed layout holds: no reorder or hide controls). The phone does not show it yet; its first place would be Income, since phone Home is full. Interest and pensions are not counted as dividends.
 
-### D-137 — Safe to spend today is the stricter of payday and budget (5 November 2026)
-**Status:** Proposed by Claude from the page rating; waiting on John's pick (decision card in the "Rate every page for usefulness" thread). Amends D-90's Safe to spend today line.
-**Decision:** The Today strip's "Safe to spend today" is the smaller of Until payday over the days to payday and the day-to-day budget left over the days left in the month, rounded like Budget's "about $X a day". With only one known, it uses that one. Logic in `safeToSpendToday` (`lib/payday-spending.ts`), checked by `npm run test:payday-spending`.
-**Why:** with a bank linked, a sample user saw "Safe to spend today $211" on Home and "about $33 a day" on Budget. Until payday is cash left after bills and normal spending, which is the money Contributions plans to save, so calling it safe to spend works against the plan.
-**Scope:** website Today strip only. The Until payday card and Transactions "Free to spend" are unchanged (D-90). Phone not changed.
+### D-137 — Safe to spend today shows the budget pace beside it (5 November 2026)
+**Status:** Approved by John ("show both"), website. Amends D-90's Safe to spend today line.
+**Decision:** The Today strip keeps "Safe to spend today" as Until payday over the days to payday (D-90), or the day-to-day budget left over the days left without a payday. When the budget's daily pace is lower, a second, softer line sits under it: "$33 a day keeps you on budget". No red, no warning word. Logic in `safeToSpendToday` (`lib/payday-spending.ts`), checked by `npm run test:payday-spending`.
+**Why:** with a bank linked, a sample user saw $211 safe today on Home and "about $33 a day" on Budget, with nothing saying why. John does not want people who can't save 20% yet to feel guilty, so the safe figure stays, and the budget pace shows as a goal to aim for.
+**Scope:** website Today strip only. The Until payday card and Transactions "Free to spend" are unchanged. Phone not changed.

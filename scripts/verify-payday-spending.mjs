@@ -28,10 +28,10 @@ close(recentRate(recent,[bill],new Date(2026,10,1)),12);
 close(paydaySpending({...base,rows:recent}).amount,12*14);
 assert.equal(recentRate(recent.slice(1),[bill],new Date(2026,10,1)),null); // under 30 days of history
 assert.equal(recentRate(recent.slice(0,6),[bill],new Date(2026,10,1)),null); // too few payments
-// Safe to spend today: the stricter of payday cash and the month's budget.
-assert.equal(safeToSpendToday({payday:{remaining:2116,days:10},budget:{left:855,daysLeft:26}}),33); // matches Budget's "about $33 a day"
-assert.equal(safeToSpendToday({payday:{remaining:300,days:10},budget:{left:855,daysLeft:26}}),30);
-assert.equal(safeToSpendToday({payday:{remaining:2116,days:10},budget:null}),212);
-assert.equal(safeToSpendToday({payday:null,budget:{left:-40,daysLeft:26}}),0);
-assert.equal(safeToSpendToday({payday:{remaining:null,days:10},budget:null}),null);
+// Safe to spend today (D-137): payday first, the budget's pace beside it when lower.
+assert.deepEqual(safeToSpendToday({payday:{remaining:2116,days:10},budget:{left:855,daysLeft:26}}),{today:212,onBudget:33});
+assert.deepEqual(safeToSpendToday({payday:{remaining:300,days:10},budget:{left:855,daysLeft:26}}),{today:30,onBudget:null});
+assert.deepEqual(safeToSpendToday({payday:{remaining:2116,days:10},budget:null}),{today:212,onBudget:null});
+assert.deepEqual(safeToSpendToday({payday:null,budget:{left:-40,daysLeft:26}}),{today:0,onBudget:null});
+assert.deepEqual(safeToSpendToday({payday:{remaining:null,days:10},budget:{left:855,daysLeft:26}}),{today:null,onBudget:null});
 console.log('22 payday estimate guards passed');

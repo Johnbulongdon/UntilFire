@@ -1709,10 +1709,13 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         <TodayStrip
           userId={userId}
           bills={bills}
-          perDay={safeToSpendToday({
-            payday: paydayView ? { remaining: paydayRemaining, days: paydayView.days } : null,
-            budget: monthLeft.everydayBudget > 0 ? { left: monthLeft.left, daysLeft: monthDays - now.getDate() + 1 } : null,
-          })}
+          {...(() => {
+            const safe = safeToSpendToday({
+              payday: paydayView ? { remaining: paydayRemaining, days: paydayView.days } : null,
+              budget: monthLeft.everydayBudget > 0 ? { left: monthLeft.left, daysLeft: monthDays - now.getDate() + 1 } : null,
+            });
+            return { perDay: safe.today, onBudget: safe.onBudget };
+          })()}
           fmt={(n) => fmtMoney(n)}
           toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}
           onOpen={() => onTabChange?.("cashflow")}

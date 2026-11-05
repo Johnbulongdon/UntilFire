@@ -79,11 +79,13 @@ export type TodayWrite =
   | { lease: string; decision: LeaseDecision }
   | { renttag: "Rent" | "Mortgage" };
 
-export default function TodayStrip({ userId, bills, perDay, fmt, toUsd, onOpen, onWhatIf, onOpenNeeds }: {
+export default function TodayStrip({ userId, bills, perDay, onBudget = null, fmt, toUsd, onOpen, onWhatIf, onOpenNeeds }: {
   userId?: string;
   bills: Bill[];
   /** Safe to spend each day: Until payday over the days to payday (D-90), else the budget left over the days left. Null with neither. */
   perDay: number | null;
+  /** The day-to-day budget's daily pace, shown as a gentle goal when below perDay (D-137). */
+  onBudget?: number | null;
   fmt: (n: number) => string;
   toUsd: (amount: number, currency: string) => number;
   onOpen: () => void;
@@ -156,7 +158,7 @@ export default function TodayStrip({ userId, bills, perDay, fmt, toUsd, onOpen, 
   }, [userId, quiet]);
 
   if (!progress || !list) return null;
-  return <TodayList items={list.items} count={monthCount(progress.done)} perDay={perDay} fmt={fmt} onAnswer={answer} onOpen={onOpen} onWhatIf={onWhatIf} onOpenNeeds={onOpenNeeds} />;
+  return <TodayList items={list.items} count={monthCount(progress.done)} perDay={perDay} onBudget={onBudget} fmt={fmt} onAnswer={answer} onOpen={onOpen} onWhatIf={onWhatIf} onOpenNeeds={onOpenNeeds} />;
 }
 
 /**
@@ -164,11 +166,13 @@ export default function TodayStrip({ userId, bills, perDay, fmt, toUsd, onOpen, 
  * done", and under either, what's safe to spend today: a figure to read, not a
  * step to tick (D-108). It opens Money.
  */
-export function TodayList({ items, count, perDay, fmt, onAnswer, onOpen, onWhatIf, onOpenNeeds }: {
+export function TodayList({ items, count, perDay, onBudget = null, fmt, onAnswer, onOpen, onWhatIf, onOpenNeeds }: {
   items: WebTodayItem[];
   count: { done: number; of: number };
   /** Safe to spend each day; null without a budget or a payday. */
   perDay: number | null;
+  /** The day-to-day budget's daily pace, shown as a gentle goal when below perDay (D-137). */
+  onBudget?: number | null;
   fmt: (n: number) => string;
   onAnswer: (key: string, write?: TodayWrite) => void;
   onOpen: () => void;
@@ -260,11 +264,14 @@ export function TodayList({ items, count, perDay, fmt, onAnswer, onOpen, onWhatI
           ))}
         </div>
       )}
-      <button type="button" onClick={onOpen} aria-label={perDay != null ? `Safe to spend today ${fmt(perDay)}. Open Money` : "Set a budget to see what's safe to spend each day. Open Money"}
+      <button type="button" onClick={onOpen} aria-label={perDay != null ? `Safe to spend today ${fmt(perDay)}.${onBudget != null ? ` ${fmt(onBudget)} a day keeps you on budget.` : ""} Open Money` : "Set a budget to see what's safe to spend each day. Open Money"}
         style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 48, padding: "10px 0 0", border: "none", borderTop: "1px solid var(--uf-border)",
           background: "transparent", color: "var(--uf-ink)", font: "inherit", textAlign: "left", cursor: "pointer" }}>
         {perDay != null
-          ? <span>Safe to spend today <span style={{ ...mono, fontWeight: 600 }}>{fmt(perDay)}</span></span>
+          ? <span style={{ display: "grid", gap: 2 }}>
+              <span>Safe to spend today <span style={{ ...mono, fontWeight: 600 }}>{fmt(perDay)}</span></span>
+              {onBudget != null && <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}><span style={mono}>{fmt(onBudget)}</span> a day keeps you on budget</span>}
+            </span>
           : <span style={{ color: "var(--uf-ink-2)" }}>Set a budget to see what&apos;s safe to spend each day</span>}
         <span aria-hidden style={{ color: "var(--uf-ink-3)", fontSize: 16 }}>›</span>
       </button>

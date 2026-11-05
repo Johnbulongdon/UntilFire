@@ -2,7 +2,7 @@
 
 ## 2026-11-05 — Numbers that agree across pages
 
-- Home's "Safe to spend today" is now the smaller of what's left until payday and what's left in your day-to-day budget, so it matches Budget and never offers money your plan means to save.
+- Under "Safe to spend today", Home now also shows what a day keeps you on budget, when that's lower, as a goal rather than a warning.
 - The Budget ring calls the unspent part "Not spent yet", not "Saving".
 - Calendar no longer suggests transfers between your own accounts (like a monthly move to Vanguard) as bills.
 - Home greets you by the name saved in Profile, never by your email address.
