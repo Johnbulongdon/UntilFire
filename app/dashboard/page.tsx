@@ -1714,7 +1714,7 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
               payday: paydayView ? { remaining: paydayRemaining, days: paydayView.days } : null,
               budget: monthLeft.everydayBudget > 0 ? { left: monthLeft.left, daysLeft: monthDays - now.getDate() + 1 } : null,
             });
-            return { perDay: safe.today, onBudget: safe.onBudget };
+            return { perDay: safe.today, stretch: safe.stretch };
           })()}
           fmt={(n) => fmtMoney(n)}
           toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}

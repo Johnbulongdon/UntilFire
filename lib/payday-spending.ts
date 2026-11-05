@@ -48,22 +48,23 @@ export function paydayRemainder(afterBills: number, everyday: number | null, cus
 }
 
 /**
- * The Today strip's two daily figures (D-137). `today` is what is safe to spend
- * today: Until payday over the days to payday (D-90), or the day-to-day budget
- * left over the days left without a payday. `onBudget` is the budget's daily
- * pace, shown beside it as a gentle goal when it is lower, so someone not yet
- * saving much still sees what is safe, and also what keeps them on budget
- * (John, 5 Nov 2026). Rounded like Budget's "about $X a day".
+ * The Today strip's two daily figures (D-137). `today`, in bold, is what keeps
+ * you on budget: the day-to-day budget left over the days left, capped by
+ * Until payday over the days to payday so it never promises cash that isn't
+ * there. `stretch` is the payday figure, shown small under it when higher:
+ * spare cash you could use, but that the plan means to save. Without a budget,
+ * `today` is the payday figure (D-90). Rounded like Budget's "about $X a day".
+ * John, 5 Nov 2026: budget first, and no guilt about the rest.
  */
 export function safeToSpendToday({ payday, budget }: {
   payday: { remaining: number | null; days: number } | null;
   budget: { left: number; daysLeft: number } | null;
-}): { today: number | null; onBudget: number | null } {
+}): { today: number | null; stretch: number | null } {
   const perDay = (n: number, d: number) => Math.max(0, Math.round(n / d));
   const fromBudget = budget && budget.daysLeft > 0 ? perDay(budget.left, budget.daysLeft) : null;
-  if (payday) {
-    const today = payday.remaining !== null && payday.days > 0 ? perDay(payday.remaining, payday.days) : null;
-    return { today, onBudget: today !== null && fromBudget !== null && fromBudget < today ? fromBudget : null };
-  }
-  return { today: fromBudget, onBudget: null };
+  if (!payday) return { today: fromBudget, stretch: null };
+  const fromPayday = payday.remaining !== null && payday.days > 0 ? perDay(payday.remaining, payday.days) : null;
+  if (fromPayday === null) return { today: null, stretch: null };
+  if (fromBudget === null || fromBudget >= fromPayday) return { today: fromPayday, stretch: null };
+  return { today: fromBudget, stretch: fromPayday };
 }
