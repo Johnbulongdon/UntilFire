@@ -43,7 +43,9 @@ export default function ContributionSummary({ view, today, onEdit, onReviewCashf
             <span>{r.label}</span><strong><Money className="ph-mask" style={{ fontWeight: 700 }} amount={r.amount} /></strong>
           </div>;
         })}
-        {view.investable <= 0 && rows.length > 0 && <p className={s.muted}>Investments · $0 this cycle</p>}
+        {view.investable <= 0 && rows.length > 0 && (setupGoal === 'save' && view.efTarget > view.efBalance
+          ? <p className={s.muted}>One-time top-up of your safety pot (<Money amount={view.efTarget - view.efBalance} /> to go). Then saving goes to investing.</p>
+          : <p className={s.muted}>Investments · $0 this cycle</p>)}
         {total > 0 && <div className={s.split} role="img" aria-label={rows.map((r) => `${r.label}: ${Math.round(r.amount / total * 100)}%`).join(', ')}>
           {rows.map((r) => <span key={r.kind} data-kind={r.kind} style={{ flexGrow: r.amount }} />)}
         </div>}

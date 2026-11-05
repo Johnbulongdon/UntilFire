@@ -256,19 +256,19 @@ export default function MonthInsight({
           background: "var(--uf-surface)", borderRadius: "var(--uf-r-control)",
         }}>
           <div style={{ fontSize: 13, color: "var(--uf-ink-2)", lineHeight: 1.65 }}>
-            If every month looked like this one, your FIRE target would be{" "}
+            If every month cost this much, you&apos;d need{" "}
             <strong style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--uf-ink)" }}>
               {formatMoney(disp(targetAtThisRate), { currency: displayCurrency, style: "compact" })}
             </strong>{" "}
-            — {targetDelta === 0 ? "the same as" : (
+            to be free: {targetDelta === 0 ? "the same as" : (
               <>
                 <strong style={{ fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums", color: targetDelta < 0 ? "var(--uf-pos)" : "var(--uf-neg)" }}>
                   {formatMoney(Math.abs(disp(targetDelta)), { currency: displayCurrency, style: "compact" })}
                 </strong>{" "}
-                {targetDelta < 0 ? "lower than" : "higher than"}
+                {targetDelta < 0 ? "less than" : "more than"}
               </>
             )}{" "}
-            your median month at {Math.round(targetMultiple * 10) / 10}&times; annual spending.
+            in a normal month.
           </div>
         </div>
       )}

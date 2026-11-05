@@ -213,7 +213,7 @@ function getEmergencyFundPlan(balance: number, monthlyExpenses: number, hasEverH
       guidance = "Your reserve did its job. Top it back up while keeping some momentum elsewhere.";
     } else {
       state = "fragile";
-      stateLabel = "Fragile";
+      stateLabel = "Building";
       headline = "Strengthen your safety buffer";
       guidance = "You have a base now. Keep building it while staying in motion elsewhere.";
     }
@@ -3860,7 +3860,6 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgages, setMortgages, conn
   // The same rule as net worth (effectiveDebts): connected replaces typed, cards included.
   const mortgageBalance = mortgages.reduce((s, m) => s + m.balance, 0);
   const debtsEff = effectiveDebts({ totalDebt, mortgageBalance, plaidAccounts });
-  const totalLiabilities = debtsEff.otherDebt + debtsEff.mortgage + debtsEff.cards;
   const [hideZero, setHideZero] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
 
@@ -3869,7 +3868,7 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgages, setMortgages, conn
   const hiddenCount = connected.filter(a => (a.balance_current ?? 0) === 0).length;
   const rateFor = (name: string) => planDebts.find(d => d.name.trim().toLowerCase() === name.trim().toLowerCase())?.ratePct;
 
-  type Debt = { key: string; name: string; meta: string; balance: number; card: boolean; limit?: number | null; rate?: number; typed?: "debt" | "mortgage"; mortgageId?: string; plaidMortgageId?: string };
+  type Debt = { key: string; name: string; meta: string; balance: number; card: boolean; limit?: number | null; rate?: number; typed?: "debt" | "mortgage"; mortgageId?: string; plaidMortgageId?: string; payoff?: number | null };
   // Payment and payoff year beside a mortgage's rate, so each one reads as its own loan.
   const mortgageMeta = (monthly: number, ratePct: number | undefined, balance: number) => {
     const year = monthly > 0 ? payoffYear(balance, monthly, ratePct) : null;
@@ -3885,12 +3884,22 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgages, setMortgages, conn
       balance: Math.max(0, a.balance_current ?? 0), card: a.type === "credit", limit: a.balance_limit,
       plaidMortgageId: connectedIds.has(a.id) ? a.id : undefined,
       rate: (connectedIds.has(a.id) ? mortgageTerms[a.id]?.ratePct : undefined) ?? rateFor(a.name || ""),
+      payoff: connectedIds.has(a.id) && (mortgageTerms[a.id]?.monthly ?? 0) > 0 ? payoffYear(Math.max(0, a.balance_current ?? 0), mortgageTerms[a.id]!.monthly!, mortgageTerms[a.id]?.ratePct) : null,
     })),
     // Typed figures stand in only where nothing of that kind is connected, as net worth counts them.
     ...(!connected.some(a => a.type === "loan" && !isMortgageAcct(a)) ? [{ key: "typed_debt", name: "Other debt", meta: "Typed · loans and cards not connected", balance: totalDebt, card: false, typed: "debt" as const }] : []),
     ...(!connected.some(isMortgageAcct) ? mortgages.map((m) => ({ key: m.id === "m1" ? "mortgage" : `mortgage:${m.id}`, name: m.name, mortgageId: m.id,
-      meta: `Mortgage · ${mortgageMeta(m.monthly, m.ratePct, m.balance)}`, balance: m.balance, card: false, typed: "mortgage" as const, rate: m.ratePct })) : []),
+      meta: `Mortgage · ${mortgageMeta(m.monthly, m.ratePct, m.balance)}`, balance: m.balance, card: false, typed: "mortgage" as const, rate: m.ratePct,
+      payoff: m.monthly > 0 ? payoffYear(m.balance, m.monthly, m.ratePct) : null })) : []),
   ];
+  // A card is debt only when you carry it: a rate entered on Contributions says so. Without one it is
+  // this month's spending, paid in full by the next bill, so it stays out of the total and the date.
+  const carried = (r: Debt) => r.balance > 0 && (!r.card || r.rate != null);
+  const carriedRows = list.filter(carried);
+  const carriedTotal = carriedRows.reduce((t, r) => t + r.balance, 0);
+  const paidInFull = list.filter((r) => r.card && r.balance > 0 && r.rate == null).reduce((t, r) => t + r.balance, 0);
+  // Debt-free year: the last payoff, known only when every debt you carry has a payment.
+  const debtFreeYear = carriedRows.length > 0 && carriedRows.every((r) => r.payoff != null) ? Math.max(...carriedRows.map((r) => r.payoff!)) : null;
   const rows = list.sort((x, y) => (y.rate ?? -1) - (x.rate ?? -1) || y.balance - x.balance);
 
   // Paid off, across the debts whose starting balance is known.
@@ -3921,11 +3930,15 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgages, setMortgages, conn
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <MoneyHead
-        label="Total debts"
-        value={fmtMoney(totalLiabilities)}
-        sub={startTotal > 0
-          ? <><Fig>{fmtMoney(paidTotal)}</Fig> paid off of <Fig>{fmtMoney(startTotal)}</Fig></>
-          : rows.some(r => r.rate != null) ? "Highest rate first" : "Choose a debt to add what it started at and see it paid down."}
+        label="Debt you carry"
+        value={fmtMoney(carriedTotal)}
+        sub={<>
+          {carriedTotal === 0 ? (paidInFull > 0 ? "None. Cards you pay in full don't count." : "None. Nice.")
+            : debtFreeYear ? <>Debt-free by <Fig>{debtFreeYear}</Fig></> : "Add a monthly payment to each debt to see your debt-free year."}
+          {carriedTotal > 0 && <><br />{startTotal > 0
+            ? <><Fig>{fmtMoney(paidTotal)}</Fig> paid off of <Fig>{fmtMoney(startTotal)}</Fig></>
+            : rows.some(r => r.rate != null) ? "Highest rate first" : "Choose a debt to add what it started at and see it paid down."}</>}
+        </>}
       >
         {startTotal > 0 && <MoneyTrack share={paidTotal / startTotal} label={`${Math.round((paidTotal / startTotal) * 100)}% of tracked debt paid off`} />}
         <MoneyKey items={[["c", "Cards", debtsEff.cards], ["l", "Loans and other", debtsEff.otherDebt], ["m", "Mortgage", debtsEff.mortgage]]
@@ -3945,6 +3958,7 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgages, setMortgages, conn
           const paid = orig > 0 ? Math.max(0, orig - r.balance) : 0;
           const meta = [r.meta, r.rate != null && !r.mortgageId && !r.plaidMortgageId ? `${r.rate}%` : null,
             r.card && r.limit ? `of ${fmtMoney(r.limit)} limit` : null,
+            r.card && r.rate == null && r.balance > 0 ? "Paid in full, not counted" : null,
             !r.card && orig > 0 ? `${Math.round((paid / orig) * 100)}% paid off` : null].filter(Boolean).join(" · ");
           const open = editing === r.key;
           return (
@@ -6487,7 +6501,7 @@ export default function Dashboard() {
                 <div className="uf-cashflow-subtab-switch" style={{ marginBottom: 24 }}>
                   <PillTabs label="Cashflow" options={CASHFLOW_SUB_TABS} value={cashflowSubTab} onChange={setCashflowSubTab} />
                 </div>
-                {cashflowSubTab === "cashflow" && <TransactionsTab categoryNeeds={categoryNeeds} budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} homeLeft={homeLeft} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
+                {cashflowSubTab === "cashflow" && <TransactionsTab usualSaving={planFacts.monthlySavings} categoryNeeds={categoryNeeds} budgets={expenses as Record<string, number>} expectedIncome={income} freeToSpend={freeResult} homeLeft={homeLeft} defaultCurrency={defaultCurrency} displayCurrency={defaultCurrency} displayRates={rates} preferredCurrencies={preferredCurrencies} isPro={subscription?.plan === "pro"} onUpgradeClick={() => { setUpgradeSource("cashflow_plaid_limit"); setUpgradeOpen(true); }} />}
                 {cashflowSubTab === "expected" && <ExpectedPaymentsTab key={paydaySetupOpen ? "payday-setup" : "expected-payments"} paydaySetup={paydaySetupOpen ? {
                   onSaved: (row) => setCommittedRows((prev) => [...prev.filter((item) => item.id !== row.id), row]),
                   onReturnHome: () => openDashboardTab("overview"),

@@ -58,7 +58,9 @@ function CategoryBar({ r, fmt }: { r: { now: number; due: number; budget: number
   );
 }
 
-export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategories, onToggleCategory, onClearFilters, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel, expectedIncome = 0, bills = [], calendarItems = [], compact = fmt, calendarOnly = false }: {
+export default function SpendCard({ transactions, range, today, toUSD, fmt, expenseCats, incomeCats, selectedCategories, onToggleCategory, onClearFilters, selectedDay, onSelectDay, onZoomMonth, palette, onColor, budgets = {}, periodLabel, expectedIncome = 0, bills = [], calendarItems = [], compact = fmt, calendarOnly = false, usualSaving = 0 }: {
+  /** A usual month's saving from the plan (typed pay less 12-month average spending), shown beside a single month's. */
+  usualSaving?: number;
   transactions: Tx[]; range: DateRange; today: string;
   toUSD: (amount: number, currency: string) => number; fmt: (usd: number) => string;
   expenseCats: CatDisplay[]; incomeCats: CatDisplay[];
@@ -143,8 +145,6 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
     if (expectedIncome > 0 && short) { earned += expectedIncome; filled++; } else earned += actual;
   }
   const saved = earned - spent;
-  const rawRate = earned > 0 ? Math.round((saved / earned) * 100) : null;
-  const rate = rawRate != null && rawRate >= -100 && rawRate <= 100 ? rawRate : null;
 
   const cats = mode === "spent" ? expenseCats : incomeCats;
   // Budget compares like with like (D-31): the budgeted categories (or the
@@ -235,15 +235,18 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
               ))}
             </div>
             <span style={{ ...mono, fontSize: 28, fontWeight: 600 }}>{fmt(total)}</span>
-            <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", display: "inline-flex", alignItems: "center", gap: 2 }}>
-              {mode === "spent"
-                ? <>Income <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(earned)}{filled > 0 ? "*" : ""}</b></>
-                : <>{running ? "Expenses on track for" : "Expenses"} <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(spent)}</b></>}
-              {earned > 0 && <>
-                · {running ? "On track to save" : "Saved"} <b style={{ ...mono, color: saved < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink-2)", margin: "0 4px" }}>{saved < 0 ? "−" : ""}{fmt(Math.abs(saved))}{rate != null ? ` (${rate}%)` : ""}</b>
-                <InfoTip label="About saved">Income minus expenses over this range; the percentage is your savings rate.{running ? " While the month is running, expenses are the forecast to its end." : ""}{filled > 0 ? ` *Where income hasn't arrived yet, your expected income from the Budget tab stands in.` : ""}</InfoTip>
-              </>}
-            </span>
+            {earned > 0 && (() => {
+              const b = { ...mono, color: "var(--uf-ink)", marginLeft: 6 };
+              const one = range.months.length === 1;
+              return <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", display: "grid", gap: 2 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+                  {saved < 0 ? (running ? "Overspend this month" : "Overspent") : running ? "Left over this month" : one ? "Left over" : "Left over in total"}
+                  <b style={{ ...b, color: saved < 0 ? "var(--uf-neg-ink)" : b.color }}>{fmt(Math.abs(saved))}</b>
+                  <InfoTip label="About left over">Money in minus money out{running ? ", with spending forecast to the end of the month" : ""}.{filled > 0 ? " Pay that hasn't arrived yet counts as expected." : ""}{one && usualSaving > 0 ? " A usual month is your plan: take-home less your average spending over the last 12 months. Your freedom date uses it." : ""}</InfoTip>
+                </span>
+                {one && usualSaving > 0 && <span>Usual month<b style={b}>{fmt(usualSaving)}</b></span>}
+              </div>;
+            })()}
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <div role="radiogroup" aria-label="Chart" style={{ position: "relative", display: "flex", background: "var(--uf-surface-2)", borderRadius: 999, padding: 3 }}>

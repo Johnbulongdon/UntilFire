@@ -1713,7 +1713,8 @@ function AiReviewModal({
 }
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
-export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick, budgets, expectedIncome, freeToSpend: _freeToSpend, homeLeft = null, categoryNeeds }: {
+export default function TransactionsTab({ defaultCurrency = "USD", displayCurrency = "USD", displayRates = FALLBACK_RATES, preferredCurrencies = [], isPro = false, onUpgradeClick, budgets, expectedIncome, freeToSpend: _freeToSpend, homeLeft = null, categoryNeeds, usualSaving = 0 }: {
+  usualSaving?: number;
   categoryNeeds?: NeedOverrides;
   defaultCurrency?: string;
   displayCurrency?: string;
@@ -2402,7 +2403,7 @@ export default function TransactionsTab({ defaultCurrency = "USD", displayCurren
           selectedDay={selectedDay} onSelectDay={setSelectedDay}
           onZoomMonth={(m) => { setRange(1, m); setSelectedDay(null); }}
           palette={COLOR_PALETTE} onColor={handleCategoryColor}
-          budgets={budgets} expectedIncome={expectedIncome} bills={bills} calendarItems={calendarItems} compact={n=>formatUSDInCurrency(n,displayCurrency,displayRates,{compact:true})} periodLabel={rangePreset === 1 && rangeEnd === currentMonth ? "This month" : rangeLabel(rangePreset, rangeEnd)} />}
+          budgets={budgets} expectedIncome={expectedIncome} usualSaving={usualSaving} bills={bills} calendarItems={calendarItems} compact={n=>formatUSDInCurrency(n,displayCurrency,displayRates,{compact:true})} periodLabel={rangePreset === 1 && rangeEnd === currentMonth ? "This month" : rangeLabel(rangePreset, rangeEnd)} />}
         {!firstUse && <WorthALook flags={flags} notes={billNotes} rows={transactions} fmt={fmtDisplay} toUSD={usd} displayCurrency={displayCurrency}
           twins={twins} onDeleteCopies={deleteCopies}
           onYes={(r, k) => resolveFlag(r, k, true)} onNo={(r, k) => resolveFlag(r, k, false)} />}

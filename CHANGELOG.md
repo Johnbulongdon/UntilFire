@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-05 — Clearer saving, debts and contributions
+
+- Transactions shows two plain numbers under the month's spending: "Left over this month" and "Usual month". The income figure and the percentage are gone from that line.
+- Contributions says when the amount is a one-time top-up of your safety pot, not a monthly amount.
+- Debts shows the debt you carry and your debt-free year. Cards you pay in full each month are not counted; add a card's rate on Contributions if you carry it.
+- Kinder and plainer words: "Building" instead of "Fragile" for a safety pot in progress, "Entertainment" spelled out, a plainer line on Insights, and "program" everywhere.
+
 ## 2026-11-05 — Your real money, not guesses
 
 - Net Worth shows a simple line of your net worth over time, one point a day. It starts the day you first open the page after this update.

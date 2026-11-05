@@ -3597,3 +3597,9 @@ adequate sample before claiming a winner. No conversion improvement is assumed.
 **Why:** pay goes up and down month to month, and a single odd month should not move a freedom date. The old snapshot rows hold only invested money (`portfolio_value`, for the freedom curve), so they could not draw net worth; the snapshot read also returned the oldest 120 rows and now returns the latest.
 **Scope:** website. Phone snapshots don't set `net_worth` yet, and the line ignores rows without it. Needs the migration `20261105170000_net_worth_snapshot_value.sql`; without it nothing is written and the line says it starts today.
 
+### D-139 — Debts counts only debt you carry; usual saving beside this month's (5 November 2026)
+**Status:** Approved by John ("number two is right, number three is also right, do number four"), website.
+**Decision:** Debts' headline is "Debt you carry": loans, mortgages and any card with a rate entered on Contributions. A card without a rate is treated as paid in full each month and left out of the headline and the debt-free year; its row says so. The debt-free year is the latest payoff year, shown only when every carried debt has a monthly payment. Net worth still subtracts every card balance. Transactions shows the plan's usual monthly saving (`planFacts.monthlySavings`, the figure behind Freedom Date, Explore and Home's saving rate) as "Usual month" under "Left over this month" (John: too many numbers, so the income figure and the percentage left that line). Contributions explains a safety-pot top-up as spare cash now, not a monthly amount.
+**Why:** a sample user saw five different saving numbers; tracing them found two real ones (usual month $2,991 = 46%, this month $2,677), a mid-month "not spent yet" already relabelled (D-137), and a one-time safety-pot top-up. A $640 card paid every month read as debt.
+**Scope:** website. Phone unchanged.
+
