@@ -3958,7 +3958,7 @@ function LiabilitiesTab({ totalDebt, setTotalDebt, mortgages, setMortgages, conn
           const paid = orig > 0 ? Math.max(0, orig - r.balance) : 0;
           const meta = [r.meta, r.rate != null && !r.mortgageId && !r.plaidMortgageId ? `${r.rate}%` : null,
             r.card && r.limit ? `of ${fmtMoney(r.limit)} limit` : null,
-            r.card && r.rate == null && r.balance > 0 ? "Paid in full, not counted. Carry it? Add its rate on Contributions" : null,
+            r.card && r.rate == null && r.balance > 0 ? "Paid in full, not counted" : null,
             !r.card && orig > 0 ? `${Math.round((paid / orig) * 100)}% paid off` : null].filter(Boolean).join(" · ");
           const open = editing === r.key;
           return (

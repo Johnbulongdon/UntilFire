@@ -145,8 +145,6 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
     if (expectedIncome > 0 && short) { earned += expectedIncome; filled++; } else earned += actual;
   }
   const saved = earned - spent;
-  const rawRate = earned > 0 ? Math.round((saved / earned) * 100) : null;
-  const rate = rawRate != null && rawRate >= -100 && rawRate <= 100 ? rawRate : null;
 
   const cats = mode === "spent" ? expenseCats : incomeCats;
   // Budget compares like with like (D-31): the budgeted categories (or the
@@ -237,16 +235,18 @@ export default function SpendCard({ transactions, range, today, toUSD, fmt, expe
               ))}
             </div>
             <span style={{ ...mono, fontSize: 28, fontWeight: 600 }}>{fmt(total)}</span>
-            <span className="uf-t-small" style={{ color: "var(--uf-ink-3)", display: "inline-flex", alignItems: "center", gap: 2 }}>
-              {mode === "spent"
-                ? <>Income <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(earned)}{filled > 0 ? "*" : ""}</b></>
-                : <>{running ? "Expenses on track for" : "Expenses"} <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(spent)}</b></>}
-              {earned > 0 && <>
-                · {running ? "On track to save" : "Saved"} <b style={{ ...mono, color: saved < 0 ? "var(--uf-neg-ink)" : "var(--uf-ink-2)", margin: "0 4px" }}>{saved < 0 ? "−" : ""}{fmt(Math.abs(saved))}{rate != null ? ` (${rate}%)` : ""}</b>
-                {range.months.length === 1 && usualSaving > 0 && <>· usual <b style={{ ...mono, color: "var(--uf-ink-2)", margin: "0 4px" }}>{fmt(usualSaving)}</b></>}
-                <InfoTip label="About saved">Income minus expenses over this range; the percentage is your savings rate.{usualSaving > 0 ? " Usual is a normal month in your plan: your take-home less your average spending over the last 12 months. Freedom Date and Home use it." : ""}{running ? " While the month is running, expenses are the forecast to its end." : ""}{filled > 0 ? ` *Where income hasn't arrived yet, your expected income from the Budget tab stands in.` : ""}</InfoTip>
-              </>}
-            </span>
+            {earned > 0 && (() => {
+              const b = { ...mono, color: "var(--uf-ink)", marginLeft: 6 };
+              const one = range.months.length === 1;
+              return <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", display: "grid", gap: 2 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+                  {saved < 0 ? (running ? "Overspend this month" : "Overspent") : running ? "Left over this month" : one ? "Left over" : "Left over in total"}
+                  <b style={{ ...b, color: saved < 0 ? "var(--uf-neg-ink)" : b.color }}>{fmt(Math.abs(saved))}</b>
+                  <InfoTip label="About left over">Money in minus money out{running ? ", with spending forecast to the end of the month" : ""}.{filled > 0 ? " Pay that hasn't arrived yet counts as expected." : ""}{one && usualSaving > 0 ? " A usual month is your plan: take-home less your average spending over the last 12 months. Your freedom date uses it." : ""}</InfoTip>
+                </span>
+                {one && usualSaving > 0 && <span>Usual month<b style={b}>{fmt(usualSaving)}</b></span>}
+              </div>;
+            })()}
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <div role="radiogroup" aria-label="Chart" style={{ position: "relative", display: "flex", background: "var(--uf-surface-2)", borderRadius: 999, padding: 3 }}>
