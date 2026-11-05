@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-05 — Your real money, not guesses
+
+- Net Worth shows a simple line of your net worth over time, one point a day. It starts the day you first open the page after this update.
+- Income shows what really came in this month and last month, next to your usual pay. Your freedom date still uses your usual pay, so one big or small month doesn't move it.
+- What if asks for your income and three months of transactions when they are missing, instead of guessing.
+- Clearer words: "retirement accounts" in the US instead of "pension", "Can stop saving at 34" instead of "Coast 34", and a simpler line under Explore's best badge.
+
 ## 2026-11-05 — Numbers that agree across pages
 
 - Home's "Safe to spend today" now leads with what keeps you on budget, matching Budget's daily figure. When there's more cash than that before payday, a small line says how much, as money meant for saving.
