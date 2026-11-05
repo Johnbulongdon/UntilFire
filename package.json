@@ -22,6 +22,7 @@
     "test:merchant-memory": "node --experimental-strip-types --no-warnings scripts/verify-merchant-memory.ts",
     "test:merchant-rules": "node --experimental-strip-types --no-warnings scripts/verify-merchant-rules.ts",
     "test:bank-cleanup": "node --experimental-strip-types --no-warnings scripts/verify-bank-cleanup.ts",
+    "test:dividend-cover": "node --experimental-strip-types --no-warnings scripts/verify-dividend-cover.ts",
     "test:spend-range": "node --experimental-strip-types --no-warnings scripts/verify-spend-range.ts",
     "test:transaction-flags": "node --experimental-strip-types --no-warnings scripts/verify-transaction-flags.ts",
     "test:spend-forecast": "node --experimental-strip-types --no-warnings scripts/verify-spend-forecast.ts",

@@ -286,8 +286,11 @@ export function HomeCardPrompt({ description, action }: { description: string; a
   );
 }
 
-export function GlanceRow({ netWorth, invested, safety, savingsRate, fmt, onNetWorth, onSafety, onSavings, safetySetup, savingsSetup, usAverage = true }: {
+export function GlanceRow({ netWorth, invested, safety, savingsRate, fmt, onNetWorth, onSafety, onSavings, safetySetup, savingsSetup, usAverage = true, dividends = null, onDividends }: {
   netWorth: number | null;
+  /** Dividends a month against repeating bills (lib/dividend-cover.ts); null hides the tile, so only people paid a dividend see it. */
+  dividends?: { monthly: number; bills: number; pct: number } | null;
+  onDividends?: () => void;
   safetySetup?: { description: string; action: string };
   savingsSetup?: { description: string; action: string };
   /** Invested at each month end, oldest first, up to 12 (the snapshots behind the curve); fewer than 2 draws no line. */
@@ -368,6 +371,19 @@ export function GlanceRow({ netWorth, invested, safety, savingsRate, fmt, onNetW
           <button type="button" onClick={onSavings} style={cell}>
             <TileHead label="Savings rate" to="plan" />
             <HomeCardPrompt {...savingsSetup} />
+          </button>
+        )}
+        {dividends && (
+          <button type="button" onClick={onDividends} aria-label="Dividends, open Income" style={cell}>
+            <TileHead label="Dividends" to="money" />
+            <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+              <b style={{ ...mono, fontSize: 22 }}>{dividends.pct < 1 ? "<1" : Math.round(dividends.pct)}%</b>
+              <span className="uf-t-small" style={muted}>of your bills paid</span>
+            </span>
+            <div role="img" aria-label={`Dividends pay ${Math.round(dividends.pct)}% of your bills`} style={{ height: 8, borderRadius: 4, background: "var(--uf-surface-2)", overflow: "hidden" }}>
+              <i style={{ display: "block", height: "100%", width: `${Math.max(2, Math.min(100, dividends.pct))}%`, borderRadius: 4, background: "var(--uf-teal)" }} />
+            </div>
+            <span className="uf-t-small" style={{ ...mono, ...muted }}>{fmt(dividends.monthly)} a month · bills {fmt(dividends.bills)}</span>
           </button>
         )}
       </div>

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-05 — See how much of your bills dividends pay
+
+- If your bank shows dividend payments, Home adds a small Dividends tile: the share of your monthly bills your dividends already cover. Nothing to set up.
+
 ## 2026-11-05 — A Learn hub for each FIRE stage
 
 - Learn now has stage essentials, a recommended guide, and search across the library. Three new emergency savings guides cover targets, accounts, and rebuilding, with a CFPB source link.
