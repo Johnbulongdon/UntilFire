@@ -46,3 +46,25 @@ export function paydayRemainder(afterBills: number, everyday: number | null, cus
   if (everyday === null || !Number.isFinite(everyday) || everyday < 0 || !Number.isFinite(cushion) || cushion < 0) return null;
   return afterBills - everyday - cushion;
 }
+
+/**
+ * The Today strip's two daily figures (D-137). `today`, in bold, is what keeps
+ * you on budget: the day-to-day budget left over the days left, capped by
+ * Until payday over the days to payday so it never promises cash that isn't
+ * there. `stretch` is the payday figure, shown small under it when higher:
+ * spare cash you could use, but that the plan means to save. Without a budget,
+ * `today` is the payday figure (D-90). Rounded like Budget's "about $X a day".
+ * John, 5 Nov 2026: budget first, and no guilt about the rest.
+ */
+export function safeToSpendToday({ payday, budget }: {
+  payday: { remaining: number | null; days: number } | null;
+  budget: { left: number; daysLeft: number } | null;
+}): { today: number | null; stretch: number | null } {
+  const perDay = (n: number, d: number) => Math.max(0, Math.round(n / d));
+  const fromBudget = budget && budget.daysLeft > 0 ? perDay(budget.left, budget.daysLeft) : null;
+  if (!payday) return { today: fromBudget, stretch: null };
+  const fromPayday = payday.remaining !== null && payday.days > 0 ? perDay(payday.remaining, payday.days) : null;
+  if (fromPayday === null) return { today: null, stretch: null };
+  if (fromBudget === null || fromBudget >= fromPayday) return { today: fromPayday, stretch: null };
+  return { today: fromBudget, stretch: fromPayday };
+}

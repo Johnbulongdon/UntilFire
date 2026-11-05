@@ -67,7 +67,7 @@ export default function NeedsWantsDonut({ income, needsBills, needsOther, wants,
             <circle key={a.key} r={R} cx="80" cy="80" fill="none" stroke={a.color} strokeWidth="26"
               strokeDasharray={`${a.dash} ${C}`} strokeDashoffset={-a.offset} transform="rotate(-90 80 80)" />
           ))}
-          <text x="80" y="74" textAnchor="middle" fontSize="13" fill="var(--uf-ink-3)" fontFamily="Inter, sans-serif">{hasIncome ? "Saving" : "Spent"}</text>
+          <text x="80" y="74" textAnchor="middle" fontSize="13" fill="var(--uf-ink-3)" fontFamily="Inter, sans-serif">{hasIncome ? "Not spent yet" : "Spent"}</text>
           <text x="80" y="98" textAnchor="middle" fontSize="21" fontWeight="800" fill="var(--uf-ink)" fontFamily="Inter, sans-serif" style={moneyMono}>
             {fmt(hasIncome ? rest : used)}
           </text>

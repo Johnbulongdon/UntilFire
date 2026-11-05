@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-05 — Numbers that agree across pages
+
+- Home's "Safe to spend today" now leads with what keeps you on budget, matching Budget's daily figure. When there's more cash than that before payday, a small line says how much, as money meant for saving.
+- The Budget ring calls the unspent part "Not spent yet", not "Saving".
+- Calendar no longer suggests transfers between your own accounts (like a monthly move to Vanguard) as bills.
+- Home greets you by the name saved in Profile, never by your email address.
+
 ## 2026-11-05 — See how much of your bills dividends pay
 
 - If your bank shows dividend payments, Home adds a small Dividends tile: the share of your monthly bills your dividends already cover. Nothing to set up.

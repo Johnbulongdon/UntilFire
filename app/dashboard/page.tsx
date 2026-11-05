@@ -1,5 +1,5 @@
 "use client";
-import { paydaySpending, paydayRemainder } from '@/lib/payday-spending';
+import { paydaySpending, paydayRemainder, safeToSpendToday } from '@/lib/payday-spending';
 
 import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
 
@@ -1709,7 +1709,13 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         <TodayStrip
           userId={userId}
           bills={bills}
-          perDay={paydayView ? paydayRemaining === null ? null : Math.max(0, Math.floor(paydayRemaining / paydayView.days)) : monthLeft.everydayBudget > 0 ? Math.max(0, monthLeft.left / (monthDays - now.getDate() + 1)) : null}
+          {...(() => {
+            const safe = safeToSpendToday({
+              payday: paydayView ? { remaining: paydayRemaining, days: paydayView.days } : null,
+              budget: monthLeft.everydayBudget > 0 ? { left: monthLeft.left, daysLeft: monthDays - now.getDate() + 1 } : null,
+            });
+            return { perDay: safe.today, stretch: safe.stretch };
+          })()}
           fmt={(n) => fmtMoney(n)}
           toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}
           onOpen={() => onTabChange?.("cashflow")}
@@ -5719,12 +5725,15 @@ export default function Dashboard() {
           }
         });
 
-      // Fetch user display name
-      supabase.auth.getUser().then(({ data: { user } }) => {
-        if (user) {
-          const name = (user.user_metadata?.full_name as string | undefined) || user.email?.split("@")[0] || "";
-          setUserName(name);
-        }
+      // The greeting's name: the one saved in Profile, then the sign-in
+      // provider's. Never the email handle: "Good afternoon, ngjohn101"
+      // reads like a bug (page rating, 5 Nov 2026).
+      Promise.all([
+        supabase.from("profiles").select("display_name").eq("user_id", session.user.id).maybeSingle(),
+        supabase.auth.getUser(),
+      ]).then(([{ data: p }, { data: { user } }]) => {
+        const saved = (p?.display_name as string | null | undefined)?.trim();
+        setUserName(saved || (user?.user_metadata?.full_name as string | undefined) || "");
       });
 
       // Bills already committed for the rest of this month. Budget "remaining"
