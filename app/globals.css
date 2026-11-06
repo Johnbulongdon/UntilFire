@@ -679,7 +679,7 @@ a {
 
 /* Next Horizon, approved 29 October 2026. Aliases above keep existing features compatible. */
 :root{--uf-yellow:#FFE58A;--uf-mint:#E3F7EF;--uf-lilac:#EEE9FA;--uf-blue:#E8F3FF;--uf-pink:#FBE7F2;--uf-on-accent:#151719;--uf-r-control:14px;--uf-r-card:24px;--uf-r-modal:28px;--uf-font-brand:'Inter',sans-serif}
-.dark{--uf-mint:#213F35;--uf-lilac:#363048;--uf-blue:#26384D;--uf-pink:#432C3D}
+.dark{--uf-mint:#2B4A40;--uf-lilac:#363048;--uf-blue:#26384D;--uf-pink:#432C3D}
 button,input,select,textarea{font-family:inherit}h1,h2{font-weight:800;letter-spacing:-.04em}button:focus-visible,a:focus-visible{outline:3px solid #8E78C2;outline-offset:3px}
 .uf-brand-wordmark{font-family:var(--uf-font-brand);font-weight:800;letter-spacing:-.055em}
 .uf-brand-mark-dark{display:none}.dark .uf-brand-mark-light{display:none}.dark .uf-brand-mark-dark{display:block}

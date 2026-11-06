@@ -36,7 +36,7 @@
 .note { font-size:12px; color:var(--uf-ink-2); margin:16px 0 0; line-height:1.6; }
 .all { display:flex; gap:8px; align-items:center; font-size:13px; }
 .card :is(button,summary,input):focus-visible { outline:2px solid currentColor; outline-offset:3px; }
-:global(.dark) .hero { background:#243b33; color:#fafafd; }
+:global(.dark) .hero { background:var(--uf-mint); color:#fafafd; }
 :global(.dark) .answer small,:global(.dark) .row small,:global(.dark) .adjust summary { color:#c3d9cf; }
 :global(.dark) .payday { color:#151719; }
 :global(.dark) .row { border-bottom-color:#ffffff20; }

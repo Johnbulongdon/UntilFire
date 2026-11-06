@@ -183,7 +183,7 @@ function SavingsGap({ data }: { data: AccountData }) {
 }
 
 /** A soft panel that shows against the page in both themes (surface in light, card in dark). */
-const panel = () => (colors.ground === '#151719' ? '#213F35' : '#E3F7EF')
+const panel = () => (colors.ground === '#151719' ? '#2B4A40' : '#E3F7EF')
 
 /**
  * Today on Home (D-108): what's left to answer, opening into the one-at-a-time

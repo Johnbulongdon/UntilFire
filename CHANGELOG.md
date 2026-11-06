@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-06 — Softer green in dark mode
+
+- In dark mode, the Today and Until payday cards (and other mint cards) use a lighter, softer green, so they sit better next to the lilac and blue cards. Both Home cards now use the same green. Light mode is unchanged. Website and phone.
+
 ## 2026-11-05 — Pages that use your own numbers
 
 - Income tells you when a month has an extra payday, how much lands and when, with a button to send it to savings.
