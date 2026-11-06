@@ -20,7 +20,7 @@ Black sunrise and winding path, paired with the outlined Inter UntilFire wordmar
 | Card | #FFFFFF |
 | Secondary ink | #5C6170 |
 
-Pastels group content. They do not replace positive, warning or negative financial meanings. Use black text on pastel cards in either theme. Dark mode uses charcoal surfaces, readable light ink and the same accents. Dark accent cards: mint #2B4A40 (D-141), lilac #363048, blue #26384D, pink #432C3D; use the `--uf-*` tokens, never hard-coded hexes. Legacy `green` and `teal` token names remain compatibility aliases; they no longer mandate those hues.
+Pastels group content. They do not replace positive, warning or negative financial meanings. Use black text on pastel cards in either theme. Dark mode uses charcoal surfaces, readable light ink and the same accents. Dark accent fills: mint #213F35, lilac #363048, blue #26384D, pink #432C3D; use the `--uf-*` tokens, never hard-coded hexes. Large Home panels (Today, Until payday) go charcoal in dark mode with a small colour chip by the title, so the yellow freedom card stays the one big colour (D-141). Legacy `green` and `teal` token names remain compatibility aliases; they no longer mandate those hues.
 
 Transaction amounts (31 October 2026): income uses `--uf-pos-ink` with +, spending uses `--uf-neg-ink` with −, and transfers use `--uf-move-ink` (blue, #2F5DA8 light / #9FC3F2 dark) with ⇄, because a transfer moves money between the user's own accounts and is neither in nor out. Each pairs colour with a sign so meaning never depends on colour alone; all pass 6:1 on cards in both themes.
 

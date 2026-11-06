@@ -140,7 +140,7 @@ function DateMoved({ result }: { result: Freedom }) {
   }, [from, to, key])
   if (!show) return null
   return (
-    <View className="flex-row items-center gap-3 rounded-3xl p-4" style={{ backgroundColor: panel() }}>
+    <View className="flex-row items-center gap-3 rounded-3xl p-4" style={panel()}>
       <Sunny mood="think" size={56} />
       <View className="flex-1 gap-2">
         <Text className="text-[15px] leading-5 text-ink">
@@ -167,7 +167,7 @@ function SavingsGap({ data }: { data: AccountData }) {
   if (!told || !session || cash <= 0 || placed || cash >= told * 0.9) return null
   const done = () => { haptic.tick(); saveFireProfile(session.user.id, { onboardingSavings: null }).then(() => refresh()).catch(() => {}) }
   return (
-    <View className="flex-row items-center gap-3 rounded-3xl p-4" style={{ backgroundColor: panel() }}>
+    <View className="flex-row items-center gap-3 rounded-3xl p-4" style={panel()}>
       <Sunny mood="think" size={56} />
       <View className="flex-1 gap-2">
         <Text className="text-[15px] leading-5 text-ink">
@@ -182,8 +182,10 @@ function SavingsGap({ data }: { data: AccountData }) {
   )
 }
 
-/** A soft panel that shows against the page in both themes (surface in light, card in dark). */
-const panel = () => (colors.ground === '#151719' ? '#2B4A40' : '#E3F7EF')
+/** A soft panel: mint in light; charcoal card with a border in dark, so yellow stays the one big colour (D-141). */
+const panel = () => (colors.ground === '#151719'
+  ? { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }
+  : { backgroundColor: '#E3F7EF' })
 
 /**
  * Today on Home (D-108): what's left to answer, opening into the one-at-a-time
@@ -206,7 +208,7 @@ function TodayCard({ data, userId, paydayDaily }: { data: AccountData; userId: s
   }, [quiet, userId])
   const left = items.length
   return (
-    <View {...anchor} className="gap-3 rounded-3xl p-4" style={{ backgroundColor: panel() }}>
+    <View {...anchor} className="gap-3 rounded-3xl p-4" style={panel()}>
       <View className="flex-row items-baseline justify-between">
         <Text className="text-[18px] font-bold text-ink">Today</Text>
         <Text className="text-[13px] text-ink-2"><Text className="font-mono text-[13px] text-ink-2">{count.done}</Text> of <Text className="font-mono text-[13px] text-ink-2">{count.of}</Text> days</Text>
@@ -335,7 +337,7 @@ function ThisMonth({ data }: { data: AccountData }) {
   const path = soFar.map((v, i) => `${i ? 'L' : 'M'}${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' ')
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`This month: ${money(total)} spent of your ${money(budget)} day-to-day budget. ${pace}. Open your budget`} onPress={() => { haptic.tick(); router.push('/money/budget') }}
-      className="gap-2 rounded-3xl p-4 active:opacity-80" style={{ backgroundColor: panel() }}>
+      className="gap-2 rounded-3xl p-4 active:opacity-80" style={panel()}>
       <View className="flex-row items-center justify-between">
         <Text className="text-[12px] font-bold uppercase tracking-[1.5px] text-ink-3">This month</Text>
         <Text className="text-[13px] font-bold" style={{ color: colors.green }}>Money ›</Text>
@@ -371,7 +373,7 @@ function NextGoal({ data }: { data: AccountData }) {
   const share = g.current_saved / g.target_amount
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`${g.name}: ${Math.round(share * 100)}% saved. Open goals`} onPress={() => { haptic.tick(); router.push('/plan/goals') }}
-      className="gap-2 rounded-3xl p-4 active:opacity-80" style={{ backgroundColor: panel() }}>
+      className="gap-2 rounded-3xl p-4 active:opacity-80" style={panel()}>
       <View className="flex-row items-baseline justify-between">
         <Text numberOfLines={1} className="flex-1 pr-3 text-[16px] font-bold text-ink">{g.emoji ?? '🎯'} {g.name}</Text>
         <Text className="font-mono text-[16px] text-ink">{Math.round(share * 100)}%</Text>

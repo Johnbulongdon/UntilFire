@@ -1,8 +1,8 @@
 # Changelog
 
-## 2026-11-06 — Softer green in dark mode
+## 2026-11-06 — Calmer Home cards in dark mode
 
-- In dark mode, the Today and Until payday cards (and other mint cards) use a lighter, softer green, so they sit better next to the lilac and blue cards. Both Home cards now use the same green. Light mode is unchanged. Website and phone.
+- In dark mode, the Today and Until payday cards on Home are charcoal instead of dark green, with a small mint or yellow square by the title, so the yellow freedom card stands out. Light mode is unchanged. Website and phone.
 
 ## 2026-11-05 — Pages that use your own numbers
 

@@ -3609,8 +3609,8 @@ adequate sample before claiming a winner. No conversion improvement is assumed.
 **Why:** the 5 November page ratings found these pages low use because they showed generic lists or repeated other pages. John: never generic advice; use the person's data or ask for it.
 **Scope:** website. Phone unchanged.
 
-### D-141 — Dark-mode mint is #2B4A40 (6 November 2026)
-**Status:** Approved by John ("lets start with A", after mocks of two lighter options).
-**Decision:** Dark-mode `--uf-mint` changes from #213F35 to #2B4A40. Until payday's hard-coded dark #243B33 now uses the token, so Today and Until payday match. The phone uses the same hex on Home (Today panel, Until payday). Light mint #E3F7EF is unchanged.
-**Why:** John found the dark green too heavy on Home. It was the most saturated dark accent (S31% vs lilac 20%), so it read as forest green. #2B4A40 keeps white ink 9.3:1, secondary ink 5.7:1 and negative ink 5.0:1; option B (#355349) dropped negative ink to 4.4:1. Mocks: project files `untilfire/home-green-2026-11-06/`.
+### D-141 — Dark-mode Home panels are charcoal, not green (6 November 2026)
+**Status:** Approved by John ("C is better not A", after mocks of lighter greens A/B and charcoal C).
+**Decision:** In dark mode, Home's Today card and the Until payday hero use `--uf-card` with a `--uf-border` line instead of dark mint, with a small 22px colour chip before the title (mint for Today, yellow for Until payday; web `.uf-home-panel` / `.uf-title-chip`). Phone Home panels (`panel()`) and phone Until payday use the charcoal card and border, without chips. Light mode keeps mint #E3F7EF. The dark `--uf-mint` token stays #213F35 for other mint surfaces. Until payday's hard-coded dark #243B33 is removed.
+**Why:** John found the dark green too heavy and "not as good looking compared to the black and yellow combo". The green was the most saturated dark accent and competed with the yellow freedom card; charcoal leaves yellow as the one big colour. Lighter greens (A #2B4A40, B #355349) were mocked and dropped. Mocks: project files `untilfire/home-green-2026-11-06/`.
 **Scope:** website and phone (JS only, reaches phones on "ship").
