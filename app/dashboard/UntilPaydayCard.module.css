@@ -2,6 +2,7 @@
 .hero { padding:24px; background:#e3f7ef; color:#151719; }
 .header,.ledgerHeader { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .header h2,.ledger h3 { font-size:17px; font-weight:700; margin:0; }
+.header h2 { display:flex; align-items:center; gap:10px; }
 .payday { display:inline-flex; align-items:center; gap:8px; padding:9px 13px; background:#ffe58a; border-radius:999px; font-size:13px; font-weight:700; white-space:nowrap; }
 .summary { display:grid; grid-template-columns:1fr 1.15fr; gap:28px; margin-top:24px; }
 .answer { display:flex; flex-direction:column; gap:8px; min-width:0; }
@@ -36,8 +37,8 @@
 .note { font-size:12px; color:var(--uf-ink-2); margin:16px 0 0; line-height:1.6; }
 .all { display:flex; gap:8px; align-items:center; font-size:13px; }
 .card :is(button,summary,input):focus-visible { outline:2px solid currentColor; outline-offset:3px; }
-:global(.dark) .hero { background:#243b33; color:#fafafd; }
-:global(.dark) .answer small,:global(.dark) .row small,:global(.dark) .adjust summary { color:#c3d9cf; }
+:global(.dark) .hero { background:var(--uf-card); color:var(--uf-ink); }
+:global(.dark) .answer small,:global(.dark) .row small,:global(.dark) .adjust summary { color:var(--uf-ink-2); }
 :global(.dark) .payday { color:#151719; }
 :global(.dark) .row { border-bottom-color:#ffffff20; }
 @container (max-width:620px) { .summary { grid-template-columns:1fr; gap:14px; }.answer strong { font-size:48px; }.hero,.ledger { padding:20px; }.ledger h3 small { display:block; margin:5px 0 0; } }

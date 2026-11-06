@@ -30,7 +30,7 @@ export function UntilPaydayCard({ line, paydayIso, icon, fmt, onOpen, everyday =
   };
   return <Card className={styles.card} style={{ containerType: 'inline-size' }}>
     <div className={styles.hero}>
-      <header className={styles.header}><h2>Until payday</h2><span className={styles.payday}><CalendarDays size={16} aria-hidden />{date(paydayIso)}</span></header>
+      <header className={styles.header}><h2><span className="uf-title-chip" data-tone="yellow" aria-hidden="true" />Until payday</h2><span className={styles.payday}><CalendarDays size={16} aria-hidden />{date(paydayIso)}</span></header>
       <div className={styles.summary}>
         <div className={styles.answer} aria-live="polite" aria-atomic="true">
           <strong className={remaining !== null && remaining < 0 ? styles.negative : undefined}>{remaining === null ? '—' : signed(remaining)}</strong>

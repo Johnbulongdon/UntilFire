@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-06 — Calmer Home cards in dark mode
+
+- In dark mode, the Today and Until payday cards on Home are charcoal instead of dark green, with a small mint or yellow square by the title, so the yellow freedom card stands out. Light mode is unchanged. Website and phone.
+
 ## 2026-11-05 — Pages that use your own numbers
 
 - Income tells you when a month has an extra payday, how much lands and when, with a button to send it to savings.

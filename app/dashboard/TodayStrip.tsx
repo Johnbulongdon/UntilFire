@@ -190,9 +190,9 @@ export function TodayList({ items, count, perDay, stretch = null, fmt, onAnswer,
     wasFinished.current = finished;
   }, [finished, justFinished]);
   return (
-    <Card style={{ display: "grid", gap: 4, background: "var(--uf-mint)" }}>
+    <Card className="uf-home-panel" style={{ display: "grid", gap: 4 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-        <h2 className="uf-t-h3" style={{ margin: 0 }}>Today</h2>
+        <h2 className="uf-t-h3" style={{ margin: 0, display: "flex", alignItems: "center", gap: 10 }}><span className="uf-title-chip" aria-hidden="true" />Today</h2>
         <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}><span style={mono}>{count.done}</span> of <span style={mono}>{count.of}</span> days</span>
       </div>
       {finished ? (

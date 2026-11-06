@@ -680,6 +680,9 @@ a {
 /* Next Horizon, approved 29 October 2026. Aliases above keep existing features compatible. */
 :root{--uf-yellow:#FFE58A;--uf-mint:#E3F7EF;--uf-lilac:#EEE9FA;--uf-blue:#E8F3FF;--uf-pink:#FBE7F2;--uf-on-accent:#151719;--uf-r-control:14px;--uf-r-card:24px;--uf-r-modal:28px;--uf-font-brand:'Inter',sans-serif}
 .dark{--uf-mint:#213F35;--uf-lilac:#363048;--uf-blue:#26384D;--uf-pink:#432C3D}
+/* Home Today + Until payday (D-141): mint in light; charcoal with a small colour chip in dark, so yellow stays the one big colour. */
+.uf-home-panel{background:var(--uf-mint)}.dark .uf-home-panel{background:var(--uf-card);border:1px solid var(--uf-border)}
+.uf-title-chip{display:none}.dark .uf-title-chip{display:inline-block;width:22px;height:22px;border-radius:8px;flex-shrink:0;background:#BCE9DA}.dark .uf-title-chip[data-tone=yellow]{background:#FFE58A}
 button,input,select,textarea{font-family:inherit}h1,h2{font-weight:800;letter-spacing:-.04em}button:focus-visible,a:focus-visible{outline:3px solid #8E78C2;outline-offset:3px}
 .uf-brand-wordmark{font-family:var(--uf-font-brand);font-weight:800;letter-spacing:-.055em}
 .uf-brand-mark-dark{display:none}.dark .uf-brand-mark-light{display:none}.dark .uf-brand-mark-dark{display:block}
