@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-08 — New app tagline
+
+- The app's tagline is now "Your next move toward freedom." It shows on the phone welcome screen, in browser tabs and link previews, and in the App Store and Google Play listings. The website headline stays "See beyond your balance. Open up your life."
+
 ## 2026-11-06 — Calmer Home cards in dark mode
 
 - In dark mode, the Today and Until payday cards on Home are charcoal instead of dark green, with a small mint or yellow square by the title, so the yellow freedom card stands out. Light mode is unchanged. Website and phone.

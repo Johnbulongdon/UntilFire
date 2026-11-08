@@ -7,7 +7,7 @@ code; check them again if either changes.
 ## Basics
 
 - **Name** (30): UntilFire: Freedom Date
-- **Subtitle** (30): Budget daily. Retire sooner.
+- **Subtitle** (30): Your next move toward freedom.
 - **Category:** Finance. Secondary: Productivity.
 - **Price:** Free, with UntilFire Pro as an auto-renewing subscription
   (`com.untilfire.pro.monthly`, `com.untilfire.pro.yearly`; same price as the

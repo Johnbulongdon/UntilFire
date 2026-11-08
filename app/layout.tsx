@@ -20,7 +20,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'UntilFire | See Beyond Your Balance. Open Up Your Life.',
+  title: 'UntilFire | Your next move toward freedom.',
   description: UNTILFIRE_ANCHOR_COPY,
   keywords:
     'FIRE calculator, financial independence retire early, freedom date calculator, when can I retire, personal finance planning, work optionality, financial freedom, early retirement calculator, FIRE number, savings rate calculator, coast FIRE, barista FIRE, lean FIRE, fat FIRE, retirement timeline, how much do I need to retire',
@@ -28,16 +28,16 @@ export const metadata: Metadata = {
     canonical: SITE_URL,
   },
   openGraph: {
-    title: 'UntilFire — See beyond your balance. Open up your life.',
+    title: 'UntilFire — Your next move toward freedom.',
     description: UNTILFIRE_ANCHOR_DESCRIPTION,
     url: SITE_URL,
     siteName: 'UntilFire',
     type: 'website',
-    images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: 'UntilFire — See beyond your balance. Open up your life.' }],
+    images: [{ url: `${SITE_URL}/opengraph-image`, width: 1200, height: 630, alt: 'UntilFire — Your next move toward freedom.' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'UntilFire — See beyond your balance. Open up your life.',
+    title: 'UntilFire — Your next move toward freedom.',
     description: UNTILFIRE_ANCHOR_DESCRIPTION,
     images: [`${SITE_URL}/opengraph-image`],
   },

@@ -37,7 +37,7 @@ export function WelcomeScreen({ onGetStarted, onSignIn }: {
             {'Make room\nfor more life.'}
           </Text>
           <Text style={[styles.subtitle, { color: colors.ink2 }]}>
-            Your money today. Your freedom ahead.
+            Your next move toward freedom.
           </Text>
         </Animated.View>
 

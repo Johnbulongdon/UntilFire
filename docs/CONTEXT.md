@@ -9,6 +9,8 @@ UntilFire is a **financial freedom app**.
 
 **Supporting sentence:** See your whole financial picture, understand your choices, and build toward the life you want.
 
+**App tagline:** Your next move toward freedom. (D-143: App Store and Google Play, phone welcome screen, page titles. The website headline stays as above.)
+
 Updated 27 October 2026 by founder decision (D-109). “See beyond” means both
 understanding more than a current balance and seeing future possibilities.
 “Open up your life” connects financial clarity to the user's own goals, without
