@@ -41,6 +41,13 @@ const TITLES = [
   "Do you rent or own?",
   "How do you invest?",
 ];
+/** The word each question is really about, highlighted in its title. */
+const KEYWORDS = ["freedom", "live", "get paid", "take home", "spend", "saved and invested", "old", "gets in the way", "rent or own", "invest"];
+const highlight = (title: string, key: string) => {
+  const at = title.indexOf(key);
+  if (at < 0) return title;
+  return <>{title.slice(0, at)}<mark className="nh-key">{key}</mark>{title.slice(at + key.length)}</>;
+};
 export default function BrandedIntake({
   initialCity,
   initialCurrency = "USD",
@@ -435,7 +442,7 @@ export default function BrandedIntake({
             aria-label={`Question ${step + 1} of 10`}
           />
         </div>
-        <section className={"nh-intake-panel tone-step-" + step} key={step} data-summary={summary} data-amount={step >= 3 && step <= 5 ? "" : undefined}>
+        <section className={"nh-intake-panel tone-step-" + step} key={step} data-summary={summary} data-amount={step === 4 ? "segment" : step === 3 || step === 5 ? "plain" : undefined}>
           <form noValidate onSubmit={(e) => { e.preventDefault(); advance(); }}
             onKeyDown={(e) => {
               // Fields submit natively; from the heading or empty space Enter still moves on.
@@ -443,7 +450,7 @@ export default function BrandedIntake({
               if (e.key === "Enter" && !e.repeat && !e.nativeEvent.isComposing && !t.closest("input, button, select, textarea, a, summary")) { e.preventDefault(); advance(); }
             }}>
             <h1 ref={heading} tabIndex={-1}>
-              {step===4&&mode==="Saved"?"How much do you save each month?":TITLES[step]}
+              {step === 4 && mode === "Saved" ? highlight("How much do you save each month?", "save") : highlight(TITLES[step], KEYWORDS[step])}
             </h1>
             <div className="nh-body">{body}</div>
             <div className="nh-actions">

@@ -786,9 +786,16 @@
 @media(max-width:760px){.nh-intake .nh-intake-panel{align-items:stretch}.nh-intake .nh-intake-panel form{width:100%}}
 /* Money questions on phones: the number sits in the middle of the screen. No slider anywhere (John, 8 November 2026). */
 @media(max-width:760px){
-.nh-intake-panel[data-amount] .nh-body{flex:1;justify-content:center;padding-bottom:40px;text-align:center;display:flex;flex-direction:column;align-items:center}
+.nh-intake-panel[data-amount] .nh-body{flex:1;justify-content:flex-start;padding-top:16vh;text-align:center;display:flex;flex-direction:column;align-items:center}
 .nh-intake-panel[data-amount] .nh-number-input{width:100%}
 .nh-intake-panel[data-amount] .nh-number-input>label>span{justify-content:center;margin-left:0}
 .nh-intake-panel[data-amount] .nh-number-input>label>span,.nh-intake-panel[data-amount] .nh-number-input .nh-amount{font-size:60px}
 .nh-intake-panel[data-amount] .nh-number-input .nh-amount{width:calc(var(--nh-len,1) * .6em);max-width:100%}
 .nh-intake-panel[data-amount] .nh-segment{margin:0 auto 24px}}
+/* Same height on all three: the pages without the Expenses/Saved switch keep its space empty. */
+@media(max-width:760px){.nh-intake-panel[data-amount=plain] .nh-body{padding-top:calc(16vh + 70px)}}
+/* The key word of each question, marked like a highlighter that sweeps in after the title. */
+.nh-intake mark.nh-key{color:inherit;background:linear-gradient(#FFE58A,#FFE58A) 0 88%/100% .42em no-repeat;padding:0 .04em;animation:nh-key-in .45s .3s cubic-bezier(.2,.8,.2,1) both}
+.dark .nh-intake mark.nh-key{background-image:linear-gradient(#FFE58A66,#FFE58A66)}
+@keyframes nh-key-in{from{background-size:0 .42em}to{background-size:100% .42em}}
+@media(prefers-reduced-motion:reduce){.nh-intake mark.nh-key{animation:none}}
