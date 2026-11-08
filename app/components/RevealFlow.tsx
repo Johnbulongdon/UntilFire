@@ -7,8 +7,6 @@ import Logo from "@/app/components/Logo";
 import PercentileTrack from "@/app/components/PercentileTrack";
 import type { RevealCtaPlacement } from "@/lib/analytics-events";
 import type { CalculatorPrefill } from "@/lib/journey";
-import SavingsPace from '@/app/components/SavingsPace';
-import { saveCalculatorPrefill } from '@/lib/journey';
 import HomeBackdrop from "@/app/components/auth/HomeBackdrop";
 import SignInCard from "@/app/components/auth/SignInCard";
 import ShareFreedomYear from "@/app/components/ShareFreedomYear";
@@ -77,7 +75,9 @@ const BG = "var(--uf-ground)";
 // "Still working" needs to sit clearly between the dim "lived" grey and the
 // bright teal "free years" — --uf-green is too close in hue to teal at this
 // lightness and the two read as one colour in the dot grid.
-const WORKING = "var(--uf-ink-3)";
+// Ink-based so the dots stay visible on every page colour, light and dark.
+const LIVED = "color-mix(in srgb, var(--uf-ink) 16%, transparent)";
+const WORKING = "color-mix(in srgb, var(--uf-ink) 45%, transparent)";
 const linkPlain: React.CSSProperties = { background: "none", border: "none", color: "var(--uf-ink-2)", font: "600 13px Inter, sans-serif", cursor: "pointer", padding: "6px 2px" };
 const linkButton: React.CSSProperties = { background: "none", border: "none", padding: 0, color: "var(--uf-green)", font: "700 13px Inter, sans-serif", cursor: "pointer", textDecoration: "underline", textUnderlineOffset: 3 };
 // Mirrors --uf-teal in .dark — needed for translucent glows/tints, which
@@ -129,7 +129,7 @@ function useReducedMotion() {
 export default function RevealFlow(props: RevealFlowProps) {
   const {
     freedomAge, freedomYear, yearsToFire, planningAge, ageWasAssumed, returnPct, growthPicker, isAlreadyFire,
-    fireTarget, pctThere, savingsRatePct, usBaselineRate, fireBenchmarkRate, netWorthComparison,
+    fireTarget, pctThere, savingsRatePct,
     expatHome, expatBaseAge, expatCities, formatCompact,
     onSave, prefill, onKeepResult, onAdjust, onShare, onStepViewed,
   } = props;
@@ -140,19 +140,19 @@ export default function RevealFlow(props: RevealFlowProps) {
   const [playMotion, setPlayMotion] = useState(false);
   const reduce = prefersReducedMotion && !playMotion;
   const [step, setStep] = useState(1);
-  const [selectedPlan, setSelectedPlan] = useState<CalculatorPrefill | null>(null);
-  const savedPlan = selectedPlan ?? prefill;
   const [showGrowth, setShowGrowth] = useState(false);
 
   const replay = () => { setPlayMotion(true); setStep(1); };
-  // Your first step (9) sits between the monthly picture (5) and savings pace (8).
+  // Your first step (9) ends the results (D-144). The monthly picture (5) shows
+  // only when the safety pot is already full, or when no step can be picked.
   const firstStep = useMemo(() => pickFirstStep({
     monthlySpend: prefill.monthlySpendEstimate ?? (prefill.annualCost ?? 0) / 12,
     monthlySavings: prefill.monthlySavings ?? 0,
     saved: prefill.portfolioBalance ?? 0,
   }), [prefill.monthlySpendEstimate, prefill.annualCost, prefill.monthlySavings, prefill.portfolioBalance]);
-  const next = () => setStep((s) => s === 5 ? (firstStep ? 9 : 8) : s === 9 ? 8 : s === 8 ? 7 : Math.min(7, s + 1));
-  const back = () => setStep((s) => s === 9 ? 5 : Math.max(2, s - 1));
+  const flow = useMemo(() => !firstStep ? [2, 3, 4, 5] : firstStep.kind === "invest" ? [2, 3, 4, 5, 9] : [2, 3, 4, 9], [firstStep]);
+  const next = () => setStep((s) => { const i = flow.indexOf(s); return i >= 0 && i < flow.length - 1 ? flow[i + 1] : 7; });
+  const back = () => setStep((s) => { const i = flow.indexOf(s); return i > 0 ? flow[i - 1] : s === 7 ? flow[flow.length - 1] : s; });
 
   // Keyboard navigation between result steps.
   useEffect(() => {
@@ -161,14 +161,14 @@ export default function RevealFlow(props: RevealFlowProps) {
       const target = e.target as HTMLElement | null;
       if (target?.isContentEditable || target?.closest("button, a, input, select, textarea, [role=dialog]")) return;
       if (e.key === "ArrowRight" || e.key === "Enter") {
-        if ((step > 1 && step < 7) || step === 9) { e.preventDefault(); next(); }
+        if (flow.includes(step)) { e.preventDefault(); next(); }
       } else if (e.key === "ArrowLeft") {
-        if (step > 2) { e.preventDefault(); back(); }
+        if (flow.indexOf(step) > 0) { e.preventDefault(); back(); }
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [step]);
+  }, [step, flow]);
 
   // Report each result step once per reveal, so a result that never became
   // a signup says where it stopped. Step 1 is the loader; the unreachable
@@ -189,7 +189,7 @@ export default function RevealFlow(props: RevealFlowProps) {
   const working = Math.max(0, Math.min(100 - lived, yearsToFire ?? 0));
   const freeYears = Math.max(0, 100 - lived - working);
   const dots = useMemo(() => Array.from({ length: 100 }, (_, i) => (
-    i < lived ? "var(--uf-border-2)" : i < lived + working ? WORKING : TEAL
+    i < lived ? LIVED : i < lived + working ? WORKING : "var(--uf-ink)"
   )), [lived, working]);
 
   // Freedom-number ring (r=118 → circumference ≈ 741).
@@ -200,10 +200,6 @@ export default function RevealFlow(props: RevealFlowProps) {
   const ageText = String(freedomYear ?? new Date().getFullYear());
   const numText = formatCompact(fireTarget);
 
-  // Honest savings comparison bars.
-  const maxRate = Math.max(savingsRatePct, fireBenchmarkRate, usBaselineRate, 1);
-  const savingsMultiple = usBaselineRate > 0 ? savingsRatePct / usBaselineRate : 0;
-  const beatsUs = savingsRatePct > usBaselineRate;
 
 
   const shell: React.CSSProperties = {
@@ -240,132 +236,121 @@ export default function RevealFlow(props: RevealFlowProps) {
     </div>
   );
 
-  if (step === 8) return <SavingsPace prefill={prefill} value={savedPlan.monthlySavings ?? 0}
-    onBack={() => setStep(firstStep ? 9 : 5)} onUse={plan => { setSelectedPlan(plan); setStep(7); }} />;
-
   // 7 — save: the sign-up card itself, over the blurred Home, so saving the
   // result and signing up are one page (no separate /login stop).
   if (step === 7) return (
     <div className="rf-root" style={{ minHeight: "100vh", position: "relative", background: BG, display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 0" }}>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
-      <HomeBackdrop prefill={savedPlan} />
+      <HomeBackdrop prefill={prefill} />
       <main style={{ width: "100%", maxWidth: 400, padding: "0 24px", position: "relative", zIndex: 1, ...anim("rf-up .3s ease both") }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ marginBottom: 10 }}><Logo variant="auto" size={28} /></div>
           <h1 className="uf-t-h1" style={{ margin: 0, color: "var(--uf-ink)", textWrap: "balance" }}>
-            {(selectedPlan ? selectedPlan.retireYear != null : freedomYear !== null)
-              ? <><span style={{ color: TEAL }}>{selectedPlan ? selectedPlan.retireYear : freedomYear}</span> is just your starting point</>
+            {freedomYear !== null
+              ? <><span style={{ color: TEAL }}>{freedomYear}</span> is just your starting point</>
               : <>Your starting point is ready</>}
           </h1>
         </div>
-        <SignInCard verb="Save" onStart={() => {
-          onKeepResult();
-          if (selectedPlan) saveCalculatorPrefill({ ...selectedPlan, generatedAt: new Date().toISOString() });
-        }} />
+        <SignInCard verb="Save" onStart={onKeepResult} />
         <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 18, marginTop: 16 }}>
-          <button onClick={() => setStep(8)} style={linkPlain}>← Back to results</button>
-          {!selectedPlan && <button onClick={onShare} style={linkPlain}>Share result</button>}
+          <button onClick={back} style={linkPlain}>← Back to results</button>
+          <button onClick={onShare} style={linkPlain}>Share result</button>
         </div>
       </main>
     </div>
   );
 
+  // Full-screen pages, one colour each (D-144): ✕ + progress on top, few words,
+  // one big number, a full-width button pinned low on phones.
+  const ink = "var(--uf-ink)";
+  const big: React.CSSProperties = { fontSize: "clamp(88px, 14vw, 132px)", fontWeight: 800, letterSpacing: "-.06em", lineHeight: .9, fontVariantNumeric: "tabular-nums", margin: 0 };
+  const head: React.CSSProperties = { fontSize: "clamp(36px, 5vw, 52px)", fontWeight: 800, letterSpacing: "-.04em", lineHeight: 1.02, margin: 0, textWrap: "balance" };
+  const key: React.CSSProperties = { fontSize: 20, fontWeight: 700 };
+  const col: React.CSSProperties = { width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, textAlign: "center", ...anim("rf-up .3s ease both") };
+  const stepPill = <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".14em", background: ink, color: "var(--uf-card)", padding: "6px 12px", borderRadius: 999 }}>STEP 1</div>;
+  const segments = flow.length + 1;
+  const at = flow.indexOf(step) + 1;
+  const isLast = flow.indexOf(step) === flow.length - 1;
+
   return (
-    <div className="rf-root" data-motion={playMotion ? "play" : "system"} data-brand-step={step} data-dense={step === 5 && netWorthComparison ? "" : undefined} style={shell}>
+    <div className="rf-root" data-motion={playMotion ? "play" : "system"} data-brand-step={step} data-pot={firstStep?.kind} style={shell}>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES }} />
 
-      {/* top bar */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 1120, width: "100%", margin: "0 auto", zIndex: 2 }}>
-        <Logo variant="auto" size={26} />
-        <button type="button" onClick={replay} style={{ background: "none", border: "none", color: "var(--uf-green)", font: "600 13px Inter, sans-serif", cursor: "pointer", padding: 8 }}>
-          {reduce ? "Play animations" : "Replay reveal"}
-        </button>
-
+      {/* ✕ + progress */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: 1120, width: "100%", margin: "0 auto", zIndex: 2 }}>
+        <button type="button" onClick={onAdjust} aria-label="Change your answers" style={{ background: "none", border: 0, color: "var(--uf-ink-2)", font: "600 22px Inter, sans-serif", cursor: "pointer", padding: "4px 6px 4px 0", lineHeight: 1 }}>✕</button>
+        <div role="progressbar" aria-label="Your results" aria-valuemin={1} aria-valuemax={segments} aria-valuenow={at} style={{ flex: 1, display: "flex", gap: 8 }}>
+          {Array.from({ length: segments }, (_, i) => (
+            <div key={i} style={{ flex: 1, height: 4, borderRadius: 4, background: "color-mix(in srgb, var(--uf-ink) 16%, transparent)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: i < at ? "100%" : "0%", background: ink, borderRadius: 4, transition: "width .25s ease" }} />
+            </div>
+          ))}
+        </div>
       </div>
 
-      {reduce && <p role="status" style={{ ...subtle, textAlign: "center", marginTop: 12 }}>Animations are off because your device requests reduced motion. You can choose Play animations above.</p>}
-
-      {/* progress (7 segments for steps 2–7, with 9 and 8 before save) */}
-      <div style={{ maxWidth: 1120, width: "100%", margin: "18px auto 0", display: "flex", gap: 8, zIndex: 2 }}>
-        {[2,3,4,5,9,8,7].map((_, i) => (
-          <div key={i} style={{ flex: 1, height: 4, borderRadius: 4, background: "var(--uf-border)", overflow: "hidden" }}>
-            <div style={{ height: "100%", width: [2,3,4,5,9,8,7].indexOf(step) >= i ? "100%" : "0%", background: TEAL, borderRadius: 4, transition: "width .25s ease" }} />
-          </div>
-        ))}
-      </div>
-
-      {/* stage — the keyed wrapper re-mounts per step, so rf-page animates every page-to-page transition */}
       <div className="rf-stage" style={stage}>
         <div key={step} className={step === 2 ? "rf-reveal-layout" : undefined} style={{ width: "100%", display: "flex", justifyContent: "center", ...anim("rf-page .28s cubic-bezier(.2,.8,.2,1) both") }}>
 
+          {/* 2 — freedom date (the one yellow page) */}
           {step === 2 && <>
-            <div className="rf-reveal-copy" style={{display:'grid',gap:20}}>
-              <div style={eyebrow}>YOUR FREEDOM PICTURE</div>
-              <h1 style={{fontSize:'clamp(32px,4vw,44px)',lineHeight:1.08,margin:0}}>{isAlreadyFire?'Your starting point':'Your freedom date'}</h1>
-              <div style={subtle}>{isAlreadyFire?'Your entered savings cover your freedom number.':ageWasAssumed?'At your current saving pace.': 'Work could become optional at '+freedomAge+'.'}</div>
-              <div style={{fontSize:'clamp(72px,9vw,120px)',fontWeight:800,letterSpacing:'-.06em',lineHeight:1,...anim('rf-pop .35s ease both')}}>{isAlreadyFire?'Now':ageText}</div>
-              <div style={subtle}>{isAlreadyFire?'Check your bills and balances before making plans.':'More choices ahead.'}</div>
-              <button onClick={next} style={{justifySelf:'start',marginTop:12,border:0,borderRadius:999,padding:'17px 28px',background:'var(--uf-green)',color:'var(--uf-card)',font:'700 16px Inter,sans-serif',cursor:'pointer'}}>Continue →</button>
+            <div className="rf-reveal-copy" style={{ ...col, ...anim("rf-pop .35s ease both") }}>
+              <div style={key}>{isAlreadyFire ? "Free" : "Free in"}</div>
+              <h1 style={big}>{isAlreadyFire ? "Now" : ageText}</h1>
+              {isAlreadyFire ? <div style={subtle}>Your savings cover your number</div>
+                : !ageWasAssumed && <div style={subtle}>at {freedomAge}</div>}
             </div>
-            <RevealCurve prefill={prefill} target={fireTarget} years={yearsToFire??0} returnPct={returnPct} format={formatCompact}/>
+            <RevealCurve prefill={prefill} target={fireTarget} years={yearsToFire ?? 0} returnPct={returnPct} format={formatCompact} />
           </>}
 
           {/* 3 — life in years */}
           {step === 3 && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, textAlign: "center" }}>
-              <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(22px, 4vw, 28px)", fontWeight: 800, letterSpacing: "-0.02em", ...anim("rf-up .3s ease both") }}>Here&apos;s your life, in years</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(20, 1fr)", gap: 7, width: "min(520px, 82vw)" }}>
+            <div style={col}>
+              <div style={big}>{freeYears}</div>
+              <div style={key}>free years</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(20, 1fr)", gap: 6, width: "100%", marginTop: 8 }}>
                 <YearCubes colors={dots} reduce={reduce} />
               </div>
-              <div style={{ display: "flex", gap: 22, flexWrap: "wrap", justifyContent: "center", marginTop: 4 }}>
-                <Legend color="var(--uf-border-2)" label={ageWasAssumed ? `So far (${lived}, assumed)` : `Lived (${lived})`} />
-                <Legend color={WORKING} label={`Still working (${working})`} />
-                <Legend color={TEAL} label={`Free years (${freeYears})`} highlight />
+              <div style={{ display: "flex", gap: 18, flexWrap: "wrap", justifyContent: "center" }}>
+                <Legend color={LIVED} label="Lived" />
+                <Legend color={WORKING} label="Working" />
+                <Legend color={ink} label="Free" />
               </div>
-              <div style={subtle}>
-                {isAlreadyFire
-                  ? <>You&apos;ve already bought back <b style={{ color: TEAL }}>{freeYears} free years</b> — assuming you live to 100.</>
-                  : ageWasAssumed
-                    ? <>Freedom in {working} years buys back <b style={{ color: TEAL }}>{freeYears} free years</b>. This uses an assumed age of {lived}, since you skipped it, and assumes you live to 100.</>
-                    : <>Retiring at {freedomAge} buys back <b style={{ color: TEAL }}>{freeYears} free years</b> — assuming you live to 100.</>}
-              </div>
+              {ageWasAssumed && <div style={{ ...subtle, fontSize: 13 }}>Using age {lived}, since you skipped it.</div>}
             </div>
           )}
 
           {/* 4 — freedom number */}
           {step === 4 && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 22, textAlign: "center", ...anim("rf-up .3s ease both") }}>
-              <div style={eyebrow}>YOUR FREEDOM NUMBER</div>
-              <div style={{ position: "relative", width: 260, height: 260, maxWidth: "80vw", maxHeight: "80vw", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={col}>
+              <div style={{ position: "relative", width: 260, height: 260, maxWidth: "72vw", maxHeight: "72vw", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg viewBox="0 0 260 260" style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)", width: "100%", height: "100%" }}>
-                  <circle cx="130" cy="130" r="118" fill="none" stroke="var(--uf-border)" strokeWidth="14" />
-                  <circle cx="130" cy="130" r="118" fill="none" stroke={TEAL} strokeWidth="14" strokeLinecap="round" strokeDasharray={RING} strokeDashoffset={ringOffset} style={{ animation: reduce ? undefined : "rf-ring .3s .05s cubic-bezier(.2,.8,.2,1) both" }} />
+                  <circle cx="130" cy="130" r="118" fill="none" stroke="var(--uf-card)" strokeWidth="16" />
+                  <circle cx="130" cy="130" r="118" fill="none" stroke={ink} strokeWidth="16" strokeLinecap="round" strokeDasharray={RING} strokeDashoffset={ringOffset} style={{ animation: reduce ? undefined : "rf-ring .3s .05s cubic-bezier(.2,.8,.2,1) both" }} />
                 </svg>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(38px, 9vw, 52px)", fontWeight: 800, letterSpacing: "-0.03em" }}>
-                    {numText}
-                  </div>
-                  <div style={{ fontSize: 14, color: "var(--uf-ink-2)", fontWeight: 600 }}>
-                    in today’s money
-                  </div>
+                  <div style={{ fontSize: "clamp(38px, 9vw, 52px)", fontWeight: 800, letterSpacing: "-0.04em", fontVariantNumeric: "tabular-nums" }}>{numText}</div>
+                  <div style={{ fontSize: 13, color: "var(--uf-ink-2)", fontWeight: 600 }}>in today’s money</div>
                 </div>
               </div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: "var(--uf-ink)" }}>
-                {pctThere > 0
-                  ? <>You&apos;re already <b style={{ color: TEAL }}>{Math.round(pctThere)}%</b> of the way there</>
-                  : <>This is your target to reach.</>}
-              </div>
-              <div style={subtle}>{isAlreadyFire ? "Your inputs cover the target. Review your balances and bills." : pctThere >= 75 ? "Your target is getting closer." : "Everything you save is part of the picture."}</div>
+              <div style={key}>Your freedom number</div>
+              {pctThere > 0 && <div style={subtle}>{Math.min(100, Math.round(pctThere))}% there</div>}
             </div>
           )}
 
+          {/* 5 — monthly picture: only when the safety pot is full (or no step 1) */}
           {step === 5 && (
-            <div style={{width:'100%',maxWidth:560,display:'grid',gap:24,...anim('rf-up .3s ease both')}}>
-              <div style={eyebrow}>YOUR MONTHLY PICTURE</div>
-              <div style={{fontSize:'clamp(32px,5vw,56px)',fontWeight:800,letterSpacing:'-.04em'}}>{savingsRatePct}% saved</div>
-              <div style={{display:'flex',height:24,borderRadius:999,overflow:'hidden',background:'var(--uf-border)'}}><div style={{width:Math.min(100,Math.max(0,100-savingsRatePct))+'%',background:'var(--uf-ink)'}}/><div style={{flex:1,background:'#B9E7D6'}}/></div>
-              <div style={{display:'flex',justifyContent:'space-between',gap:24}}><div><div style={subtle}>Expenses</div><strong style={{fontSize:28}}>{monthlyMoney(prefill.monthlySpendEstimate ?? (prefill.annualCost ?? 0)/12)}</strong></div><div style={{textAlign:'right'}}><div style={subtle}>Saved each month</div><strong style={{fontSize:28}}>{monthlyMoney(prefill.monthlySavings ?? 0)}</strong></div></div>
-              <div style={subtle}>Your starting point. Small changes can move your date.</div>
+            <div style={col}>
+              <div style={big}>{savingsRatePct}%</div>
+              <div style={key}>of your pay saved</div>
+              <div role="img" aria-label={`${savingsRatePct}% of your pay saved`} style={{ display: "flex", height: 24, width: "100%", borderRadius: 999, overflow: "hidden", background: "var(--uf-card)" }}>
+                <div style={{ width: Math.min(100, Math.max(0, savingsRatePct)) + "%", background: ink }} />
+              </div>
+              {firstStep?.kind === "invest" && (
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700 }}>
+                  <span aria-hidden style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--uf-pos)", color: "var(--uf-card)", display: "grid", placeItems: "center", fontSize: 13 }}>✓</span>
+                  Safety pot full
+                </div>
+              )}
             </div>
           )}
 
@@ -373,66 +358,52 @@ export default function RevealFlow(props: RevealFlowProps) {
           {step === 9 && firstStep && (() => {
             const f = firstStep;
             const covered = Math.floor(f.monthsCovered + 1e-9);
-            const title = f.kind === "pot" ? "Fill your safety pot"
-              : f.kind === "invest" ? `Invest ${monthlyMoney(f.monthlySavings)} every month`
-              : f.gap > 0 ? `Close your ${monthlyMoney(f.gap)} monthly gap` : "Find room to save";
-            const line = f.kind === "pot" ? `Saving ${monthlyMoney(f.monthlySavings)} a month, it's full by ${fullByLabel(f.monthsToFull ?? 0)}.`
-              : f.kind === "invest" ? `Your savings already cover ${SAFETY_POT_MONTHS} months of bills. Each month, ${monthlyMoney(f.monthlySavings)} can go to investing.`
-              : `${f.gap > 0 ? `You spend ${monthlyMoney(f.gap)} more than you take home each month.` : "You spend everything you take home."} Save your plan and add your spending to see where it goes.`;
+            if (f.kind === "invest") return (
+              <div style={col}>
+                {stepPill}
+                <h1 style={head}>Invest {monthlyMoney(f.monthlySavings)} a month</h1>
+                <div aria-hidden style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: 5, width: "100%" }}>
+                  {Array.from({ length: 12 }, (_, i) => <div key={i} style={{ height: 48, borderRadius: 10, background: ink }} />)}
+                </div>
+                <div style={key}>{formatCompact(f.monthlySavings * 12)} a year</div>
+              </div>
+            );
             return (
-              <div style={{width:'100%',maxWidth:560,display:'grid',gap:24,...anim('rf-up .3s ease both')}}>
-                <div style={eyebrow}>YOUR FIRST STEP</div>
-                <h1 style={{fontSize:'clamp(32px,5vw,56px)',fontWeight:800,letterSpacing:'-.04em',lineHeight:1.05,margin:0}}>{title}</h1>
-                <div role="img" aria-label={`${covered} of ${SAFETY_POT_MONTHS} months of bills covered`} style={{display:'grid',gridTemplateColumns:`repeat(${SAFETY_POT_MONTHS},1fr)`,gap:8}}>
-                  {Array.from({length:SAFETY_POT_MONTHS},(_,i)=>(
-                    <div key={i} style={{height:56,borderRadius:14,background:'var(--uf-card)',overflow:'hidden'}}>
-                      <div style={{height:'100%',width:Math.max(0,Math.min(1,f.monthsCovered-i))*100+'%',background:'var(--uf-ink)'}}/>
+              <div style={col}>
+                {stepPill}
+                <h1 style={head}>{f.kind === "pot" ? "Fill your safety pot" : f.gap > 0 ? `Close your ${monthlyMoney(f.gap)} gap` : "Find room to save"}</h1>
+                <div role="img" aria-label={`${covered} of ${SAFETY_POT_MONTHS} months of bills saved`} style={{ display: "grid", gridTemplateColumns: `repeat(${SAFETY_POT_MONTHS}, 1fr)`, gap: 8, width: "100%" }}>
+                  {Array.from({ length: SAFETY_POT_MONTHS }, (_, i) => (
+                    <div key={i} style={{ height: 64, borderRadius: 16, background: "var(--uf-card)", overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: Math.max(0, Math.min(1, f.monthsCovered - i)) * 100 + "%", background: ink }} />
                     </div>
                   ))}
                 </div>
-                <div style={{display:'flex',justifyContent:'space-between',gap:16,fontSize:13,color:'var(--uf-ink-2)',marginTop:-12}}>
-                  <span>{covered} of {SAFETY_POT_MONTHS} months of bills covered</span><span>{monthlyMoney(f.need/SAFETY_POT_MONTHS)} each</span>
-                </div>
-                <div style={{display:'flex',justifyContent:'space-between',gap:24}}>
-                  <div><div style={subtle}>You have</div><strong style={{fontSize:28,fontVariantNumeric:'tabular-nums'}}>{monthlyMoney(f.have)}</strong></div>
-                  <div style={{textAlign:'right'}}><div style={subtle}>{SAFETY_POT_MONTHS} months of bills</div><strong style={{fontSize:28,fontVariantNumeric:'tabular-nums'}}>{monthlyMoney(f.need)}</strong></div>
-                </div>
-                <div style={subtle}>{line}</div>
+                <div style={key}>{covered} of {SAFETY_POT_MONTHS} months of bills</div>
+                <div style={subtle}>{f.kind === "pot"
+                  ? `Full by ${fullByLabel(f.monthsToFull ?? 0)} · ${monthlyMoney(f.monthlySavings)} a month`
+                  : "Add your spending to see where it goes"}</div>
               </div>
             );
           })()}
 
-          {/* 6 — expat globe (real geo-arbitrage deltas) */}
+          {/* 6 — expat globe (not in the flow; kept for the globe experiment) */}
           {step === 6 && (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, textAlign: "center", width: "100%", ...anim("rf-up .3s ease both") }}>
-              <div style={eyebrow}>EXPAT FIRE</div>
-              <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(20px, 4vw, 26px)", fontWeight: 800, letterSpacing: "-0.02em" }}>Retire even earlier somewhere else</div>
-              {expatCities.length > 0 ? (
-                <ExpatFireGlobe home={expatHome} baseAge={expatBaseAge ?? planningAge} cities={expatCities} playMotion={playMotion} />
-              ) : (
-                <div style={{ ...subtle, maxWidth: 460 }}>
-                  You&apos;re already in one of the most cost-efficient places for your plan — relocating wouldn&apos;t pull your date much sooner.
-                </div>
-              )}
-              <div style={{ ...subtle, maxWidth: 460 }}>
-                Tap a city to compare.
-              </div>
+            <div style={col}>
+              <div style={head}>Retire even earlier somewhere else</div>
+              {expatCities.length > 0
+                ? <ExpatFireGlobe home={expatHome} baseAge={expatBaseAge ?? planningAge} cities={expatCities} playMotion={playMotion} />
+                : <div style={subtle}>Your city is already cost-efficient for your plan.</div>}
             </div>
           )}
 
         </div>
       </div>
 
-      {/* nav (steps 2–6) */}
-      <div style={{ maxWidth: 1120, width: "100%", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", gap: 16, minHeight: 56, zIndex: 2 }}>
-        {((step > 2 && step < 7) || step === 9) && (
-          <button onClick={back} style={{ background: "none", border: "none", color: "var(--uf-ink-2)", font: "600 14px Inter, sans-serif", cursor: "pointer", padding: 10 }}>← Back</button>
-        )}
-        {((step > 2 && step < 7) || step === 9) && (
-          <button onClick={next} style={{ background: "var(--uf-green)", border: "1px solid var(--uf-green)", color: "var(--uf-card)", borderRadius: 999, padding: "17px 40px", font: "700 16px Inter, sans-serif", cursor: "pointer" }}>
-            {step === 9 || (step === 5 && !firstStep) ? "Try one improvement →" : "Continue →"}
-          </button>
-        )}
+      {/* nav: full-width pinned button on phones; Back on desktop only */}
+      <div className="rf-nav">
+        {flow.indexOf(step) > 0 && <button type="button" className="rf-back" onClick={back}>← Back</button>}
+        <button type="button" className="rf-next" onClick={next}>{isLast ? "Save my plan →" : "Continue →"}</button>
       </div>
     </div>
   );

@@ -65,7 +65,7 @@ async function walkCalculator(page: Page, shoot: (name: string) => Promise<void>
     if(answers[name]) await page.locator('.nh-intake .nh-amount, .nh-intake input[type=number]').first().fill(answers[name])
     if(name==='city') await page.getByRole('button',{name:/^(Continue|Skip)$/}).click()
     else if(name==='save') break
-    else await page.getByRole('button',{name:/^(Continue|Continue →|Show my freedom date|Try one improvement →|Use original plan|Use updated plan)$/}).last().click()
+    else await page.getByRole('button',{name:/^(Continue|Continue →|Show my freedom date|Save my plan →)$/}).last().click()
   }
 }
 

@@ -18,9 +18,7 @@ const loadTs = (path, deps = {}) => {
 const fireNumber = loadTs('lib/fire-number.ts', { './sp500-history.ts': loadTs('lib/sp500-history.ts') });
 const yearCubes = loadTs('components/ui/YearCubes.tsx', {'./YearCubes.module.css':{default:{cell:'year-cell'}}});
 // Exercise the real final-step component/callback without the video or animation.
-let selectedOverride = null;
 let targetStep = 7;
-let selectedSaved;
 const exports = {};
 vm.runInNewContext(ts.transpileModule(readFileSync('app/components/RevealFlow.tsx', 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
@@ -28,8 +26,8 @@ vm.runInNewContext(ts.transpileModule(readFileSync('app/components/RevealFlow.ts
   exports,
   require: (id) => id === 'react' ? {
     ...React, useEffect: () => {}, useMemo: (fn) => fn(), useRef: (value) => ({ current: value }),
-    useState: (value) => [value === 1 ? targetStep : value === null ? selectedOverride : typeof value === 'function' ? value() : value, () => {}],
-  } : id === '@/components/ui/YearCubes' ? yearCubes : id === '@/app/components/Logo' ? { default: () => React.createElement('img', { src: '/logo/horizon-color.svg', alt: 'UntilFire' }) } : id === '@/app/components/PercentileTrack' ? { default: () => null } : id === 'next/dynamic' ? { default: () => () => null } : id === '@/app/components/SavingsPace' ? { default: () => null } : id === '@/lib/journey' ? { saveCalculatorPrefill: p => { selectedSaved = p; } } : id === '@/lib/currency' ? loadTs('lib/currency.ts') : id === '@/lib/fire-number' ? fireNumber
+    useState: (value) => [value === 1 ? targetStep : typeof value === 'function' ? value() : value, () => {}],
+  } : id === '@/components/ui/YearCubes' ? yearCubes : id === '@/app/components/Logo' ? { default: () => React.createElement('img', { src: '/logo/horizon-color.svg', alt: 'UntilFire' }) } : id === '@/app/components/PercentileTrack' ? { default: () => null } : id === 'next/dynamic' ? { default: () => () => null } : id === '@/lib/currency' ? loadTs('lib/currency.ts') : id === '@/lib/fire-number' ? fireNumber
     : id === '@/lib/first-step' ? loadTs('lib/first-step.ts')
     // The save step's backdrop and sign-up card (D-96), stubbed: their own checks live elsewhere.
     : id === '@/app/components/auth/HomeBackdrop' ? { default: () => null }
@@ -135,23 +133,8 @@ for (const retireYear of [2048, null]) {
 }
 console.log('Starting-point handoff preserves entered finances and omits unreached dates.');
 
-// Chosen pace overrides the original handoff immediately before sign-in starts.
-selectedOverride = { monthlyIncome: 6000, monthlySavings: 1750, monthlySpendEstimate: 4250, annualCost: 51000, retireYear: 2045, portfolioBalance: 135000, realReturn: 0.069 };
-let originalKept = false;
-const selectedTree = exports.default({ ...props, prefill: { monthlySavings: 1500 }, onKeepResult: () => { originalKept = true; }, onSave: () => {} });
-assert.match(renderToStaticMarkup(selectedTree), /2045/);
-findCard(selectedTree).props.onStart();
-assert.ok(originalKept);
-assert.equal(selectedSaved.monthlySavings, 1750);
-assert.equal(selectedSaved.monthlySpendEstimate, 4250);
-assert.equal(selectedSaved.annualCost, 51000);
-assert.equal(selectedSaved.retireYear, 2045);
-assert.equal(selectedSaved.portfolioBalance, 135000);
-assert.ok(selectedSaved.generatedAt);
-console.log('Selected savings pace reaches the actual sign-in handoff.');
-
 // Monthly figures must remain exact even though the target uses compact labels.
-targetStep=5;selectedOverride=null;
+targetStep=9;
 const monthly=renderToStaticMarkup(exports.default({...props,prefill:{monthlyIncome:4500,monthlySavings:1500,monthlySpendEstimate:3000,defaultCurrency:'USD'}}));
-assert.match(monthly,/\$1,500/);assert.match(monthly,/\$3,000/);assert.doesNotMatch(monthly,/\$2k/);
-console.log('Monthly summary shows exact entered savings and expenses.');
+assert.match(monthly,/\$1,500 a month/);assert.doesNotMatch(monthly,/\$2k/);
+console.log('Your first step shows the exact entered monthly saving.');

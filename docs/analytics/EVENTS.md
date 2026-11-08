@@ -165,8 +165,7 @@ querying history.
 
 ### `funnel_reveal_step_viewed`
 
-The added `savings_pace` step uses stable index 8 before save (index 7); existing IDs remain unchanged.
-The added `first_step` page (Your first step) uses stable index 9, between `stack_up` (5) and `savings_pace` (8). It is skipped when the answers give no monthly spending.
+`savings_pace` (index 8) was retired on 8 November 2026 (D-144); the id stays for older data. `first_step` (Your first step, index 9) is the last page before save (7). Order: `freedom_age`, `life_years`, `freedom_number`, then `first_step`; `stack_up` (5) shows before `first_step` only when the safety pot is already full, and is the last page when the answers give no monthly spending.
 
 - **Where**: `app/components/RevealFlow.tsx` reports each step through its
   `onStepViewed` prop (an effect on the current step), and `app/HomeClient.tsx`
@@ -179,7 +178,7 @@ The added `first_step` page (Your first step) uses stable index 9, between `stac
   save step and did not click) look the same.
 - **Properties**:
   - `step_id` — `freedom_age` (2), `life_years` (3), `freedom_number` (4),
-    `stack_up` (5), `expat` (6), `save` (7), `savings_pace` (8),
+    `stack_up` (5), `expat` (6), `save` (7), `savings_pace` (8, retired),
     `first_step` (9); or `unreachable`, the single
     screen shown instead when the inputs never reach the freedom number.
   - `step_index` — RevealFlow's step number, 2–9. Step 1 is the loading

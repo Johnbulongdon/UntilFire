@@ -689,23 +689,24 @@ button,input,select,textarea{font-family:inherit}h1,h2{font-weight:800;letter-sp
 /* Role aliases are retained for feature compatibility, not as new palette names. */
 .uf-freedom-panel{--uf-ink:#151719;--uf-ink-2:#5C5130;--uf-ink-3:#655A39;--uf-teal:#151719;--uf-teal-deep:#151719;--uf-green:#151719;--uf-green-50:#FFFFFF75;--uf-card:#FFFFFF}
 .uf-freedom-panel .uf-t-small{color:#5C5130}
-/* Step 2 is the yellow freedom card: dark ink inside the card only, so the page around it follows the theme. */
-.rf-root[data-brand-step="2"] .rf-stage{--uf-ink:#151719;--uf-ink-2:#5C5130;--uf-ink-3:#655A39;--uf-teal:#151719;--uf-green:#151719;--uf-card:#FFFFFF;--uf-border:#D6C681;color:#151719}
-.rf-root[data-brand-step="3"]{background:var(--uf-mint)!important}.rf-root[data-brand-step="5"]{background:var(--uf-blue)!important}
-/* Reveal follows the same rounded desktop canvas as the questions. */
-.rf-root[data-brand-step]{background:var(--uf-ground)!important}
-.rf-root[data-brand-step] .rf-stage{border-radius:32px;background:var(--uf-card);padding:48px;min-height:560px;margin-top:32px;margin-bottom:20px}
-.rf-root[data-brand-step="2"] .rf-stage{background:#FFE58A}
-.rf-root[data-brand-step="3"] .rf-stage{background:var(--uf-mint)}
-.rf-root[data-brand-step="5"] .rf-stage{background:var(--uf-blue)}
-.rf-root[data-brand-step="9"] .rf-stage{background:var(--uf-lilac)}
+/* Onboarding results (D-144): full-screen pages, one colour each. Yellow is only the freedom date. */
+.rf-root[data-brand-step="2"]{--uf-ink:#151719;--uf-ink-2:#5C5130;--uf-ink-3:#655A39;--uf-teal:#151719;--uf-green:#151719;--uf-card:#FFFFFF;--uf-border:#D6C681;color:#151719;background:var(--uf-yellow)!important}
+.rf-root[data-brand-step="3"]{background:var(--uf-mint)!important}
+.rf-root[data-brand-step="4"]{background:var(--uf-pink)!important}
+.rf-root[data-brand-step="5"],.rf-root[data-brand-step="9"]{background:var(--uf-blue)!important}
+.rf-root[data-brand-step="9"][data-pot="invest"]{background:var(--uf-lilac)!important}
+.rf-root[data-brand-step]{min-height:100dvh!important}
+.rf-root[data-brand-step] .rf-stage{flex:1;margin:0 auto;padding:32px 0}
 .rf-reveal-layout{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:64px}
 .rf-reveal-chart{min-width:0}.rf-reveal-chart svg{width:100%;height:auto}
-@media(max-width:700px){.rf-root[data-brand-step] .rf-stage{padding:24px;min-height:560px;margin-top:24px}.rf-reveal-layout{grid-template-columns:1fr;gap:32px}.rf-reveal-chart svg{max-height:170px}}
+.rf-nav{max-width:1120px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:center;gap:16px;min-height:56px;z-index:2}
+.rf-next{background:var(--uf-ink);color:var(--uf-card);border:0;border-radius:999px;padding:18px 44px;font:700 17px Inter,sans-serif;cursor:pointer}
+.rf-back{background:none;border:0;color:var(--uf-ink-2);font:600 14px Inter,sans-serif;cursor:pointer;padding:10px}
+@media(max-width:700px){.rf-reveal-layout{grid-template-columns:1fr;gap:32px}.rf-reveal-chart svg{max-height:170px}
+.rf-root[data-brand-step] .rf-stage{padding:24px 0}
+.rf-nav{position:sticky;bottom:0;padding-bottom:env(safe-area-inset-bottom)}.rf-back{display:none}.rf-next{width:100%;padding:20px}}
 /* Fixed yellow cards keep their light chart fill in both themes. */
 .uf-freedom-panel{--uf-teal-soft:#FFF1BC;--uf-surface-2:#D6C681}
-.rf-root[data-brand-step] .rf-stage{margin:32px auto 20px;min-height:600px}
-@media(max-width:700px){.rf-root[data-brand-step] .rf-stage{min-height:560px}}
 
 /* Browser interaction: short feedback, stable fields, no perpetual decoration. */
 .uf-button,.nh-primary,.nh-secondary,.nh-choices>button,.nh-city-options>button,.uf-section-button,.uf-sidebar-item,.uf-sidebar-sub-item,.uf-money-row>button,.pace-submit{transition:transform 140ms ease,background-color 160ms ease,border-color 160ms ease,box-shadow 160ms ease;touch-action:manipulation}

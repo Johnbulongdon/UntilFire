@@ -143,7 +143,7 @@ export const REVEAL_STEP_IDS: Record<number, RevealStepId> = {
   5: 'stack_up',
   6: 'expat',
   7: 'save',
-  8: 'savings_pace',
+  8: 'savings_pace', // retired 2026-11-08 (D-144); kept for older data
   9: 'first_step',
 };
 

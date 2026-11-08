@@ -52,11 +52,10 @@ const WEB_CALCULATOR: JourneyStep[] = [
 ]
 
 /** The calculator pages the screenshot script walks through, in order. */
-export const CALC_SHOTS = ['goal','city','pay','income','expenses','portfolio','age','worry','housing','investing','freedom-age','life','number','standing','first-step','pace','save'] as const
+export const CALC_SHOTS = ['goal','city','pay','income','expenses','portfolio','age','worry','housing','investing','freedom-age','life','number','standing','first-step','save'] as const
 
 /** The calculator's save step is the sign-up card itself (Google, Apple soon, or email). */
 const WEB_SIGN_UP: JourneyStep[] = [
-  { label: 'Savings pace', action: 'Keep or update monthly savings', route: '/', shot: 'calc:pace' },
   { label: 'Save and sign up', action: 'Save with Google or email', route: '/', shot: 'calc:save' },
   { label: 'Google', route: '/auth/callback', external: true },
   { label: 'Home', route: '/dashboard', shot: 'user:/dashboard' },
