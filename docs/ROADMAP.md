@@ -2,7 +2,7 @@
 
 ## Current priorities
 
-N3 follow-up — Onboarding "Your first step" (D-144), Claude, 8 November 2026. In review (website only). Types, lint, first-step, reveal tracking, save-plan and journeys checks passed; local browser check at 390 and desktop, light and dark. Update 8 November: Try one improvement removed; full-screen, low-word pages. Next: John's review, merge on "merge", then phone onboarding if wanted.
+N3 follow-up — Onboarding "Your first step" (D-144), Claude, 8 November 2026. In review (website only). Types, lint, first-step, reveal tracking, save-plan and journeys checks passed; local browser check at 390 and desktop, light and dark. Update 8 November: Try one improvement removed; whole onboarding full screen with element motion. Merged on John's "merge" (8 November). Next: phone onboarding if wanted.
 
 N2 follow-up — Learn stage hub, Codex, 5 November 2026. In review in [PR #387](https://github.com/Johnbulongdon/UntilFire/pull/387). Four stage sections, searchable guides, and emergency savings essentials. Next: browser acceptance and review.
 
