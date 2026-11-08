@@ -76,6 +76,7 @@ const BG = "var(--uf-ground)";
 // bright teal "free years" — --uf-green is too close in hue to teal at this
 // lightness and the two read as one colour in the dot grid.
 // Ink-based so the dots stay visible on every page colour, light and dark.
+const SR: React.CSSProperties = { position: "absolute", width: 1, height: 1, margin: -1, overflow: "hidden", clip: "rect(0,0,0,0)", whiteSpace: "nowrap" };
 const LIVED = "color-mix(in srgb, var(--uf-ink) 16%, transparent)";
 const WORKING = "color-mix(in srgb, var(--uf-ink) 45%, transparent)";
 const linkPlain: React.CSSProperties = { background: "none", border: "none", color: "var(--uf-ink-2)", font: "600 13px Inter, sans-serif", cursor: "pointer", padding: "6px 2px" };
@@ -91,6 +92,7 @@ const KEYFRAMES = `
 @keyframes rf-up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 @keyframes rf-pop{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
 @keyframes rf-dot{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+@keyframes rf-digit{from{opacity:0;transform:translateY(.4em)}to{opacity:1;transform:none}}
 @keyframes rf-page{from{opacity:0;transform:translateY(14px) scale(.99)}to{opacity:1;transform:none}}
 @keyframes rf-bar{from{transform:scaleY(0)}to{transform:scaleY(1)}}
 @keyframes rf-bar-x{from{transform:scaleX(0)}to{transform:scaleX(1)}}
@@ -266,8 +268,11 @@ export default function RevealFlow(props: RevealFlowProps) {
   const big: React.CSSProperties = { fontSize: "clamp(88px, 14vw, 132px)", fontWeight: 800, letterSpacing: "-.06em", lineHeight: .9, fontVariantNumeric: "tabular-nums", margin: 0 };
   const head: React.CSSProperties = { fontSize: "clamp(36px, 5vw, 52px)", fontWeight: 800, letterSpacing: "-.04em", lineHeight: 1.02, margin: 0, textWrap: "balance" };
   const key: React.CSSProperties = { fontSize: 20, fontWeight: 700 };
-  const col: React.CSSProperties = { width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, textAlign: "center", ...anim("rf-up .3s ease both") };
-  const stepPill = <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: ".14em", background: ink, color: "var(--uf-card)", padding: "6px 12px", borderRadius: 999 }}>STEP 1</div>;
+  const col: React.CSSProperties = { width: "100%", maxWidth: 520, display: "flex", flexDirection: "column", alignItems: "center", gap: 18, textAlign: "center" };
+  // Element by element (D-144): each part arrives in order, 0.1s apart, after the tap.
+  const seq = (i: number, kind = "rf-up", dur = ".34s") => anim(`${kind} ${dur} ${(0.06 + i * 0.1).toFixed(2)}s cubic-bezier(.2,.8,.2,1) both`);
+  const digits = (text: string, at: number) => <><span style={SR}>{text}</span><span aria-hidden>{text.split("").map((c, i) => <span key={i} style={{ display: "inline-block", ...anim(`rf-digit .36s ${(0.06 + at * 0.1 + i * 0.06).toFixed(2)}s cubic-bezier(.2,.8,.2,1) both`) }}>{c}</span>)}</span></>;
+  const stepPill = <div style={{ ...seq(0, "rf-pop", ".3s"),  fontSize: 13, fontWeight: 800, letterSpacing: ".14em", background: ink, color: "var(--uf-card)", padding: "6px 12px", borderRadius: 999 }}>STEP 1</div>;
   const segments = flow.length + 1;
   const at = flow.indexOf(step) + 1;
   const isLast = flow.indexOf(step) === flow.length - 1;
@@ -293,24 +298,24 @@ export default function RevealFlow(props: RevealFlowProps) {
 
           {/* 2 — freedom date (the one yellow page) */}
           {step === 2 && <>
-            <div className="rf-reveal-copy" style={{ ...col, ...anim("rf-pop .35s ease both") }}>
-              <div style={key}>{isAlreadyFire ? "Free" : "Free in"}</div>
-              <h1 style={big}>{isAlreadyFire ? "Now" : ageText}</h1>
-              {isAlreadyFire ? <div style={subtle}>Your savings cover your number</div>
-                : !ageWasAssumed && <div style={subtle}>at {freedomAge}</div>}
+            <div className="rf-reveal-copy" style={col}>
+              <div style={{ ...key, ...seq(0) }}>{isAlreadyFire ? "Free" : "Free in"}</div>
+              <h1 style={big}>{digits(isAlreadyFire ? "Now" : ageText, 1)}</h1>
+              {isAlreadyFire ? <div style={{ ...subtle, ...seq(6) }}>Your savings cover your number</div>
+                : !ageWasAssumed && <div style={{ ...subtle, ...seq(6) }}>at {freedomAge}</div>}
             </div>
-            <RevealCurve prefill={prefill} target={fireTarget} years={yearsToFire ?? 0} returnPct={returnPct} format={formatCompact} />
+            <RevealCurve animate={!reduce} prefill={prefill} target={fireTarget} years={yearsToFire ?? 0} returnPct={returnPct} format={formatCompact} />
           </>}
 
           {/* 3 — life in years */}
           {step === 3 && (
             <div style={col}>
-              <div style={big}>{freeYears}</div>
-              <div style={key}>free years</div>
+              <div style={big}>{digits(String(freeYears), 0)}</div>
+              <div style={{ ...key, ...seq(2) }}>free years</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(20, 1fr)", gap: 6, width: "100%", marginTop: 8 }}>
                 <YearCubes colors={dots} reduce={reduce} />
               </div>
-              <div style={{ display: "flex", gap: 18, flexWrap: "wrap", justifyContent: "center" }}>
+              <div style={{ display: "flex", gap: 18, flexWrap: "wrap", justifyContent: "center", ...seq(7) }}>
                 <Legend color={LIVED} label="Lived" />
                 <Legend color={WORKING} label="Working" />
                 <Legend color={ink} label="Free" />
@@ -325,28 +330,28 @@ export default function RevealFlow(props: RevealFlowProps) {
               <div style={{ position: "relative", width: 260, height: 260, maxWidth: "72vw", maxHeight: "72vw", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <svg viewBox="0 0 260 260" style={{ position: "absolute", inset: 0, transform: "rotate(-90deg)", width: "100%", height: "100%" }}>
                   <circle cx="130" cy="130" r="118" fill="none" stroke="var(--uf-card)" strokeWidth="16" />
-                  <circle cx="130" cy="130" r="118" fill="none" stroke={ink} strokeWidth="16" strokeLinecap="round" strokeDasharray={RING} strokeDashoffset={ringOffset} style={{ animation: reduce ? undefined : "rf-ring .3s .05s cubic-bezier(.2,.8,.2,1) both" }} />
+                  <circle cx="130" cy="130" r="118" fill="none" stroke={ink} strokeWidth="16" strokeLinecap="round" strokeDasharray={RING} strokeDashoffset={ringOffset} style={{ animation: reduce ? undefined : "rf-ring .9s .1s cubic-bezier(.2,.8,.2,1) both" }} />
                 </svg>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{ fontSize: "clamp(38px, 9vw, 52px)", fontWeight: 800, letterSpacing: "-0.04em", fontVariantNumeric: "tabular-nums" }}>{numText}</div>
-                  <div style={{ fontSize: 13, color: "var(--uf-ink-2)", fontWeight: 600 }}>in today’s money</div>
+                  <div style={{ fontSize: "clamp(38px, 9vw, 52px)", fontWeight: 800, letterSpacing: "-0.04em", fontVariantNumeric: "tabular-nums" }}>{digits(numText, 2)}</div>
+                  <div style={{ fontSize: 13, color: "var(--uf-ink-2)", fontWeight: 600, ...seq(6) }}>in today’s money</div>
                 </div>
               </div>
-              <div style={key}>Your freedom number</div>
-              {pctThere > 0 && <div style={subtle}>{Math.min(100, Math.round(pctThere))}% there</div>}
+              <div style={{ ...key, ...seq(7) }}>Your freedom number</div>
+              {pctThere > 0 && <div style={{ ...subtle, ...seq(8) }}>{Math.min(100, Math.round(pctThere))}% there</div>}
             </div>
           )}
 
           {/* 5 — monthly picture: only when the safety pot is full (or no step 1) */}
           {step === 5 && (
             <div style={col}>
-              <div style={big}>{savingsRatePct}%</div>
-              <div style={key}>of your pay saved</div>
+              <div style={big}>{digits(`${savingsRatePct}%`, 0)}</div>
+              <div style={{ ...key, ...seq(3) }}>of your pay saved</div>
               <div role="img" aria-label={`${savingsRatePct}% of your pay saved`} style={{ display: "flex", height: 24, width: "100%", borderRadius: 999, overflow: "hidden", background: "var(--uf-card)" }}>
-                <div style={{ width: Math.min(100, Math.max(0, savingsRatePct)) + "%", background: ink }} />
+                <div style={{ width: Math.min(100, Math.max(0, savingsRatePct)) + "%", background: ink, transformOrigin: "left", ...seq(4, "rf-bar-x", ".6s") }} />
               </div>
               {firstStep?.kind === "invest" && (
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700 }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 15, fontWeight: 700, ...seq(10, "rf-pop", ".35s") }}>
                   <span aria-hidden style={{ width: 22, height: 22, borderRadius: "50%", background: "var(--uf-pos)", color: "var(--uf-card)", display: "grid", placeItems: "center", fontSize: 13 }}>✓</span>
                   Safety pot full
                 </div>
@@ -361,26 +366,26 @@ export default function RevealFlow(props: RevealFlowProps) {
             if (f.kind === "invest") return (
               <div style={col}>
                 {stepPill}
-                <h1 style={head}>Invest {monthlyMoney(f.monthlySavings)} a month</h1>
+                <h1 style={{ ...head, ...seq(1) }}>Invest {monthlyMoney(f.monthlySavings)} a month</h1>
                 <div aria-hidden style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: 5, width: "100%" }}>
-                  {Array.from({ length: 12 }, (_, i) => <div key={i} style={{ height: 48, borderRadius: 10, background: ink }} />)}
+                  {Array.from({ length: 12 }, (_, i) => <div key={i} style={{ height: 48, borderRadius: 10, background: ink, transformOrigin: "bottom", ...anim(`rf-bar .3s ${(0.3 + i * 0.05).toFixed(2)}s cubic-bezier(.2,.8,.2,1) both`) }} />)}
                 </div>
-                <div style={key}>{formatCompact(f.monthlySavings * 12)} a year</div>
+                <div style={{ ...key, ...seq(9) }}>{formatCompact(f.monthlySavings * 12)} a year</div>
               </div>
             );
             return (
               <div style={col}>
                 {stepPill}
-                <h1 style={head}>{f.kind === "pot" ? "Fill your safety pot" : f.gap > 0 ? `Close your ${monthlyMoney(f.gap)} gap` : "Find room to save"}</h1>
+                <h1 style={{ ...head, ...seq(1) }}>{f.kind === "pot" ? "Fill your safety pot" : f.gap > 0 ? `Close your ${monthlyMoney(f.gap)} gap` : "Find room to save"}</h1>
                 <div role="img" aria-label={`${covered} of ${SAFETY_POT_MONTHS} months of bills saved`} style={{ display: "grid", gridTemplateColumns: `repeat(${SAFETY_POT_MONTHS}, 1fr)`, gap: 8, width: "100%" }}>
                   {Array.from({ length: SAFETY_POT_MONTHS }, (_, i) => (
-                    <div key={i} style={{ height: 64, borderRadius: 16, background: "var(--uf-card)", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: Math.max(0, Math.min(1, f.monthsCovered - i)) * 100 + "%", background: ink }} />
+                    <div key={i} style={{ height: 64, borderRadius: 16, background: "var(--uf-card)", overflow: "hidden", ...anim(`rf-pop .3s ${(0.26 + i * 0.05).toFixed(2)}s ease both`) }}>
+                      <div style={{ height: "100%", width: Math.max(0, Math.min(1, f.monthsCovered - i)) * 100 + "%", background: ink, transformOrigin: "left", ...anim(`rf-bar-x .3s ${(0.6 + i * 0.16).toFixed(2)}s cubic-bezier(.2,.8,.2,1) both`) }} />
                     </div>
                   ))}
                 </div>
-                <div style={key}>{covered} of {SAFETY_POT_MONTHS} months of bills</div>
-                <div style={subtle}>{f.kind === "pot"
+                <div style={{ ...key, ...seq(10) }}>{covered} of {SAFETY_POT_MONTHS} months of bills</div>
+                <div style={{ ...subtle, ...seq(11) }}>{f.kind === "pot"
                   ? `Full by ${fullByLabel(f.monthsToFull ?? 0)} · ${monthlyMoney(f.monthlySavings)} a month`
                   : "Add your spending to see where it goes"}</div>
               </div>
@@ -497,10 +502,10 @@ function Bar({ heightPct, value, label, tone, delay, reduce, youBadge, compact }
 }
 
 /** Annual balances use the same end-of-year contribution convention as the reveal engine. */
-function RevealCurve({prefill,target,years,returnPct,format}:{prefill:CalculatorPrefill;target:number;years:number;returnPct:number;format:(n:number)=>string}){
+function RevealCurve({animate,prefill,target,years,returnPct,format}:{animate:boolean;prefill:CalculatorPrefill;target:number;years:number;returnPct:number;format:(n:number)=>string}){
  const n=Math.max(1,Math.min(65,Math.ceil(years))),start=Math.max(0,prefill.portfolioBalance??0),saving=Math.max(0,prefill.monthlySavings??0)*12;
  const values=[start];for(let i=1;i<=n;i++)values.push(values[i-1]*(1+returnPct/100)+saving);
  const max=Math.max(target,...values,1),x=(i:number)=>20+i/n*460,y=(v:number)=>180-v/max*145;
  const line=values.map((v,i)=>(i?'L':'M')+x(i)+','+y(v)).join(' ');
- return <div className="rf-reveal-chart"><svg viewBox="0 0 500 230" role="img" aria-label="Your saved balance growing towards your freedom target"><line x1="20" x2="480" y1={y(target)} y2={y(target)} stroke="#15171955" strokeDasharray="3 5"/><path d={line+' L480 200 H20 Z'} fill="#FFFFFF50"/><path d={line} fill="none" stroke="#151719" strokeWidth="3" pathLength="1"/><circle cx="20" cy={y(start)} r="4" fill="#151719"/><circle cx="480" cy={y(values.at(-1)!)} r="5" fill="#151719"/></svg><div style={{display:'flex',justifyContent:'space-between',gap:16,fontSize:12}}><span>Today · {format(start)}</span><span>Freedom target · {format(target)}</span></div></div>
+ return <div className="rf-reveal-chart"><svg viewBox="0 0 500 230" role="img" aria-label="Your saved balance growing towards your freedom target"><line x1="20" x2="480" y1={y(target)} y2={y(target)} stroke="#15171955" strokeDasharray="3 5"/><path d={line+' L480 200 H20 Z'} fill="#FFFFFF50" style={animate?{animation:'rf-up .5s .9s ease both'}:undefined}/><path d={line} fill="none" stroke="#151719" strokeWidth="3" pathLength="1" strokeDasharray="1" style={animate?{animation:'rf-draw .9s .4s cubic-bezier(.4,0,.2,1) both'}:undefined}/><circle cx="20" cy={y(start)} r="4" fill="#151719"/><circle cx="480" cy={y(values.at(-1)!)} r="5" fill="#151719" style={animate?{animation:'rf-dot .25s 1.25s both',transformBox:'fill-box',transformOrigin:'center'}:undefined}/></svg><div style={{display:'flex',justifyContent:'space-between',gap:16,fontSize:12,...(animate?{animation:'rf-up .3s 1.3s ease both'}:{})}}><span>Today · {format(start)}</span><span>Freedom target · {format(target)}</span></div></div>
 }

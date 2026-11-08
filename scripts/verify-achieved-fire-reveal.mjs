@@ -29,7 +29,7 @@ check(
   "life-in-years shows no working years when already free",
   /const working = Math\.max\(0, Math\.min\(100 - lived, yearsToFire \?\? 0\)\);/.test(flow) &&
     /const freeYears = Math\.max\(0, 100 - lived - working\);/.test(flow) &&
-    /<div style=\{big\}>\{freeYears\}<\/div>/.test(flow)
+    /<div style=\{big\}>\{digits\(String\(freeYears\), 0\)\}<\/div>/.test(flow)
 );
 
 check(
