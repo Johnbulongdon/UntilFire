@@ -146,7 +146,6 @@ export default function BrandedIntake({
     label: string,
     value: string,
     change: (v: string) => void,
-    max: number,
     unit = " / month",
   ) => (
     <div className="nh-number-input">
@@ -168,26 +167,13 @@ export default function BrandedIntake({
             aria-label={label}
             required
             value={grouped(value)}
+            style={{ "--nh-len": Math.max(1, grouped(value).length) } as React.CSSProperties}
             placeholder="0"
             onChange={(e) => change(ungroup(e.target.value))}
           />
         </span>
       </label>
       <small>{unit}</small>
-      <input
-        type="range"
-        min="0"
-        max={Math.max(max, Number(value) || 0)}
-        step={Math.max(1, Math.round(rate * 10))}
-        value={Number(value) || 0}
-        aria-label={label + " slider"}
-        onChange={(e) => change(e.target.value)}
-        aria-valuetext={money(Number(value) || 0) + unit}
-      />
-      <div>
-        <small>{money(0)}</small>
-        <small>{money(Math.max(max, Number(value) || 0))}</small>
-      </div>
     </div>
   );
   let body: React.ReactNode;
@@ -260,7 +246,7 @@ export default function BrandedIntake({
   if (step === 3)
     body = (
       <>
-        {numeric("Monthly take-home income", income, setIncome, 15000 * rate)}
+        {numeric("Monthly take-home income", income, setIncome)}
         <p className="nh-input-hint">
           After tax. Your plan uses monthly amounts.
         </p>
@@ -312,7 +298,6 @@ export default function BrandedIntake({
             if(mode === "Expenses")setExpenses(v);
             else {setSavedInput(v);setExpenses(v === "" ? "" : String(Math.round((inc - Math.min(inc,+v))*100)/100));}
           },
-          Math.max(inc, exp, 1),
         )}
         {exp > inc && (
           <p role="status" className="nh-input-hint">
@@ -328,7 +313,6 @@ export default function BrandedIntake({
           "Saved and invested",
           invested,
           setInvested,
-          250000 * rate,
           " today",
         )}
         <p className="nh-input-hint">Include cash and retirement accounts.</p>
@@ -451,7 +435,7 @@ export default function BrandedIntake({
             aria-label={`Question ${step + 1} of 10`}
           />
         </div>
-        <section className={"nh-intake-panel tone-step-" + step} key={step} data-summary={summary}>
+        <section className={"nh-intake-panel tone-step-" + step} key={step} data-summary={summary} data-amount={step >= 3 && step <= 5 ? "" : undefined}>
           <form noValidate onSubmit={(e) => { e.preventDefault(); advance(); }}
             onKeyDown={(e) => {
               // Fields submit natively; from the heading or empty space Enter still moves on.
@@ -461,7 +445,7 @@ export default function BrandedIntake({
             <h1 ref={heading} tabIndex={-1}>
               {step===4&&mode==="Saved"?"How much do you save each month?":TITLES[step]}
             </h1>
-            {body}
+            <div className="nh-body">{body}</div>
             <div className="nh-actions">
               <button
                 type="submit"

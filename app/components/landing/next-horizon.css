@@ -784,3 +784,11 @@
 }
 @media(prefers-reduced-motion:reduce){.nh-intake .nh-intake-panel form>*,.nh-intake .nh-intake-panel>aside{animation:none!important}}
 @media(max-width:760px){.nh-intake .nh-intake-panel{align-items:stretch}.nh-intake .nh-intake-panel form{width:100%}}
+/* Money questions on phones: the number sits in the middle of the screen. No slider anywhere (John, 8 November 2026). */
+@media(max-width:760px){
+.nh-intake-panel[data-amount] .nh-body{flex:1;justify-content:center;padding-bottom:40px;text-align:center;display:flex;flex-direction:column;align-items:center}
+.nh-intake-panel[data-amount] .nh-number-input{width:100%}
+.nh-intake-panel[data-amount] .nh-number-input>label>span{justify-content:center;margin-left:0}
+.nh-intake-panel[data-amount] .nh-number-input>label>span,.nh-intake-panel[data-amount] .nh-number-input .nh-amount{font-size:60px}
+.nh-intake-panel[data-amount] .nh-number-input .nh-amount{width:calc(var(--nh-len,1) * .6em);max-width:100%}
+.nh-intake-panel[data-amount] .nh-segment{margin:0 auto 24px}}
