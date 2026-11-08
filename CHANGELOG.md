@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-08 — Clearer Profile icons in dark mode
+
+- On the website Profile page, each row icon now sits in a light pastel circle (lilac, mint, blue, yellow or pink) in both themes, like the phone app. Before, the circles were dark tints in dark mode, so dark icons such as Name, Household and Currency were hard to see.
+
 ## 2026-11-08 — Your first step in onboarding
 
 - After "Your monthly picture", the website onboarding now shows "Your first step", made from your own answers: fill your safety pot (six blocks, one for each month of bills, and the month it's full), invest your monthly saving once the pot is full, or close a monthly gap. The "Try one improvement" page is gone; Your first step leads straight to saving your plan.

@@ -284,16 +284,16 @@ export default function ProfileTab({
 
       <Section t="Account" />
       <MoneyList>
-        <MoneyRow dot="#2a78d6" icon="👤" name="Name" meta="How the dashboard greets you" value={`${displayName.trim() || "Add"} ›`} onClick={() => toggle("name")}
+        <MoneyRow well dot="#EEE9FA" icon="👤" name="Name" meta="How the dashboard greets you" value={`${displayName.trim() || "Add"} ›`} onClick={() => toggle("name")}
           after={openRow === "name" && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <input aria-label="Display name" style={inputStyle} value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your name" onKeyDown={(e) => e.key === "Enter" && saveName()} />
               <Button variant="primary" size="sm" onClick={saveName} disabled={saving.name || !displayName.trim()}>{saving.name ? "Saving…" : saved.name ? "Saved ✓" : "Save"}</Button>
             </div>
           )} />
-        <MoneyRow dot="#e87ba4" icon="👥" name="Household" meta="Plan together with a partner" value={`${householdSummary} ›`} onClick={() => toggle("household")}
+        <MoneyRow well dot="#E3F7EF" icon="👥" name="Household" meta="Plan together with a partner" value={`${householdSummary} ›`} onClick={() => toggle("household")}
           after={<div style={{ display: openRow === "household" ? "block" : "none" }}><HouseholdSection bare onSummary={setHouseholdSummary} /></div>} />
-        <MoneyRow dot="#1baf7a" icon="💱" name="Currency" meta="Amounts show in this; new entries start in it" value={`${defaultCurrency} ›`} onClick={() => toggle("currency")}
+        <MoneyRow well dot="#E3F7EF" icon="💱" name="Currency" meta="Amounts show in this; new entries start in it" value={`${defaultCurrency} ›`} onClick={() => toggle("currency")}
           after={openRow === "currency" && (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <select aria-label="Default currency" style={{ ...inputStyle, flex: "none", minWidth: 120, cursor: "pointer" }} value={defaultCurrency} onChange={(e) => setDefaultCurrency(e.target.value)}>
@@ -302,7 +302,7 @@ export default function ProfileTab({
               <Button variant="primary" size="sm" onClick={saveCurrency} disabled={saving.currency}>{saving.currency ? "Saving…" : saved.currency ? "Saved ✓" : "Save"}</Button>
             </div>
           )} />
-        <MoneyRow dot="#6b5bd2" icon="🗂️" name="Currency shortlist" meta="Only these appear in currency menus; empty shows all"
+        <MoneyRow well dot="#E8F3FF" icon="🗂️" name="Currency shortlist" meta="Only these appear in currency menus; empty shows all"
           value={`${preferredCurrencies.length ? preferredCurrencies.slice(0, 3).join(", ") + (preferredCurrencies.length > 3 ? ` +${preferredCurrencies.length - 3}` : "") : "All"} ›`}
           onClick={() => toggle("shortlist")}
           after={openRow === "shortlist" && (
@@ -343,7 +343,7 @@ export default function ProfileTab({
               <div><Button variant="primary" size="sm" onClick={saveCurrency} disabled={saving.currency}>{saving.currency ? "Saving…" : saved.currency ? "Saved ✓" : "Save shortlist"}</Button></div>
             </div>
           )} />
-        <MoneyRow dot="var(--uf-ink-3)" icon={isDark ? "🌙" : "☀️"} name="Appearance" meta="Light or dark screens" value={`${isDark ? "Dark" : "Light"} ›`} onClick={() => toggle("appearance")}
+        <MoneyRow well dot="#E8F3FF" icon={isDark ? "🌙" : "☀️"} name="Appearance" meta="Light or dark screens" value={`${isDark ? "Dark" : "Light"} ›`} onClick={() => toggle("appearance")}
           after={openRow === "appearance" && (
             <div role="radiogroup" aria-label="Appearance" style={{ display: "flex", gap: 8 }}>
               {([["light", "Light"], ["dark", "Dark"]] as const).map(([k, label]) => {
@@ -363,25 +363,25 @@ export default function ProfileTab({
       <Section t="Banks" />
       <MoneyList footer={<Button variant="secondary" size="sm" onClick={() => onTabChange("assets")}>{plaidItems.length ? "Connect another bank" : "Connect a bank"}</Button>}>
         {plaidItems.length === 0
-          ? <MoneyRow dot="var(--uf-ink-3)" icon="🏦" name="No banks connected" meta="Connect one to fill Money in automatically" value="" />
+          ? <MoneyRow well dot="#E8F3FF" icon="🏦" name="No banks connected" meta="Connect one to fill Money in automatically" value="" />
           : plaidItems.map((item) => (
-            <MoneyRow key={item.id} dot="#1baf7a" icon="🏦" name={item.institution_name} meta={`Connected · synced ${fmtSynced(item.last_synced_at)}`} value="Manage ›" onClick={() => onTabChange("assets")} />
+            <MoneyRow key={item.id} well dot="#E8F3FF" icon="🏦" name={item.institution_name} meta={`Connected · synced ${fmtSynced(item.last_synced_at)}`} value="Manage ›" onClick={() => onTabChange("assets")} />
           ))}
       </MoneyList>
 
       {/* FIRE type is a personality result, not a projection input (app-structure rule 2). */}
       <Section t="You and FIRE" />
       <MoneyList>
-        <MoneyRow dot="#eda100" icon="🧬" name="FIRE type" meta={fireTypeResult ? "Your result from the FIRE type quiz" : "A short quiz about how you want freedom to look"}
+        <MoneyRow well dot="#FFE58A" icon="🧬" name="FIRE type" meta={fireTypeResult ? "Your result from the FIRE type quiz" : "A short quiz about how you want freedom to look"}
           value={fireTypeResult ? `${fireTypeResult.name} ›` : "Find yours ›"} onClick={() => { window.location.href = fireTypeHref; }} />
-        <MoneyRow dot="var(--uf-teal)" icon="📅" name="Planning assumptions" meta="Age, city, lifestyle and tax live in Plan, next to your freedom date" value="Open ›" onClick={() => onTabChange("fire-calculator")} />
+        <MoneyRow well dot="#EEE9FA" icon="📅" name="Planning assumptions" meta="Age, city, lifestyle and tax live in Plan, next to your freedom date" value="Open ›" onClick={() => onTabChange("fire-calculator")} />
       </MoneyList>
 
       <Section t="Share UntilFire" />
       <MoneyList>
-        <MoneyRow dot="#e34948" icon="🎁" name="Give a month, get a month" meta={`Friends get Pro ${REFERRED_TRIAL_LABEL}; you get a month when one subscribes`} value="Get link ›" onClick={() => toggle("give")}
+        <MoneyRow well dot="#FBE7F2" icon="🎁" name="Give a month, get a month" meta={`Friends get Pro ${REFERRED_TRIAL_LABEL}; you get a month when one subscribes`} value="Get link ›" onClick={() => toggle("give")}
           after={openRow === "give" && <GiveAMonthCard cardStyle={{}} bare />} />
-        <MoneyRow dot="#2a78d6" icon="📣" name="Creator program" meta="Earn from readers who subscribe" value="Learn more ›" onClick={() => toggle("creator")}
+        <MoneyRow well dot="#FBE7F2" icon="📣" name="Creator program" meta="Earn from readers who subscribe" value="Learn more ›" onClick={() => toggle("creator")}
           after={openRow === "creator" && <CreatorCard cardStyle={{}} bare />} />
       </MoneyList>
 
@@ -389,7 +389,7 @@ export default function ProfileTab({
           and Sign out closes the page. */}
       <Section t="Data and account" />
       <MoneyList>
-        <MoneyRow dot="#1baf7a" icon="📦" name="Data and account" meta="Export your data or delete your account" value="Open ›" onClick={() => toggle("data")}
+        <MoneyRow well dot="#E8F3FF" icon="📦" name="Data and account" meta="Export your data or delete your account" value="Open ›" onClick={() => toggle("data")}
           after={openRow === "data" && (
             <div style={{ display: "grid", gap: 16 }}>
               <ExportData userId={userId} />
