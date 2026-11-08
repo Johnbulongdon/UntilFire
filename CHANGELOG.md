@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-08 — Google Pay payments on Android
+
+- On Android, UntilFire can add your Google Pay payments by itself. Turn it on and each tap to pay shows up in Transactions with a "G Pay" label the next time you open the app.
+- When your bank sends the same payment, the two become one, so nothing counts twice.
+- New Android users see a short "Connect" step after their freedom year: connect a bank, turn on Google Pay, or skip. You can also turn Google Pay on from Transactions or Profile, and off any time in Profile.
+- iPhone and the website are unchanged.
+
 ## 2026-11-06 — Calmer Home cards in dark mode
 
 - In dark mode, the Today and Until payday cards on Home are charcoal instead of dark green, with a small mint or yellow square by the title, so the yellow freedom card stands out. Light mode is unchanged. Website and phone.

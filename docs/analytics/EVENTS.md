@@ -273,6 +273,9 @@ The added `savings_pace` step uses stable index 8 before save (index 7); existin
   `index`, `dividends`, `property`, one event per pick). Skips send nothing.
   Phone step ids are now 5 `savings`, 6 `portfolio`, 7 `age`, 8 `worry`,
   9 `housing` (`know` was folded into Spending).
+- `app_google_pay_toggled` - Android only (D-142): Google Pay capture turned
+  `on: true` (both UntilFire's switch and Android's notification access) or
+  `on: false`. No amounts or shop names.
 
 The app reuses the website's property names so one funnel and one breakdown
 read both (`mobile/src/lib/analytics.ts`): `funnel_calculator_step_viewed`

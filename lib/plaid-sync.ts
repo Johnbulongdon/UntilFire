@@ -17,6 +17,7 @@ import { planTagging, type ClassificationRule } from "@/lib/classification-rules
 import { fetchAllPages } from "@/lib/supabase-pages";
 import { planMerchantRules, readMerchantRules } from "@/lib/merchant-rules";
 import { monthStart, pickWithdrawals } from "@/lib/savings-limits";
+import { GPAY_TAG, MATCH_DAYS, pairWalletTwins } from "@/lib/wallet-alerts";
 
 type Admin = SupabaseClient<any, any, any>;
 
@@ -105,6 +106,14 @@ export async function syncPlaidItem(admin: Admin, plaid: PlaidApi, item: SyncIte
         if (error) throw new Error("Could not preserve pending transaction edits");
       }
     }
+  }
+
+  // A payment first added from a Google Wallet alert on Android becomes this
+  // bank row: what the person filed moves across and the Google Pay copy goes (D-142).
+  try {
+    await foldWalletTwins(admin, userId, addedRows as NonNullable<ReturnType<typeof mapPlaidTx>>[]);
+  } catch (walletErr) {
+    console.error("[plaid/sync] google pay twins:", walletErr);
   }
 
   // Update modified
@@ -325,5 +334,30 @@ export async function applyRefunds(admin: Admin, userId: string, refundIds: stri
     }
   } catch (refundErr) {
     console.error("[plaid] applying refunds:", refundErr);
+  }
+}
+
+/** Fold Google Pay rows (lib/wallet-alerts) into the bank rows that just arrived for the same payment. */
+async function foldWalletTwins(admin: Admin, userId: string, rows: NonNullable<ReturnType<typeof mapPlaidTx>>[]) {
+  const bank = rows.filter((r) => r.transaction_type === "expense")
+    .map((r) => ({ id: r.plaid_transaction_id, date: r.date, amount: r.amount, currency: r.currency, description: r.description ?? "" }));
+  if (bank.length === 0) return;
+  const earliest = bank.reduce((min, r) => (r.date < min ? r.date : min), bank[0].date);
+  const from = new Date(Date.parse(`${earliest}T00:00:00Z`) - MATCH_DAYS * 86_400_000).toISOString().slice(0, 10);
+  const { data: gpay, error } = await admin.from("expenses")
+    .select("id, date, amount, currency, description, category, sub_category, tags")
+    .eq("user_id", userId).contains("tags", [GPAY_TAG]).gte("date", from);
+  if (error) throw error;
+  for (const { bank: b, gpay: g } of pairWalletTwins(bank, (gpay ?? []) as { id: string; date: string; amount: number; currency: string; description: string; category: string | null; sub_category: string | null; tags: string[] | null }[])) {
+    const own = (g.tags ?? []).filter((t) => !t.startsWith("sys:"));
+    const filed = g.category && g.category !== "other";
+    if (filed || own.length) {
+      const { data: current } = await admin.from("expenses").select("tags").eq("plaid_transaction_id", b.id).eq("user_id", userId).maybeSingle();
+      const tags = [...new Set([...((current?.tags as string[] | null) ?? []).filter((t) => !(own.length && (t === "need" || t === "want"))), ...own])];
+      await admin.from("expenses")
+        .update({ ...(filed ? { category: g.category, sub_category: g.sub_category } : {}), tags })
+        .eq("plaid_transaction_id", b.id).eq("user_id", userId);
+    }
+    await admin.from("expenses").delete().eq("id", g.id).eq("user_id", userId);
   }
 }

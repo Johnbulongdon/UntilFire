@@ -57,6 +57,7 @@ export const Events = {
   SETUP_CHECKLIST: 'funnel_setup_checklist',
   // Onboarding's worry, housing and investing answers, so demand (dividends) is countable.
   ONBOARDING_ANSWERED: 'app_onboarding_answered',
+  GOOGLE_PAY_TOGGLED: 'app_google_pay_toggled',
 } as const
 
 export function track(event: (typeof Events)[keyof typeof Events], props?: Record<string, string | number | boolean | null>) {

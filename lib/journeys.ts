@@ -225,6 +225,8 @@ export const JOURNEYS: Journey[] = [
       { label: 'Welcome', action: 'Tap Get started', route: 'onboarding/index.tsx', shot: 'app:/onboarding' },
       { label: 'Sign in', action: 'Google or email', route: 'sign-in.tsx', shot: 'app:/sign-in' },
       ...PHONE_ONBOARDING,
+      // Android only (D-142): bank and Google Pay, all skippable. iPhone goes straight to Home.
+      { label: 'Connect (Android)', action: 'Bank, Google Pay or Skip', route: 'connect.tsx', shot: 'app-user:/connect' },
       { label: 'Home', route: '(tabs)/index.tsx', shot: 'app-user:/' },
     ],
   },
