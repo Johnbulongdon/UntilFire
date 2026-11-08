@@ -18,6 +18,7 @@ import { colors, setPalette, themeVars } from '@/theme/colors'
 import { Events, track } from '@/lib/analytics'
 import { reportError, withCrashReporting } from '@/lib/crash-reporting'
 import { AppLock } from '@/components/AppLock'
+import { WalletAlertsSync } from '@/components/WalletAlertsSync'
 import { NotificationTaps } from '@/components/NotificationTaps'
 import { UpdateGate } from '@/components/UpdateGate'
 import { EmptyState } from '@/components/EmptyState'
@@ -74,11 +75,14 @@ function RootLayout() {
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <ScreenViews />
         <NotificationTaps />
+        <WalletAlertsSync />
         <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ground } }}>
           <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
           <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
           <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
           <Stack.Screen name="save-plan" options={{ animation: 'fade' }} />
+          <Stack.Screen name="connect" options={{ animation: 'fade' }} />
+          <Stack.Screen name="google-pay" options={{ presentation: 'modal' }} />
           <Stack.Screen name="transaction" options={{ presentation: 'modal' }} />
           <Stack.Screen name="budget-edit" options={{ presentation: 'modal' }} />
           <Stack.Screen name="spending-accounts" options={{ presentation: 'modal' }} />

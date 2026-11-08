@@ -23,6 +23,7 @@ import { colors } from '@/theme/colors'
 import { WorthALook } from '@/components/WorthALook'
 import { ReviewBar } from '@/components/ReviewBar'
 import { ThemeScope } from '@/components/ThemeScope'
+import { WalletCard } from '@/components/WalletCard'
 
 const PRESETS: { key: RangePreset; label: string }[] = [
   { key: 1, label: 'Month' },
@@ -92,6 +93,7 @@ function Activity({ owner, context, initialCategory, initialMonth }: {
 
   const header = (
     <View>
+      <WalletCard />
       <ReviewBar rows={summary.inRange} months={range.months} />
       <View className="mt-3"><WorthALook rows={summary.inRange} /></View>
       <View className="mt-3 flex-row items-center justify-between rounded-control bg-surface px-2 py-2">

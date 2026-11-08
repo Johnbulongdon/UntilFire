@@ -9,6 +9,7 @@ import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
 import { SETUP_WHY } from '@/engine'
 import { haptic } from '@/lib/haptics'
+import { walletAvailable } from '@/lib/wallet-alerts'
 import { useAuth } from '@/state/auth'
 import { freedomFor, planFromDraft, usePlan, type Plan } from '@/state/plan'
 
@@ -38,7 +39,7 @@ export default function YourPlan() {
   useEffect(() => { haptic.success() }, [])
 
   return (
-    <RevealFrame eyebrow="Your plan" next="Start my plan" onNext={() => { haptic.press(); router.replace(session ? '/(tabs)' : '/save-plan') }}>
+    <RevealFrame eyebrow="Your plan" next="Start my plan" onNext={() => { haptic.press(); router.replace(session ? (walletAvailable ? '/connect' : '/(tabs)') : '/save-plan') }}>
       {/* Layout sits on plain Views: the web build ignores className on Animated.View. */}
       <Animated.View entering={FadeIn.duration(400)}>
         <View className="flex-row items-center gap-4">

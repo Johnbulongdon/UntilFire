@@ -9,6 +9,7 @@ import { Alert, Linking, Pressable, Switch, View } from 'react-native'
 import { Button } from '@/components/Button'
 import { replayTour } from '@/components/GuidedTour'
 import { PrimaryButton } from '@/components/PrimaryButton'
+import { walletAvailable, walletOn } from '@/lib/wallet-alerts'
 import { Row, RowIcon } from '@/components/SettingsRow'
 import { Card, Label, Screen } from '@/components/Screen'
 import { Text } from '@/components/Text'
@@ -105,6 +106,7 @@ export default function Profile() {
           {/* Its reward is a longer web trial, which App Review reads as paying outside Apple (3.1.1); hidden in the App Store build. */}
           {!nativeBuild && <Row icon="gift.fill" fallback="🎁" label="Give a month, get a month" value="" onPress={() => router.push('/give-a-month')} />}
           <Row icon="gift.fill" fallback="🎁" label="Creator programme" value="" onPress={() => router.push("/creator" as never)} />
+          {walletAvailable && <Row icon="creditcard.fill" fallback="📲" label="Google Pay" value={walletOn() ? 'On' : 'Off'} onPress={() => router.push('/google-pay')} />}
           <Row icon="dollarsign.circle.fill" fallback="$" label="Currency" value={data ? `${currencyFlag(data.currency)}  ${CURRENCY_NAMES[data.currency] ?? data.currency}` : '…'} onPress={() => router.push('/currency')} />
         </Card>
       ) : (

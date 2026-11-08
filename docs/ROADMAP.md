@@ -2,6 +2,8 @@
 
 ## Current priorities
 
+Google Pay capture on Android (D-142), Claude, 8 November 2026. In review (branch `claude/project-thread-yc3eav`). Native module, Connect step, Transactions card, Profile switch, bank matching. Next: Android development build on John's phone, then a store build with John's OK and the Play Console notification-access declaration.
+
 N2 follow-up — Learn stage hub, Codex, 5 November 2026. In review in [PR #387](https://github.com/Johnbulongdon/UntilFire/pull/387). Four stage sections, searchable guides, and emergency savings essentials. Next: browser acceptance and review.
 
 N2 follow-up — Payday setup account selection, Codex, 5 November 2026. In review in [PR #386](https://github.com/Johnbulongdon/UntilFire/pull/386). Next: signed-in acceptance and review.

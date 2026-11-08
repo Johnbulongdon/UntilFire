@@ -53,7 +53,7 @@ export function TransactionRow({ t, first, selecting, selected, onToggle, onLong
       <View className="flex-1">
         <Text private numberOfLines={1} className="text-[15px] font-semibold text-ink">{t.description || cat.label}</Text>
         <Text numberOfLines={1} className="mt-0.5 text-[12px] text-ink-3">
-          {transfer ? 'Transfer' : cat.label}{t.sub_category ? ` · ${t.sub_category}` : ''}{t.transaction_type === 'expense' ? (needOf(t) === 'need' ? ' · Need' : ' · Want') : ''}{refunded ? ' · refunded' : ''}
+          {t.tags.includes('sys:gpay') ? <Text className="text-[12px] font-bold text-ink-2">G Pay · </Text> : null}{transfer ? 'Transfer' : cat.label}{t.sub_category ? ` · ${t.sub_category}` : ''}{t.transaction_type === 'expense' ? (needOf(t) === 'need' ? ' · Need' : ' · Want') : ''}{refunded ? ' · refunded' : ''}
         </Text>
       </View>
       <Text accessibilityLabel={transfer ? `Transfer ${moneyExact(usd)}` : undefined} className={`font-mono text-[15px] ${income ? 'text-pos-ink' : transfer ? 'text-move-ink' : 'text-neg-ink'}`}>
