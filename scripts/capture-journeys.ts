@@ -61,7 +61,8 @@ async function walkCalculator(page: Page, shoot: (name: string) => Promise<void>
     if(name==='freedom-age') await page.getByRole('button',{name:'Continue →',exact:true}).waitFor({timeout:20000})
     if(['freedom-age','life','number','standing'].includes(name)) await page.waitForTimeout(2200) // capture settled reveal scenes
     await shoot('calc:'+name)
-    const answers: Record<string,string>={income:'6000',expenses:'3000',portfolio:'6000',age:'32'}
+    // Savings above 6 months of bills, so the walk sees every result page: Your monthly picture (pot full), then Invest (D-144).
+    const answers: Record<string,string>={income:'6000',expenses:'3000',portfolio:'20000',age:'32'}
     if(answers[name]) await page.locator('.nh-intake .nh-amount, .nh-intake input[type=number]').first().fill(answers[name])
     if(name==='city') await page.getByRole('button',{name:/^(Continue|Skip)$/}).click()
     else if(name==='save') break
