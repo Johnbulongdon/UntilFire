@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-08 — Home-screen widget on Android
+
+- Add UntilFire to your Android home screen. The small size shows what's safe to spend today and what's left until payday. The medium size also shows Today: tap ✓ to file a payment as suggested without opening the app, or tap a row to open it. If App lock is on, the amounts stay hidden. Needs the next Play Store build.
+
 ## 2026-11-08 — Clearer Profile icons in dark mode
 
 - On the website Profile page, each row icon now sits in a light pastel circle (lilac, mint, blue, yellow or pink) in both themes, like the phone app. Before, the circles were dark tints in dark mode, so dark icons such as Name, Household and Currency were hard to see.

@@ -7,6 +7,7 @@ import * as Updates from 'expo-updates'
  * each line short and in plain words (the founder reads it to check a build).
  */
 export const UPDATE_LOG: { version: string; date: string; changes: string[] }[] = [
+  { version: '0.2.2', date: '2026-11-08', changes: ['New Android home-screen widget: safe to spend today, and Today items you can tick without opening the app'] },
   { version: '0.2.1', date: '2026-11-08', changes: ['The welcome screen says what UntilFire is for: your next move toward freedom'] },
   { version: '0.2.1', date: '2026-11-06', changes: ['In dark mode, the Today and Until payday cards are charcoal instead of green'] },
   { version: '0.2.1', date: '2026-11-02', changes: ['Choose System, Light or Dark in Profile settings; your choice stays after restarting'] },
