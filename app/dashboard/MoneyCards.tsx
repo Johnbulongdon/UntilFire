@@ -134,10 +134,11 @@ export function MoneyList({ children, footer }: { children: React.ReactNode; foo
 }
 
 /** A soft circle in the row's colour, with its emoji or a small dot inside, as on Transactions. */
-export function RowIcon({ color, emoji, size = 36 }: { color: string; emoji?: React.ReactNode; size?: number }) {
+export function RowIcon({ color, emoji, size = 36, well }: { color: string; emoji?: React.ReactNode; size?: number; well?: boolean }) {
   return (
     <span aria-hidden style={{ flex: "none", width: size, height: size, borderRadius: 999, display: "grid", placeItems: "center",
-      background: `color-mix(in srgb, ${color} 16%, transparent)`, fontSize: size * 0.48, lineHeight: 1 }}>
+      // A well is a solid approved pastel in both themes, so dark emoji stay readable in dark mode (Profile, like the phone).
+      background: well ? color : `color-mix(in srgb, ${color} 16%, transparent)`, fontSize: size * 0.48, lineHeight: 1 }}>
       {emoji ?? <i style={{ width: 10, height: 10, borderRadius: 999, background: color }} />}
     </span>
   );
@@ -161,9 +162,11 @@ export function BankLogo({ logo, name, color, size = 36 }: { logo?: string | nul
 
 const ICON = 36, GAP = 12;
 
-export function MoneyRow({ dot, icon, name, meta, value, valueTone, strong, bar, onClick, after, wrap }: {
+export function MoneyRow({ dot, icon, name, meta, value, valueTone, strong, bar, onClick, after, wrap, well }: {
   /** The row's colour: its category or account type. */
   dot: string;
+  /** Fill the icon circle solid with `dot` (a light pastel) in both themes: settings rows. */
+  well?: boolean;
   /** An emoji for the circle; without one the circle holds a dot. */
   icon?: React.ReactNode;
   name: React.ReactNode;
@@ -183,7 +186,7 @@ export function MoneyRow({ dot, icon, name, meta, value, valueTone, strong, bar,
 }) {
   const head = (
     <div style={{ display: "flex", alignItems: "center", gap: GAP }}>
-      <RowIcon color={dot} emoji={icon} size={ICON} />
+      <RowIcon color={dot} emoji={icon} size={ICON} well={well} />
       <span style={{ minWidth: 0, flex: 1, textAlign: "left" }}>
         <span className="uf-t-body" style={{ display: "block", fontWeight: 600, color: "var(--uf-ink)", ...(wrap ? {} : { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }) }}>{name}</span>
         {meta && <span className="uf-t-small" style={{ display: "block", ...muted }}>{meta}</span>}
