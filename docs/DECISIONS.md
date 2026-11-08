@@ -3398,7 +3398,7 @@ redesign, bank-first onboarding requirement, new advice capability or deployment
 is authorized by this documentation update.
 **Source:** Founder positioning discussion and explicit request to record the
 replacement and old slogan, 27 October 2026.
-**App tagline:** [D-142](#d-142--app-tagline-your-next-move-toward-freedom-8-november-2026)
+**App tagline:** [D-143](#d-143--app-tagline-your-next-move-toward-freedom-8-november-2026)
 adds a short tagline for stores, the phone welcome screen and page titles; this
 headline stays on the website.
 **Trade-off / revisit:** The headline alone is abstract, so keep the supporting
@@ -3618,7 +3618,7 @@ adequate sample before claiming a winner. No conversion improvement is assumed.
 **Why:** John found the dark green too heavy and "not as good looking compared to the black and yellow combo". The green was the most saturated dark accent and competed with the yellow freedom card; charcoal leaves yellow as the one big colour. Lighter greens (A #2B4A40, B #355349) were mocked and dropped. Mocks: project files `untilfire/home-green-2026-11-06/`.
 **Scope:** website and phone (JS only, reaches phones on "ship").
 
-### D-142 — App tagline: "Your next move toward freedom." (8 November 2026)
+### D-143 — App tagline: "Your next move toward freedom." (8 November 2026)
 **Status:** Approved by John ("think which one should show as in the app tagline, it needs to be the strongest", then "yes" to this line).
 **Decision:** The app tagline is "Your next move toward freedom." It is the App Store subtitle (exactly 30 characters), the start of the Google Play short description, the line under the phone welcome headline, and the page title in browser tabs and link previews (`app/layout.tsx`). The website headline and supporting sentence stay as D-109; the web app manifest description and the share image keep the D-109 headline.
 **Why:** John wants UntilFire to be the organized, always-on place to start your financial freedom, for people who don't know what to ask. A chat assistant can describe your situation once, but you must know the questions; UntilFire tells you the next step from your own data. "Next move" names that, "freedom" keeps the goal, and it does not lead with the freedom date, which John called only one part of the tool.
