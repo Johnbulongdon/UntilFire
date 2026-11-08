@@ -6,13 +6,11 @@ import {
   Check,
   CalendarDays,
   Wallet,
-  Globe2,
   Home,
   ChartNoAxesCombined,
   ShieldCheck,
   KeyRound,
 } from "lucide-react";
-import Logo from "@/app/components/Logo";
 import Flag from "@/app/components/Flag";
 import { citySearch, convertIntakeAmount } from "@/lib/intake-inputs";
 import { CITIES } from "@/lib/fire-data";
@@ -436,11 +434,8 @@ export default function BrandedIntake({
     : step === 6 ? "Enter an age from 18 to 100, or leave it blank."
     : "Enter an amount to continue.";
   return (
-    <div className="nh-intake" data-direction={direction}>
-      <header>
-        <Logo size={28} />
-        <span>See beyond your balance.</span>
-      </header>
+    // Full screen, one colour per question, like the results (D-144).
+    <div className="nh-intake" data-direction={direction} data-tone={step % 4}>
       <main>
         <div className="nh-intake-progress">
           <button
@@ -450,13 +445,11 @@ export default function BrandedIntake({
           >
             <ArrowLeft size={19} />
           </button>
-          <span>Your starting point</span>
           <progress
             max="10"
             value={step + 1}
-            aria-label="Onboarding progress"
+            aria-label={`Question ${step + 1} of 10`}
           />
-          <b>{step + 1} / 10</b>
         </div>
         <section className={"nh-intake-panel tone-step-" + step} key={step} data-summary={summary}>
           <form noValidate onSubmit={(e) => { e.preventDefault(); advance(); }}
@@ -482,8 +475,7 @@ export default function BrandedIntake({
               {hint && <p id="nh-step-hint" className="nh-input-hint">{hint}</p>}
             </div>
           </form>
-          <aside>
-            {summary ? (
+          {summary && <aside>
               <div className="nh-intake-summary">
                 <span>Your monthly picture</span>
                 <div>
@@ -511,30 +503,7 @@ export default function BrandedIntake({
                   />
                 </div>
               </div>
-            ) : (
-              <div className="nh-intake-message">
-                {step === 1 ? (
-                  <Globe2 size={66} />
-                ) : step === 8 ? (
-                  <Home size={66} />
-                ) : (
-                  <img
-                    src="/brand/mark-black.svg"
-                    alt=""
-                    width="165"
-                    height="88"
-                  />
-                )}
-                <h2>
-                  {step === 1
-                    ? (city?.name ?? "Your place in the world.")
-                    : step === 8
-                      ? "Room for real life."
-                      : "More life.\nOn your terms."}
-                </h2>
-              </div>
-            )}
-          </aside>
+          </aside>}
         </section>
       </main>
     </div>

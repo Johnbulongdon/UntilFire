@@ -759,3 +759,28 @@
 .nh-example-control{margin:20px 0;padding:16px 0;border-top:1px solid #15171925}.nh-example-control label{display:flex;justify-content:space-between;align-items:center;font-size:12px;gap:12px}.nh-example-control label strong{font-size:12px;letter-spacing:0;white-space:nowrap}.nh-example-control input{width:100%;min-height:44px;accent-color:#151719;cursor:ew-resize;touch-action:pan-y}.nh-example-control small{display:block;font-size:10px;color:#5c5130}.nh-example-control :is(input):focus-visible{outline:3px solid #151719;outline-offset:3px}.nh-example-control output{font:inherit}
 @media(prefers-reduced-motion:reduce){.nh-intake-panel,.nh-intake-panel h1,.nh-choices>button,.nh-choices>button.selected .nh-choice-icon,.nh-choices>button.selected>svg:last-child{animation:none!important;transition:none!important;translate:none!important;transform:none!important;scale:none!important}.nh-split-meter i{transition:none!important}}
 .nh-intake-progress progress{appearance:none;-webkit-appearance:none;border:0;border-radius:999px;overflow:hidden;background:var(--uf-surface-2)}.nh-intake-progress progress::-webkit-progress-bar{background:var(--uf-surface-2);border-radius:999px}.nh-intake-progress progress::-webkit-progress-value{background:var(--uf-ink);border-radius:999px;transition:width 240ms ease}.nh-intake-progress progress::-moz-progress-bar{background:var(--uf-ink);border-radius:999px}@media(max-width:760px){.nh-intake-panel[data-summary=false]>aside{display:none}}@media(prefers-reduced-motion:reduce){.nh-intake-progress progress::-webkit-progress-value{transition:none}}
+
+/* Full-screen questions (D-144): one colour per question, no card, no logo bar,
+   back + progress on top, the button low and full width on phones, and each part arriving in turn. */
+.nh-intake{--nh-bg:var(--uf-mint);background:var(--nh-bg)}
+.nh-intake[data-tone="1"]{--nh-bg:var(--uf-blue)}.nh-intake[data-tone="2"]{--nh-bg:var(--uf-lilac)}.nh-intake[data-tone="3"]{--nh-bg:var(--uf-pink)}
+.nh-intake>main{max-width:none;min-height:100dvh;display:flex;flex-direction:column;padding:28px 48px 32px}
+.nh-intake .nh-intake-progress{max-width:1120px;width:100%;margin:0 auto;gap:10px}
+.nh-intake .nh-intake-progress button{padding:6px 6px 6px 0;color:var(--uf-ink-2)}
+.nh-intake .nh-intake-progress progress{flex:1;width:auto;margin-left:0;height:6px}
+.nh-intake .nh-intake-progress progress,.nh-intake .nh-intake-progress progress::-webkit-progress-bar{background:color-mix(in srgb,var(--uf-ink) 14%,transparent)}
+.nh-intake .nh-intake-panel{background:transparent;border:0;border-radius:0;padding:40px 0;min-height:0;flex:1;max-width:1120px;width:100%;margin:0 auto}
+.nh-intake .nh-intake-panel[data-summary=false]{grid-template-columns:minmax(0,560px);justify-content:center}
+.nh-intake .nh-intake-panel form>:not(h1){animation:nh-copy-in .32s .12s cubic-bezier(.2,.8,.2,1) both}
+.nh-intake .nh-intake-panel form>.nh-actions{animation-delay:.28s}
+.nh-intake .nh-intake-panel>aside{animation:nh-copy-in .32s .2s cubic-bezier(.2,.8,.2,1) both}
+.nh-intake .nh-choices>button{animation-delay:.12s}.nh-intake .nh-choices>button:nth-child(2){animation-delay:.18s}.nh-intake .nh-choices>button:nth-child(3){animation-delay:.24s}.nh-intake .nh-choices>button:nth-child(4){animation-delay:.3s}
+@media(max-width:760px){
+  .nh-intake>main{padding:24px 16px 24px}
+  .nh-intake .nh-intake-panel{display:flex;flex-direction:column;padding:28px 0 0}
+  .nh-intake .nh-intake-panel>aside{display:none}
+  .nh-intake .nh-intake-panel form{flex:1;display:flex;flex-direction:column}
+  .nh-intake .nh-intake-panel .nh-actions{margin-top:auto;padding-top:24px;position:sticky;bottom:0;padding-bottom:env(safe-area-inset-bottom)}
+}
+@media(prefers-reduced-motion:reduce){.nh-intake .nh-intake-panel form>*,.nh-intake .nh-intake-panel>aside{animation:none!important}}
+@media(max-width:760px){.nh-intake .nh-intake-panel{align-items:stretch}.nh-intake .nh-intake-panel form{width:100%}}
