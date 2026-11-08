@@ -30,6 +30,7 @@ vm.runInNewContext(ts.transpileModule(readFileSync('app/components/RevealFlow.ts
     ...React, useEffect: () => {}, useMemo: (fn) => fn(), useRef: (value) => ({ current: value }),
     useState: (value) => [value === 1 ? targetStep : value === null ? selectedOverride : typeof value === 'function' ? value() : value, () => {}],
   } : id === '@/components/ui/YearCubes' ? yearCubes : id === '@/app/components/Logo' ? { default: () => React.createElement('img', { src: '/logo/horizon-color.svg', alt: 'UntilFire' }) } : id === '@/app/components/PercentileTrack' ? { default: () => null } : id === 'next/dynamic' ? { default: () => () => null } : id === '@/app/components/SavingsPace' ? { default: () => null } : id === '@/lib/journey' ? { saveCalculatorPrefill: p => { selectedSaved = p; } } : id === '@/lib/currency' ? loadTs('lib/currency.ts') : id === '@/lib/fire-number' ? fireNumber
+    : id === '@/lib/first-step' ? loadTs('lib/first-step.ts')
     // The save step's backdrop and sign-up card (D-96), stubbed: their own checks live elsewhere.
     : id === '@/app/components/auth/HomeBackdrop' ? { default: () => null }
     : id === '@/app/components/auth/SignInCard' ? { default: (p) => React.createElement('signin-card', { 'data-verb': p.verb, onClick: p.onStart }) }

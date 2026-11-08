@@ -41,6 +41,7 @@
     "test:start-ctas": "node scripts/verify-start-ctas-open-onboarding.mjs",
     "test:savings-pace": "node scripts/verify-savings-pace.mjs",
     "test:journey-canvas": "node --experimental-strip-types --no-warnings scripts/verify-journey-canvas.ts",
+    "test:first-step": "node --experimental-strip-types --no-warnings scripts/verify-first-step.ts",
     "test:journeys": "node --experimental-strip-types --no-warnings scripts/verify-journeys.ts",
     "dev:login": "node --use-env-proxy --experimental-strip-types --no-warnings scripts/dev-login.ts",
     "journeys:capture": "node --experimental-strip-types --no-warnings scripts/capture-journeys.ts",

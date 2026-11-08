@@ -16,6 +16,7 @@ import type { NetWorthComparison } from "@/lib/net-worth-compare";
 import type { ExpatCity } from "@/app/components/ExpatFireGlobe";
 import {FALLBACK_RATES} from '@/lib/currency';
 import { CAUTIOUS_RETURN_PCT, DEFAULT_RETURN_PCT } from "@/lib/fire-number";
+import { pickFirstStep, fullByLabel, SAFETY_POT_MONTHS } from "@/lib/first-step";
 
 // Expat-FIRE globe (orthographic, home → city relocation line), loaded on demand (step 6 only).
 const ExpatFireGlobe = dynamic(() => import("@/app/components/ExpatFireGlobe"), {
@@ -144,8 +145,14 @@ export default function RevealFlow(props: RevealFlowProps) {
   const [showGrowth, setShowGrowth] = useState(false);
 
   const replay = () => { setPlayMotion(true); setStep(1); };
-  const next = () => setStep((s) => s === 5 ? 8 : s === 8 ? 7 : Math.min(7, s + 1));
-  const back = () => setStep((s) => Math.max(2, s - 1));
+  // Your first step (9) sits between the monthly picture (5) and savings pace (8).
+  const firstStep = useMemo(() => pickFirstStep({
+    monthlySpend: prefill.monthlySpendEstimate ?? (prefill.annualCost ?? 0) / 12,
+    monthlySavings: prefill.monthlySavings ?? 0,
+    saved: prefill.portfolioBalance ?? 0,
+  }), [prefill.monthlySpendEstimate, prefill.annualCost, prefill.monthlySavings, prefill.portfolioBalance]);
+  const next = () => setStep((s) => s === 5 ? (firstStep ? 9 : 8) : s === 9 ? 8 : s === 8 ? 7 : Math.min(7, s + 1));
+  const back = () => setStep((s) => s === 9 ? 5 : Math.max(2, s - 1));
 
   // Keyboard navigation between result steps.
   useEffect(() => {
@@ -154,7 +161,7 @@ export default function RevealFlow(props: RevealFlowProps) {
       const target = e.target as HTMLElement | null;
       if (target?.isContentEditable || target?.closest("button, a, input, select, textarea, [role=dialog]")) return;
       if (e.key === "ArrowRight" || e.key === "Enter") {
-        if (step > 1 && step < 7) { e.preventDefault(); next(); }
+        if ((step > 1 && step < 7) || step === 9) { e.preventDefault(); next(); }
       } else if (e.key === "ArrowLeft") {
         if (step > 2) { e.preventDefault(); back(); }
       }
@@ -234,7 +241,7 @@ export default function RevealFlow(props: RevealFlowProps) {
   );
 
   if (step === 8) return <SavingsPace prefill={prefill} value={savedPlan.monthlySavings ?? 0}
-    onBack={() => setStep(5)} onUse={plan => { setSelectedPlan(plan); setStep(7); }} />;
+    onBack={() => setStep(firstStep ? 9 : 5)} onUse={plan => { setSelectedPlan(plan); setStep(7); }} />;
 
   // 7 — save: the sign-up card itself, over the blurred Home, so saving the
   // result and signing up are one page (no separate /login stop).
@@ -278,11 +285,11 @@ export default function RevealFlow(props: RevealFlowProps) {
 
       {reduce && <p role="status" style={{ ...subtle, textAlign: "center", marginTop: 12 }}>Animations are off because your device requests reduced motion. You can choose Play animations above.</p>}
 
-      {/* progress (6 segments for steps 2–7) */}
+      {/* progress (7 segments for steps 2–7, with 9 and 8 before save) */}
       <div style={{ maxWidth: 1120, width: "100%", margin: "18px auto 0", display: "flex", gap: 8, zIndex: 2 }}>
-        {Array.from({ length: 6 }, (_, i) => (
+        {[2,3,4,5,9,8,7].map((_, i) => (
           <div key={i} style={{ flex: 1, height: 4, borderRadius: 4, background: "var(--uf-border)", overflow: "hidden" }}>
-            <div style={{ height: "100%", width: [2,3,4,5,8,7].indexOf(step) >= i ? "100%" : "0%", background: TEAL, borderRadius: 4, transition: "width .25s ease" }} />
+            <div style={{ height: "100%", width: [2,3,4,5,9,8,7].indexOf(step) >= i ? "100%" : "0%", background: TEAL, borderRadius: 4, transition: "width .25s ease" }} />
           </div>
         ))}
       </div>
@@ -362,6 +369,39 @@ export default function RevealFlow(props: RevealFlowProps) {
             </div>
           )}
 
+          {/* 9 — your first step, from the calculator answers only */}
+          {step === 9 && firstStep && (() => {
+            const f = firstStep;
+            const covered = Math.floor(f.monthsCovered + 1e-9);
+            const title = f.kind === "pot" ? "Fill your safety pot"
+              : f.kind === "invest" ? `Invest ${monthlyMoney(f.monthlySavings)} every month`
+              : f.gap > 0 ? `Close your ${monthlyMoney(f.gap)} monthly gap` : "Find room to save";
+            const line = f.kind === "pot" ? `Saving ${monthlyMoney(f.monthlySavings)} a month, it's full by ${fullByLabel(f.monthsToFull ?? 0)}.`
+              : f.kind === "invest" ? `Your savings already cover ${SAFETY_POT_MONTHS} months of bills. Each month, ${monthlyMoney(f.monthlySavings)} can go to investing.`
+              : `${f.gap > 0 ? `You spend ${monthlyMoney(f.gap)} more than you take home each month.` : "You spend everything you take home."} Save your plan and add your spending to see where it goes.`;
+            return (
+              <div style={{width:'100%',maxWidth:560,display:'grid',gap:24,...anim('rf-up .3s ease both')}}>
+                <div style={eyebrow}>YOUR FIRST STEP</div>
+                <h1 style={{fontSize:'clamp(32px,5vw,56px)',fontWeight:800,letterSpacing:'-.04em',lineHeight:1.05,margin:0}}>{title}</h1>
+                <div role="img" aria-label={`${covered} of ${SAFETY_POT_MONTHS} months of bills covered`} style={{display:'grid',gridTemplateColumns:`repeat(${SAFETY_POT_MONTHS},1fr)`,gap:8}}>
+                  {Array.from({length:SAFETY_POT_MONTHS},(_,i)=>(
+                    <div key={i} style={{height:56,borderRadius:14,background:'var(--uf-card)',overflow:'hidden'}}>
+                      <div style={{height:'100%',width:Math.max(0,Math.min(1,f.monthsCovered-i))*100+'%',background:'var(--uf-ink)'}}/>
+                    </div>
+                  ))}
+                </div>
+                <div style={{display:'flex',justifyContent:'space-between',gap:16,fontSize:13,color:'var(--uf-ink-2)',marginTop:-12}}>
+                  <span>{covered} of {SAFETY_POT_MONTHS} months of bills covered</span><span>{monthlyMoney(f.need/SAFETY_POT_MONTHS)} each</span>
+                </div>
+                <div style={{display:'flex',justifyContent:'space-between',gap:24}}>
+                  <div><div style={subtle}>You have</div><strong style={{fontSize:28,fontVariantNumeric:'tabular-nums'}}>{monthlyMoney(f.have)}</strong></div>
+                  <div style={{textAlign:'right'}}><div style={subtle}>{SAFETY_POT_MONTHS} months of bills</div><strong style={{fontSize:28,fontVariantNumeric:'tabular-nums'}}>{monthlyMoney(f.need)}</strong></div>
+                </div>
+                <div style={subtle}>{line}</div>
+              </div>
+            );
+          })()}
+
           {/* 6 — expat globe (real geo-arbitrage deltas) */}
           {step === 6 && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18, textAlign: "center", width: "100%", ...anim("rf-up .3s ease both") }}>
@@ -385,12 +425,12 @@ export default function RevealFlow(props: RevealFlowProps) {
 
       {/* nav (steps 2–6) */}
       <div style={{ maxWidth: 1120, width: "100%", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", gap: 16, minHeight: 56, zIndex: 2 }}>
-        {step > 2 && step < 7 && (
+        {((step > 2 && step < 7) || step === 9) && (
           <button onClick={back} style={{ background: "none", border: "none", color: "var(--uf-ink-2)", font: "600 14px Inter, sans-serif", cursor: "pointer", padding: 10 }}>← Back</button>
         )}
-        {step > 2 && step < 7 && (
+        {((step > 2 && step < 7) || step === 9) && (
           <button onClick={next} style={{ background: "var(--uf-green)", border: "1px solid var(--uf-green)", color: "var(--uf-card)", borderRadius: 999, padding: "17px 40px", font: "700 16px Inter, sans-serif", cursor: "pointer" }}>
-            {step === 5 ? "Try one improvement →" : "Continue →"}
+            {step === 9 || (step === 5 && !firstStep) ? "Try one improvement →" : "Continue →"}
           </button>
         )}
       </div>

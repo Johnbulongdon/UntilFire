@@ -166,6 +166,7 @@ querying history.
 ### `funnel_reveal_step_viewed`
 
 The added `savings_pace` step uses stable index 8 before save (index 7); existing IDs remain unchanged.
+The added `first_step` page (Your first step) uses stable index 9, between `stack_up` (5) and `savings_pace` (8). It is skipped when the answers give no monthly spending.
 
 - **Where**: `app/components/RevealFlow.tsx` reports each step through its
   `onStepViewed` prop (an effect on the current step), and `app/HomeClient.tsx`
@@ -178,9 +179,10 @@ The added `savings_pace` step uses stable index 8 before save (index 7); existin
   save step and did not click) look the same.
 - **Properties**:
   - `step_id` — `freedom_age` (2), `life_years` (3), `freedom_number` (4),
-    `stack_up` (5), `expat` (6), `save` (7); or `unreachable`, the single
+    `stack_up` (5), `expat` (6), `save` (7), `savings_pace` (8),
+    `first_step` (9); or `unreachable`, the single
     screen shown instead when the inputs never reach the freedom number.
-  - `step_index` — RevealFlow's step number, 2–7. Step 1 is the loading
+  - `step_index` — RevealFlow's step number, 2–9. Step 1 is the loading
     screen and is not sent.
 
 ### `funnel_reveal_cta_clicked`

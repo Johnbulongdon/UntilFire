@@ -698,6 +698,7 @@ button,input,select,textarea{font-family:inherit}h1,h2{font-weight:800;letter-sp
 .rf-root[data-brand-step="2"] .rf-stage{background:#FFE58A}
 .rf-root[data-brand-step="3"] .rf-stage{background:var(--uf-mint)}
 .rf-root[data-brand-step="5"] .rf-stage{background:var(--uf-blue)}
+.rf-root[data-brand-step="9"] .rf-stage{background:var(--uf-lilac)}
 .rf-reveal-layout{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:64px}
 .rf-reveal-chart{min-width:0}.rf-reveal-chart svg{width:100%;height:auto}
 @media(max-width:700px){.rf-root[data-brand-step] .rf-stage{padding:24px;min-height:560px;margin-top:24px}.rf-reveal-layout{grid-template-columns:1fr;gap:32px}.rf-reveal-chart svg{max-height:170px}}
