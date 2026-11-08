@@ -22,14 +22,14 @@ check(
 check(
   "achieved FIRE shows 'Now' and says the portfolio covers living costs, not a future age or year",
   /isAlreadyFire\s*\?\s*['"]Now['"]\s*:\s*ageText/.test(flow) &&
-    /Your entered savings cover your freedom number\./.test(flow) &&
-    /Check your bills and balances before making plans\./.test(flow)
+    /Your savings cover your number/.test(flow)
 );
 
 check(
   "life-in-years shows no working years when already free",
   /const working = Math\.max\(0, Math\.min\(100 - lived, yearsToFire \?\? 0\)\);/.test(flow) &&
-    /isAlreadyFire\s*\?\s*<>You&apos;ve already bought back/.test(flow)
+    /const freeYears = Math\.max\(0, 100 - lived - working\);/.test(flow) &&
+    /<div style=\{big\}>\{digits\(String\(freeYears\), 0\)\}<\/div>/.test(flow)
 );
 
 check(

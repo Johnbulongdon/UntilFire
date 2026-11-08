@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-08 — Your first step in onboarding
+
+- After "Your monthly picture", the website onboarding now shows "Your first step", made from your own answers: fill your safety pot (six blocks, one for each month of bills, and the month it's full), invest your monthly saving once the pot is full, or close a monthly gap. The "Try one improvement" page is gone; Your first step leads straight to saving your plan.
+- The result pages are now full screen, each with its own colour and far fewer words: a big number, a short line and one button (full width on phones). The monthly picture only shows when your safety pot is already full.
+- The questions before your result are full screen too, each in its own colour, and every page builds up piece by piece after you tap.
+
 ## 2026-11-08 — New app tagline
 
 - The app's tagline is now "Your next move toward freedom." It shows on the phone welcome screen, in browser tabs and link previews, and in the App Store and Google Play listings. The website headline stays "See beyond your balance. Open up your life."

@@ -6,13 +6,11 @@ import {
   Check,
   CalendarDays,
   Wallet,
-  Globe2,
   Home,
   ChartNoAxesCombined,
   ShieldCheck,
   KeyRound,
 } from "lucide-react";
-import Logo from "@/app/components/Logo";
 import Flag from "@/app/components/Flag";
 import { citySearch, convertIntakeAmount } from "@/lib/intake-inputs";
 import { CITIES } from "@/lib/fire-data";
@@ -43,6 +41,13 @@ const TITLES = [
   "Do you rent or own?",
   "How do you invest?",
 ];
+/** The word each question is really about, highlighted in its title. */
+const KEYWORDS = ["freedom", "live", "get paid", "take home", "spend", "saved and invested", "old", "gets in the way", "rent or own", "invest"];
+const highlight = (title: string, key: string) => {
+  const at = title.indexOf(key);
+  if (at < 0) return title;
+  return <>{title.slice(0, at)}<mark className="nh-key">{key}</mark>{title.slice(at + key.length)}</>;
+};
 export default function BrandedIntake({
   initialCity,
   initialCurrency = "USD",
@@ -148,7 +153,6 @@ export default function BrandedIntake({
     label: string,
     value: string,
     change: (v: string) => void,
-    max: number,
     unit = " / month",
   ) => (
     <div className="nh-number-input">
@@ -170,26 +174,13 @@ export default function BrandedIntake({
             aria-label={label}
             required
             value={grouped(value)}
+            style={{ "--nh-len": Math.max(1, grouped(value).length) } as React.CSSProperties}
             placeholder="0"
             onChange={(e) => change(ungroup(e.target.value))}
           />
         </span>
       </label>
       <small>{unit}</small>
-      <input
-        type="range"
-        min="0"
-        max={Math.max(max, Number(value) || 0)}
-        step={Math.max(1, Math.round(rate * 10))}
-        value={Number(value) || 0}
-        aria-label={label + " slider"}
-        onChange={(e) => change(e.target.value)}
-        aria-valuetext={money(Number(value) || 0) + unit}
-      />
-      <div>
-        <small>{money(0)}</small>
-        <small>{money(Math.max(max, Number(value) || 0))}</small>
-      </div>
     </div>
   );
   let body: React.ReactNode;
@@ -262,7 +253,7 @@ export default function BrandedIntake({
   if (step === 3)
     body = (
       <>
-        {numeric("Monthly take-home income", income, setIncome, 15000 * rate)}
+        {numeric("Monthly take-home income", income, setIncome)}
         <p className="nh-input-hint">
           After tax. Your plan uses monthly amounts.
         </p>
@@ -314,7 +305,6 @@ export default function BrandedIntake({
             if(mode === "Expenses")setExpenses(v);
             else {setSavedInput(v);setExpenses(v === "" ? "" : String(Math.round((inc - Math.min(inc,+v))*100)/100));}
           },
-          Math.max(inc, exp, 1),
         )}
         {exp > inc && (
           <p role="status" className="nh-input-hint">
@@ -330,7 +320,6 @@ export default function BrandedIntake({
           "Saved and invested",
           invested,
           setInvested,
-          250000 * rate,
           " today",
         )}
         <p className="nh-input-hint">Include cash and retirement accounts.</p>
@@ -436,11 +425,8 @@ export default function BrandedIntake({
     : step === 6 ? "Enter an age from 18 to 100, or leave it blank."
     : "Enter an amount to continue.";
   return (
-    <div className="nh-intake" data-direction={direction}>
-      <header>
-        <Logo size={28} />
-        <span>See beyond your balance.</span>
-      </header>
+    // Full screen, one colour per question, like the results (D-144).
+    <div className="nh-intake" data-direction={direction} data-tone={step % 4}>
       <main>
         <div className="nh-intake-progress">
           <button
@@ -450,15 +436,13 @@ export default function BrandedIntake({
           >
             <ArrowLeft size={19} />
           </button>
-          <span>Your starting point</span>
           <progress
             max="10"
             value={step + 1}
-            aria-label="Onboarding progress"
+            aria-label={`Question ${step + 1} of 10`}
           />
-          <b>{step + 1} / 10</b>
         </div>
-        <section className={"nh-intake-panel tone-step-" + step} key={step} data-summary={summary}>
+        <section className={"nh-intake-panel tone-step-" + step} key={step} data-summary={summary} data-amount={step === 4 ? "segment" : step === 3 || step === 5 ? "plain" : undefined}>
           <form noValidate onSubmit={(e) => { e.preventDefault(); advance(); }}
             onKeyDown={(e) => {
               // Fields submit natively; from the heading or empty space Enter still moves on.
@@ -466,9 +450,9 @@ export default function BrandedIntake({
               if (e.key === "Enter" && !e.repeat && !e.nativeEvent.isComposing && !t.closest("input, button, select, textarea, a, summary")) { e.preventDefault(); advance(); }
             }}>
             <h1 ref={heading} tabIndex={-1}>
-              {step===4&&mode==="Saved"?"How much do you save each month?":TITLES[step]}
+              {step === 4 && mode === "Saved" ? highlight("How much do you save each month?", "save") : highlight(TITLES[step], KEYWORDS[step])}
             </h1>
-            {body}
+            <div className="nh-body">{body}</div>
             <div className="nh-actions">
               <button
                 type="submit"
@@ -482,8 +466,7 @@ export default function BrandedIntake({
               {hint && <p id="nh-step-hint" className="nh-input-hint">{hint}</p>}
             </div>
           </form>
-          <aside>
-            {summary ? (
+          {summary && <aside>
               <div className="nh-intake-summary">
                 <span>Your monthly picture</span>
                 <div>
@@ -511,30 +494,7 @@ export default function BrandedIntake({
                   />
                 </div>
               </div>
-            ) : (
-              <div className="nh-intake-message">
-                {step === 1 ? (
-                  <Globe2 size={66} />
-                ) : step === 8 ? (
-                  <Home size={66} />
-                ) : (
-                  <img
-                    src="/brand/mark-black.svg"
-                    alt=""
-                    width="165"
-                    height="88"
-                  />
-                )}
-                <h2>
-                  {step === 1
-                    ? (city?.name ?? "Your place in the world.")
-                    : step === 8
-                      ? "Room for real life."
-                      : "More life.\nOn your terms."}
-                </h2>
-              </div>
-            )}
-          </aside>
+          </aside>}
         </section>
       </main>
     </div>

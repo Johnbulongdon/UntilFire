@@ -28,6 +28,6 @@ The older `docs/modules/` documents and sprint plans are historical snapshots,
 not current implementation specifications. Preserve their intent where useful;
 do not implement their unverified routes or reopen completed work from checkboxes.
 
-### Reveal savings pace (October 22, 2026)
+### Reveal savings pace (October 22, 2026, removed 8 November 2026)
 
-The responsive website reveal includes a fixed-income savings experiment before sign-up. `SavingsPace` and `lib/savings-pace.ts` reuse the current projection engine; changed savings update spending and target together. Draft changes are local until the single original/updated-plan button is chosen. Sign-up preserves that selected prefill. No local peer benchmark is invented; research is tracked in ROADMAP. Native Expo onboarding is not changed.
+The website reveal's "Try one improvement" savings experiment (D-97) was removed by D-144: Your first step now ends the results, so `SavingsPace` and `lib/savings-pace.ts` are gone. Native Expo onboarding still has its own pace screen.
