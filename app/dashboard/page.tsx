@@ -1722,7 +1722,8 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           bills={bills}
           {...(() => {
             const safe = safeToSpendToday({
-              payday: paydayView ? { remaining: paydayRemaining, days: paydayView.days } : null,
+              // Cash after bills and cards, not after usual spending (John, 9 Nov 2026: what you can spend, D-146).
+              payday: paydayView ? { remaining: paydayView.free, days: paydayView.days } : null,
               budget: monthLeft.everydayBudget > 0 ? { left: monthLeft.left, daysLeft: monthDays - now.getDate() + 1 } : null,
             });
             return { perDay: safe.today, stretch: safe.stretch };

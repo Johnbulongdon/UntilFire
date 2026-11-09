@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-09 — Safe to spend means what you can spend
+
+- "Safe to spend today" no longer takes your usual spending off first, so it shows what you can spend today, not just the extra over a normal day. It works the same on the website, the phone app and the Android widget: your day-to-day budget per day, or your cash after bills and cards per day until payday if that is lower. The widget also shows the UntilFire logo.
+
 ## 2026-11-08 — Home-screen widget on Android
 
 - Add UntilFire to your Android home screen. The small size shows what's safe to spend today and what's left until payday. The medium size also shows Today: tap ✓ to file a payment as suggested without opening the app, or tap a row to open it. If App lock is on, the amounts stay hidden. Needs the next Play Store build.
