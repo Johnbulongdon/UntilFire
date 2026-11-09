@@ -1,4 +1,3 @@
-import { paydayRemainder } from '@engine/payday-spending.ts'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Redirect, router } from 'expo-router'
 import { useEffect, useState } from 'react'
@@ -34,7 +33,7 @@ import { freeUntilPayday, unpaid, upcoming } from '@/lib/bills'
 import { phoneNextMove, snoozedMoves, snoozeMove } from '@/lib/next-move'
 import { spentUSD, toUSD } from '@/state/account'
 import { expenseCategories } from '@/lib/custom-categories'
-import { monthCount, quietDayToMark, safeToSpendToday, saveTodayProgress, todayItems } from '@/lib/today'
+import { monthCount, quietDayToMark, safeToSpend, saveTodayProgress, todayItems } from '@/lib/today'
 
 /**
  * Home (V2, after the October audit; D-89, D-108): Today first, then the
@@ -49,24 +48,21 @@ export default function Home() {
   const result = useFreedom()
   const { session } = useAuth()
   const { data, loading, refresh } = useAccount()
-  const [paydayAdjustment,setPaydayAdjustment]=useState<{window:string;everyday:number|null;cushion:number}|null>(null)
   const payday = data ? freeUntilPayday(data) : null
   const paydayWindow = session?.user.id+':'+payday?.payday.iso+':'+isoDay(new Date())
-  const activeAdjustment=paydayAdjustment?.window===paydayWindow?paydayAdjustment:null
-  const paydayRemaining=payday?paydayRemainder(payday.free,activeAdjustment?.everyday??payday.everyday?.amount??null,activeAdjustment?.cushion??0):null
   const setupOpen = useSetupOpen(data)
   if (!plan || !result) return <Redirect href="/onboarding" />
 
   return (
     <Screen tab="home" flat hideTitle title="Home" refreshing={loading && !!data} onRefresh={data ? refresh : undefined}>
-      {data && session && <TodayCard data={data} userId={session.user.id} paydayDaily={payday ? paydayRemaining===null?null:Math.max(0,Math.floor(paydayRemaining/payday.days)):undefined} />}
+      {data && session && <TodayCard data={data} userId={session.user.id} />}
       <Hero result={result} />
       <DateMoved result={result} />
       {data && <SavingsGap data={data} />}
       {data && setupOpen === false && <NextMoveCard data={data} />}
       {data && <SetupCard data={data} freedomYear={result.year ?? null} />}
       <Actions signedIn={!!session} />
-      {data && (freeUntilPayday(data) ? <UntilPayday key={paydayWindow} data={data} onAdjustmentChange={a=>setPaydayAdjustment({window:paydayWindow,...a})} /> : <ThisMonth data={data} />)}
+      {data && (freeUntilPayday(data) ? <UntilPayday key={paydayWindow} data={data} /> : <ThisMonth data={data} />)}
       {data && <RecurringTeaser data={data} freedom={result} />}
       {data && <NextGoal data={data} />}
       {data && <HouseholdCard />}
@@ -192,13 +188,14 @@ const panel = () => (colors.ground === '#151719'
  * list, or the day's check when it's done. Safe to spend is a figure under it,
  * not a step to tick, and a day with nothing to answer counts once it's opened.
  */
-function TodayCard({ data, userId, paydayDaily }: { data: AccountData; userId: string; paydayDaily?:number|null }) {
+function TodayCard({ data, userId }: { data: AccountData; userId: string }) {
   const { refresh } = useAccount()
   const anchor = useTourAnchor('today')
   const progress = data.profile.today
   const { day, items } = todayItems(data, progress)
   const count = monthCount(progress.done)
-  const safe = paydayDaily !== undefined ? paydayDaily : safeToSpendToday(data)
+  // The website's rule (D-137, D-146): budget per day, capped by cash after bills; the cash figure small when higher.
+  const { today: safe, stretch } = safeToSpend(data)
   const quiet = quietDayToMark(progress.done, items.length)
   useEffect(() => {
     if (!quiet) return
@@ -230,7 +227,10 @@ function TodayCard({ data, userId, paydayDaily }: { data: AccountData; userId: s
         onPress={() => { haptic.tick(); router.push(safe != null ? '/money/budget' : '/budget-edit') }}
         className="flex-row items-center justify-between border-t pt-3 active:opacity-70" style={{ borderTopColor: colors.border }}>
         {safe != null
-          ? <Text className="text-[15px] text-ink">Safe to spend today <Text className="font-mono text-[15px] font-semibold text-ink">{money(safe)}</Text></Text>
+          ? <View className="flex-1 gap-0.5">
+              <Text className="text-[15px] text-ink">Safe to spend today <Text className="font-mono text-[15px] font-semibold text-ink">{money(safe)}</Text></Text>
+              {stretch != null && <Text className="text-[12px] text-ink-2">Up to <Text className="font-mono text-[12px] text-ink-2">{money(stretch)}</Text> if you use money meant for saving</Text>}
+            </View>
           : <Text className="text-[15px] text-ink-2">Set a budget to see what&apos;s safe to spend each day</Text>}
         <Text className="text-[16px] text-ink-3">›</Text>
       </Pressable>
@@ -292,7 +292,7 @@ const MOVE_ICON: Record<NextMove['tab'] | 'lease', { name: 'chart.pie.fill' | 'c
  * flat but for the bills, each icon at the start of its drop, ending on
  * payday at the number. Below zero is striped red.
  */
-function UntilPayday({ data,onAdjustmentChange }: { data: AccountData;onAdjustmentChange:(a:{everyday:number|null;cushion:number})=>void }) {
+function UntilPayday({ data }: { data: AccountData }) {
   const f = freeUntilPayday(data)
   if (!f) return null
   const counted = new Set(data.plaidAccounts.filter(a => a.type === 'depository' && isCounted({ id: a.id, name: a.name, type: a.type, subtype: a.subtype, balanceUSD: 0 }, data.spendToggles ?? {})).map(a => a.plaid_account_id).filter(Boolean))
@@ -305,7 +305,7 @@ function UntilPayday({ data,onAdjustmentChange }: { data: AccountData;onAdjustme
   const line = paydayLine({ today: new Date(), cash: f.spending, paydayIso: f.payday.iso, bills, rows, payMin: biggestPay * 0.5 })
   const cats = expenseCategories()
   const estimate = f.everyday
-  return <UntilPaydayCard onAdjustmentChange={onAdjustmentChange} key={f.payday.iso+':'+isoDay(new Date())} everyday={estimate?.amount??null} estimateSource={estimate?.source} line={line} paydayIso={f.payday.iso} billCount={f.bills.length} billTotal={f.bills.reduce((s,b)=>s+Math.abs(b.amount),0)} icon={key=>cats.find(c=>c.key===key)?.emoji??'💳'} onOpen={()=>{haptic.tick();router.push('/money/budget')}} />
+  return <UntilPaydayCard key={f.payday.iso+':'+isoDay(new Date())} everyday={estimate?.amount??null} estimateSource={estimate?.source} line={line} paydayIso={f.payday.iso} billCount={f.bills.length} billTotal={f.bills.reduce((s,b)=>s+Math.abs(b.amount),0)} icon={key=>cats.find(c=>c.key===key)?.emoji??'💳'} onOpen={()=>{haptic.tick();router.push('/money/budget')}} />
 }
 
 /**

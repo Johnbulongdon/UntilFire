@@ -1,4 +1,4 @@
-import { paydayRemainder } from '@engine/payday-spending.ts'
+import { safeToSpendToday as sharedSafeToSpend } from '@engine/payday-spending.ts'
 import { addMonths, asksShop, buildMerchantMemory, findFlags, isoDay, isRent, isRentOrMortgage, ladderViewFromPlan, leaseAsk, noticeDeadline, monthOf, netAmount, suggestFromHistory, type FlagKind } from '@/engine'
 import { freeUntilPayday, unpaid, upcoming } from '@/lib/bills'
 import { contributionFacts, EMPTY_PLAN } from '@/lib/contribution-facts'
@@ -66,18 +66,24 @@ export function listDay(done: string[], now = new Date()): string {
 }
 
 /**
- * What's safe to spend each day: Until payday over the days to payday (D-90,
- * the Home card), else the budget left over the days left in the month. Null
- * with neither a balance and paycheck nor a day-to-day budget.
+ * What's safe to spend each day, the website's rule (D-137, D-146): the
+ * day-to-day budget left over the days left in the month, capped by cash
+ * after bills and cards over the days to payday. Usual spending is not taken
+ * off first: this is what you can spend, not the extra over a normal day.
+ * `stretch` is the higher cash figure, shown small when the budget is lower.
  */
-export function safeToSpendToday(data: AccountData, now = new Date()): number | null {
+export function safeToSpend(data: AccountData, now = new Date()): { today: number | null; stretch: number | null } {
   const f = freeUntilPayday(data, now)
-  if (f) { const left = paydayRemainder(f.free, f.everyday?.amount ?? null); return left === null ? null : Math.max(0, Math.floor(left / f.days)) }
   const { everydayBudget, left } = splitBudget(data)
-  if (everydayBudget <= 0) return null
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-  const daysLeft = end - now.getDate() + 1
-  return Math.max(0, left / daysLeft)
+  return sharedSafeToSpend({
+    payday: f ? { remaining: f.free, days: f.days } : null,
+    budget: everydayBudget > 0 ? { left, daysLeft: end - now.getDate() + 1 } : null,
+  })
+}
+
+export function safeToSpendToday(data: AccountData, now = new Date()): number | null {
+  return safeToSpend(data, now).today
 }
 
 /** `forDay` holds the list on a day just finished, so its celebration shows before the next list. */

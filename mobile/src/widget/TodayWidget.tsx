@@ -1,4 +1,4 @@
-import { FlexWidget, TextWidget } from 'react-native-android-widget'
+import { FlexWidget, ImageWidget, TextWidget } from 'react-native-android-widget'
 
 import { isoDay } from '@/engine'
 
@@ -8,7 +8,9 @@ type Hex = `#${string}`
 const LIGHT = { card: '#FFFFFF', ink: '#151719', ink2: '#5C6170', ink3: '#686D7C', soft: '#EFEDF4', pos: '#17684B', pill: '#151719', pillInk: '#FFFFFF' } as const
 const DARK = { card: '#202226', ink: '#FAFAFD', ink2: '#C3C6D0', ink3: '#A9ADBA', soft: '#32353D', pos: '#8FD8B9', pill: '#FAFAFD', pillInk: '#151719' } as const
 type Palette = { [K in keyof typeof LIGHT]: Hex }
-const YELLOW: Hex = '#FFE58A'
+// The UntilFire mark (public/brand), black on light and white on dark (John, 9 Nov 2026: "like the logo, not a cube").
+const MARK = require('../../assets/brand-mark.png')
+const MARK_WHITE = require('../../assets/brand-mark-white.png')
 
 const TODAY = { clickAction: 'OPEN_URI', clickActionData: { uri: 'untilfire://today' } }
 const APP = { clickAction: 'OPEN_APP' }
@@ -28,7 +30,7 @@ export function TodayWidget({ snap, width, dark }: { snap: WidgetSnapshot | null
 function Label({ text, c }: { text: string; c: Palette }) {
   return (
     <FlexWidget style={{ flexDirection: 'row', alignItems: 'center', flexGap: 6 }}>
-      <FlexWidget style={{ width: 12, height: 12, borderRadius: 4, backgroundColor: YELLOW }} />
+      <ImageWidget image={c.card === DARK.card ? MARK_WHITE : MARK} imageWidth={22} imageHeight={12} />
       <TextWidget text={text} style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: c.ink2 }} />
     </FlexWidget>
   )
