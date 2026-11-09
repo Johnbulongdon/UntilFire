@@ -14,6 +14,7 @@ import { scheduleBillReminders } from '@/lib/bill-reminders'
 import { cancelTodayReminders, scheduleTodayReminders } from '@/lib/today-reminder'
 import { seedFromOnboarding } from '@/lib/mutations'
 import { setCategoryNeeds } from '@/lib/review'
+import { updateWidget } from '@/widget/snapshot'
 
 const SITE = 'https://www.untilfire.com'
 /** Months of transactions the app reads: this one and twelve before it, for ranges up to a year and "usual". */
@@ -187,7 +188,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   }), [])
 
   const refresh = useCallback(async () => {
-    if (!session) { setData(null); shown.current = false; setSavedAt(null); setDisplayCurrency('USD'); cancelTodayReminders().catch(() => {}); return }
+    if (!session) { setData(null); shown.current = false; setSavedAt(null); setDisplayCurrency('USD'); cancelTodayReminders().catch(() => {}); updateWidget(null).catch(() => {}); return }
     setLoading(true); setError(null)
     const userId = session.user.id
 
@@ -361,6 +362,8 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     scheduleBillReminders(next.bills).catch(() => {})
     // The 9pm Today reminder skips days already finished (D-73).
     scheduleTodayReminders(next.profile.today.done).catch(() => {})
+    // The home-screen widget shows these numbers until the next load (D-145, Android).
+    updateWidget(next).catch(() => {})
     AsyncStorage.setItem(cacheKey(userId), JSON.stringify({ savedAt: stamp, data: next })).catch(() => {})
     } catch {
       setError(shown.current

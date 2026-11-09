@@ -1,7 +1,7 @@
 {
   "name": "untilfire-mobile",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "dependencies": {
     "@expo-google-fonts/dm-mono": "^0.4.2",
     "@expo-google-fonts/fraunces": "^0.4.1",
@@ -50,6 +50,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
+    "react-native-android-widget": "^0.26.0",
     "react-native-gesture-handler": "~2.32.0",
     "react-native-maps": "1.27.2",
     "react-native-plaid-link-sdk": "^13.3.0",
@@ -77,7 +78,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "doctor": "expo-doctor"
+    "doctor": "expo-doctor",
+    "lint": "expo lint"
   },
   "private": true
 }
