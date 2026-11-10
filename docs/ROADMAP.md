@@ -2,7 +2,7 @@
 
 ## Current priorities
 
-N3 acquisition follow-up — Cold outreach pipeline, Codex, 11 November 2026. Implemented for review; admin campaigns, qualified U.S. prospects, A/B copy and cinematic phone template, private queue, signed opt-out and SMTP worker. Production migration and outgoing server configuration pending. Existing signup email unchanged. No Now priority displaced. See [pipeline contract](marketing/cold-email/README.md).
+N3 acquisition follow-up — Cold outreach pipeline, Codex, 11 November 2026. In review in [PR #401](https://github.com/Johnbulongdon/UntilFire/pull/401); admin campaigns, qualified U.S. prospects, A/B copy and cinematic phone template, private queue, signed opt-out and SMTP worker. Production migration and outgoing server configuration pending. Existing signup email unchanged. No Now priority displaced. See [pipeline contract](marketing/cold-email/README.md).
 
 N3 follow-up — Onboarding "Your first step" (D-144), Claude, 8 November 2026. In review (website only). Types, lint, first-step, reveal tracking, save-plan and journeys checks passed; local browser check at 390 and desktop, light and dark. Update 8 November: Try one improvement removed; whole onboarding full screen with element motion. Merged on John's "merge" (8 November). Next: phone onboarding if wanted.
 
@@ -686,3 +686,4 @@ Phone entry QOL in review: [PR #349](https://github.com/Johnbulongdon/UntilFire/
 
 
 1 November N2 connected account-action journey — In review; Codex, [draft PR #354](https://github.com/Johnbulongdon/UntilFire/pull/354): concept approved by John, interactive mock for review. Home keeps one next-move card opening a Plan task; Money owns Accounts & tools, comparison, disclosed referral examples and a return-to-plan setup loop. Current yellow/pastel style explicitly selected. Mock build and four packaging tests pass; desktop/320px/390px browser flows checked. Production integration, owned progress persistence, provider programme review and real inviter-link routing remain pending. See docs/design/accounts-tools-journey/README.md.
+
