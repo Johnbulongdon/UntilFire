@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 
 /**
  * Written from what the code does: Supabase for accounts and data, Plaid for
- * banks, Stripe and Apple for Pro, PostHog for analytics, Resend for email, OpenRouter
- * for categorising, Vercel for hosting. Change this page with any new service
+ * banks, Stripe and Apple for Pro, PostHog for analytics, Sentry for app crash
+ * reports, Resend for email, OpenRouter for categorising, Vercel for hosting. Change this page with any new service
  * or new kind of data, and keep the App Store privacy answers in step.
  */
 const sections: LegalSection[] = [
@@ -39,7 +39,7 @@ const sections: LegalSection[] = [
   {
     title: "Who helps us run UntilFire",
     body: [
-      "Supabase stores accounts and data. Vercel hosts the website. Plaid connects banks. Stripe takes payments on the website and Apple in the iOS app. PostHog records usage and errors. Resend sends email. OpenRouter runs the model that suggests a category for a transaction, given its description and amount only.",
+      "Supabase stores accounts and data. Vercel hosts the website. Plaid connects banks. Stripe takes payments on the website and Apple in the iOS app. PostHog records usage and errors. Sentry records crash reports from the phone app, tied to your account ID only. Resend sends email. OpenRouter runs the model that suggests a category for a transaction, given its description and amount only.",
       "Each receives only what it needs for that job, under its own privacy terms.",
     ],
   },
