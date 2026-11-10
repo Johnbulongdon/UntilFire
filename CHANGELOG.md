@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-11 — Separate admin cold-outreach pipeline (pending rollout)
+
+- Admin Cold outreach adds prospect imports, A/B drafts and previews, a capped queue, opt-outs and manual outcome reporting. A local authenticated SMTP worker sends from John at UntilFire without using signup email infrastructure. Sending stays disabled until configuration and migration are complete. No emails have been sent.
+
 ## 2026-11-10 — Android privacy and analytics fixes
 
 - The privacy policy now names Sentry, which records crash reports from the phone app, tied to your account ID only.
