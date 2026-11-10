@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-11-10 — Android privacy and analytics fixes
+
+- The privacy policy now names Sentry, which records crash reports from the phone app, tied to your account ID only.
+- Android app events are now tagged `surface: 'android_app'` in PostHog instead of `ios_app`, so Android and iPhone usage can be told apart. Ships as an over-the-air update.
+
 ## 2026-11-09 — Safe to spend means what you can spend
 
 - "Safe to spend today" no longer takes your usual spending off first, so it shows what you can spend today, not just the extra over a normal day. It works the same on the website, the phone app and the Android widget: your day-to-day budget per day, or your cash after bills and cards per day until payday if that is lower. The widget also shows the UntilFire logo.

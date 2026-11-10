@@ -4,7 +4,7 @@ import { Platform } from 'react-native'
 /**
  * Product analytics and crash reports, into the same PostHog project as the
  * website so one funnel covers both. Event names reuse lib/analytics-events.ts
- * where the moment is the same; every event carries `surface: 'ios_app'`.
+ * where the moment is the same; every event carries `surface`: 'ios_app' or 'android_app'.
  *
  * Off until EXPO_PUBLIC_POSTHOG_KEY is set (mobile/.env), so development and
  * Expo Go stay out of the numbers unless you turn it on. Never send amounts,
@@ -36,7 +36,7 @@ export const posthog: PostHog | null = KEY && Platform.OS !== 'web'
   : null
 
 // funnel_event_version as on the website (lib/analytics-events.ts), so one funnel reads both.
-posthog?.register({ surface: 'ios_app', funnel_event_version: 1 })
+posthog?.register({ surface: Platform.OS === 'android' ? 'android_app' : 'ios_app', funnel_event_version: 1 })
 
 export const Events = {
   ONBOARDING_STEP_VIEWED: 'funnel_calculator_step_viewed',
