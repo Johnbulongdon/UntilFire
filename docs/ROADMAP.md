@@ -686,4 +686,3 @@ Phone entry QOL in review: [PR #349](https://github.com/Johnbulongdon/UntilFire/
 
 
 1 November N2 connected account-action journey — In review; Codex, [draft PR #354](https://github.com/Johnbulongdon/UntilFire/pull/354): concept approved by John, interactive mock for review. Home keeps one next-move card opening a Plan task; Money owns Accounts & tools, comparison, disclosed referral examples and a return-to-plan setup loop. Current yellow/pastel style explicitly selected. Mock build and four packaging tests pass; desktop/320px/390px browser flows checked. Production integration, owned progress persistence, provider programme review and real inviter-link routing remain pending. See docs/design/accounts-tools-journey/README.md.
-
