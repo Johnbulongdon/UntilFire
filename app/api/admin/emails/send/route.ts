@@ -146,7 +146,8 @@ export async function POST(req: NextRequest) {
 
     try {
       const { error } = await resend.emails.send({
-        from: "UntilFire <hello@untilfire.com>",
+        from: "John at UntilFire <john.ng@untilfire.com>",
+        replyTo: "john.ng@untilfire.com",
         to: recipient.email!,
         subject,
         html,

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-11 — Admin sender default (pending rollout)
+
+- Admin announcements and monthly updates use John at UntilFire <john.ng@untilfire.com> and route replies to john.ng@untilfire.com. Recorded the default for future admin email work. Cold outreach already uses that identity; campaign sending remains disabled.
+
 ## 2026-11-11 — Existing-server outreach transport (pending rollout)
 
 - Added an opt-in local Postfix worker mode with a fixed loopback connection, preflight checks for held/exposed/unsigned delivery, and disabled-by-default systemd deployment examples. Remote SMTP still requires authenticated TLS. No campaign enabled. Eight focused tests pass.

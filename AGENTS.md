@@ -25,6 +25,15 @@ product constraints, navigation, design and working map apply to all agents.
   a file name.
 - **Phone app work** in `mobile/` also follows [mobile/AGENTS.md](mobile/AGENTS.md).
 
+## Admin email sender default
+
+Founder instruction, 11 November 2026: use **John at UntilFire
+<john.ng@untilfire.com>** as the default From identity for admin-originated
+emails, including announcements, monthly updates and cold outreach. Set
+Reply-To to **john.ng@untilfire.com**. Keep registered-user broadcasts and
+cold outreach on their separate sending pipelines and preserve sending guards.
+Use this default in future admin email work unless John changes it.
+
 ## Authority and evidence
 
 - Host/system instructions and execution-environment safety and permission
