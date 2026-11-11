@@ -15,6 +15,12 @@ const badges: {
   data?: Record<string, string>;
 }[] = [
   {
+    name: "Founder.best",
+    href: "https://www.founder.best/products/untilfire?ref=founderbest",
+    src: "https://www.founder.best/top1.png",
+    rel: "noopener noreferrer",
+  },
+  {
     name: "SaaSLineup",
     href: "https://saaslineup.com/product/untilfire?ref=badge",
     src: "https://saaslineup.com/badge/untilfire.svg",
