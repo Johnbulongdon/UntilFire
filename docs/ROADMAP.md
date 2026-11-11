@@ -2,7 +2,7 @@
 
 ## Current priorities
 
-N3 admin email follow-up — Codex, 11 November 2026. In review: default admin announcements and monthly updates to John at UntilFire <john.ng@untilfire.com>, with replies to the same address; record the founder default in AGENTS.md. Cold outreach already uses that identity. Merge/deployment pending; no campaign activation. No Now priority displaced.
+N3 admin email follow-up — Codex, 11 November 2026. In review in [PR #402](https://github.com/Johnbulongdon/UntilFire/pull/402): default admin announcements and monthly updates to John at UntilFire <john.ng@untilfire.com>, with replies to the same address; record the founder default in AGENTS.md. Cold outreach already uses that identity. Merge/deployment pending; no campaign activation. No Now priority displaced.
 
 N3 acquisition follow-up — Cold outreach pipeline, Codex, 11 November 2026. In review in [PR #401](https://github.com/Johnbulongdon/UntilFire/pull/401); admin campaigns, qualified U.S. prospects, A/B copy and cinematic phone template, private queue, signed opt-out and SMTP worker. Reviewed production migration applied separately; self-hosted signing prepared. Worker now supports a fixed loopback Postfix connection with readiness checks and inert systemd examples. Reverse DNS and controlled delivery verification remain pending; sending stays off. Existing signup email unchanged. No Now priority displaced. See [pipeline contract](marketing/cold-email/README.md).
 
