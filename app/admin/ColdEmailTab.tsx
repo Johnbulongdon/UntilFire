@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { ColdVariant } from "@/lib/cold-email";
 import styles from "./ColdEmail.module.css";
+import ProspectCollector from "./ProspectCollector";
 
 type Campaign = {
   id: string;
@@ -434,6 +435,7 @@ export default function ColdEmailTab({ token }: { token: string }) {
       )}
       {section === "prospects" && (
         <>
+          <ProspectCollector token={token} onImport={(rows) => action({ action: "import", rows })} />
           <section className={styles.panel}>
             <h3>Import a qualified batch</h3>
             <p>

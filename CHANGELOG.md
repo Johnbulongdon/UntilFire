@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-12 — Admin public contact collector (pending rollout)
+
+- Added bounded public website contact extraction to Cold outreach → Prospects, with source links, published-name evidence and manual U.S./relevance review before import. Existing import deduplication and sending guards remain intact. No paid data provider, database migration or campaign activation.
+
 ## 2026-11-11 — Admin sender default (pending rollout)
 
 - Admin announcements and monthly updates use John at UntilFire <john.ng@untilfire.com> and route replies to john.ng@untilfire.com. Recorded the default for future admin email work. Cold outreach already uses that identity; campaign sending remains disabled.

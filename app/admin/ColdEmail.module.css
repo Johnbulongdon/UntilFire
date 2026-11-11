@@ -2,6 +2,27 @@
   color: var(--uf-ink);
   font-family: inherit;
 }
+.collectorGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.collectorCard {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--uf-border-2);
+  border-radius: 20px;
+  background: var(--uf-surface);
+  overflow-wrap: anywhere;
+}
+.collectorCard small { margin: 8px 0 16px; }
+.root details { margin: 16px 0; overflow-wrap: anywhere; }
+.root summary { cursor: pointer; min-height: 44px; padding: 12px 0; }
+.root :is(button, a, input, textarea, summary):focus-visible {
+  outline: 2px solid var(--uf-ink);
+  outline-offset: 3px;
+}
 .header {
   display: flex;
   justify-content: space-between;
