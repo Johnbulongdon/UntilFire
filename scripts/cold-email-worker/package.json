@@ -1,0 +1,15 @@
+{
+  "name": "untilfire-cold-email-worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file=.env worker.mjs",
+    "test": "node --test worker.test.mjs database.test.mjs"
+  },
+  "dependencies": {
+    "nodemailer": "10.5.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.16"
+  }
+}

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run configured UntilFire outreach batches
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=1min
+Unit=untilfire-outreach.service
+
+[Install]
+WantedBy=timers.target

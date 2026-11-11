@@ -7,6 +7,7 @@ import Logo from "@/app/components/Logo";
 import OverviewTab from "./OverviewTab";
 import UsersTab from "./UsersTab";
 import EmailsTab from "./EmailsTab";
+import ColdEmailTab from "./ColdEmailTab";
 import SupportTab from "./SupportTab";
 import RetentionTab from "./RetentionTab";
 import CitiesTab from "./CitiesTab";
@@ -15,10 +16,23 @@ import OffersTab from "./OffersTab";
 import SeoTab from "./SeoTab";
 import JourneysTab from "./JourneysTab";
 
-type AdminTab = "overview" | "users" | "retention" | "seo" | "emails" | "cities" | "referrals" | "offers" | "support" | "journeys";
+type AdminTab =
+  | "cold-email"
+  | "overview"
+  | "users"
+  | "retention"
+  | "seo"
+  | "emails"
+  | "cities"
+  | "referrals"
+  | "offers"
+  | "support"
+  | "journeys";
 
 export default function AdminPage() {
-  const [status, setStatus] = useState<"checking" | "denied" | "ok">("checking");
+  const [status, setStatus] = useState<"checking" | "denied" | "ok">(
+    "checking",
+  );
   const [token, setToken] = useState<string | null>(null);
   const [tab, setTab] = useState<AdminTab>("overview");
 
@@ -44,36 +58,76 @@ export default function AdminPage() {
     });
   }, []);
 
-  if (status === "checking") return <Centered>Checking access&hellip;</Centered>;
-  if (status === "denied") return <Centered>You don&apos;t have access to this page.</Centered>;
+  if (status === "checking")
+    return <Centered>Checking access&hellip;</Centered>;
+  if (status === "denied")
+    return <Centered>You don&apos;t have access to this page.</Centered>;
 
   return (
-    <div className={styles.root} style={{ minHeight: "100vh", background: "var(--uf-ground)", fontFamily: "Inter, system-ui, -apple-system, sans-serif" }}>
-      <div style={{ maxWidth: tab === "journeys" ? 1600 : 1100, margin: "0 auto", padding: "32px 24px 80px" }}>
-        <div style={{ marginBottom: 24 }}><Logo variant="auto" size={30}/></div>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--uf-ink)", margin: "0 0 4px" }}>UntilFire Admin</h1>
-        <p style={{ color: "var(--uf-ink-2)", fontSize: 14, margin: "0 0 24px" }}>Operations, users, and email &mdash; internal only.</p>
+    <div
+      className={styles.root}
+      style={{
+        minHeight: "100vh",
+        background: "var(--uf-ground)",
+        fontFamily: "Inter, system-ui, -apple-system, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: tab === "journeys" ? 1600 : 1100,
+          margin: "0 auto",
+          padding: "32px 24px 80px",
+        }}
+      >
+        <div style={{ marginBottom: 24 }}>
+          <Logo variant="auto" size={30} />
+        </div>
+        <h1
+          style={{
+            fontSize: 24,
+            fontWeight: 800,
+            color: "var(--uf-ink)",
+            margin: "0 0 4px",
+          }}
+        >
+          UntilFire Admin
+        </h1>
+        <p
+          style={{ color: "var(--uf-ink-2)", fontSize: 14, margin: "0 0 24px" }}
+        >
+          Operations, users, and email &mdash; internal only.
+        </p>
 
-        <nav style={{ display: "flex", gap: 6, marginBottom: 24, borderBottom: "1px solid var(--uf-border)", flexWrap: "wrap" }}>
-          {([
+        <nav
+          style={{
+            display: "flex",
+            gap: 6,
+            marginBottom: 24,
+            borderBottom: "1px solid var(--uf-border)",
+            flexWrap: "wrap",
+          }}
+        >
+          {[
             { key: "overview" as const, label: "Overview" },
             { key: "users" as const, label: "Users" },
             { key: "retention" as const, label: "Retention" },
             { key: "seo" as const, label: "SEO" },
             { key: "emails" as const, label: "Emails" },
+            { key: "cold-email" as const, label: "Cold outreach" },
             { key: "cities" as const, label: "Cities" },
             { key: "referrals" as const, label: "Referrals" },
             { key: "offers" as const, label: "Offers" },
             { key: "support" as const, label: "Support" },
             { key: "journeys" as const, label: "Journeys" },
-          ]).map((t) => (
+          ].map((t) => (
             <button
               key={t.key}
               aria-current={tab === t.key ? "page" : undefined}
               onClick={() => setTab(t.key)}
               style={{
                 padding: "10px 16px",
-                background: tab === t.key ? "var(--uf-green)" : "var(--uf-card)",
+                background:
+                  tab === t.key ? "var(--uf-green)" : "var(--uf-card)",
                 border: "none",
                 borderRadius: "var(--uf-r-pill)",
                 minHeight: 44,
@@ -94,6 +148,7 @@ export default function AdminPage() {
         {token && tab === "retention" && <RetentionTab token={token} />}
         {token && tab === "seo" && <SeoTab token={token} />}
         {token && tab === "emails" && <EmailsTab token={token} />}
+        {token && tab === "cold-email" && <ColdEmailTab token={token} />}
         {token && tab === "cities" && <CitiesTab token={token} />}
         {token && tab === "referrals" && <ReferralsTab token={token} />}
         {token && tab === "offers" && <OffersTab token={token} />}
@@ -106,7 +161,16 @@ export default function AdminPage() {
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Inter, system-ui, -apple-system, sans-serif", color: "var(--uf-ink-2)" }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: "Inter, system-ui, -apple-system, sans-serif",
+        color: "var(--uf-ink-2)",
+      }}
+    >
       {children}
     </div>
   );
