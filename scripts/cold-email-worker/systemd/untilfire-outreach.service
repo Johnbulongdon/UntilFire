@@ -1,0 +1,18 @@
+[Unit]
+Description=UntilFire cold outreach worker
+After=network-online.target postfix.service opendkim.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=untilfire-outreach
+Group=untilfire-outreach
+WorkingDirectory=/opt/untilfire-outreach
+EnvironmentFile=/etc/untilfire-outreach.env
+ExecStart=/usr/bin/node /opt/untilfire-outreach/worker.mjs
+TimeoutStartSec=20min
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+UMask=0077

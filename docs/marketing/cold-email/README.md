@@ -49,9 +49,39 @@ or guaranteed inbox placement is made.
 
 ## Rollout order
 
+### Existing-server delivery option
+
+The worker supports `COLD_EMAIL_TRANSPORT=local-postfix` when it runs on the same
+Linux machine as Postfix. Use `scripts/cold-email-worker/.env.local-postfix.example`.
+This fixes the connection to 127.0.0.1:25, has no SMTP password or remote host
+override, and never opens a public submission port. The connection stays within
+the machine. Remote SMTP mode continues to require authenticated TLS.
+
+Before claiming a job, the local mode reads the installed `/usr/sbin/postconf` and
+requires `inet_interfaces=loopback-only`, `default_transport=smtp`, empty
+`defer_transports`, `smtpd_milters=inet:127.0.0.1:8891` and
+`milter_default_action=tempfail`. Missing Postfix or a paused/unsigned/exposed
+relay stops the worker. The staged server intentionally does not pass this check
+until delivery is released. Do not clear its guards merely to start a timer.
+
+Server acceptance means acceptance by the local Postfix queue in this mode,
+not acceptance by Gmail or inbox delivery. Deferred or bounced downstream mail
+still needs server-log review; this change does not add a delivery webhook.
+Verify forward/reverse DNS, SPF, DKIM and a controlled delivery before launch.
+Provider-use and postal-address requirements still apply. No campaign is enabled
+by choosing this transport.
+
+The optional systemd examples in `scripts/cold-email-worker/systemd/` are inert
+files for the existing Linux server. They add no hosted service or subscription.
+Install the worker and Node at their documented paths, create an operator account,
+and store secrets in a root-readable environment file before considering them.
+Do not enable the timer before completing the rollout below. A service that is
+already running is not started again, and database caps remain authoritative.
+
 1. Review/apply the full SQL below to the intended Supabase project. It creates
-   private tables and service-role-only functions; no production migration has
-   been applied as part of implementation.
+   private tables and service-role-only functions. The reviewed production
+   migration was applied separately during sender setup; check migration history
+   before running it again. New environments still need the full SQL below.
 2. Configure server-only env: COLD_EMAIL_SECRET and COLD_EMAIL_WORKER_SECRET,
    independent random values at least 32 characters; COLD_EMAIL_POSTAL_ADDRESS;
    COLD_EMAIL_ENABLED=false initially. Keep secrets out of NEXT_PUBLIC variables.

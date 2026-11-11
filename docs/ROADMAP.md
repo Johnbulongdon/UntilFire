@@ -2,7 +2,7 @@
 
 ## Current priorities
 
-N3 acquisition follow-up — Cold outreach pipeline, Codex, 11 November 2026. In review in [PR #401](https://github.com/Johnbulongdon/UntilFire/pull/401); admin campaigns, qualified U.S. prospects, A/B copy and cinematic phone template, private queue, signed opt-out and SMTP worker. Production migration and outgoing server configuration pending. Existing signup email unchanged. No Now priority displaced. See [pipeline contract](marketing/cold-email/README.md).
+N3 acquisition follow-up — Cold outreach pipeline, Codex, 11 November 2026. In review in [PR #401](https://github.com/Johnbulongdon/UntilFire/pull/401); admin campaigns, qualified U.S. prospects, A/B copy and cinematic phone template, private queue, signed opt-out and SMTP worker. Reviewed production migration applied separately; self-hosted signing prepared. Worker now supports a fixed loopback Postfix connection with readiness checks and inert systemd examples. Reverse DNS and controlled delivery verification remain pending; sending stays off. Existing signup email unchanged. No Now priority displaced. See [pipeline contract](marketing/cold-email/README.md).
 
 N3 follow-up — Onboarding "Your first step" (D-144), Claude, 8 November 2026. In review (website only). Types, lint, first-step, reveal tracking, save-plan and journeys checks passed; local browser check at 390 and desktop, light and dark. Update 8 November: Try one improvement removed; whole onboarding full screen with element motion. Merged on John's "merge" (8 November). Next: phone onboarding if wanted.
 

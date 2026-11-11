@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { runWorker, workerConfig } from "./worker.mjs";
+import { runWorker, workerConfig, verifyLocalPostfix } from "./worker.mjs";
 const env = {
   SMTP_HOST: "smtp.example.org",
   SMTP_USER: "user",
@@ -33,6 +33,26 @@ const job = {
   unsubscribeUrl: "https://www.untilfire.com/unsubscribe",
   messageId: "<test@untilfire.com>",
 };
+test("local relay cannot be pointed at remote or authenticated SMTP", () => {
+  const local = { COLD_EMAIL_TRANSPORT: "local-postfix", COLD_EMAIL_WORKER_SECRET: "x".repeat(32), SMTP_OUTREACH_PERMITTED: "true" };
+  const c = workerConfig(local);
+  assert.equal(c.transport.host, "127.0.0.1");
+  assert.equal(c.transport.port, 25);
+  assert.equal(c.transport.auth, undefined);
+  for (const key of ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS"]) {
+    assert.throws(() => workerConfig({ ...local, [key]: "remote" }), /remove SMTP overrides/);
+  }
+  assert.throws(() => workerConfig({ ...local, SMTP_OUTREACH_PERMITTED: "false" }), /permits/);
+  assert.throws(() => workerConfig({ ...local, COLD_EMAIL_TRANSPORT: "other" }), /transport/);
+});
+test("local preflight rejects exposed, deferred or unsigned mail delivery", async () => {
+  const ready = { inet_interfaces: "loopback-only", default_transport: "smtp", defer_transports: "", smtpd_milters: "inet:127.0.0.1:8891", milter_default_action: "tempfail" };
+  await verifyLocalPostfix(async key => ready[key]);
+  for (const [key, unsafe] of Object.entries({ inet_interfaces: "all", default_transport: "error", defer_transports: "smtp", smtpd_milters: "", milter_default_action: "accept" })) {
+    await assert.rejects(verifyLocalPostfix(async name => name === key ? unsafe : ready[name]), /not ready/);
+  }
+  await assert.rejects(verifyLocalPostfix(async () => { throw new Error("missing Postfix"); }), /missing Postfix/);
+});
 test("pause/opt-out immediately before send prevents delivery", async () => {
   const calls = [];
   let sent = 0;

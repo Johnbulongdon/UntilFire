@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-11 — Existing-server outreach transport (pending rollout)
+
+- Added an opt-in local Postfix worker mode with a fixed loopback connection, preflight checks for held/exposed/unsigned delivery, and disabled-by-default systemd deployment examples. Remote SMTP still requires authenticated TLS. No campaign enabled. Eight focused tests pass.
+
 ## 2026-11-11 — Separate admin cold-outreach pipeline (pending rollout)
 
 - Admin Cold outreach adds prospect imports, A/B drafts and previews, a capped queue, opt-outs and manual outcome reporting. A local authenticated SMTP worker sends from John at UntilFire without using signup email infrastructure. Sending stays disabled until configuration and migration are complete. No emails have been sent.

@@ -1,5 +1,25 @@
 import nodemailer from "nodemailer";
 import { pathToFileURL } from "node:url";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const exec = promisify(execFile);
+
+// This mode is only for a worker running on the same machine as Postfix.
+// Never make the unauthenticated local relay configurable to a remote host.
+export async function verifyLocalPostfix(read = async (key) => {
+  const { stdout } = await exec("/usr/sbin/postconf", ["-h", key], {
+    timeout: 5000, maxBuffer: 8192,
+  });
+  return stdout.trim();
+}) {
+  const keys = ["inet_interfaces", "default_transport", "defer_transports", "smtpd_milters", "milter_default_action"];
+  const [interfaces, transport, deferred, signing, failure] = await Promise.all(keys.map(read));
+  if (interfaces !== "loopback-only" || transport !== "smtp" || deferred !== "" ||
+      signing !== "inet:127.0.0.1:8891" || failure !== "tempfail") {
+    throw new Error("Local Postfix is not ready: require loopback-only, active SMTP delivery and fail-closed local signing");
+  }
+}
 
 export function workerConfig(env) {
   const origin = new URL(env.UNTILFIRE_ORIGIN || "https://www.untilfire.com");
@@ -17,12 +37,18 @@ export function workerConfig(env) {
     throw new Error(
       "Confirm the SMTP server permits your outreach before sending",
     );
-  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS)
+  const mode = env.COLD_EMAIL_TRANSPORT || "smtp";
+  if (!["smtp", "local-postfix"].includes(mode))
+    throw new Error("Choose smtp or local-postfix transport");
+  if (mode === "local-postfix" &&
+      [env.SMTP_HOST, env.SMTP_PORT, env.SMTP_USER, env.SMTP_PASS].some(Boolean))
+    throw new Error("Local Postfix uses fixed loopback settings; remove SMTP overrides");
+  if (mode === "smtp" && (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS))
     throw new Error(
       "Configure an authenticated SMTP server; forwarding is not a sending service",
     );
   if (
-    /(^|\.)(resend\.com|resend\.dev|smtp2go\.com|brevo\.com|sendinblue\.com|gmail\.com|cloudflare\.net)$/i.test(
+    mode === "smtp" && /(^|\.)(resend\.com|resend\.dev|smtp2go\.com|brevo\.com|sendinblue\.com|gmail\.com|cloudflare\.net)$/i.test(
       env.SMTP_HOST,
     )
   )
@@ -30,7 +56,7 @@ export function workerConfig(env) {
       "This host is not approved for this outreach worker; use a server whose terms permit the campaign",
     );
   const port = Number(env.SMTP_PORT || 587);
-  if (![465, 587].includes(port))
+  if (mode === "smtp" && ![465, 587].includes(port))
     throw new Error("Use authenticated TLS on port 465 or 587");
   const max = Number(env.WORKER_MAX_MESSAGES || 10),
     delay = Number(env.WORKER_DELAY_SECONDS || 60);
@@ -49,7 +75,13 @@ export function workerConfig(env) {
     secret: env.COLD_EMAIL_WORKER_SECRET,
     max,
     delay,
-    transport: {
+    mode,
+    transport: mode === "local-postfix" ? {
+      host: "127.0.0.1", port: 25, secure: false, ignoreTLS: true,
+      name: "mail.untilfire.com",
+      connectionTimeout: 15000, greetingTimeout: 15000, socketTimeout: 45000,
+      disableFileAccess: true, disableUrlAccess: true,
+    } : {
       host: env.SMTP_HOST,
       port,
       secure: port === 465,
@@ -141,6 +173,7 @@ if (
 ) {
   try {
     const config = workerConfig(process.env);
+    if (config.mode === "local-postfix") await verifyLocalPostfix();
     await runWorker(config, nodemailer.createTransport(config.transport));
   } catch (error) {
     console.error(error.message);
