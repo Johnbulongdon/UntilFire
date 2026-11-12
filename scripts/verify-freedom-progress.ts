@@ -44,10 +44,10 @@ assert.equal(fd.next!.date!.getMonth(), 11);
 assert.equal(aboutDate(fd.next!.date!, now).startsWith("about Dec "), true);
 // $1,387.50 a month of a $900k target is 13.5 hours.
 assert.ok(Math.abs(fd.hoursPerMonth! - 13.505) < 0.01);
-assert.equal(freePaceLabel(fd.hoursPerMonth), "+13 hours a month");
+assert.equal(freePaceLabel(fd.hoursPerMonth), "You add 13 hours every month");
 assert.equal(freePaceLabel(0.4), null);
-assert.equal(freePaceLabel(50), "+2 days a month");
-assert.equal(freePaceLabel(1.5), "+1 hour a month");
+assert.equal(freePaceLabel(50), "You add 2 days every month");
+assert.equal(freePaceLabel(1.5), "You add 1 hour every month");
 
 // Days match the percent's share exactly on a boundary (no float slip to 17).
 assert.equal(freeDays(900_000 * 18 / 365, 900_000)!.days, 18);
@@ -75,9 +75,9 @@ assert.equal(freeDays(10_000, 0), null);
 assert.equal(freeDays(Number.NaN, 900_000), null);
 // The pill: a date when the path gives one, the amount to go when not, the freedom date itself for day 365.
 const usd = (n: number) => `$${Math.round(n)}`;
-assert.equal(freeNextLabel(fd, usd, "Oct 2052", now), `Day 19 · ${aboutDate(fd.next!.date!, now)}`);
-assert.equal(freeNextLabel(freeDays(45_000, 900_000)!, usd), "Day 19 · $1849 to go");
-assert.equal(freeNextLabel(freeDays(899_999, 900_000, [899_999, 950_000], now)!, usd, "Oct 2052", now), "Day 365 · Oct 2052");
+assert.equal(freeNextLabel(fd, usd, "Oct 2052", now), `Next free day: ${aboutDate(fd.next!.date!, now)}`);
+assert.equal(freeNextLabel(freeDays(45_000, 900_000)!, usd), "Next free day: $1849 to go");
+assert.equal(freeNextLabel(freeDays(899_999, 900_000, [899_999, 950_000], now)!, usd, "Oct 2052", now), "All 365 days: Oct 2052");
 assert.equal(freeNextLabel(freeDays(950_000, 900_000)!, usd), "Every day is yours");
 
 // $300 saved toward $900k buys about 3 hours of every year.

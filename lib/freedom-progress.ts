@@ -104,22 +104,22 @@ export function aboutDate(date: Date, now: Date = new Date()): string {
   return `about ${date.toLocaleDateString("en-US", near ? { month: "short", day: "numeric" } : { month: "short", year: "numeric" })}`;
 }
 
-/** "+11 hours a month", "+2 days a month"; null under an hour, where it would only read as noise. */
+/** "You add 11 hours every month", "You add 2 days every month"; null under an hour, where it would only read as noise. */
 export function freePaceLabel(hoursPerMonth: number | null): string | null {
   if (hoursPerMonth == null || hoursPerMonth < 1) return null;
-  if (hoursPerMonth >= 48) { const d = Math.floor(hoursPerMonth / 24); return `+${d} days a month`; }
+  if (hoursPerMonth >= 48) { const d = Math.floor(hoursPerMonth / 24); return `You add ${d} days every month`; }
   const h = Math.floor(hoursPerMonth);
-  return `+${h} ${h === 1 ? "hour" : "hours"} a month`;
+  return `You add ${h} ${h === 1 ? "hour" : "hours"} every month`;
 }
 
 /**
- * The pill under the dots: "Day 19 · about Jan 14", or the amount to go when
- * the path gives no date. Day 365 is the freedom date itself, so it takes
- * that label instead of a second, slightly different estimate.
+ * The pill under the dots: "Next free day: about Jan 14", or the amount to go
+ * when the path gives no date. The last day is the freedom date itself, so it
+ * takes that label instead of a second, slightly different estimate. Plain
+ * words on purpose: "Day 19 · about Jan 14" was not understood (John, 12 Nov).
  */
 export function freeNextLabel(f: FreeDays, fmt: (n: number) => string, freedomLabel?: string | null, now: Date = new Date()): string {
   if (!f.next) return "Every day is yours";
-  const day = `Day ${f.next.day}`;
-  if (f.next.day === DAYS_IN_YEAR && freedomLabel) return `${day} · ${freedomLabel}`;
-  return `${day} · ${f.next.date ? aboutDate(f.next.date, now) : `${fmt(f.next.toGo)} to go`}`;
+  if (f.next.day === DAYS_IN_YEAR && freedomLabel) return `All 365 days: ${freedomLabel}`;
+  return `Next free day: ${f.next.date ? aboutDate(f.next.date, now) : `${fmt(f.next.toGo)} to go`}`;
 }

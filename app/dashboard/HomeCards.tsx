@@ -52,8 +52,8 @@ export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, free, no
   route?: { from: string; fromFlag?: string; to: string; toFlag?: string; when: string; onOpen: () => void };
   /**
    * Free days (D-149, lib/freedom-progress): "18 days", how many of the 365
-   * dots are filled, the next-day pill ("Day 19 · about Jan 14"), the monthly
-   * pace ("+11 hours a month") and the share behind it ("5%") for the hint.
+   * dots are filled, the next-day pill ("Next free day: about Jan 14"), the monthly
+   * pace ("You add 11 hours every month") and the share behind it ("5%") for the hint.
    */
   free?: { label: string; days: number; next: string; pace?: string | null; pct: string };
   /** One-time line after sign-up: why this date differs from the calculator's. */
