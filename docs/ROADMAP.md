@@ -2,7 +2,7 @@
 
 ## Current priorities
 
-Money math check (D-147), Claude, 12 November 2026. In review. Website and phone rules run side by side on 17 sample accounts; fixed linked bank payments counted as day-to-day spending and a card in credit counted as owed. Types, money-rules, free-to-spend and spend-forecast checks passed. Next: John's call on one shared "bill already paid" rule; compare freedom-date inputs.
+Money math check (D-147), Claude, 12 November 2026. In review. Website and phone rules run side by side on 17 sample accounts; fixed linked bank payments counted as day-to-day spending and a card in credit counted as owed. Types, money-rules, free-to-spend and spend-forecast checks passed. One shared "bill already paid" rule added (D-148, John's choice). Next: compare freedom-date inputs.
 
 N3 admin email follow-up — Codex, 11 November 2026. In review in [PR #402](https://github.com/Johnbulongdon/UntilFire/pull/402): default admin announcements and monthly updates to John at UntilFire <john.ng@untilfire.com>, with replies to the same address; record the founder default in AGENTS.md. Cold outreach already uses that identity. Merge/deployment pending; no campaign activation. No Now priority displaced.
 
