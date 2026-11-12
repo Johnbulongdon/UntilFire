@@ -3680,3 +3680,11 @@ adequate sample before claiming a winner. No conversion improvement is assumed.
 **Why:** people coming back is the top gap, and payday is the one day everyone thinks about money. A paycheck with a plan and a small win in free time is a reason to open the app that is not a chore.
 **Guardrails:** hours are only shown for money kept or added (D-149), and paying debt down adds none. When bills are more than the cash, the item says so in one plain line, with no step and no reward promised. Nothing is moved: UntilFire does not move money, "Looks right" only records the answer.
 **Trade-off / revisit:** the ladder's amount can be higher than the plan shows when it counts cash outside the spending accounts; Contributions still shows the ladder's full figure. The 9am payday reminder still opens Calendar and its words are unchanged, because pay may not have reached the bank yet at 9am. Not built: marking the transfers as done from the item, a budget hint for people without one.
+
+### Member accounts directory — 13 November 2026
+
+**Status:** John approved the offers-first member mock and explicitly requested shipping with provider logos and without the invite/rewards explanation section.
+
+**Decision:** Signed-in website Accounts & tools becomes a bank, savings and brokerage discovery directory. Current published cash promotions lead, with stock rewards clearly separate; search, categories and original-color provider marks support browsing. No competing budgeting products. This replaces the default Money-check-first browsing presentation, while Plan’s contextual account picker and D-131’s navigation ownership remain.
+
+**Limits:** D-81’s curated programme permission, inviter attribution and approval rules remain. Public promotions are not an activated referral programme or proof that offers combine. Approved live metadata controls referral bonus/disclosure; no provider or member link is enabled by this presentation change. The dated directory endpoint requires authentication and private/no-store responses. Native presentation is unchanged; no money logic changes.
