@@ -1,5 +1,15 @@
 # Cold outreach pipeline
 
+## Automatic prospect lookup — 12 November 2026
+
+Admin → Cold outreach → Prospects starts with **Look up new prospects**. No JSON, website URL or paid data provider is required. Each click reads a rotating public finance reading list, discovers up to 100 relevant outbound websites and scans the next three plus one linked contact/about page each. Browser-local progress advances through six lists and their discovered sites; it is not a global scheduled search index. Source contents can change, so batches can overlap. Saved addresses and opt-outs are filtered server-side; reviewed imports still use the existing duplicate-safe importer. The previous JSON importer remains under Advanced.
+
+Only explicitly published emails and names are extracted, with source evidence. Missing names stay blank. U.S. fit and relevance require review before import. Lookups do not persist contacts, enqueue messages or send email. Existing sender settings and guards remain unchanged. No migrations or environment keys are needed.
+
+All fetches use bounded public-IPv4 pinned HTTPS transport, robots checks and restrictive metadata exclusions. Discovery does not follow redirects; unavailable sources fall back to checking the starter site's homepage under the same collection guards. A shared 22-second deadline bounds discovery plus collection. Each source failure is visible in the source report. A run may return zero emails; there is no promised lead count or unlimited web search.
+
+Verification: 19 focused checks cover extraction, source discovery, rotating batches, blocked sources, authentication, bounded requests and saved/opt-out filtering. Local type/lint/build and real-site results are recorded in the PR. Browser acceptance and signed-in import must be verified before release.
+
 Owner: Codex. Requested by John, 11 November 2026. Baseline: latest pushed main
 55ed7e469c32d25bfe3ff2fee3e1c8a9695adc59. Implementation for review; not live.
 

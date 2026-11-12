@@ -3,6 +3,9 @@
 ## 2026-11-12 — Payday plan (pending rollout)
 
 - When your pay lands, Today shows a plan for it: your bills until the next payday, your day-to-day money, your next saving steps (safety pot, goals, investing) and anything left as a cushion. The parts always add up to the cash in your spending accounts, and use the same numbers as Until payday, Safe to spend today and Contributions. If the plan saves or invests money, it tells you what that adds ("This plan pays for 5 more hours of every year."). Free for everyone, on the website and the phone app. It replaces the phone's Pro-only payday item.
+## 2026-11-12 — Automatic outreach prospect lookup (pending rollout)
+
+- Added Look up new prospects: automatically discover finance websites and collect published contact emails for review, skipping saved and opted-out addresses. No pasted URLs or JSON required; manual list import is tucked under Advanced. No emails are sent by lookup.
 
 ## 2026-11-12 — Free days on Home
 

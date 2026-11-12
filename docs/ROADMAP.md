@@ -1,5 +1,7 @@
 # UntilFire — Product Roadmap
 
+N3 acquisition follow-up — Codex, 12 November 2026. In review in [PR #403](https://github.com/Johnbulongdon/UntilFire/pull/403): one-click automatic prospect lookup replaces required seed URLs; public finance reading lists discover linked websites, published contact evidence supports review, and saved/opted-out contacts are skipped. No JSON or paid provider required. No contacts imported or emails sent. Browser and live-yield acceptance pending; no Now priority displaced.
+
 ## Current priorities
 
 Payday plan (D-150), Claude, 12 November 2026. In review on branch `claude/project-thread-coqi36`. Second idea from the 12 November mock set; John chose "free for everyone". Today shows a split of the cash until the next payday when pay lands, on the website and the phone, from one shared rule (`lib/payday-plan.ts`). Types, lint and the new payday-plan checks passed; the website item checked at 390 and 1280, light and dark, and the phone card in the web preview, all with sample numbers (not a signed-in account or a real paycheck, and not on a device). Outside Now/Next as a John-requested feature, no Now item displaced. Next from the same mock set: the monthly story.

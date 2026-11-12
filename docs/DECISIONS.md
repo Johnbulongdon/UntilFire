@@ -1,5 +1,9 @@
 # UntilFire — decision log
 
+### Automatic prospect discovery — 12 November 2026
+
+John requested a lookup button that automatically fetches new emails without JSON or manually supplied websites. Supersedes PR #403's seed-only collection interface. Use free, bounded discovery from public finance reading lists and their linked websites, with rotating browser-local progress and source evidence. Preserve U.S./relevance review, opt-out exclusion, duplicate-safe import and sending guards. This is on-demand discovery, not an unlimited search index or a scheduled volume promise. Merge and release remain pending.
+
 Reconciled 23 September 2026. This records why a choice exists, not just what
 shipped. [Project memory](KNOWLEDGE.md) defines maintenance and document ownership.
 Sources and both vault branch snapshots are recorded in
