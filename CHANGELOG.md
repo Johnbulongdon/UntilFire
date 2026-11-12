@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-12 — Payday plan (pending rollout)
+
+- When your pay lands, Today shows a plan for it: your bills until the next payday, your day-to-day money, your next saving steps (safety pot, goals, investing) and anything left as a cushion. The parts always add up to the cash in your spending accounts, and use the same numbers as Until payday, Safe to spend today and Contributions. If the plan saves or invests money, it tells you what that adds ("This plan pays for 5 more hours of every year."). Free for everyone, on the website and the phone app. It replaces the phone's Pro-only payday item.
+
 ## 2026-11-12 — Free days on Home
 
 - Home now opens with the days of every year your money already pays for ("18 days of every year"), with one dot per day, when the next day arrives ("Next free day: about Dec 22") and how fast you add time ("You add 13 hours every month"). It is your "% there" shown as days of a year, so it always agrees with your freedom date. The freedom date stays on the same card. Website and phone app.

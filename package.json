@@ -31,6 +31,7 @@
     "test:next-move": "node --experimental-strip-types --no-warnings scripts/verify-next-move.ts",
     "test:setup-steps": "node --experimental-strip-types --no-warnings scripts/verify-setup-steps.ts",
     "test:freedom-progress": "node --experimental-strip-types --no-warnings scripts/verify-freedom-progress.ts",
+    "test:payday-plan": "node --experimental-strip-types --no-warnings scripts/verify-payday-plan.ts",
     "test:plaid-pfc": "node --experimental-strip-types --no-warnings scripts/verify-plaid-pfc.ts",
     "test:transaction-time": "node --experimental-strip-types --no-warnings scripts/verify-transaction-time.ts",
     "test:city-page-seo": "node scripts/verify-city-page-seo.mjs",

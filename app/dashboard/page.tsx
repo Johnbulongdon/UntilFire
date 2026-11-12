@@ -1,6 +1,7 @@
 "use client";
 import { extraPayMonths } from '@/lib/pay-months';
 import { paydaySpending, paydayRemainder, safeToSpendToday } from '@/lib/payday-spending';
+import { paydayPlan } from '@/lib/payday-plan';
 
 import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
 
@@ -1291,6 +1292,29 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
   const [paydayAdjustment, setPaydayAdjustment] = useState<{ window: string; everyday: number | null; cushion: number } | null>(null);
   const paydayWindow = userId + ':' + paydayView?.payday.iso + ':' + todayIso;
   const activePaydayAdjustment = paydayAdjustment?.window === paydayWindow ? paydayAdjustment : null;
+  // Safe to spend today (D-137, D-146): cash after bills and cards, not after usual spending (John, 9 Nov 2026: what you can spend).
+  const safeToday = safeToSpendToday({
+    payday: paydayView ? { remaining: paydayView.free, days: paydayView.days } : null,
+    budget: monthLeft.everydayBudget > 0 ? { left: monthLeft.left, daysLeft: monthDays - now.getDate() + 1 } : null,
+  });
+  // The payday plan (D-150): the same Until payday, Safe to spend today and ladder numbers, split for the Today strip.
+  const paydayFacts = useMemo(() => {
+    if (!paydayView) return null;
+    const ladder = contributionFacts ? ladderViewFromPlan(contributionPlan, contributionFacts) : null;
+    // A contribution already marked as made this cycle has nothing more to move.
+    const steps = ladder && !ladder.available.done ? ladder.waterfall.fills.filter((f) => f.amount > 0).map((f) => ({ kind: f.kind, amount: f.amount })) : [];
+    return {
+      bankLinked: plaidAccounts.length > 0,
+      paychecks: (contributionFacts?.expectedItems ?? []).filter((i) => i.type === "income" && i.recurrence !== "none")
+        .map((i) => ({ description: i.description, category: null, usd: Math.abs(i.amountUSD), due: i.dueDate, recurrence: i.recurrence })),
+      plan: (pay: number) => paydayPlan({
+        pay, cash: paydayView.cash, bills: paydayView.bills.reduce((t, b) => t + Math.abs(b.amount), 0), cards: paydayView.cardsOwed,
+        days: paydayView.days, nextPaydayIso: paydayView.payday.iso, perDay: safeToday.today, steps, target: fireTarget,
+      }),
+    };
+    // paydayView and safeToday are rebuilt each render from these.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [freeResult, bills, contributionFacts, contributionPlan, plaidAccounts.length, safeToday.today, fireTarget]);
   const paydayRemaining = paydayView ? paydayRemainder(paydayView.free, activePaydayAdjustment?.everyday ?? paydayEstimate?.amount ?? null, activePaydayAdjustment?.cushion ?? 0) : null;
   // Get set up (lib/setup-steps): read from what the account already has.
   const setupFacts = useMemo<SetupFacts>(() => ({
@@ -1721,19 +1745,15 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
         <TodayStrip
           userId={userId}
           bills={bills}
-          {...(() => {
-            const safe = safeToSpendToday({
-              // Cash after bills and cards, not after usual spending (John, 9 Nov 2026: what you can spend, D-146).
-              payday: paydayView ? { remaining: paydayView.free, days: paydayView.days } : null,
-              budget: monthLeft.everydayBudget > 0 ? { left: monthLeft.left, daysLeft: monthDays - now.getDate() + 1 } : null,
-            });
-            return { perDay: safe.today, stretch: safe.stretch };
-          })()}
+          payday={paydayFacts}
+          perDay={safeToday.today}
+          stretch={safeToday.stretch}
           fmt={(n) => fmtMoney(n)}
           toUsd={(amount, currency) => toUSD(amount, currency, displayRates)}
           onOpen={() => onTabChange?.("cashflow")}
           onWhatIf={onOpenCompare}
           onOpenNeeds={onOpenNeeds}
+          onOpenPlan={() => onTabChange?.("contributions")}
         />
       </HomeSlot>
       </div>
