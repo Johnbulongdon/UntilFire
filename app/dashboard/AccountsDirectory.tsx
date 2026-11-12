@@ -48,7 +48,7 @@ function Directory({ api, owner }: ReturnType<typeof useToolsAPI>) {
             if (n !== generation.current)
                 return;
             const entries: Entry[] = d.accounts.map(p => ({ ...p, live: live?.offers.find(o => o.slug === p.slug && o.country === p.country && o.kind === p.kind) }));
-            for (const o of live?.offers ?? [])
+            for (const o of (live?.offers ?? []).filter(o => o.country === "US"))
                 if (!entries.some(p => p.slug === o.slug))
                     entries.push({ slug: o.slug, name: o.name, product: o.blurb, kind: o.kind, country: o.country, logo: "", source: "", description: o.blurb, reward: null, rewardKind: null, cashValue: 0, requirements: "Review the provider’s current eligibility, fees and terms before applying.", eligibility: "The linked provider sets the requirements.", checkedOn: "", reviewOn: "", endsOn: null, live: o });
             setData(entries);
@@ -71,7 +71,7 @@ function Directory({ api, owner }: ReturnType<typeof useToolsAPI>) {
         return <section className={s.page}><h1 className="uf-t-h1">Accounts &amp; tools</h1><p>Sign in to discover accounts and offers.</p><a href="/login">Sign in</a></section>;
     const bonus = (p: Entry) => p.live ? p.live.bonusText : p.reward;
     const filtered = data.filter(p => (category === "all" || p.kind === category) && (!savedOnly || saved.includes(p.slug)) && `${p.name} ${p.product}`.toLowerCase().includes(query.toLowerCase()) && (reward === "all" || (bonus(p) && p.rewardKind === reward)));
-    const featured = filtered.filter(p => bonus(p)).sort((a, b) => (b.live ? 0 : b.cashValue) - (a.live ? 0 : a.cashValue));
+    const featured = filtered.filter(p => bonus(p)).sort((a, b) => Number(a.rewardKind === "stock") - Number(b.rewardKind === "stock") || (b.live ? 0 : b.cashValue) - (a.live ? 0 : a.cashValue));
     const detail = data.find(p => p.slug === selected);
     const toggleSave = (slug: string) => setSaved(v => v.includes(slug) ? v.filter(x => x !== slug) : [...v, slug]);
     function provider(p: Entry) { return <div className={s.provider}><span className={s.logo}>{p.logo ? <img src={`/providers/directory/${p.logo}.png`} alt={`${p.name} logo`} width={40} height={40}/> : <Gift aria-hidden size={24}/>}</span><div><h3>{p.name}</h3><p className={s.muted}>{p.product}</p></div></div>; }
@@ -93,8 +93,8 @@ function Directory({ api, owner }: ReturnType<typeof useToolsAPI>) {
         }
         catch {
             popup?.close();
-            setError("This referral link changed or could not be opened. Review the refreshed offer and try again.");
             await load();
+            setError("This referral link changed or could not be opened. Review the refreshed offer and try again.");
         }
         finally {
             setBusy(false);
