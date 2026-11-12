@@ -41,7 +41,7 @@ export function DoorChip({ to, onClick }: { to: "plan" | "money"; onClick: () =>
 /** A card's name, sentence case: one label style across Home (D-108). */
 const cardLabel: React.CSSProperties = { fontSize: 14, fontWeight: 600, color: "var(--uf-ink-2)" };
 
-export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, progress, note, children }: {
+export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, free, note, children }: {
   /** "March 2041"; null until the plan has enough to project. */
   dateLabel: string | null;
   yearsAway: number | null;
@@ -50,48 +50,77 @@ export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, progress
   onOpen: () => void;
   /** A planned move to the retirement city (D-82), shown under the date so the number says what it assumes. */
   route?: { from: string; fromFlag?: string; to: string; toFlag?: string; when: string; onOpen: () => void };
-  /** How far you've come (lib/freedom-progress): "23%", 0–1, the next mark, and today's invested total ("$6.6k"). */
-  progress?: { pct: string; share: number; next: string; today?: string };
+  /**
+   * Free days (D-149, lib/freedom-progress): "18 days", how many of the 365
+   * dots are filled, the next-day pill ("Next free day: about Jan 14"), the monthly
+   * pace ("You add 11 hours every month") and the share behind it ("5%") for the hint.
+   */
+  free?: { label: string; days: number; next: string; pace?: string | null; pct: string };
   /** One-time line after sign-up: why this date differs from the calculator's. */
   note?: { text: string; onDismiss: () => void };
   /** The curve, drawn by the dashboard from the same projection as the date. */
   children: React.ReactNode;
 }) {
+  const big: React.CSSProperties = { fontFamily: "var(--uf-font-display)", fontSize: "clamp(32px, 6vw, 40px)", fontWeight: 700, color: "var(--uf-teal)", lineHeight: 1.1, fontVariantNumeric: "tabular-nums" };
+  const away = yearsAway == null ? null
+    : `${yearsAway === 0 ? "Target reached today" : yearsAway < 1 ? `In ${Math.max(1, Math.round(yearsAway * 12))} months` : `In ${Math.round(yearsAway * 10) / 10} ${Math.round(yearsAway * 10) / 10 === 1 ? "year" : "years"}`}${age ? `, at ${age}` : ""}`;
+  const routeChip = route && (
+    <button type="button" onClick={route.onOpen} aria-label={`Planned move to ${route.to} ${route.when}. Change it in Plan`}
+      style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--uf-border)", background: "var(--uf-surface-2)", borderRadius: 999, padding: "5px 12px", font: "inherit", fontSize: 13, fontWeight: 700, color: "var(--uf-ink)", cursor: "pointer" }}>
+      {route.from && <><span><RouteFlag emoji={route.fromFlag} /> {route.from}</span><span aria-hidden style={{ color: "var(--uf-ink-3)" }}>→</span></>}
+      <span><RouteFlag emoji={route.toFlag} /> {route.to}</span>
+      <span style={{ color: "var(--uf-ink-3)", fontWeight: 500 }}>· {route.when} ›</span>
+    </button>
+  );
+  const pill: React.CSSProperties = { display: "inline-flex", alignItems: "center", borderRadius: 999, padding: "6px 12px", fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums" };
   return (
     <Card className="uf-freedom-panel" style={{ display: "grid", gap: 14, background: "var(--uf-yellow)", color: "var(--uf-on-accent)", overflow: "hidden" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
-        <div>
-          <div className="uf-t-small" style={muted}>Work becomes optional</div>
-          {dateLabel ? (
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+        <div style={{ flex: "1 1 0", minWidth: 0 }}>
+          {!dateLabel ? (
             <>
-              <div style={{ fontFamily: "var(--uf-font-display)", fontSize: "clamp(32px, 6vw, 40px)", fontWeight: 700, color: "var(--uf-teal)", lineHeight: 1.1 }}>{dateLabel}</div>
-              {yearsAway != null && (
-                <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 2 }}>
-                  {yearsAway === 0 ? "Target reached today" : yearsAway < 1 ? `In ${Math.max(1, Math.round(yearsAway * 12))} months` : `In ${Math.round(yearsAway * 10) / 10} ${Math.round(yearsAway * 10) / 10 === 1 ? "year" : "years"}`}{age ? `, at ${age}` : ""}
-                </div>
-              )}
-              {route && (
-                <button type="button" onClick={route.onOpen} aria-label={`Planned move to ${route.to} ${route.when}. Change it in Plan`}
-                  style={{ marginTop: 10, display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--uf-border)", background: "var(--uf-surface-2)", borderRadius: 999, padding: "5px 12px", font: "inherit", fontSize: 13, fontWeight: 700, color: "var(--uf-ink)", cursor: "pointer" }}>
-                  {route.from && <><span><RouteFlag emoji={route.fromFlag} /> {route.from}</span><span aria-hidden style={{ color: "var(--uf-ink-3)" }}>→</span></>}
-                  <span><RouteFlag emoji={route.toFlag} /> {route.to}</span>
-                  <span style={{ color: "var(--uf-ink-3)", fontWeight: 500 }}>· {route.when} ›</span>
-                </button>
-              )}
-              {progress && (
-                // Today's words live here, so the curve below carries only a dot for today (no label clash).
-                <div title={progress.next}
-                  style={{ marginTop: 12, display: "flex", width: "fit-content", alignItems: "center", gap: 6, background: "var(--uf-ink)", color: "var(--uf-yellow)", borderRadius: 999, padding: "6px 12px", fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
-                  {progress.today ? <>{progress.today} today<span style={{ opacity: 0.7, fontWeight: 500 }}>· {progress.pct} there</span></> : <>{progress.pct} there</>}
-                </div>
-              )}
+              <div className="uf-t-small" style={muted}>Work becomes optional</div>
+              <div className="uf-t-body" style={{ color: "var(--uf-ink-2)" }}>Finish your setup to see your freedom date.</div>
+            </>
+          ) : free ? (
+            // Free days lead (D-149): the share already there, as days of a year. The date follows under the dots.
+            <>
+              <div className="uf-t-small" style={muted}>Your money already pays for</div>
+              <div style={{ display: "flex", alignItems: "baseline", columnGap: 10, flexWrap: "wrap" }}>
+                <span style={big}>{free.label}</span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: "var(--uf-ink)" }}>of every year</span>
+              </div>
             </>
           ) : (
-            <div className="uf-t-body" style={{ color: "var(--uf-ink-2)" }}>Finish your setup to see your freedom date.</div>
+            <>
+              <div className="uf-t-small" style={muted}>Work becomes optional</div>
+              <div style={big}>{dateLabel}</div>
+              {away && <div className="uf-t-small" style={{ color: "var(--uf-ink-2)", marginTop: 2 }}>{away}</div>}
+              {routeChip}
+            </>
           )}
         </div>
         <DoorChip to="plan" onClick={onOpen} />
       </div>
+      {dateLabel && free && (
+        <>
+          <div className="uf-free-days" role="img" aria-label={`${free.days} of 365 days filled. That is ${free.pct} of your freedom number.`}>
+            {Array.from({ length: 365 }, (_, i) => <i key={i} data-on={i < free.days ? "" : undefined} data-next={i === free.days ? "" : undefined} />)}
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span title={`${free.pct} of your freedom number is ${free.pct} of a year`} style={{ ...pill, background: "var(--uf-ink)", color: "var(--uf-yellow)" }}>{free.next}</span>
+            {free.pace && <span style={{ ...pill, background: "var(--uf-card)", color: "var(--uf-ink)" }}>{free.pace}</span>}
+          </div>
+          <div>
+            <div style={{ display: "flex", alignItems: "baseline", columnGap: 8, flexWrap: "wrap" }}>
+              <span className="uf-t-small" style={muted}>Work becomes optional</span>
+              <span className="uf-t-h3" style={{ color: "var(--uf-ink)" }}>{dateLabel}</span>
+              {away && <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>{away}</span>}
+            </div>
+            {routeChip}
+          </div>
+        </>
+      )}
       {note && (
         <div role="note" style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", background: "var(--uf-card)", borderRadius: 16, padding: "10px 14px" }}>
           <span className="uf-t-small" style={{ flex: "1 1 220px", color: "var(--uf-ink)" }}>{note.text}</span>

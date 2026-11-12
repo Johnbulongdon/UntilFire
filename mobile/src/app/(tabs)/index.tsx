@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Redirect, router } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Pressable, View } from 'react-native'
 import Svg, { Circle, Line, Path } from 'react-native-svg'
 
@@ -25,7 +25,7 @@ import { useAuth } from '@/state/auth'
 import { saveFireProfile } from '@/lib/mutations'
 import { useFreedom, type Freedom } from '@/state/freedom'
 import { useLivePlan } from '@/state/live-plan'
-import { everydayByDay, freedomProgress, guessBillCategory, progressPercent, isCounted, isoDay, paydayLine, quickFreedom, type NextMove } from '@/engine'
+import { everydayByDay, freeDays, freeDaysLabel, freeNextLabel, freePaceLabel, guessBillCategory, isCounted, isoDay, paydayLine, quickFreedom, type NextMove } from '@/engine'
 import { usePlan } from '@/state/plan'
 import { brand, colors } from '@/theme/colors'
 import { splitBudget } from '@/lib/budget-split'
@@ -72,50 +72,80 @@ export default function Home() {
 }
 
 /**
- * The hero (Home option A, October 2026): the freedom date and its path in one
- * deep-teal card with white text, so the date reads as the headline of the app.
- * Option B, a sunrise scene, is kept in mind for later.
+ * The hero: free days lead (D-149), the share of the freedom number already
+ * there said as days of a year, one dot per day. The freedom date and its
+ * path follow in the same yellow card. Without a target it falls back to the
+ * date as the headline.
  */
 function Hero({ result }: { result: Freedom }) {
   const yearsAway = result.years != null ? Math.round(result.years * 10) / 10 : null
   const date = result.year == null ? '65+ years' : result.date ? result.date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : String(result.year)
   const sub = [yearsAway != null ? (yearsAway <= 0 ? 'Now' : yearsAway < 1 ? 'Under a year away' : `${yearsAway.toFixed(1)} years away`) : null, result.ageAtFreedom != null ? `age ${result.ageAtFreedom}` : null].filter(Boolean).join(' · ')
+  // series[0] is today and series[k] the pot k years on: the same projection the date is read from.
+  const free = useMemo(() => freeDays(result.invested, result.target, result.series.map(s => s.invested)), [result])
+  const open = () => { haptic.tick(); router.push('/plan/freedom') }
   return (
     <View {...useTourAnchor('hero')} style={{ borderRadius: 28, overflow: 'hidden', backgroundColor: brand.yellow }}>
       <View style={{ padding: 18, paddingBottom: 14 }}>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Free in ${date}. Open your freedom date`} onPress={() => { haptic.tick(); router.push('/plan/freedom') }}>
-          <Text style={{ color: '#5C5130' }} className="text-[12px] font-bold uppercase tracking-[2px]">Free in</Text>
-          <Text style={{ color: '#151719' }} className="font-display text-[50px] font-bold leading-[56px] tracking-tight">{date}</Text>
-          {!!sub && <Text style={{ color: '#5C5130' }} className="text-[15px]">{sub}</Text>}
-        </Pressable>
-        <HowFar result={result} />
+        {free ? (
+          <>
+            <Pressable accessibilityRole="button" accessibilityLabel={`Your money already pays for ${freeDaysLabel(free)} of every year. Free in ${date}. Open your freedom date`} onPress={open}>
+              <Text style={{ color: '#5C5130' }} className="text-[15px]">Your money already pays for</Text>
+              <Text style={{ color: '#151719' }} className="font-display text-[50px] font-bold leading-[56px] tracking-tight">{freeDaysLabel(free)}</Text>
+              <Text style={{ color: '#151719' }} className="text-[15px] font-bold">of every year</Text>
+            </Pressable>
+            <FreeDaysDots days={free.days} />
+            <View className="mt-3 flex-row flex-wrap" style={{ gap: 8 }}>
+              <View className="rounded-full px-3 py-1.5" style={{ backgroundColor: '#151719' }}>
+                <Text style={{ color: brand.yellow }} className="font-mono text-[13px] font-bold">{freeNextLabel(free, money, result.year == null ? null : date)}</Text>
+              </View>
+              {!!freePaceLabel(free.hoursPerMonth) && (
+                <View className="rounded-full px-3 py-1.5" style={{ backgroundColor: '#FFFFFF' }}>
+                  <Text style={{ color: '#151719' }} className="font-mono text-[13px] font-bold">{freePaceLabel(free.hoursPerMonth)}</Text>
+                </View>
+              )}
+            </View>
+            <Pressable className="mt-4 flex-row flex-wrap items-baseline" style={{ columnGap: 8 }} accessibilityRole="button" accessibilityLabel={`Free in ${date}. Open your freedom date`} onPress={open}>
+              <Text style={{ color: '#5C5130' }} className="text-[13px]">Free in</Text>
+              <Text style={{ color: '#151719' }} className="text-[18px] font-bold">{date}</Text>
+              {!!sub && <Text style={{ color: '#5C5130' }} className="text-[13px]">{sub}</Text>}
+            </Pressable>
+          </>
+        ) : (
+          <Pressable accessibilityRole="button" accessibilityLabel={`Free in ${date}. Open your freedom date`} onPress={open}>
+            <Text style={{ color: '#5C5130' }} className="text-[12px] font-bold uppercase tracking-[2px]">Free in</Text>
+            <Text style={{ color: '#151719' }} className="font-display text-[50px] font-bold leading-[56px] tracking-tight">{date}</Text>
+            {!!sub && <Text style={{ color: '#5C5130' }} className="text-[15px]">{sub}</Text>}
+          </Pressable>
+        )}
         <View className="mt-4"><FreedomLineChart f={result} /></View>
       </View>
     </View>
   )
 }
 
+const DOT_COLUMNS = 37
+const DOT_GAP = 2
+
 /**
- * How far you've come (goal gradient, lib/freedom-progress): the share of the
- * freedom number already there and the next quarter mark, close enough to chase.
+ * One dot per day of a year (D-149): filled for each day the money already
+ * pays for, a ring on the next one. 37 across, sized to the card, as on the
+ * website at phone width.
  */
-function HowFar({ result }: { result: Freedom }) {
-  const p = freedomProgress(result.invested, result.target, result.series.map(s => ({ year: s.year, value: s.invested })))
-  if (!p) return null
-  const pct = progressPercent(p.share)
-  const next = p.next ? `Next: ${Math.round(p.next.mark * 100)}%${p.next.year != null ? ` in ${p.next.year}` : `, ${money(p.next.toGo)} to go`}` : 'Your freedom number is there'
+function FreeDaysDots({ days }: { days: number }) {
+  const [width, setWidth] = useState(0)
+  const size = width > 0 ? (width - DOT_GAP * (DOT_COLUMNS - 1)) / DOT_COLUMNS : 0
+  const dots = useMemo(() => Array.from({ length: 365 }, (_, i) => i), [])
   return (
-    <View className="mt-4" accessible accessibilityLabel={`${pct} of your freedom number. ${next}`}>
-      <View className="flex-row items-baseline justify-between">
-        <Text style={{ color: '#151719' }} className="font-mono text-[15px] font-bold">{pct} there</Text>
-        <Text style={{ color: '#5C5130' }} className="text-[13px]">{next}</Text>
-      </View>
-      <View className="mt-2 h-2.5 overflow-hidden rounded-full" style={{ backgroundColor: '#D8C67B' }}>
-        <View className="h-full rounded-full" style={{ width: `${Math.max(2, p.share * 100)}%`, backgroundColor: brand.deep }} />
-        {[0.25, 0.5, 0.75].map(m => (
-          <View key={m} className="absolute bottom-0 top-0 w-[2px]" style={{ left: `${m * 100}%`, backgroundColor: 'rgba(6,65,47,0.55)' }} />
-        ))}
-      </View>
+    <View className="mt-3 flex-row flex-wrap" style={{ gap: DOT_GAP, minHeight: 8 }} onLayout={e => setWidth(Math.floor(e.nativeEvent.layout.width))}
+      accessible accessibilityRole="image" accessibilityLabel={`${days} of 365 days filled`}>
+      {size > 0 && dots.map(i => (
+        <View key={i} style={{
+          width: size, height: size, borderRadius: size / 2,
+          backgroundColor: i < days ? '#151719' : i === days ? '#FFFFFF' : 'rgba(21,23,25,0.14)',
+          borderWidth: i === days ? 1.5 : 0, borderColor: '#151719',
+        }} />
+      ))}
     </View>
   )
 }

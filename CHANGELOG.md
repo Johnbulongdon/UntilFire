@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-12 — Free days on Home
+
+- Home now opens with the days of every year your money already pays for ("18 days of every year"), with one dot per day, when the next day arrives ("Next free day: about Dec 22") and how fast you add time ("You add 13 hours every month"). It is your "% there" shown as days of a year, so it always agrees with your freedom date. The freedom date stays on the same card. Website and phone app.
+
 ## 2026-11-12 — Rent paid through your bank no longer eats your budget
 
 - If you linked a bill to the name your bank uses (for example rent paid as "BILT PAYMENT"), that payment now counts as the bill, not as day-to-day spending. Before, "left" dropped by the whole rent and "Safe to spend today" could show $0. Fixed on the website, the phone app and the Android widget.
