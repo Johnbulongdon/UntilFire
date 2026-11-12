@@ -9,8 +9,8 @@ async function moduleUrl(path, replacements=[]) {
 }
 const parser=await moduleUrl('../lib/prospect-collector.ts');
 const transport=await moduleUrl('../lib/prospect-fetch.ts', [['"./prospect-collector"',JSON.stringify(parser)]]);
-const discovery=await moduleUrl('../lib/prospect-discovery.ts', [['"./prospect-collector"',JSON.stringify(parser)],['"./prospect-fetch"',JSON.stringify(transport)]]);
-const {discoverWebsiteLinks,lookupProspects,DISCOVERY_SOURCES}=await import(discovery);
+const discovery=await moduleUrl('../lib/prospect-partners.ts', [['"./prospect-collector"',JSON.stringify(parser)],['"./prospect-fetch"',JSON.stringify(transport)]]);
+const {discoverWebsiteLinks,lookupPartnerProspects:lookupProspects,DISCOVERY_SOURCES}=await import(discovery);
 const page=(url,body,status=200,type='text/html')=>({url:url.href,body,status,type,location:''});
 test('discovers relevant outbound sites; removes duplicates, social links, scripts and unsafe URLs',()=>{
   const links=discoverWebsiteLinks(`<a href="https://myfinance.org/post">Money blog</a><a href="https://www.myfinance.org/other">Budget</a><a href="https://youtube.com/a">Money</a><a href="https://127.0.0.1/">Budget</a><a href="https://unrelated.org/">Buy shoes</a><script><a href="https://badfinance.org/">Money</a></script>`,DISCOVERY_SOURCES[0]);
@@ -50,6 +50,7 @@ test('route filters both saved and suppressed contacts and fails closed on stora
   const mock='data:text/javascript;base64,'+Buffer.from(`
     export const NextResponse={json:(data,options={})=>({data,status:options.status||200})};
     export async function requireAdminUser(){return {user:{id:'admin'},admin:{from:table=>({select:()=>({in:async()=>({error:globalThis.__lookupRoute.error,data:[{email:table==='cold_prospects'?'saved@example.org':'optout@example.org'}]})})})}};}
+    export async function lookupPartnerProspects(cursor){return lookupProspects(cursor);}
     export async function lookupProspects(cursor){return {contacts:['saved','optout','fresh'].map(n=>({email:n+'@example.org'})),pages:[],nextCursor:cursor+1};}
   `).toString('base64');
   const route=await moduleUrl('../app/api/admin/cold-email/collect/route.ts',[['"next/server"',JSON.stringify(mock)],['"@/lib/admin-auth"',JSON.stringify(mock)],['"@/lib/prospect-discovery"',JSON.stringify(mock)]]);

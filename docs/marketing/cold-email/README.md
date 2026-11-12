@@ -1,5 +1,17 @@
 # Cold outreach pipeline
 
+## Persona research — correction, 12 November 2026
+
+Default lookup is now Potential users: U.S. young adults with a publicly stated personal budgeting or FIRE goal. This supersedes PR #403's publisher-first default. The first free research adapter searches recent Hacker News comments through Algolia, then verifies the live item and the same author's public profile through the official HN API. Six queries rotate through bounded pages; each run considers at most 12 accounts, with three accounts processed concurrently and a shared 22-second deadline. Quoted speech, third-person needs, stale/deleted posts and known out-of-range ages are excluded. The initial explicit age range is 18–39; unknown age is unverified, never inferred from a job, username or photo.
+
+Results retain the person's own statement, date and source link alongside independently missing identity, contact, U.S. location and age evidence. Names are only read from explicit self-identification. An email must be explicitly public in the account's about text, or paired with a published name on a personal website explicitly linked as their own. No private account email fields, guessed addresses, purchased data, or identity matching against anonymous accounts. Ambiguous multiple emails and operational/role inboxes are withheld. Personal-site reads retain the original robots, pinned-public-IP, redirect, size and timeout guards and are limited to two sites per run.
+
+Potential users and Creators & partners are separate modes. Explicit finance sellers and app creators detected in user research are kept out of the user cards; the partner mode retains the original finance-site collector. Results missing identity/contact/qualification remain research-only until an admin supplies public evidence and reviews them. Editing evidence clears selection. Import preserves interest/contact source evidence and audience in fit notes; duplicate/opt-out filtering and all sending guards remain intact. No schema, paid provider or environment key is added. Lookups do not save prospects or send emails.
+
+Coverage is limited to one public discussion community plus explicitly linked personal websites, not all U.S. consumers. Live research across ten bounded batches returned 10 candidate entries (nine unique people), two unique published emails, and no complete persona matches; batches may overlap. This is evidence-backed research, not a guaranteed volume of send-ready contacts. Published statements are not independently verified. Local initial/error states, audience switching and light/dark layout checked at 390/1280; no horizontal overflow. Signed-in collection/import and populated result-card browser acceptance remain unverified.
+
+Sources: https://hn.algolia.com/api and https://github.com/HackerNews/API.
+
 ## Automatic prospect lookup — 12 November 2026
 
 Admin → Cold outreach → Prospects starts with **Look up new prospects**. No JSON, website URL or paid data provider is required. Each click reads a rotating public finance reading list, discovers up to 100 relevant outbound websites and scans the next three plus one linked contact/about page each. Browser-local progress advances through six lists and their discovered sites; it is not a global scheduled search index. Source contents can change, so batches can overlap. Saved addresses and opt-outs are filtered server-side; reviewed imports still use the existing duplicate-safe importer. The previous JSON importer remains under Advanced.

@@ -1,7 +1,7 @@
 export type CollectedContact = {
   email: string;
   name: string;
-  nameEvidence: "person metadata" | "email link" | "not published";
+  nameEvidence: "person metadata" | "public profile" | "email link" | "not published";
   sourceUrl: string;
   pageTitle: string;
   evidence: string;

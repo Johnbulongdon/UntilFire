@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-12 — Persona-first prospect research (pending rollout)
+
+- Potential users now start with their own public budgeting/FIRE statement and show missing identity, email, U.S. and young-adult evidence. Creators and partners have a separate lookup mode. Incomplete results stay research-only; no addresses or demographics are guessed.
+
 ## 2026-11-12 — Automatic outreach prospect lookup (pending rollout)
 
 - Added Look up new prospects: automatically discover finance websites and collect published contact emails for review, skipping saved and opted-out addresses. No pasted URLs or JSON required; manual list import is tucked under Advanced. No emails are sent by lookup.

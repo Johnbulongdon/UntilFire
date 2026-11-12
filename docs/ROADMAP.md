@@ -1,5 +1,7 @@
 # UntilFire — Product Roadmap
 
+N3 acquisition correction — Codex, 12 November 2026. Persona-first prospect research built for review: potential users default to public personal budgeting/FIRE statements; U.S./young-adult/contact evidence remains explicit, creators have a separate mode. First adapter uses free HN discussion/profile APIs; no broad consumer coverage claim. Live sample returned nine unique people/two published emails but no complete persona matches. No contacts imported or emails sent; no Now priority displaced. Next: populated-result browser acceptance and reviewed release.
+
 N3 acquisition follow-up — Codex, 12 November 2026. In review in [PR #403](https://github.com/Johnbulongdon/UntilFire/pull/403): one-click automatic prospect lookup replaces required seed URLs; public finance reading lists discover linked websites, published contact evidence supports review, and saved/opted-out contacts are skipped. No JSON or paid provider required. No contacts imported or emails sent. Browser and live-yield acceptance pending; no Now priority displaced.
 
 ## Current priorities

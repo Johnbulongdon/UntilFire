@@ -1,5 +1,9 @@
 # UntilFire — decision log
 
+### Persona-first outreach correction — 12 November 2026
+
+John clarified that the consumer acquisition audience is U.S. young adults interested in FIRE and budgeting help, consistent with the approved city/freedom A/B drafts. Supersedes the publisher-first lookup shipped in PR #403. Default discovery starts with a person's explicit public interest, then checks their own published identity/contact and qualification evidence. Use a conservative initial 18–39 range, flag unknown evidence, and separate creators/partners. The first adapter uses free public HN APIs and explicitly self-linked personal sites; it does not establish whole-market coverage or guaranteed email supply. Personal information and research rows stay out of the public repository. Implementation authorized; merge/publication requires the normal release instruction.
+
 ### Automatic prospect discovery — 12 November 2026
 
 John requested a lookup button that automatically fetches new emails without JSON or manually supplied websites. Supersedes PR #403's seed-only collection interface. Use free, bounded discovery from public finance reading lists and their linked websites, with rotating browser-local progress and source evidence. Preserve U.S./relevance review, opt-out exclusion, duplicate-safe import and sending guards. This is on-demand discovery, not an unlimited search index or a scheduled volume promise. Merge and release remain pending.
