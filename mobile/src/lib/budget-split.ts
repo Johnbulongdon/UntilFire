@@ -35,7 +35,7 @@ export function splitBudget(data: AccountData, month = thisMonth()) {
 
   const billRows = data.bills.filter(b => b.transaction_type === 'expense').map(b => ({ ...b, usd: Math.abs(toUSD(b.amount, b.currency)) }))
   const monthRows = data.transactions.filter(t => t.transaction_type === 'expense' && monthOf(t.date) === month)
-  const isBillPayment = (t: (typeof monthRows)[number]) => billKeys.has(t.category) && matchesBill({ description: t.description, usd: spentUSD(t), category: t.category }, billRows)
+  const isBillPayment = (t: (typeof monthRows)[number]) => matchesBill({ description: t.description, usd: spentUSD(t), category: t.category }, billRows)
   const billSpentBy = new Map<string, number>()
   for (const t of monthRows) if (isBillPayment(t)) billSpentBy.set(t.category, (billSpentBy.get(t.category) ?? 0) + spentUSD(t))
 

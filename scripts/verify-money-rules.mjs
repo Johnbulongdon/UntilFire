@@ -15,6 +15,7 @@ import { applyAccountShares, readAccountShares, shareOf } from "../lib/account-s
 import { householdSpending } from "../lib/household-spending.ts";
 import { freedomCash, safetyPot } from "../lib/freedom-cash.ts";
 import { goalMonthly } from "../lib/goal-monthly.ts";
+import { everydayLeft } from "../lib/everyday-left.ts";
 import { starterBudget, starterGuide, usualByCategory } from "../lib/starter-budget.ts";
 
 // ── Bank rows ──
@@ -57,6 +58,15 @@ const bills = [{ description: "Spotify", category: "entertainment", recurrence: 
 assert.ok(matchesBill({ description: "SPOTIFY USA", usd: 11.99, category: "entertainment" }, bills), "a price rise is still the bill");
 assert.ok(!matchesBill({ description: "AMC Theatres", usd: 25, category: "entertainment" }, bills), "other spending in the category is everyday");
 assert.ok(!billCategorySet([{ description: "Dentist", category: "healthcare", recurrence: "none" }]).has("healthcare"), "a one-off doesn't make a category fixed");
+// A payment under the bank name linked to a bill is that bill, on the website (`merchant`) and the phone (`match_merchant`) (D-147).
+const rent = { description: "Rent", category: "housing", recurrence: "monthly", usd: 1500 };
+assert.ok(!matchesBill({ description: "BILT PAYMENT", usd: 1500, category: "housing" }, [rent]), "an unlinked bank name is not the bill");
+assert.ok(matchesBill({ description: "BILT PAYMENT", usd: 1500, category: "housing" }, [{ ...rent, merchant: "BILT PAYMENT" }]), "a linked bank name is the bill");
+assert.ok(matchesBill({ description: "Bilt Payment 1123", usd: 1500, category: "other" }, [{ ...rent, match_merchant: "BILT PAYMENT" }]), "in any category");
+assert.ok(!matchesBill({ description: "BILT PAYMENT", usd: 300, category: "housing" }, [{ ...rent, merchant: "BILT PAYMENT" }]), "but not a different amount");
+const linkedLeft = everydayLeft({ budget: { housing: 1500, food: 600 }, bills: [{ ...rent, merchant: "BILT PAYMENT" }],
+  monthRows: [{ description: "BILT PAYMENT", usd: 1500, category: "housing" }, { description: "TRADER JOES", usd: 100, category: "food" }] });
+assert.equal(linkedLeft.left, 500, "a linked rent payment is not day-to-day spending");
 
 // ── Needs ──
 assert.equal(categoryNeed("food"), "need");

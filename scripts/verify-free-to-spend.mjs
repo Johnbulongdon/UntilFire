@@ -97,6 +97,8 @@ check("a credit card never counts, even toggled on", !isCounted(visa, { visa: tr
   const withCard = freeToSpend({ today: d(2026, 10, 1), accounts: [checking, visa], expected: [pay("2026-10-10", "monthly"), bill("Rent", "2026-10-01", 1450)] });
   check("a card with no payment bill: its balance is set aside", untilPayday(withCard, ["Rent"]).free === 2400 - 1450 - 640);
   check("a card payment that is a bill: not counted twice", untilPayday(withCard, ["Rent", "Visa card payment"]).cardsOwed === 0);
+  const inCredit = freeToSpend({ today: d(2026, 10, 1), accounts: [checking, { ...visa, balanceUSD: -50 }], expected: [pay("2026-10-10", "monthly")] });
+  check("a card in credit is not money owed (D-147)", untilPayday(inCredit, []).free === 2400);
   const noPay = freeToSpend({ today: d(2026, 10, 1), accounts: [checking], expected: bills });
   check("no paycheck: no Until payday, Home shows the budget card", untilPayday(noPay, []) === null);
   check("no bank: no Until payday", untilPayday(freeToSpend({ today: d(2026, 10, 1), accounts: [], expected: [pay("2026-10-10", "monthly")], budget }), []) === null);

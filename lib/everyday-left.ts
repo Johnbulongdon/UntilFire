@@ -34,9 +34,8 @@ export function everydayLeft({ budget, bills, monthRows, spreadCategories = [] }
 
 /** Is this row everyday spending: an expense, not spread over the year, and not a bill's own payment. */
 function isEveryday(bills: (BillLike & { usd: number })[], spread: Set<string>) {
-  const billKeys = billCategorySet(bills);
   return (t: EverydayRow) => (t.transaction_type ?? "expense") === "expense" && !spread.has(t.category ?? "other")
-    && !(billKeys.has(t.category ?? "other") && matchesBill({ description: t.description, usd: t.usd, category: t.category ?? "other" }, bills));
+    && !matchesBill({ description: t.description, usd: t.usd, category: t.category ?? "other" }, bills);
 }
 
 /**
