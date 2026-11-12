@@ -317,23 +317,39 @@ export function unlinkedBillPayments(txs: BillTx[], listed: Bill[], declined: (t
   }
   return out;
 }
+/** How many days before its due date a payment can land and still be that date's: 10, or a third of the gap for shorter repeats (as paymentFor). */
+export const paidLead = (r: Recurrence) => (r === "weekly" ? 2 : r === "biweekly" ? 5 : 10);
+const nameWords = (s: string | null | undefined) => new Set((s ?? "").toLowerCase().match(/[a-z0-9]{3,}|[\u4e00-\u9fff]+/g) ?? []);
+
 /**
- * Payments that already paid an overdue bill under its own name, the phone's
- * rule (mobile lib/bills `unpaid`): an expense named like the bill, within 15%
- * of it, from a week before the due date to today. Category is not checked:
- * "Google One" lands in Entertainment, the bill in Subscriptions. Without a
- * confirmed bank name nothing moved the bill on, so Home counted October's
- * Google One and 中国移动 as still owed after they were paid. One payment per
- * bill, and only for a due date that has passed, so past months already
- * behind the stored due date never roll it forward again.
+ * Has this payment paid the bill's `due` date? The one rule for the website
+ * and the phone (D-148): named like the bill or under its linked bank name,
+ * within 15% of the amount, and dated from a few days before the due date
+ * (`paidLead`) to today. Before, the phone took any payment in the due date's
+ * calendar month, so last period's late payment or last week's daycare paid
+ * the next one too, and the website only looked once a bill was overdue, so a
+ * bill paid a few days early stayed owed.
+ */
+export function paysBill(b: Pick<Bill, "description" | "merchant" | "usd" | "recurrence">, due: string,
+  t: { date: string; usd: number; description: string }, todayIso: string): boolean {
+  if (!(b.usd > 0) || t.date < shiftDay(due, -paidLead(b.recurrence)) || t.date > todayIso) return false;
+  if (Math.abs(t.usd - b.usd) > 0.15 * b.usd) return false;
+  const words = nameWords(t.description);
+  return namesMatch(b as Bill, t.description) || [...nameWords(b.description)].some((w) => words.has(w));
+}
+
+/**
+ * Payments that already paid a listed bill's current due date (paysBill).
+ * Category is not checked: "Google One" lands in Entertainment, the bill in
+ * Subscriptions. Without a confirmed bank name nothing moved the bill on, so
+ * Home counted October's Google One and 中国移动 as still owed after they
+ * were paid. One payment per bill.
  */
 export function paidByName(txs: BillTx[], listed: Bill[], todayIso: string): Map<string, Bill> {
   const out = new Map<string, Bill>();
   for (const b of listed) {
-    if (!b.id || b.due > todayIso || b.usd <= 0) continue;
-    const from = shiftDay(b.due, -7);
-    const t = txs.find((t) => !out.has(t.id) && t.date >= from && t.date <= todayIso
-      && namesMatch(b, t.description) && Math.abs(t.usd - b.usd) <= 0.15 * b.usd);
+    if (!b.id) continue;
+    const t = txs.find((t) => !out.has(t.id) && paysBill(b, b.due, t, todayIso));
     if (t) out.set(t.id, b);
   }
   return out;

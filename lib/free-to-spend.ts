@@ -129,7 +129,8 @@ export function freeToSpend(input: {
   const free = limitedBy === "cash" ? cash!.free : budget!.untilPayday;
   const cards = input.accounts
     .filter((a) => a.type === "credit")
-    .map((a) => ({ name: a.name, owedUSD: Math.abs(a.balanceUSD) }));
+    // A card in credit (the bank owes you) is not money owed: the phone's rule (connectedDebt).
+    .map((a) => ({ name: a.name, owedUSD: Math.max(0, a.balanceUSD) }));
 
   return { free, perDay: free > 0 ? Math.floor(free / days) : 0, days, payday, limitedBy, cash, budget, cards };
 }

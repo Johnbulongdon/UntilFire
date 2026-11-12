@@ -1,7 +1,6 @@
 import { paydaySpending } from '@engine/payday-spending.ts'
-import type { Bill as ForecastBill } from '@engine/spend-forecast.ts'
-import { sameMerchant } from '@engine/recurring-detect.ts'
-import { BILL_MATCH_TOLERANCE, expandExpected, isoDay, looksLikeCardPayment, type ExpectedItem, type ForecastEvent } from '@/engine'
+import { paysBill, type Bill as ForecastBill } from '@engine/spend-forecast.ts'
+import { expandExpected, isoDay, looksLikeCardPayment, type ExpectedItem, type ForecastEvent } from '@/engine'
 import { spentUSD, toUSD, type AccountData, type Bill, type Transaction } from '@/state/account'
 
 import { cashByRole } from './balances'
@@ -27,30 +26,24 @@ export function upcoming(bills: Bill[], days = 30, now = new Date()): BillEvent[
     .sort((a, b) => a.iso.localeCompare(b.iso))
 }
 
-const words = (s: string) => new Set((s.toLowerCase().match(/[a-z0-9]{3,}|[\u4e00-\u9fff]+/g) ?? []))
-
 /**
- * Bills and paydays less the bill occurrences already paid: a spending
- * transaction in that occurrence's month (for an overdue one, from a week
- * before its due date) within 3% of the amount and sharing a word with the
- * bill's name, or under the bank name it was linked to (rent paid as
- * "BILT PAYMENT", D-133). Without it a bill paid early (BILT on the 2nd, due the 31st)
- * counted twice in Budget's set-aside and free to spend (Oct 16 2026).
+ * Bills and paydays less the bill occurrences already paid, by the website's
+ * rule (lib/spend-forecast paysBill, D-148): a spending transaction named like
+ * the bill, or under the bank name it was linked to (rent paid as
+ * "BILT PAYMENT", D-133), within 15% of the amount, from a few days before
+ * that due date to today. Each payment pays one occurrence.
  */
 export function unpaid(events: BillEvent[], bills: Bill[], transactions: Transaction[]): BillEvent[] {
   const byId = new Map(bills.map(b => [b.id, b]))
   const used = new Set<string>()
   const spends = transactions.filter(isSpend)
+  const now = today()
   return events.filter(e => {
     const bill = byId.get(e.billId)
     if (e.type !== 'expense' || !bill) return true
-    const due = Math.abs(e.amount)
-    const name = words(bill.description)
-    const from = e.overdue ? isoDay(new Date(new Date(`${bill.due_date}T00:00:00`).getTime() - 7 * 864e5)) : `${e.iso.slice(0, 7)}-01`
-    const to = e.overdue ? today() : `${e.iso.slice(0, 7)}-31`
-    const paid = spends.find(t => !used.has(t.id) && t.date >= from && t.date <= to
-      && Math.abs(spentUSD(t) - due) <= due * BILL_MATCH_TOLERANCE
-      && ([...words(t.description)].some(w => name.has(w)) || (!!bill.match_merchant && sameMerchant(bill.match_merchant, t.description))))
+    const due = e.overdue ? bill.due_date.slice(0, 10) : e.iso
+    const b = { description: bill.description, merchant: bill.match_merchant, usd: Math.abs(e.amount), recurrence: bill.recurrence as ForecastBill['recurrence'] }
+    const paid = spends.find(t => !used.has(t.id) && paysBill(b, due, { date: t.date.slice(0, 10), usd: spentUSD(t), description: t.description ?? '' }, now))
     if (paid) used.add(paid.id)
     return !paid
   })

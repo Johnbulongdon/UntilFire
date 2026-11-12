@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-11-12 — Rent paid through your bank no longer eats your budget
+
+- If you linked a bill to the name your bank uses (for example rent paid as "BILT PAYMENT"), that payment now counts as the bill, not as day-to-day spending. Before, "left" dropped by the whole rent and "Safe to spend today" could show $0. Fixed on the website, the phone app and the Android widget.
+- On the website, a credit card that is in credit (the bank owes you) is no longer taken off Until payday.
+- The website and the phone app now agree on when a bill counts as paid: a matching payment up to 10 days before the due date (2 days for weekly bills). A bill paid a few days early no longer stays owed on the website, and on the phone last week's or last month's late payment no longer hides the next bill.
+
 ## 2026-11-11 — Admin sender default (pending rollout)
 
 - Admin announcements and monthly updates use John at UntilFire <john.ng@untilfire.com> and route replies to john.ng@untilfire.com. Recorded the default for future admin email work. Cold outreach already uses that identity; campaign sending remains disabled.

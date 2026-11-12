@@ -4,7 +4,7 @@
  * Run: npm run test:spend-forecast
  */
 import assert from "node:assert/strict";
-import { type Bill, billsByCategory, billForPayment, nextMonthlyDue, ordinal, typicalForRange, typicalMonth, billsOverBudget, dueByCategory, rateSoFar, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, markPaid, mergeBills, occurrences, paidByName, presumePaid, settleBill, unlinkedBillPayments } from "../lib/spend-forecast.ts";
+import { type Bill, billsByCategory, billForPayment, nextMonthlyDue, ordinal, typicalForRange, typicalMonth, billsOverBudget, dueByCategory, rateSoFar, budgetPath, daysOfMonths, everydayRate, forecastPath, guessBillCategory, isBill, markPaid, mergeBills, occurrences, paidByName, paysBill, presumePaid, settleBill, unlinkedBillPayments } from "../lib/spend-forecast.ts";
 import { detectRecurring } from "../lib/recurring-detect.ts";
 
 let n = 0;
@@ -230,6 +230,20 @@ ok("make it a bill: a payment that already is a bill, or looks like one", () => 
   assert.equal(billForPayment({ ...bilt, usd: 1100 }, [sirui]).likely, null, "too far from the rent to ask");
   assert.equal(billForPayment({ usd: 15.49, description: "NETFLIX.COM", category: "subscriptions" }, [netflix]).already?.id, "n", "named like a bill");
   assert.deepEqual(billForPayment({ usd: 60, description: "Gym", category: "health" }, [sirui, netflix]), { already: null, likely: null });
+});
+
+ok("one rule for a paid bill on the website and the phone (D-148)", () => {
+  const netflix: Bill = { description: "Netflix", category: "subscriptions", usd: 15, due: "2026-11-18", recurrence: "monthly" };
+  const pay = (date: string, usd = 15.49, description = "NETFLIX.COM") => ({ date, usd, description });
+  assert.ok(paysBill(netflix, netflix.due, pay("2026-11-10"), "2026-11-12"), "paid 8 days early is paid");
+  assert.ok(!paysBill(netflix, netflix.due, pay("2026-11-02"), "2026-11-12"), "last period's late payment is not this one");
+  assert.ok(!paysBill(netflix, netflix.due, pay("2026-11-10", 30), "2026-11-12"), "a different amount is not the bill");
+  assert.ok(!paysBill(netflix, netflix.due, pay("2026-11-10", 15, "HULU"), "2026-11-12"), "another name is not the bill");
+  assert.ok(paysBill({ ...netflix, description: "Rent", merchant: "BILT PAYMENT", usd: 1500 }, "2026-11-18", pay("2026-11-12", 1500, "BILT PAYMENT"), "2026-11-12"), "the linked bank name counts");
+  const daycare: Bill = { description: "Daycare", category: "childcare", usd: 200, due: "2026-11-14", recurrence: "weekly" };
+  assert.ok(!paysBill(daycare, daycare.due, pay("2026-11-07", 200, "DAYCARE CENTER"), "2026-11-12"), "last week's payment is last week's");
+  assert.ok(paysBill(daycare, daycare.due, pay("2026-11-12", 200, "DAYCARE CENTER"), "2026-11-12"), "two days early is this week's");
+  assert.equal(paidByName([{ id: "t", category: null, ...pay("2026-11-10") }], [{ ...netflix, id: "n" }], "2026-11-12").size, 1, "the website moves a bill paid early on");
 });
 
 console.log(`Spend forecast ok: ${n} checks.`);
