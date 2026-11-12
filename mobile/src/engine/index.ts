@@ -60,3 +60,4 @@ export { buildMerchantMemory, suggestFromHistory } from '@engine/merchant-memory
 export { stampActive } from '@engine/last-active.ts'
 export { SETUP_BUTTON, SETUP_CTA, SETUP_FINISHED_KEY, SETUP_LABEL, SETUP_ORDER, SETUP_SNAPSHOT_KEY, SETUP_WHY, setupFinds, setupMoment, setupSteps, type SetupFind, type SetupMoment, type SetupSnapshot, type SetupStepId } from '@engine/setup-steps.ts'
 export { freedomProgress, progressPercent, freeDays, freeDaysLabel, freeNextLabel, freePaceLabel, type FreedomProgress, type FreeDays } from '@engine/freedom-progress.ts'
+export { paydayPlan, payLanded, paydayReward, paydayDateLabel, type PaydayPlan, type PaydayPart } from '@engine/payday-plan.ts'

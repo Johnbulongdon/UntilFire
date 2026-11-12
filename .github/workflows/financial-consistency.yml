@@ -18,6 +18,7 @@ jobs:
       - run: npm run test:account-currency
       - run: npm run test:fire-projection
       - run: npm run test:payday-spending
+      - run: npm run test:payday-plan
       - run: npm run test:marked-calendar
 
       - run: node scripts/verify-provider-links.mjs

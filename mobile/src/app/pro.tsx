@@ -20,7 +20,7 @@ type SymbolName = Parameters<typeof Icon>[0]['name']
 // The website's Pro promise (app/dashboard/UpgradeModal.tsx): only what Pro actually unlocks.
 const FEATURES: { icon: SymbolName; fallback: string; title: string; detail: string }[] = [
   { icon: 'building.columns.fill', fallback: '▥', title: 'Unlimited bank connections', detail: 'Free stops at one. Pro has no limit.' },
-  { icon: 'sun.max.fill', fallback: '☀', title: 'Payday and big-spend checks', detail: 'Today tells you what is safe to invest, and when one spend tips a budget.' },
+  { icon: 'sun.max.fill', fallback: '☀', title: 'Big-spend checks', detail: 'Today tells you when one spend tips a budget, and where the money could come from.' },
   { icon: 'square.stack.3d.up.fill', fallback: '▤', title: 'Every account in one place', detail: 'All your banks behind one freedom date, not just the first.' },
 ]
 // Shown in Expo Go, where there is no StoreKit. The website's prices (lib/pricing.ts).

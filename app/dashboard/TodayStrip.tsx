@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button, Card, Icon } from "@/components/ui";
 import { supabase } from "@/lib/supabase";
-import { addDays, isoDay, monthCount, quietDayToMark, webTodayItems, type TodayLease, type TodayProgress, type TodayRow, type WebTodayItem } from "@/lib/today-web";
+import { addDays, isoDay, listDay, monthCount, quietDayToMark, webTodayItems, type TodayLease, type TodayProgress, type TodayRow, type WebTodayItem } from "@/lib/today-web";
+import { payLanded, paydayDateLabel, paydayReward, type PaydayPart, type PaydayPlan } from "@/lib/payday-plan";
 import { isRent, type LeaseDecision } from "@/lib/lease";
 import { merchantKey } from "@/lib/merchant-memory";
 import { readMerchantRules, type MerchantRule } from "@/lib/merchant-rules";
-import type { Bill } from "@/lib/spend-forecast";
+import { occurrences, type Bill } from "@/lib/spend-forecast";
 import DoneCheck from "./DoneCheck";
 
 const mono: React.CSSProperties = { fontFamily: "var(--uf-font-mono)", fontVariantNumeric: "tabular-nums" };
@@ -79,9 +80,19 @@ export type TodayWrite =
   | { lease: string; decision: LeaseDecision }
   | { renttag: "Rent" | "Mortgage" };
 
-export default function TodayStrip({ userId, bills, perDay, stretch = null, fmt, toUsd, onOpen, onWhatIf, onOpenNeeds }: {
+/** What the payday plan needs from Home (D-150): the repeating paychecks, and the plan for a pay that landed. */
+export interface PaydayFacts {
+  /** Repeating paychecks in Upcoming; `usd` is one payment. */
+  paychecks: Bill[];
+  bankLinked: boolean;
+  /** The split for this pay, from Until payday, Safe to spend today and the ladder. Null when there is nothing to plan. */
+  plan: (pay: number) => PaydayPlan | null;
+}
+
+export default function TodayStrip({ userId, bills, payday, perDay, stretch = null, fmt, toUsd, onOpen, onWhatIf, onOpenNeeds, onOpenPlan }: {
   userId?: string;
   bills: Bill[];
+  payday?: PaydayFacts | null;
   /** Safe to spend each day: Until payday over the days to payday (D-90), else the budget left over the days left. Null with neither. */
   perDay: number | null;
   /** Spare cash per day until payday, shown small when above perDay: money the plan means to save (D-137). */
@@ -93,10 +104,25 @@ export default function TodayStrip({ userId, bills, perDay, stretch = null, fmt,
   onWhatIf?: () => void;
   /** Money › Categories › Needs & wants, from the "We sorted" card. */
   onOpenNeeds?: () => void;
+  /** Plan → Contributions, from the payday plan's "Change the plan". */
+  onOpenPlan?: () => void;
 }) {
   const { progress, setProgress, rows, setRows, leases, setLeases, oldRentTag, setOldRentTag, shopRules, setShopRules, sorted } = useTodayData(userId, toUsd);
 
-  const list = progress ? webTodayItems({ rows, bills, progress, leases, oldRentTag, shopRules, sorted }) : null;
+  // Pay that landed in the last three days, and the plan for it (lib/payday-plan), the phone's rule.
+  const pay = useMemo(() => {
+    if (!payday || !progress) return null;
+    const day = listDay(progress.done);
+    const landed = payLanded({
+      day, today: isoDay(new Date()), bankLinked: payday.bankLinked,
+      incomes: rows.filter((r) => r.transaction_type === "income").map((r) => ({ date: r.date, usd: Math.abs(r.usd) })),
+      paychecks: payday.paychecks.map((p) => ({ usd: Math.abs(p.usd), dueOnDay: occurrences(p, day, day).length > 0 })),
+    });
+    const plan = landed ? payday.plan(landed.usd) : null;
+    return landed && plan ? { iso: landed.iso, plan } : null;
+  }, [payday, progress, rows]);
+
+  const list = progress ? webTodayItems({ rows, bills, progress, leases, oldRentTag, shopRules, sorted, pay }) : null;
 
   /* Each answer is saved straight away; the answer that empties the list also
      marks the day finished. Need or want is written onto the spend itself, a
@@ -140,11 +166,11 @@ export default function TodayStrip({ userId, bills, perDay, stretch = null, fmt,
     }
     // A sorted spend leaves by its tag; everything else is acked, which also stops a second ask the same stage.
     const acks = write && "need" in write ? progress.acks : [...progress.acks, key];
-    const left = webTodayItems({ rows: nextRows, bills, progress: { ...progress, acks }, leases: nextLeases, oldRentTag: nextOld, sorted }).items;
+    const left = webTodayItems({ rows: nextRows, bills, progress: { ...progress, acks }, leases: nextLeases, oldRentTag: nextOld, sorted, pay }).items;
     const next = { acks, done: left.length === 0 ? [...progress.done, list.day] : progress.done };
     setProgress(next);
     await saveProgress(userId, next);
-  }, [userId, progress, list, rows, leases, oldRentTag, bills, shopRules, sorted, setProgress, setRows, setLeases, setOldRentTag, setShopRules]);
+  }, [userId, progress, list, rows, leases, oldRentTag, bills, shopRules, sorted, pay, setProgress, setRows, setLeases, setOldRentTag, setShopRules]);
 
   // Nothing to answer: opening the day counts it (D-108).
   const quiet = progress && list ? quietDayToMark(progress.done, list.items.length) : null;
@@ -158,7 +184,51 @@ export default function TodayStrip({ userId, bills, perDay, stretch = null, fmt,
   }, [userId, quiet]);
 
   if (!progress || !list) return null;
-  return <TodayList items={list.items} count={monthCount(progress.done)} perDay={perDay} stretch={stretch} fmt={fmt} onAnswer={answer} onOpen={onOpen} onWhatIf={onWhatIf} onOpenNeeds={onOpenNeeds} />;
+  return <TodayList items={list.items} count={monthCount(progress.done)} perDay={perDay} stretch={stretch} fmt={fmt} onAnswer={answer} onOpen={onOpen} onWhatIf={onWhatIf} onOpenNeeds={onOpenNeeds} onOpenPlan={onOpenPlan} />;
+}
+
+/** One colour per kind of part; the rows name each one, so nothing rests on colour alone. */
+const partColor = (p: PaydayPart) => (p.kind === "bills" ? "var(--uf-ink-3)" : p.kind === "everyday" ? "var(--uf-move-ink)" : p.kind === "step" ? "var(--uf-pos)" : "var(--uf-border-2)");
+
+/**
+ * The payday plan (D-150, lib/payday-plan): the pay that landed, one bar for
+ * the cash in the spending accounts, a row for each part and what the saved
+ * part adds to your free days. The phone's Today card shows the same parts.
+ */
+export function PaydayPlanItem({ plan, fmt, onDone, onChange }: { plan: PaydayPlan; fmt: (n: number) => string; onDone: () => void; onChange?: () => void }) {
+  const reward = paydayReward(plan.hours);
+  const note = (p: PaydayPart) => (p.kind === "bills" ? "Due before your next payday"
+    : p.kind === "everyday" && plan.perDay != null ? `${fmt(plan.perDay)} a day for ${plan.days} ${plan.days === 1 ? "day" : "days"}`
+    : p.kind === "cushion" ? "Stays in your account" : null);
+  return (
+    <>
+      <span style={{ display: "grid", gap: 2 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700 }}><Icon name="money" size={18} />Your pay is in: <span style={mono}>{fmt(plan.pay)}</span></span>
+        <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Here is your plan until your next payday, {paydayDateLabel(plan.nextPaydayIso)}.</span>
+      </span>
+      <div role="img" aria-label={plan.parts.map((p) => `${p.label} ${fmt(p.amount)}`).join(", ")} style={{ display: "flex", gap: 3 }}>
+        {plan.parts.map((p) => <i key={p.label} style={{ flex: `${Math.max(p.amount, 1)} 1 0`, minWidth: 6, height: 12, borderRadius: 6, background: partColor(p) }} />)}
+      </div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {plan.parts.map((p) => (
+          <div key={p.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <i aria-hidden style={{ width: 10, height: 10, borderRadius: "50%", background: partColor(p), flexShrink: 0 }} />
+            <span style={{ flex: 1, minWidth: 0, display: "grid" }}>
+              <span style={{ fontWeight: 600 }}>{p.label}</span>
+              {note(p) && <span className="uf-t-small" style={muted}>{note(p)}</span>}
+            </span>
+            <span style={{ ...mono, fontWeight: 700 }}>{fmt(p.amount)}</span>
+          </div>
+        ))}
+      </div>
+      {plan.short > 0 && <span className="uf-t-small" style={{ color: "var(--uf-ink-2)" }}>Your bills are <span style={mono}>{fmt(plan.short)}</span> more than the cash in your spending accounts right now.</span>}
+      {reward && <span style={{ justifySelf: "start", borderRadius: 14, padding: "8px 12px", background: "var(--uf-yellow)", color: "var(--uf-on-accent)", fontSize: 14, fontWeight: 700 }}>{reward}</span>}
+      <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <Button size="sm" onClick={onDone}>Looks right</Button>
+        {onChange && <Button size="sm" variant="ghost" onClick={onChange}>Change the plan</Button>}
+      </span>
+    </>
+  );
 }
 
 /**
@@ -166,7 +236,7 @@ export default function TodayStrip({ userId, bills, perDay, stretch = null, fmt,
  * done", and under either, what's safe to spend today: a figure to read, not a
  * step to tick (D-108). It opens Money.
  */
-export function TodayList({ items, count, perDay, stretch = null, fmt, onAnswer, onOpen, onWhatIf, onOpenNeeds }: {
+export function TodayList({ items, count, perDay, stretch = null, fmt, onAnswer, onOpen, onWhatIf, onOpenNeeds, onOpenPlan }: {
   items: WebTodayItem[];
   count: { done: number; of: number };
   /** Safe to spend each day; null without a budget or a payday. */
@@ -178,6 +248,7 @@ export function TodayList({ items, count, perDay, stretch = null, fmt, onAnswer,
   onOpen: () => void;
   onWhatIf?: () => void;
   onOpenNeeds?: () => void;
+  onOpenPlan?: () => void;
 }) {
   const finished = items.length === 0;
   // Celebrate only the answer that finishes the day; a day already done on load just shows the check.
@@ -203,6 +274,7 @@ export function TodayList({ items, count, perDay, stretch = null, fmt, onAnswer,
         <div style={{ display: "grid" }}>
           {items.slice(0, 3).map((item, i) => (
             <div key={item.key} style={{ display: "grid", gap: 10, padding: "14px 0", borderTop: i > 0 ? "1px solid var(--uf-border)" : "none" }}>
+              {item.kind === "payday" && <PaydayPlanItem plan={item.plan} fmt={fmt} onDone={() => onAnswer(item.key)} onChange={onOpenPlan} />}
               {item.kind === "lease" && (
                 <>
                   <span style={{ display: "grid", gap: 2 }}>

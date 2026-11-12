@@ -7,6 +7,7 @@ import * as Updates from 'expo-updates'
  * each line short and in plain words (the founder reads it to check a build).
  */
 export const UPDATE_LOG: { version: string; date: string; changes: string[] }[] = [
+  { version: '0.2.2', date: '2026-11-12', changes: ['When your pay lands, Today shows a plan for it: bills, day-to-day money, your next saving steps and what is left over', 'The payday plan is free for everyone'] },
   { version: '0.2.2', date: '2026-11-12', changes: ['Home now shows the days of every year your money already pays for, with a dot for each day and when the next one arrives'] },
   { version: '0.2.2', date: '2026-11-09', changes: ['The home-screen widget shows the UntilFire logo', 'Safe to spend shows what you can spend today, the same as the website, not only the extra over a usual day'] },
   { version: '0.2.2', date: '2026-11-08', changes: ['New Android home-screen widget: safe to spend today, and Today items you can tick without opening the app'] },

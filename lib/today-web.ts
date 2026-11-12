@@ -1,6 +1,7 @@
 /**
  * The website's Today strip (D-73, D-89): the phone's Today list cut to the
- * kinds that need no extra screens — the one-time "We sorted your buys" and
+ * kinds that need no extra screens — the payday plan when pay lands (D-150,
+ * lib/payday-plan), the one-time "We sorted your buys" and
  * need or want on a spend from a shop that sells both (D-106), a bill
  * due tomorrow, the lease's "Stay or move?" (lib/lease.ts) and the one-time Rent
  * or Mortgage question. Safe to spend today is shown beside the list, not asked
@@ -12,6 +13,7 @@
 import { occurrences, type Bill } from "./spend-forecast.ts";
 import { leaseAsk, noticeDeadline, type LeaseDecision } from "./lease.ts";
 import { asksShop } from "./needs.ts";
+import type { PaydayPlan } from "./payday-plan.ts";
 
 export interface TodayProgress { done: string[]; acks: string[] }
 
@@ -21,6 +23,7 @@ export interface TodayRow { id: string; date: string; description: string; usd: 
 export interface TodayLease { id: string; ends_on: string; notice_days: number | null; decision: LeaseDecision | null }
 
 export type WebTodayItem =
+  | { key: string; kind: "payday"; plan: PaydayPlan }
   | { key: string; kind: "lease"; billId: string; deadline: string }
   | { key: string; kind: "renttag" }
   | { key: string; kind: "sorted"; count: number }
@@ -45,7 +48,7 @@ export function listDay(done: string[], now = new Date()): string {
   return now.getHours() < 12 && !done.includes(yesterday) && !done.includes(today) ? yesterday : today;
 }
 
-export function webTodayItems({ rows, bills, progress, leases = [], oldRentTag = false, shopRules = {}, sorted = 0, now = new Date() }: {
+export function webTodayItems({ rows, bills, progress, leases = [], oldRentTag = false, shopRules = {}, sorted = 0, pay = null, now = new Date() }: {
   /** Recent expense rows, newest first. */
   rows: TodayRow[];
   bills: Bill[];
@@ -58,6 +61,8 @@ export function webTodayItems({ rows, bills, progress, leases = [], oldRentTag =
   shopRules?: Record<string, unknown>;
   /** Bank purchases in the last 30 days: above zero, the one-time "We sorted" card shows. */
   sorted?: number;
+  /** Pay that has landed (lib/payday-plan payLanded), by its date, and the plan for it. */
+  pay?: { iso: string; plan: PaydayPlan } | null;
   now?: Date;
 }): { day: string; items: WebTodayItem[] } {
   const day = listDay(progress.done, now);
@@ -67,6 +72,7 @@ export function webTodayItems({ rows, bills, progress, leases = [], oldRentTag =
 
   // First, because the strip shows three and these are rare and dated. The
   // phone's keys (mobile/src/lib/today.ts), so an answer on either counts once.
+  if (pay && !acked.has(`pay:${pay.iso}`)) out.push({ key: `pay:${pay.iso}`, kind: "payday", plan: pay.plan });
   for (const l of leases) {
     const ask = leaseAsk(l, day);
     const key = `lease:${l.id}:${l.ends_on}:${ask}`;

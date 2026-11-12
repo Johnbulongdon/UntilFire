@@ -10,10 +10,11 @@ import { Button, type ButtonKind } from '@/components/Button'
 import { EmptyState } from '@/components/EmptyState'
 import { Icon } from '@/components/Icon'
 import { LoadingState } from '@/components/LoadingState'
+import { PaydaySplit } from '@/components/PaydaySplit'
 import { Sunny } from '@/components/Sunny'
 import { Text } from '@/components/Text'
 import { FLAG_COPY } from '@/components/WorthALook'
-import { isoDay, merchantKey } from '@/engine'
+import { isoDay, merchantKey, paydayDateLabel } from '@/engine'
 import { proForSale } from '@/lib/native-build'
 import { money, moneyIn } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
@@ -24,6 +25,7 @@ import { addDays, monthCount, quietDayToMark, saveTodayProgress, todayItems, typ
 import { setTodayReminder } from '@/lib/today-reminder'
 import { useAccount, type TodayProgress, type Transaction } from '@/state/account'
 import { useAuth } from '@/state/auth'
+import { useFreedom } from '@/state/freedom'
 import { colors, TAB_COLOR } from '@/theme/colors'
 import { maybeAskForRating } from '@/lib/rating'
 
@@ -31,7 +33,8 @@ const ASKED = 'today-reminder-asked'
 const dayName = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('en-US', { weekday: 'long' })
 
 type Choice = { label: string; kind?: ButtonKind; onPress: () => void }
-type Card = { eyebrow: string; title: string; amount?: string; sub?: string; choices: Choice[] }
+/** `body` is anything a card shows under its words: the payday plan's split. */
+type Card = { eyebrow: string; title: string; amount?: string; sub?: string; body?: React.ReactNode; choices: Choice[] }
 /** The last answer, undoable for a few seconds: what it did and how to put it back. */
 type Undo = { key: string; label: string; acked: boolean; revert: () => Promise<string | null> }
 const UNDO_MS = 5000
@@ -48,6 +51,8 @@ const TICK_MS = 150
 export default function Today() {
   const { session } = useAuth()
   const { data, refresh } = useAccount()
+  // The freedom number, for the payday plan's hours line.
+  const target = useFreedom()?.target ?? 0
   const player = useAudioPlayer(require('../../assets/sounds/day-complete.wav'))
   // Answers given here, on top of what the account has saved, so the list never counts from an empty start.
   const [local, setLocal] = useState<TodayProgress>({ done: [], acks: [] })
@@ -71,7 +76,7 @@ export default function Today() {
     return () => clearTimeout(t)
   }, [undo])
 
-  const { day, items } = useMemo(() => (data ? todayItems(data, progress, new Date(), finished ?? undefined) : { day: '', items: [] as TodayItem[] }), [data, progress, finished])
+  const { day, items } = useMemo(() => (data ? todayItems(data, progress, new Date(), finished ?? undefined, target) : { day: '', items: [] as TodayItem[] }), [data, progress, finished, target])
   const open = items.filter(i => !cleared.has(i.key))
   total.current = Math.max(total.current, cleared.size + open.length)
 
@@ -216,7 +221,7 @@ export default function Today() {
             <Text className="font-mono text-[17px] text-ink">{count.done} of {count.of} days this month</Text>
             <MonthDots done={progress.done} />
           </Animated.View>
-          {!data.pro && proForSale && <View className="mt-2 items-center gap-2"><Text className="text-center text-[13px] text-ink-3">Pro adds payday and big-spend checks.</Text><Button small kind="quiet" label="See Pro" onPress={() => router.push({ pathname: '/pro', params: { from: 'today' } })} /></View>}
+          {!data.pro && proForSale && <View className="mt-2 items-center gap-2"><Text className="text-center text-[13px] text-ink-3">Pro adds big-spend checks.</Text><Button small kind="quiet" label="See Pro" onPress={() => router.push({ pathname: '/pro', params: { from: 'today' } })} /></View>}
         </View>
       </Frame>
     )
@@ -248,6 +253,7 @@ export default function Today() {
           <Text className="font-display text-[32px] font-bold leading-[38px] text-ink">{card.title}</Text>
           {card.amount && <Text className="font-mono text-[34px] text-ink">{card.amount}</Text>}
           {card.sub && <Text className="text-[17px] leading-6 text-ink-2">{card.sub}</Text>}
+          {card.body}
         </Animated.View>
       )}
     </Frame>
@@ -358,9 +364,13 @@ function cardFor(item: TodayItem, h: {
       return { eyebrow: 'One quick question', title: 'Do you rent or pay a mortgage?', sub: 'So a lease is only offered if you rent.',
         choices: [{ label: 'Rent', onPress: () => retag('Rent') }, { label: 'Mortgage', kind: 'quiet', onPress: () => retag('Mortgage') }] }
     }
-    case 'payday':
-      return { eyebrow: 'Payday', title: 'Pay is in', amount: money(item.amount!), sub: 'is safe to put towards freedom.',
-        choices: [{ label: `Invest ${money(item.amount!)}`, onPress: () => { h.ack(item); router.push('/plan/contributions') } }, { label: 'Not this time', kind: 'quiet', onPress: () => h.ack(item) }] }
+    case 'payday': {
+      // The payday plan (D-150): the cash split until the next payday. Changing it is done in Contributions; the card waits.
+      const plan = item.plan!
+      return { eyebrow: 'Payday', title: 'Your pay is in', amount: money(plan.pay), sub: `Here is your plan until your next payday, ${paydayDateLabel(plan.nextPaydayIso)}.`,
+        body: <PaydaySplit plan={plan} />,
+        choices: [{ label: 'Looks right', onPress: () => h.ack(item) }, { label: 'Change the plan', kind: 'quiet', onPress: () => router.push('/plan/contributions') }] }
+    }
     case 'goal':
       return { eyebrow: 'Goal reached', title: `${item.goal!.name}!`, amount: money(item.goal!.target_amount), sub: 'saved. Nicely done.',
         choices: [{ label: 'Nice!', onPress: () => h.ack(item) }] }

@@ -1,5 +1,5 @@
 import { safeToSpendToday as sharedSafeToSpend } from '@engine/payday-spending.ts'
-import { addMonths, asksShop, buildMerchantMemory, findFlags, isoDay, isRent, isRentOrMortgage, ladderViewFromPlan, leaseAsk, noticeDeadline, monthOf, netAmount, suggestFromHistory, type FlagKind } from '@/engine'
+import { addMonths, asksShop, buildMerchantMemory, findFlags, isoDay, isRent, isRentOrMortgage, ladderViewFromPlan, leaseAsk, noticeDeadline, monthOf, netAmount, payLanded, paydayPlan, suggestFromHistory, type FlagKind, type PaydayPlan } from '@/engine'
 import { freeUntilPayday, unpaid, upcoming } from '@/lib/bills'
 import { contributionFacts, EMPTY_PLAN } from '@/lib/contribution-facts'
 import { saveFireProfile } from '@/lib/mutations'
@@ -31,9 +31,11 @@ export interface TodayItem {
   over?: { category: string; by: number; from: string | null }
   bill?: { id: string; description: string; amount: number; iso: string }
   goal?: Goal
-  /** Payday: what's safe to invest; backlog: how many more; sorted: how many were sorted. */
+  /** Payday: the pay that came in; backlog: how many more; sorted: how many were sorted. */
   amount?: number
   count?: number
+  /** Payday: the cash split until the next payday (lib/payday-plan, D-150). */
+  plan?: PaydayPlan
   /** Bill check: a bill whose price changed (with the new amount, in the bill's currency) or that stopped being paid. */
   check?: { bill: Bill; change: 'price' | 'stale'; amount?: number }
   /** Setup: the one first-week step this item asks for. */
@@ -42,8 +44,8 @@ export interface TodayItem {
   lease?: { bill: Bill; deadline: string }
 }
 
-/** The items a free account gets; Pro adds the money-smart ones (D-73, question 5). */
-export const PRO_KINDS: TodayKind[] = ['big', 'payday']
+/** The items a free account gets; Pro adds the money-smart ones (D-73, question 5). The payday plan is free (D-150). */
+export const PRO_KINDS: TodayKind[] = ['big']
 
 const MAX_FILING = 6
 const FLAG_KINDS: FlagKind[] = ['card_payment', 'duplicate', 'large']
@@ -86,8 +88,11 @@ export function safeToSpendToday(data: AccountData, now = new Date()): number | 
   return safeToSpend(data, now).today
 }
 
-/** `forDay` holds the list on a day just finished, so its celebration shows before the next list. */
-export function todayItems(data: AccountData, progress: TodayProgress, now = new Date(), forDay?: string): { day: string; items: TodayItem[] } {
+/**
+ * `forDay` holds the list on a day just finished, so its celebration shows before the next list.
+ * `target` is the freedom number, for the payday plan's hours line; the counts on Home and the widget leave it out.
+ */
+export function todayItems(data: AccountData, progress: TodayProgress, now = new Date(), forDay?: string, target = 0): { day: string; items: TodayItem[] } {
   const day = forDay ?? listDay(progress.done, now)
   const today = isoDay(now)
   const acked = new Set(progress.acks)
@@ -167,14 +172,25 @@ export function todayItems(data: AccountData, progress: TodayProgress, now = new
     if (!acked.has(key)) out.push({ key, kind: 'bill', bill: { id: e.billId, description: e.description, amount: Math.abs(e.amount), iso: e.iso } })
   }
 
-  // Payday: pay came in, so say what's safe to invest.
-  if (data.pro && !acked.has(`pay:${day}`)) {
-    const paid = events.some(e => e.type === 'income' && e.iso === day)
-      || data.transactions.some(t => t.transaction_type === 'income' && t.date === day)
-    const view = paid ? ladderViewFromPlan(data.contributionPlan ?? EMPTY_PLAN, contributionFacts(data)) : null
-    if (view && view.budget > 0 && !view.available.done) {
-      out.push({ key: `pay:${day}`, kind: 'payday', amount: Math.round(view.budget) })
-    }
+  // Payday plan (D-150): pay came in, so the cash gets a job until the next payday.
+  // Built from Until payday, Safe to spend today and the ladder, so it agrees with all three.
+  const pay = payLanded({
+    day, today, bankLinked: data.plaidAccounts.length > 0,
+    incomes: data.transactions.filter(t => t.transaction_type === 'income' && t.date >= from && t.date <= today)
+      .map(t => ({ date: t.date.slice(0, 10), usd: Math.abs(toUSD(t.amount, t.currency)) })),
+    paychecks: data.bills.filter(b => b.transaction_type === 'income' && b.recurrence !== 'none')
+      .map(b => ({ usd: Math.abs(toUSD(b.amount, b.currency)), dueOnDay: events.some(e => e.type === 'income' && e.billId === b.id && e.iso === day) })),
+  })
+  if (pay && !acked.has(`pay:${pay.iso}`)) {
+    const f = freeUntilPayday(data, now)
+    const view = f ? ladderViewFromPlan(data.contributionPlan ?? EMPTY_PLAN, contributionFacts(data)) : null
+    const plan = f ? paydayPlan({
+      pay: pay.usd, cash: f.spending, bills: f.billsBefore, cards: f.cardsOwed, days: f.days, nextPaydayIso: f.payday.iso,
+      perDay: safeToSpend(data, now).today, target,
+      // A contribution already marked as made this cycle has nothing more to move.
+      steps: view && !view.available.done ? view.waterfall.fills.filter(x => x.amount > 0).map(x => ({ kind: x.kind, amount: x.amount })) : [],
+    }) : null
+    if (plan) out.push({ key: `pay:${pay.iso}`, kind: 'payday', amount: Math.round(pay.usd), plan })
   }
 
   /* Bills that no longer match the bank (Rocket Money's checks): a monthly
