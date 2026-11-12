@@ -2,6 +2,7 @@
 import { extraPayMonths } from '@/lib/pay-months';
 import { paydaySpending, paydayRemainder, safeToSpendToday } from '@/lib/payday-spending';
 import { paydayPlan } from '@/lib/payday-plan';
+import { monthStory, storyMonth, type StoryRow } from '@/lib/month-story';
 
 import { TAX_ESTIMATES_AVAILABLE } from "@/lib/release-gates";
 
@@ -22,6 +23,7 @@ import ContributionsTab from "./ContributionsTab";
 import CompareCard from "./CompareCard";
 import NextContributionCard, { useContributionPlan } from "./NextContributionCard";
 import TodayStrip from "./TodayStrip";
+import MonthStory from "./MonthStory";
 import { emergencyFundFromPlan, measuredEmergencyFund, type AccountFacts } from "@/lib/contribution-ladder";
 import { goalMonthly, goalRungs, type GoalLike } from "@/lib/goal-monthly";
 import { retirementCash, DEFAULT_CASH_GROWTH, bridgeRequired } from "@/lib/freedom-cash";
@@ -1315,6 +1317,18 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     // paydayView and safeToday are rebuilt each render from these.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [freeResult, bills, contributionFacts, contributionPlan, plaidAccounts.length, safeToday.today, fireTarget]);
+  // Month story (D-151): last month's real income and spending. Bill and yearly categories stay out of "biggest change".
+  const story = useMemo(() => {
+    const rows: StoryRow[] = [];
+    for (const t of recentTransactions) {
+      const type = t.transaction_type ?? "expense";
+      if (type !== "expense" && type !== "income") continue;
+      const usd = type === "expense" ? toUSD(netAmt(t), t.currency ?? displayCurrency, displayRates) : Math.abs(toUSD(t.amount, t.currency ?? displayCurrency, displayRates));
+      rows.push({ date: t.date.slice(0, 10), usd, type, category: t.category ?? "other" });
+    }
+    return monthStory({ month: storyMonth(new Date(`${todayIso}T12:00:00`)), rows, exclude: new Set([...billCategorySet(bills), ...(spreadCategories ?? [])]), target: fireTarget });
+  }, [recentTransactions, bills, spreadCategories, fireTarget, todayIso, displayCurrency, displayRates]);
+  const [storyOpen, setStoryOpen] = useState(false);
   const paydayRemaining = paydayView ? paydayRemainder(paydayView.free, activePaydayAdjustment?.everyday ?? paydayEstimate?.amount ?? null, activePaydayAdjustment?.cushion ?? 0) : null;
   // Get set up (lib/setup-steps): read from what the account already has.
   const setupFacts = useMemo<SetupFacts>(() => ({
@@ -1754,7 +1768,14 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           onWhatIf={onOpenCompare}
           onOpenNeeds={onOpenNeeds}
           onOpenPlan={() => onTabChange?.("contributions")}
+          story={story}
+          onOpenStory={() => setStoryOpen(true)}
         />
+        {storyOpen && story && (
+          <MonthStory story={story} free={free} fmt={(n) => fmtMoney(n)} onClose={() => setStoryOpen(false)}
+            freedomLabel={exactFreedomDate ? exactFreedomDate.toLocaleDateString("en-US", { month: "short", year: "numeric" }) : retireYear ? String(retireYear) : null}
+            categoryLabel={(key) => EXPENSE_CATEGORIES.find((c) => c.key === key)?.label ?? key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase())} />
+        )}
       </HomeSlot>
       </div>
       <div className="uf-home-in" style={{ order: 5, animationDelay: "160ms" }}>

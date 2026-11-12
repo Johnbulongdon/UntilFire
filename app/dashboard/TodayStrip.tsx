@@ -89,10 +89,12 @@ export interface PaydayFacts {
   plan: (pay: number) => PaydayPlan | null;
 }
 
-export default function TodayStrip({ userId, bills, payday, perDay, stretch = null, fmt, toUsd, onOpen, onWhatIf, onOpenNeeds, onOpenPlan }: {
+export default function TodayStrip({ userId, bills, payday, story = null, perDay, stretch = null, fmt, toUsd, onOpen, onWhatIf, onOpenNeeds, onOpenPlan, onOpenStory }: {
   userId?: string;
   bills: Bill[];
   payday?: PaydayFacts | null;
+  /** Last month's story, when there is one (D-151): its month and name. */
+  story?: { month: string; monthName: string } | null;
   /** Safe to spend each day: Until payday over the days to payday (D-90), else the budget left over the days left. Null with neither. */
   perDay: number | null;
   /** Spare cash per day until payday, shown small when above perDay: money the plan means to save (D-137). */
@@ -106,6 +108,8 @@ export default function TodayStrip({ userId, bills, payday, perDay, stretch = nu
   onOpenNeeds?: () => void;
   /** Plan → Contributions, from the payday plan's "Change the plan". */
   onOpenPlan?: () => void;
+  /** Opens the month story, from "See my story". */
+  onOpenStory?: () => void;
 }) {
   const { progress, setProgress, rows, setRows, leases, setLeases, oldRentTag, setOldRentTag, shopRules, setShopRules, sorted } = useTodayData(userId, toUsd);
 
@@ -122,7 +126,7 @@ export default function TodayStrip({ userId, bills, payday, perDay, stretch = nu
     return landed && plan ? { iso: landed.iso, plan } : null;
   }, [payday, progress, rows]);
 
-  const list = progress ? webTodayItems({ rows, bills, progress, leases, oldRentTag, shopRules, sorted, pay }) : null;
+  const list = progress ? webTodayItems({ rows, bills, progress, leases, oldRentTag, shopRules, sorted, pay, story }) : null;
 
   /* Each answer is saved straight away; the answer that empties the list also
      marks the day finished. Need or want is written onto the spend itself, a
@@ -166,11 +170,11 @@ export default function TodayStrip({ userId, bills, payday, perDay, stretch = nu
     }
     // A sorted spend leaves by its tag; everything else is acked, which also stops a second ask the same stage.
     const acks = write && "need" in write ? progress.acks : [...progress.acks, key];
-    const left = webTodayItems({ rows: nextRows, bills, progress: { ...progress, acks }, leases: nextLeases, oldRentTag: nextOld, sorted, pay }).items;
+    const left = webTodayItems({ rows: nextRows, bills, progress: { ...progress, acks }, leases: nextLeases, oldRentTag: nextOld, sorted, pay, story }).items;
     const next = { acks, done: left.length === 0 ? [...progress.done, list.day] : progress.done };
     setProgress(next);
     await saveProgress(userId, next);
-  }, [userId, progress, list, rows, leases, oldRentTag, bills, shopRules, sorted, pay, setProgress, setRows, setLeases, setOldRentTag, setShopRules]);
+  }, [userId, progress, list, rows, leases, oldRentTag, bills, shopRules, sorted, pay, story, setProgress, setRows, setLeases, setOldRentTag, setShopRules]);
 
   // Nothing to answer: opening the day counts it (D-108).
   const quiet = progress && list ? quietDayToMark(progress.done, list.items.length) : null;
@@ -184,7 +188,7 @@ export default function TodayStrip({ userId, bills, payday, perDay, stretch = nu
   }, [userId, quiet]);
 
   if (!progress || !list) return null;
-  return <TodayList items={list.items} count={monthCount(progress.done)} perDay={perDay} stretch={stretch} fmt={fmt} onAnswer={answer} onOpen={onOpen} onWhatIf={onWhatIf} onOpenNeeds={onOpenNeeds} onOpenPlan={onOpenPlan} />;
+  return <TodayList items={list.items} count={monthCount(progress.done)} perDay={perDay} stretch={stretch} fmt={fmt} onAnswer={answer} onOpen={onOpen} onWhatIf={onWhatIf} onOpenNeeds={onOpenNeeds} onOpenPlan={onOpenPlan} onOpenStory={onOpenStory} />;
 }
 
 /** One colour per kind of part; the rows name each one, so nothing rests on colour alone. */
@@ -236,7 +240,7 @@ export function PaydayPlanItem({ plan, fmt, onDone, onChange }: { plan: PaydayPl
  * done", and under either, what's safe to spend today: a figure to read, not a
  * step to tick (D-108). It opens Money.
  */
-export function TodayList({ items, count, perDay, stretch = null, fmt, onAnswer, onOpen, onWhatIf, onOpenNeeds, onOpenPlan }: {
+export function TodayList({ items, count, perDay, stretch = null, fmt, onAnswer, onOpen, onWhatIf, onOpenNeeds, onOpenPlan, onOpenStory }: {
   items: WebTodayItem[];
   count: { done: number; of: number };
   /** Safe to spend each day; null without a budget or a payday. */
@@ -249,6 +253,7 @@ export function TodayList({ items, count, perDay, stretch = null, fmt, onAnswer,
   onWhatIf?: () => void;
   onOpenNeeds?: () => void;
   onOpenPlan?: () => void;
+  onOpenStory?: () => void;
 }) {
   const finished = items.length === 0;
   // Celebrate only the answer that finishes the day; a day already done on load just shows the check.
@@ -275,6 +280,18 @@ export function TodayList({ items, count, perDay, stretch = null, fmt, onAnswer,
           {items.slice(0, 3).map((item, i) => (
             <div key={item.key} style={{ display: "grid", gap: 10, padding: "14px 0", borderTop: i > 0 ? "1px solid var(--uf-border)" : "none" }}>
               {item.kind === "payday" && <PaydayPlanItem plan={item.plan} fmt={fmt} onDone={() => onAnswer(item.key)} onChange={onOpenPlan} />}
+              {item.kind === "story" && (
+                <>
+                  <span style={{ display: "grid", gap: 2 }}>
+                    <span style={{ fontWeight: 700 }}>Your {item.monthName} story is ready</span>
+                    <span className="uf-t-small" style={muted}>A few short pages about your month. It takes under a minute.</span>
+                  </span>
+                  <span style={{ display: "flex", gap: 8 }}>
+                    <Button size="sm" onClick={() => { onAnswer(item.key); onOpenStory?.(); }}>See my story</Button>
+                    <Button size="sm" variant="ghost" onClick={() => onAnswer(item.key)}>Skip it</Button>
+                  </span>
+                </>
+              )}
               {item.kind === "lease" && (
                 <>
                   <span style={{ display: "grid", gap: 2 }}>

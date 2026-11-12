@@ -1,9 +1,10 @@
 import { safeToSpendToday as sharedSafeToSpend } from '@engine/payday-spending.ts'
-import { addMonths, asksShop, buildMerchantMemory, findFlags, isoDay, isRent, isRentOrMortgage, ladderViewFromPlan, leaseAsk, noticeDeadline, monthOf, netAmount, payLanded, paydayPlan, suggestFromHistory, type FlagKind, type PaydayPlan } from '@/engine'
+import { addMonths, asksShop, buildMerchantMemory, findFlags, isoDay, isRent, isRentOrMortgage, ladderViewFromPlan, leaseAsk, noticeDeadline, monthOf, netAmount, payLanded, paydayPlan, suggestFromHistory, type FlagKind, type MonthStory, type PaydayPlan } from '@/engine'
 import { freeUntilPayday, unpaid, upcoming } from '@/lib/bills'
 import { contributionFacts, EMPTY_PLAN } from '@/lib/contribution-facts'
 import { saveFireProfile } from '@/lib/mutations'
 import { monthSpend } from '@/lib/money-data'
+import { phoneMonthStory } from '@/lib/month-story'
 import { defaultNeed, isFiled } from '@/lib/review'
 import { spentUSD, toUSD, type AccountData, type Bill, type Goal, type TodayProgress, type Transaction } from '@/state/account'
 import { billCategories, budgetFor, splitBudget } from '@/lib/budget-split'
@@ -15,7 +16,7 @@ import { billCategories, budgetFor, splitBudget } from '@/lib/budget-split'
  * is answered (filed, or a flag resolved); the rest are answered with an ack
  * saved in the FIRE profile beside the finished days.
  */
-export type TodayKind = 'big' | 'flag' | 'category' | 'need' | 'sorted' | 'backlog' | 'bill' | 'billcheck' | 'payday' | 'goal' | 'manual' | 'setup' | 'lease' | 'renttag'
+export type TodayKind = 'big' | 'flag' | 'category' | 'need' | 'sorted' | 'backlog' | 'bill' | 'billcheck' | 'payday' | 'story' | 'goal' | 'manual' | 'setup' | 'lease' | 'renttag'
 
 export interface Filing { category: string; sub_category: string | null; need: 'need' | 'want' }
 
@@ -36,6 +37,8 @@ export interface TodayItem {
   count?: number
   /** Payday: the cash split until the next payday (lib/payday-plan, D-150). */
   plan?: PaydayPlan
+  /** Story: last month in a few pages (lib/month-story, D-151). */
+  story?: MonthStory
   /** Bill check: a bill whose price changed (with the new amount, in the bill's currency) or that stopped being paid. */
   check?: { bill: Bill; change: 'price' | 'stale'; amount?: number }
   /** Setup: the one first-week step this item asks for. */
@@ -192,6 +195,11 @@ export function todayItems(data: AccountData, progress: TodayProgress, now = new
     }) : null
     if (plan) out.push({ key: `pay:${pay.iso}`, kind: 'payday', amount: Math.round(pay.usd), plan })
   }
+
+  // Month story (D-151): once a month has finished with real income and spending in it, its story is ready.
+  // Opened or skipped, it is answered once; next month brings the next one.
+  const story = phoneMonthStory(data, target, now)
+  if (story && !acked.has(`story:${story.month}`)) out.push({ key: `story:${story.month}`, kind: 'story', story })
 
   /* Bills that no longer match the bank (Rocket Money's checks): a monthly
      bill paid at a new price, or one paid before that hasn't been for two

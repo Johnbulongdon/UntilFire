@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-12 — Your month as a story (pending rollout)
+
+- When a month ends, Today offers "Your October story": a few short pages about your month. What you kept, your biggest change against your usual month, what the kept money pays for once you save it ("11 more hours of every year") and the days of every year your money already pays for. The last page has "Share my 18 days", which shares your days only, never your money. Pages with nothing to say are left out, and a month without income and spending recorded has no story. Free for everyone, on the website and the phone.
+
 ## 2026-11-12 — Payday plan
 
 - When your pay lands, Today shows a plan for it: your bills until the next payday, your day-to-day money, your next saving steps (safety pot, goals, investing) and anything left as a cushion. The parts always add up to the cash in your spending accounts, and use the same numbers as Until payday, Safe to spend today and Contributions. If the plan saves or invests money, it tells you what that adds ("This plan pays for 5 more hours of every year."). Free for everyone, on the website and the phone app. It replaces the phone's Pro-only payday item.

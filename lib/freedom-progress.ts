@@ -104,6 +104,20 @@ export function aboutDate(date: Date, now: Date = new Date()): string {
   return `about ${date.toLocaleDateString("en-US", near ? { month: "short", day: "numeric" } : { month: "short", year: "numeric" })}`;
 }
 
+/**
+ * What an amount adds to free days, in words: "6 more hours", "2 more days"
+ * from two days up, "30 more minutes" under an hour, null under a minute.
+ * Used wherever kept or saved money is shown as time (payday plan, month story).
+ */
+export function freeTimeMore(hours: number): string | null {
+  const minutes = Math.floor(hours * 60);
+  if (!(minutes >= 1)) return null;
+  const say = (n: number, unit: string) => `${n} more ${unit}${n === 1 ? "" : "s"}`;
+  if (hours >= 48) return say(Math.floor(hours / 24), "day");
+  if (hours >= 1) return say(Math.floor(hours), "hour");
+  return say(minutes, "minute");
+}
+
 /** "You add 11 hours every month", "You add 2 days every month"; null under an hour, where it would only read as noise. */
 export function freePaceLabel(hoursPerMonth: number | null): string | null {
   if (hoursPerMonth == null || hoursPerMonth < 1) return null;
