@@ -2,7 +2,7 @@
 
 ## Current priorities
 
-Free days on Home (D-149), Claude, 12 November 2026. In review in [PR #405](https://github.com/Johnbulongdon/UntilFire/pull/405). John approved the mock ("good to build", "go"): Home's freedom card leads with the days of a year the pot already pays for, on the website and the phone. Types, lint and the freedom-progress checks passed; website card checked at 390 and 1280, light and dark, with sample numbers (not a signed-in account). Phone checked by types and lint only, not on a device. Outside Now/Next as a John-requested feature, no Now item displaced. Next from the same mock set: Payday plan, then the monthly story.
+Free days on Home (D-149), Claude, 12 November 2026. Merged on John's "merge" (12 November) in [PR #405](https://github.com/Johnbulongdon/UntilFire/pull/405); labels reworded to plain phrases at his request first. John approved the mock ("good to build", "go"): Home's freedom card leads with the days of a year the pot already pays for, on the website and the phone. Types, lint and the freedom-progress checks passed; website card checked at 390 and 1280, light and dark, with sample numbers (not a signed-in account). Phone checked by types and lint only, not on a device. Outside Now/Next as a John-requested feature, no Now item displaced. Next from the same mock set: Payday plan, then the monthly story.
 
 Money math check (D-147), Claude, 12 November 2026. In review. Website and phone rules run side by side on 17 sample accounts; fixed linked bank payments counted as day-to-day spending and a card in credit counted as owed. Types, money-rules, free-to-spend and spend-forecast checks passed. One shared "bill already paid" rule added (D-148, John's choice). Next: compare freedom-date inputs.
 
