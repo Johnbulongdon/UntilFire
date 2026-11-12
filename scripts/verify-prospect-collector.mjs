@@ -129,6 +129,7 @@ test("collector route authenticates before fetching, bounds bodies and returns n
   const mockUrl=`data:text/javascript;base64,${Buffer.from(`
     export const NextResponse={json:(data,options={})=>({data,status:options.status||200,headers:options.headers})};
     export async function requireAdminUser(){return globalThis.__collectorRouteTest.authorized?{user:{id:'test-admin'}}:{error:NextResponse.json({error:'Unauthorized'},{status:401})};}
+    export async function lookupPartnerProspects(cursor){return lookupProspects(cursor);}
     export async function lookupProspects(cursor){globalThis.__collectorRouteTest.calls++;return {contacts:[],pages:[],collectedAt:'test',nextCursor:cursor+1};}
   `).toString("base64")}`;
   const url=await moduleUrl("../app/api/admin/cold-email/collect/route.ts",[['"next/server"',JSON.stringify(mockUrl)],['"@/lib/admin-auth"',JSON.stringify(mockUrl)],['"@/lib/prospect-discovery"',JSON.stringify(mockUrl)]]);

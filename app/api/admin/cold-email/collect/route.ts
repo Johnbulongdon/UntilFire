@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminUser } from "@/lib/admin-auth";
-import { lookupProspects } from "@/lib/prospect-discovery";
+import { lookupProspects, lookupPartnerProspects } from "@/lib/prospect-discovery";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,12 +30,14 @@ export async function POST(req: NextRequest) {
   try {
     const body = JSON.parse(raw);
     const cursor = body.cursor ?? 0;
+    const audience = body.audience ?? "users";
+    if (audience !== "users" && audience !== "partners") throw new Error("Choose potential users or creators and partners.");
     if (!Number.isSafeInteger(cursor) || cursor < 0 || cursor > 1_000_000) throw new Error("Invalid lookup position. Reload and try again.");
     if (active.has(auth.user.id)) return NextResponse.json({error:"A collection is already running. Wait for it to finish."},{status:429});
     active.add(auth.user.id);
     acquired = true;
-    const result = await lookupProspects(cursor);
-    const emails = result.contacts.map(c => c.email);
+    const result = audience === "partners" ? await lookupPartnerProspects(cursor) : await lookupProspects(cursor);
+    const emails = result.contacts.map(c => c.email).filter(Boolean);
     let skippedCount = 0;
     if (emails.length) {
       const [saved, suppressed] = await Promise.all([
