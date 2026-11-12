@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-12 — Automatic outreach prospect lookup (pending rollout)
+
+- Added Look up new prospects: automatically discover finance websites and collect published contact emails for review, skipping saved and opted-out addresses. No pasted URLs or JSON required; manual list import is tucked under Advanced. No emails are sent by lookup.
+
 ## 2026-11-12 — Free days on Home
 
 - Home now opens with the days of every year your money already pays for ("18 days of every year"), with one dot per day, when the next day arrives ("Next free day: about Dec 22") and how fast you add time ("You add 13 hours every month"). It is your "% there" shown as days of a year, so it always agrees with your freedom date. The freedom date stays on the same card. Website and phone app.

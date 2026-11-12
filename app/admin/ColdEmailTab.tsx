@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { ColdVariant } from "@/lib/cold-email";
 import styles from "./ColdEmail.module.css";
+import ProspectCollector from "./ProspectCollector";
 
 type Campaign = {
   id: string;
@@ -434,7 +435,9 @@ export default function ColdEmailTab({ token }: { token: string }) {
       )}
       {section === "prospects" && (
         <>
-          <section className={styles.panel}>
+          <ProspectCollector token={token} onImport={(rows) => action({ action: "import", rows })} />
+          <details className={styles.panel}>
+            <summary>Advanced: import an existing list</summary>
             <h3>Import a qualified batch</h3>
             <p>
               Paste up to 300 JSON records. Include a public contact source and
@@ -463,7 +466,7 @@ export default function ColdEmailTab({ token }: { token: string }) {
               <Upload size={16} />
               Import prospects
             </button>
-          </section>
+          </details>
           <section className={styles.panel}>
             <h3>Prospect list</h3>
             <div className={styles.tableWrap}>

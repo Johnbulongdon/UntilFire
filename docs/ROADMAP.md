@@ -1,5 +1,7 @@
 # UntilFire — Product Roadmap
 
+N3 acquisition follow-up — Codex, 12 November 2026. In review in [PR #403](https://github.com/Johnbulongdon/UntilFire/pull/403): one-click automatic prospect lookup replaces required seed URLs; public finance reading lists discover linked websites, published contact evidence supports review, and saved/opted-out contacts are skipped. No JSON or paid provider required. No contacts imported or emails sent. Browser and live-yield acceptance pending; no Now priority displaced.
+
 ## Current priorities
 
 Free days on Home (D-149), Claude, 12 November 2026. Merged on John's "merge" (12 November) in [PR #405](https://github.com/Johnbulongdon/UntilFire/pull/405); labels reworded to plain phrases at his request first. John approved the mock ("good to build", "go"): Home's freedom card leads with the days of a year the pot already pays for, on the website and the phone. Types, lint and the freedom-progress checks passed; website card checked at 390 and 1280, light and dark, with sample numbers (not a signed-in account). Phone checked by types and lint only, not on a device. Outside Now/Next as a John-requested feature, no Now item displaced. Next from the same mock set: Payday plan, then the monthly story.
