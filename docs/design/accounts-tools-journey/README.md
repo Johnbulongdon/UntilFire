@@ -163,3 +163,11 @@ Account browsing in Money never writes setup progress. Only the explicit Plan pi
 ### Provider eligibility clarification — 1 November 2026
 
 John clarified that provider legitimacy, not a connected-account requirement, is the eligibility rule. Members choose only admin-curated, live programmes with member submissions enabled. No member can create a provider or override its approved domain/status. The API, admin approval and outbound resolver all enforce the provider domain; web/phone show the expected domain and reject a mismatched URL before submitting. New/edited links still require review. A matching domain does not independently prove that a referral code is valid or belongs to the submitter; approval is retained. Wise, IBKR and Capital One are examples, not activated listings or hard-coded exceptions.
+
+## 13 November 2026 — member directory
+
+John approved the offers-first signed-in website directory and asked to remove the invite/rewards explainer. Money → Accounts & tools opens searchable bank, savings and brokerage listings with original-color locally hosted company logos, cash-offer highlights and separate stock reward labels. No competing budgeting software. Plan account setup and the legacy link-editor destination remain intact.
+
+The authenticated, private/no-store `/api/accounts-directory` endpoint serves dated official-source terms. Promotional amounts hide at the review deadline or expiry. Public promotions do not imply referral activation or combination with an inviter offer. Matching live providers use only server-selected bonus/disclosure metadata and the existing one-use ticket handoff. A referral lookup error disables referral continuation instead of switching beneficiaries. No providers, member links or programmes are seeded/enabled by this UI release.
+
+Website presentation only; no money logic or native release. Provider marks identify the listed companies and do not imply endorsement. Source URLs and verification dates live in `lib/accounts-directory.ts`.

@@ -1,4 +1,5 @@
 "use client";
+import AccountsDirectory from "./AccountsDirectory";
 import { reserveToolHandoff } from "@/lib/tool-handoff";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -22,6 +23,7 @@ type CheckProps = { check?: MoneyCheckFacts; money?: (usd: number) => string; re
 export default function OffersTab({ plan, ...check }: { plan?: PlanAccountPicker } & CheckProps = {}) {
   const { owner } = useToolsAPI();
   const params = useSearchParams();
+  if (!plan && !params.get("goal") && params.get("view") !== "links") return <AccountsDirectory />;
   return <OffersBrowser key={(owner ?? "signed-out") + ":" + (plan?.goal ?? params.get("goal") ?? "invest")} plan={plan} {...check} />;
 }
 function OffersBrowser({ plan, check, money, retirementWord = "Retirement accounts", onLinkBank }: { plan?: PlanAccountPicker } & CheckProps) {

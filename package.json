@@ -102,7 +102,8 @@
     "test:landing-stories": "node --experimental-strip-types --no-warnings scripts/verify-landing-story-rail.ts",
     "test:pay-months": "node --experimental-strip-types --no-warnings scripts/verify-pay-months.ts",
     "test:payday-spending": "node --experimental-strip-types --no-warnings scripts/verify-payday-spending.mjs",
-    "test:prospect-collector": "node --test scripts/verify-prospect-collector.mjs scripts/verify-prospect-discovery.mjs"
+    "test:prospect-collector": "node --test scripts/verify-prospect-collector.mjs scripts/verify-prospect-discovery.mjs",
+    "test:accounts-directory": "node scripts/verify-accounts-directory.cjs"
   },
   "dependencies": {
     "@apple/app-store-server-library": "^3.1.0",

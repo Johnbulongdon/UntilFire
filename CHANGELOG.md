@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-11-13 — Member accounts and offers directory
+
+- Money → Accounts & tools leads with current published offers and a searchable directory of real banks, savings and brokerage accounts, with company logos. Extra invite/reward explanation removed; compact link-owner disclosures remain. Plan setup and approved referral routing are preserved. No provider programmes are activated by this release.
+
 ## 2026-11-12 — Payday plan
 
 - When your pay lands, Today shows a plan for it: your bills until the next payday, your day-to-day money, your next saving steps (safety pot, goals, investing) and anything left as a cushion. The parts always add up to the cash in your spending accounts, and use the same numbers as Until payday, Safe to spend today and Contributions. If the plan saves or invests money, it tells you what that adds ("This plan pays for 5 more hours of every year."). Free for everyone, on the website and the phone app. It replaces the phone's Pro-only payday item.
