@@ -1,5 +1,9 @@
 # UntilFire — decision log
 
+### Automatic prospect discovery — 12 November 2026
+
+John requested a lookup button that automatically fetches new emails without JSON or manually supplied websites. Supersedes PR #403's seed-only collection interface. Use free, bounded discovery from public finance reading lists and their linked websites, with rotating browser-local progress and source evidence. Preserve U.S./relevance review, opt-out exclusion, duplicate-safe import and sending guards. This is on-demand discovery, not an unlimited search index or a scheduled volume promise. Merge and release remain pending.
+
 Reconciled 23 September 2026. This records why a choice exists, not just what
 shipped. [Project memory](KNOWLEDGE.md) defines maintenance and document ownership.
 Sources and both vault branch snapshots are recorded in
@@ -3288,6 +3292,7 @@ peak-end, labor illusion, Von Restorff and choice overload.
 - **How far you've come** (goal gradient). Home's freedom card shows "23%
   there" and the next quarter mark ("Next: 25% in 2027") from the same
   projection as the date (`lib/freedom-progress.ts`, both platforms).
+  *Superseded on Home by D-149 (12 November 2026): the share is shown as free days.*
 - **Bank link shown working** (labor illusion). After Plaid, real steps tick by:
   connected, transactions read, payday found, bills found (Get set up's own
   `setupFinds`, now also run by `/api/plaid/exchange-token`), date updated.
@@ -3645,3 +3650,23 @@ adequate sample before claiming a winner. No conversion improvement is assumed.
 **Decision:** The cash figure behind Safe to spend today is cash in spending accounts − bills before payday − card balances, over the days to payday (D-90). Usual everyday spending is no longer taken off first. D-137's shape stays: bold = day-to-day budget left per day when lower, with "Up to $X if you use money meant for saving" for the cash figure. Website, phone Home and the widget now share one function (`lib/payday-spending.ts` `safeToSpendToday`). The Until payday card keeps its own "Estimated left to spend" (after usual spending), which is a different question.
 **Why:** John's widget showed "Safe to spend $4". Since the 31 October Until payday change, the cash figure subtracted the expected everyday spending, so Safe to spend meant "$4 more than usual" while reading as "only $4 today". The phone also skipped D-137's budget step, so the phone and the website could differ.
 **Trade-off / revisit:** someone with no budget and little spare cash now sees a bigger daily number (what's there, not what's spare); the Until payday card still warns when usual spending won't fit.
+
+### D-147 — A linked bank payment is the bill; a card in credit is not owed (12 November 2026)
+**Status:** Bug fixes inside approved rules (D-86, D-90, D-133), from John's "Work on money math". No rule changed.
+**Decision:** (1) `matchesBill` (lib/bill-categories) also accepts a payment under the bank name linked to a bill (`merchant` on the website, `match_merchant` on the phone), within 15% of the amount, in any category. (2) Until payday on the website counts a card balance as owed only when it is above zero (`Math.max(0, …)`), the phone's rule.
+**Why:** A parity run of 17 sample accounts through the website and phone rules found: rent paid as "BILT PAYMENT" and linked to the Rent bill (D-133) was still counted as day-to-day spending, so "left" fell by a whole rent and Safe to spend today read $0 with $3,000 in checking, on the website, phone and widget alike. A card the bank owed $50 on was taken off as $50 owed on the website only.
+**Was open, now D-148:** the website and the phone decided "is this bill already paid?" with two different rules (website `paidByName`/`presumePaid`, phone `unpaid`). They disagree when a bill is paid early, when last period was paid late in the same month, and for weekly bills. One shared rule is the proposed next step. The freedom-date engine is line-for-line the same on both; its inputs have not been compared yet.
+
+### D-148 — One rule for "is this bill already paid?" on the website and the phone (12 November 2026)
+**Status:** Approved by John (decision card: "Yes, one shared rule").
+**Decision:** `paysBill` in `lib/spend-forecast.ts` is the one test: a spending payment named like the bill (or under its linked bank name), within 15% of the amount, dated from a few days before the due date to today. "A few days" is 10 for monthly and longer bills and one-offs, 5 for every-two-weeks, 2 for weekly (the same lead `paymentFor` uses). The website's `paidByName` and the phone's `unpaid` both call it. One payment pays one due date.
+**Why:** The two platforms could show a different Until payday and Safe to spend by the size of one bill. The phone took any matching payment in the due date's calendar month, so a late payment for last period, or last week's weekly bill, also "paid" the next one and cash read $40 to $200 too high in the sample accounts. The website only looked once a bill was overdue, so a bill paid a few days early stayed owed.
+**Trade-off / revisit:** a bill paid more than 10 days before its due date (rent on the 2nd for a bill dated the 31st) now stays owed on the phone until it is linked to its bank name or ticked paid; "Is this your Rent bill?" (D-133) covers that. Still different: the phone looks 62 days ahead for the next payday, the website a year (quarterly pay).
+
+### D-149 — Home leads with free days: the share already there, as days of a year (12 November 2026)
+**Status:** Approved by John (mock in project files `untilfire/bold-ideas-2026-11-12/`, "this is good to build", then "go").
+**Decision:** Home's freedom card opens with "Your money already pays for 18 days of every year", one dot per day of a year, a pill for the next whole day ("Next free day: about Dec 22") and the pace on the current path ("You add 13 hours every month"). The freedom date stays in the same card, one line lower, above the curve. Free days are `freeDays` in `lib/freedom-progress.ts`: the pot that counts ÷ the FIRE target × 365, whole days only, never 365 before the target is reached; under one day it shows hours. The next day's date is read off the same yearly projection as the freedom date (straight line inside a year, so it says "about"); with no rising path it shows the amount to go. The last day takes the freedom date's own label ("All 365 days: Oct 2053"). Wording: the first labels, "Day 19 · about Dec 22" and "+13 hours a month", were not understood by John on first read, so both are full plain phrases. Website and phone call the same function.
+**Why:** "1% there, 2044" is honest but too far away to feel, and most users start near 1%. The same share in days gives a next win weeks away, in a unit people already own (a day of their year). It follows D-109 and John's 8 November direction not to lead with the date alone. It is not a new number: it is "% there" × 365, so it cannot disagree with the freedom date.
+**Replaces:** the "$6.6k today · 1% there" pill on the website and the "% there" bar with quarter marks on the phone (D-105 "How far you've come"). The quarter marks stay on the website curve. `freedomProgress` is kept for those marks' maths and the phone freedom report.
+**Guardrail:** free days and hours are only ever shown for money kept or added, never as the "cost" of a purchase (no guilt, D-73).
+**Trade-off / revisit:** today's pot in money is no longer on the card (it is on the curve's hover and in Net worth). The phone's freedom report still says "% there". Not built from the same mock: free hours on a single saving, a monthly total, and a share card.

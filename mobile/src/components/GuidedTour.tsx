@@ -20,7 +20,7 @@ const PAD = 8
 // Home's first-visit tour (Oct 2026): Sunny points at the real parts of the
 // screen, one at a time. 'tabs' is the system tab bar, measured from the edge.
 const STOPS: { at: TourAnchor | 'tabs'; mood: Mood; title: string; body: string }[] = [
-  { at: 'hero', mood: 'hello', title: 'Your freedom date', body: 'The month work becomes optional. Tap it any time to see how it\'s worked out.' },
+  { at: 'hero', mood: 'hello', title: 'Your free days', body: 'The days of every year your money already pays for. At 365, work becomes optional. Tap to see how it\'s worked out.' },
   { at: 'actions', mood: 'think', title: 'Four quick moves', body: 'Add a spend, check your budget, invest, or try a what-if.' },
   { at: 'today', mood: 'done', title: 'Today, one minute a day', body: 'A short list from your money. Clear it and your plan stays true. Days are counted, never streaked.' },
   { at: 'tabs', mood: 'win', title: 'Money, Plan, Profile', body: 'Money is what you have now, Plan is where you\'re heading, Profile is you. Same account as untilfire.com.' },

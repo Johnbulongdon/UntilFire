@@ -129,16 +129,16 @@ test("collector route authenticates before fetching, bounds bodies and returns n
   const mockUrl=`data:text/javascript;base64,${Buffer.from(`
     export const NextResponse={json:(data,options={})=>({data,status:options.status||200,headers:options.headers})};
     export async function requireAdminUser(){return globalThis.__collectorRouteTest.authorized?{user:{id:'test-admin'}}:{error:NextResponse.json({error:'Unauthorized'},{status:401})};}
-    export async function collectContacts(urls){globalThis.__collectorRouteTest.calls++;return {contacts:[],pages:[],collectedAt:'test'};}
+    export async function lookupProspects(cursor){globalThis.__collectorRouteTest.calls++;return {contacts:[],pages:[],collectedAt:'test',nextCursor:cursor+1};}
   `).toString("base64")}`;
-  const url=await moduleUrl("../app/api/admin/cold-email/collect/route.ts",[['"next/server"',JSON.stringify(mockUrl)],['"@/lib/admin-auth"',JSON.stringify(mockUrl)],['"@/lib/prospect-fetch"',JSON.stringify(mockUrl)]]);
+  const url=await moduleUrl("../app/api/admin/cold-email/collect/route.ts",[['"next/server"',JSON.stringify(mockUrl)],['"@/lib/admin-auth"',JSON.stringify(mockUrl)],['"@/lib/prospect-discovery"',JSON.stringify(mockUrl)]]);
   const {POST}=await import(url);
   const req=body=>new Request('https://www.untilfire.com/api/admin/cold-email/collect',{method:'POST',body});
-  assert.equal((await POST(req('{"urls":["https://example.org/"]}'))).status,401);assert.equal(state.calls,0);
+  assert.equal((await POST(req('{"cursor":0}'))).status,401);assert.equal(state.calls,0);
   state.authorized=true;
   assert.equal((await POST(req('x'.repeat(5001)))).status,413);assert.equal(state.calls,0);
-  assert.equal((await POST(req('{"urls":[42]}'))).status,400);assert.equal(state.calls,0);
-  const response=await POST(req('{"urls":["https://example.org/"]}'));
+  assert.equal((await POST(req('{"cursor":-1}'))).status,400);assert.equal(state.calls,0);
+  const response=await POST(req('{"cursor":0}'));
   assert.equal(response.status,200);assert.equal(response.headers['Cache-Control'],'no-store');assert.equal(state.calls,1);
   delete globalThis.__collectorRouteTest;
 });

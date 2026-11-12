@@ -42,7 +42,7 @@ import { type Bill, budgetPath, daysOfMonths, everydayRate, forecastPath, guessB
 import FreeToSpendRunway, { SpendingAccountChoices } from "./FreeToSpendRunway";
 import FreeToSpendHome from "./FreeToSpendHome";
 import SetupChecklist, { type AddedExpected } from "./SetupChecklist";
-import { freedomProgress, progressPercent } from "@/lib/freedom-progress";
+import { freeDays, freeDaysLabel, freeNextLabel, freePaceLabel, progressPercent } from "@/lib/freedom-progress";
 import { SETUP_BUTTON, SETUP_FINISHED_KEY, SETUP_LABEL, SETUP_WHY, setupSteps, type SetupFacts, type SetupStepId } from "@/lib/setup-steps";
 import type { IconName } from "@/components/ui";
 import type { NextMove } from "@/lib/next-move";
@@ -1145,8 +1145,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
     return Array.from(byYear.values()).map((b) => ({ ...b, label: String(b.year) }));
   }, [chartData, thisYear, freeYear]);
   const todayPoint = yearBars.find((b) => b.year === thisYear) ?? yearBars[0];
-  // How far you've come (lib/freedom-progress): today's point on the same curve against the FIRE target.
-  const howFar = useMemo(() => (todayPoint ? freedomProgress(todayPoint.value, fireTarget, yearBars) : null), [todayPoint, fireTarget, yearBars]);
+  // Free days (D-149, lib/freedom-progress): today's point against the FIRE target, as days of a year;
+  // the next day's date comes off the same yearly projection as the freedom date.
+  const free = useMemo(() => (todayPoint ? freeDays(todayPoint.value, fireTarget, rawChartData.map((d) => d["Investable"])) : null), [todayPoint, fireTarget, rawChartData]);
 
   // Milestones drawn on the curve, so a far-off date still shows the steps
   // between here and there: the first year past a quarter and a half of the
@@ -1827,9 +1828,9 @@ function DashTab({ userId, income, expenses, k401, rothIRA, taxable, cashSavings
           ].filter(Boolean).join(" "),
           onDismiss: dismissHandoff,
         } : undefined}
-        progress={howFar ? {
-          pct: progressPercent(howFar.share), share: howFar.share, today: todayPoint ? fmtMoney(todayPoint.value, true) : undefined,
-          next: howFar.next ? `Next: ${Math.round(howFar.next.mark * 100)}%${howFar.next.year != null ? ` in ${howFar.next.year}` : `, ${fmtMoney(howFar.next.toGo, true)} to go`}` : "Your freedom number is there",
+        free={free ? {
+          label: freeDaysLabel(free), days: free.days, pct: progressPercent(free.share), pace: freePaceLabel(free.hoursPerMonth),
+          next: freeNextLabel(free, (n) => fmtMoney(n, true), exactFreedomDate ? exactFreedomDate.toLocaleDateString("en-US", { month: "short", year: "numeric" }) : retireYear ? String(retireYear) : null),
         } : undefined}
         route={retireCity ? {
           from: cityName ? cityName.split(",")[0] : "",

@@ -1,46 +1,14 @@
 # Cold outreach pipeline
 
-## Public contact collector — 12 November 2026
+## Automatic prospect lookup — 12 November 2026
 
-Admin → Cold outreach → Prospects includes a seed-driven public contact collector.
-An admin supplies 1–3 public HTTPS website URLs per run. Free search shortcuts
-help find relevant sources; this is not a search-index integration or a promise
-of 300 qualified contacts per day. No paid enrichment service is used.
+Admin → Cold outreach → Prospects starts with **Look up new prospects**. No JSON, website URL or paid data provider is required. Each click reads a rotating public finance reading list, discovers up to 100 relevant outbound websites and scans the next three plus one linked contact/about page each. Browser-local progress advances through six lists and their discovered sites; it is not a global scheduled search index. Source contents can change, so batches can overlap. Saved addresses and opt-outs are filtered server-side; reviewed imports still use the existing duplicate-safe importer. The previous JSON importer remains under Advanced.
 
-The collector reads each seed and at most one same-origin linked About/Contact
-page, following at most two same-site redirects. It extracts explicitly
-published mailto links, visible email explicitly introduced as a contact method,
-and Person JSON-LD email/name pairs. It never generates
-addresses from names, ties an unrelated page author to an address, logs into
-sites, bypasses access controls, or extracts unlinked address dumps. Known
-operational inboxes are excluded. Missing names remain blank; other identity
-ambiguities require review. Topic labels describe page text, not the individual's
-age, financial situation, location, consent or purchasing intent.
+Only explicitly published emails and names are extracted, with source evidence. Missing names stay blank. U.S. fit and relevance require review before import. Lookups do not persist contacts, enqueue messages or send email. Existing sender settings and guards remain unchanged. No migrations or environment keys are needed.
 
-Each result shows its source, collection time, name evidence and page topics.
-Before import, the admin selects contacts, corrects first names, and adds a
-specific fit reason plus public U.S. evidence. The existing authenticated import
-endpoint normalizes/deduplicates and saves reviewed contacts. Collection itself
-has no database writes, queues no jobs, and changes no sending switches. Draft
-results are held only in page state and are replaced by a fresh run or reload.
-Imported notes preserve the collection timestamp, U.S. evidence and published
-name when available. Source URLs identify where the contact details were found.
+All fetches use bounded public-IPv4 pinned HTTPS transport, robots checks and restrictive metadata exclusions. Discovery does not follow redirects; unavailable sources fall back to checking the starter site's homepage under the same collection guards. A shared 22-second deadline bounds discovery plus collection. Each source failure is visible in the source report. A run may return zero emails; there is no promised lead count or unlimited web search.
 
-The server authenticates before fetching, permits only HTTPS/443 domains,
-resolves and pins a public IPv4 per request, validates redirects and blocks
-private/reserved destinations. Requests have time/byte/result limits and do not
-send cookies or credentials. IPv6-only, JavaScript-only, obfuscated, login-only
-and oversized pages may produce no results. Robots rules and restrictive page
-metadata are respected; robots errors fail closed except explicit 404/410.
-The parser is conservative and does not claim full RFC crawler conformance.
-The per-instance in-flight guard is not a distributed rate limiter.
-
-Published contact details are neither email-delivery verification nor marketing
-permission. Review contact purpose and website terms; skip unrelated contacts
-and minors. Existing suppression, campaign readiness and sender guards remain
-unchanged. There is no automatic discovery schedule, SMTP mailbox probing,
-follow-up sequence or new migration. `npm run test:prospect-collector` exercises
-extraction, deduplication, crawler bounds, robots and URL/IP rejection.
+Verification: 19 focused checks cover extraction, source discovery, rotating batches, blocked sources, authentication, bounded requests and saved/opt-out filtering. Local type/lint/build and real-site results are recorded in the PR. Browser acceptance and signed-in import must be verified before release.
 
 Owner: Codex. Requested by John, 11 November 2026. Baseline: latest pushed main
 55ed7e469c32d25bfe3ff2fee3e1c8a9695adc59. Implementation for review; not live.

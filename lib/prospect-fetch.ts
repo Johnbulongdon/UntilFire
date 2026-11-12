@@ -66,12 +66,11 @@ export type CollectionResult = {
   collectedAt: string;
 };
 type FetchPage = typeof fetchPublicPage;
-export async function collectContacts(sources: string[], fetchPage: FetchPage = fetchPublicPage): Promise<CollectionResult> {
+export async function collectContacts(sources: string[], fetchPage: FetchPage = fetchPublicPage, deadline = Date.now() + 22_000): Promise<CollectionResult> {
   if (!sources.length || sources.length > 3) throw new Error("Collect from 1–3 website URLs per batch.");
   const seeds = [...new Set(sources.map(s => publicContactUrl(s).href))];
   const contacts = new Map<string, CollectedContact>();
   const pages: CollectionResult["pages"] = [];
-  const deadline = Date.now() + 22_000;
   const robots = new Map<string, string>();
   const visited = new Set<string>();
   async function rulesFor(url: URL) {

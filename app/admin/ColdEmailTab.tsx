@@ -436,7 +436,8 @@ export default function ColdEmailTab({ token }: { token: string }) {
       {section === "prospects" && (
         <>
           <ProspectCollector token={token} onImport={(rows) => action({ action: "import", rows })} />
-          <section className={styles.panel}>
+          <details className={styles.panel}>
+            <summary>Advanced: import an existing list</summary>
             <h3>Import a qualified batch</h3>
             <p>
               Paste up to 300 JSON records. Include a public contact source and
@@ -465,7 +466,7 @@ export default function ColdEmailTab({ token }: { token: string }) {
               <Upload size={16} />
               Import prospects
             </button>
-          </section>
+          </details>
           <section className={styles.panel}>
             <h3>Prospect list</h3>
             <div className={styles.tableWrap}>
