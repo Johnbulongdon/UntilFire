@@ -103,7 +103,7 @@ export function MonthStoryPages({ story, free, freedomLabel, onClose }: {
           <Text style={{ color: ink }} className="mt-3 text-[19px] font-semibold leading-7">{sub}</Text>
           {page === 'free' && free && (
             <>
-              <View style={{ marginTop: 10 }}><FreeDaysDots days={free.days} perRow={4} ink={ink} ink2={ink2} ring={dark ? '#363048' : '#FFFFFF'} empty={faint} /></View>
+              <View style={{ marginTop: 10 }}><FreeDaysDots days={free.days} ink={ink} ink2={ink2} ring={dark ? '#363048' : '#FFFFFF'} empty={faint} /></View>
               <View className="mt-4 self-start rounded-full px-3 py-1.5" style={{ backgroundColor: ink }}>
                 <Text style={{ color: dark ? '#151719' : '#FFFFFF' }} className="font-mono text-[13px] font-bold">{freeNextLabel(free, money, freedomLabel)}</Text>
               </View>

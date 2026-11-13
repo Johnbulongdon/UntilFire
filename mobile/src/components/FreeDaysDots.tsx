@@ -13,7 +13,7 @@ const MONTH_GAP_Y = 10
  * pays for, a ring on the next one. The year is twelve small months with
  * seven dots a row, so a row is a week and the filled part reads like a
  * calendar, as on the website. `perRow` is how many months sit side by side:
- * six on Home's card, four where there is room (the month story). `ink` is the
+ * six on Home's card and the month story (John's pick, 13 November). `ink` is the
  * filled colour, for a page whose ink is light (the story in dark).
  */
 export function FreeDaysDots({ days, perRow = 6, ink = '#151719', ink2 = '#5C5130', ring = '#FFFFFF', empty = 'rgba(21,23,25,0.14)' }: {

@@ -690,7 +690,7 @@ button,input,select,textarea{font-family:inherit}h1,h2{font-weight:800;letter-sp
 .uf-freedom-panel{--uf-ink:#151719;--uf-ink-2:#5C5130;--uf-ink-3:#655A39;--uf-teal:#151719;--uf-teal-deep:#151719;--uf-green:#151719;--uf-green-50:#FFFFFF75;--uf-card:#FFFFFF}
 .uf-freedom-panel .uf-t-small{color:#5C5130}
 /* Free days (D-149): one dot per day of a year, as twelve small months with seven dots a row (a row is a week).
-   Twelve months across on wide screens, six on phones; the month story sets four (app/dashboard/FreeDaysDots.tsx). */
+   Twelve months across on wide screens, six on phones and in the month story's pop-up (app/dashboard/FreeDaysDots.tsx). */
 .uf-free-days{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px 14px}
 .uf-free-days>span{display:grid;gap:5px;align-content:start;min-width:0}
 .uf-free-days>span>b{color:var(--uf-ink-2);line-height:1}

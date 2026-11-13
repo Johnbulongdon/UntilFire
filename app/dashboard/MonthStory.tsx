@@ -86,7 +86,7 @@ export default function MonthStory({ story, free, freedomLabel, fmt, categoryLab
             <span style={{ fontSize: 18, fontWeight: 600, lineHeight: 1.45, fontVariantNumeric: "tabular-nums" }}>{lines.sub}</span>
             {page === "free" && free && (
               <>
-                <div style={{ marginTop: 8 }}><FreeDaysDots days={free.days} label={`${free.days} of 365 days filled`} perRow={4} /></div>
+                <div style={{ marginTop: 8 }}><FreeDaysDots days={free.days} label={`${free.days} of 365 days filled`} perRow={6} /></div>
                 <span style={{ justifySelf: "start", marginTop: 6, background: "var(--uf-ink)", color: "var(--uf-bg)", borderRadius: 999, padding: "6px 12px", fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
                   {freeNextLabel(free, fmt, freedomLabel)}
                 </span>
