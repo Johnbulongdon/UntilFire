@@ -3693,3 +3693,11 @@ adequate sample before claiming a winner. No conversion improvement is assumed.
 **Free:** for everyone. The answer is saved under `story:<month>`, shared by the website and the phone, so it is offered once a month.
 **Why:** people coming back is the top gap. A month that ends with a short, kind recap and one thing worth sharing is a reason to open the app, and the share is a way for new people to find it.
 **Trade-off / revisit:** after "See my story" or "Skip it" there is no way to open that month's story again; a lasting place for past stories is not built. Not built from the mock: the story inside the monthly email, a picture card for sharing, analytics events for opening and sharing.
+
+### Member accounts directory — 13 November 2026
+
+**Status:** John approved the offers-first member mock and explicitly requested shipping with provider logos and without the invite/rewards explanation section.
+
+**Decision:** Signed-in website Accounts & tools becomes a bank, savings and brokerage discovery directory. Current published cash promotions lead, with stock rewards clearly separate; search, categories and original-color provider marks support browsing. No competing budgeting products. This replaces the default Money-check-first browsing presentation, while Plan’s contextual account picker and D-131’s navigation ownership remain.
+
+**Limits:** D-81’s curated programme permission, inviter attribution and approval rules remain. Public promotions are not an activated referral programme or proof that offers combine. Approved live metadata controls referral bonus/disclosure; no provider or member link is enabled by this presentation change. The dated directory endpoint requires authentication and private/no-store responses. Native presentation is unchanged; no money logic changes.
