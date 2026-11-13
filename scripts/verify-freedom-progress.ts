@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-import { aboutDate, freeDays, freeDaysLabel, freeHours, freeNextLabel, freePaceLabel, freedomProgress, progressPercent } from "../lib/freedom-progress.ts";
+import { DAYS_IN_YEAR, FREE_DAY_MONTHS, aboutDate, freeDays, freeDaysLabel, freeHours, freeNextLabel, freePaceLabel, freedomProgress, progressPercent } from "../lib/freedom-progress.ts";
 
 const path = [{ year: 2026, value: 46_000 }, { year: 2027, value: 60_000 }, { year: 2028, value: 105_000 }];
 
@@ -83,5 +83,10 @@ assert.equal(freeNextLabel(freeDays(950_000, 900_000)!, usd), "Every day is your
 // $300 saved toward $900k buys about 3 hours of every year.
 assert.equal(Math.round(freeHours(300, 900_000)), 3);
 assert.equal(freeHours(300, 0), 0);
+
+// The dots: twelve months that hold every day of the year once, in order.
+assert.equal(FREE_DAY_MONTHS.length, 12);
+assert.equal(FREE_DAY_MONTHS.reduce((n, m) => n + m.days, 0), DAYS_IN_YEAR);
+assert.ok(FREE_DAY_MONTHS.every((m, k) => m.start === FREE_DAY_MONTHS.slice(0, k).reduce((n, x) => n + x.days, 0)));
 
 console.log("Freedom progress checks passed.");

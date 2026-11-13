@@ -61,6 +61,19 @@ export interface FreeDays {
   hoursPerMonth: number | null;
 }
 
+/**
+ * The year as twelve small months, for the free days dots: each month is its
+ * own block with seven dots a row, like a calendar, so a row reads as a week
+ * and the filled part reads as "January, then some of February". `start` is
+ * the month's first day counted from 0. A plain 365-day year: the dots are a
+ * share of a year, not dates on a calendar.
+ */
+export const FREE_DAY_MONTHS: { name: string; start: number; days: number }[] = (() => {
+  const lengths: [string, number][] = [["Jan", 31], ["Feb", 28], ["Mar", 31], ["Apr", 30], ["May", 31], ["Jun", 30], ["Jul", 31], ["Aug", 31], ["Sep", 30], ["Oct", 31], ["Nov", 30], ["Dec", 31]];
+  let start = 0;
+  return lengths.map(([name, days]) => { const m = { name, start, days }; start += days; return m; });
+})();
+
 /** Hours of a year that `amount` pays for, e.g. $300 of a $900k target is about 3 hours. */
 export function freeHours(amount: number, target: number): number {
   if (!(target > 0) || !Number.isFinite(amount)) return 0;

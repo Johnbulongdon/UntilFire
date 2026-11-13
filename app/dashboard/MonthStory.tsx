@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui";
+import FreeDaysDots from "./FreeDaysDots";
 import { freeDaysLabel, freeNextLabel, freeTimeMore, type FreeDays } from "@/lib/freedom-progress";
 import { FREE_DAYS_SHARE_URL, freeDaysShareText, storyChangeLine, storyFlowLine, storyKeptLine, storyPages, type MonthStory as Story, type StoryPage } from "@/lib/month-story";
 
@@ -85,9 +86,7 @@ export default function MonthStory({ story, free, freedomLabel, fmt, categoryLab
             <span style={{ fontSize: 18, fontWeight: 600, lineHeight: 1.45, fontVariantNumeric: "tabular-nums" }}>{lines.sub}</span>
             {page === "free" && free && (
               <>
-                <div className="uf-free-days" role="img" aria-label={`${free.days} of 365 days filled`} style={{ gridTemplateColumns: "repeat(37, minmax(0, 1fr))", gap: 2, marginTop: 6 }}>
-                  {Array.from({ length: 365 }, (_, i) => <i key={i} data-on={i < free.days ? "" : undefined} data-next={i === free.days ? "" : undefined} />)}
-                </div>
+                <div style={{ marginTop: 8 }}><FreeDaysDots days={free.days} label={`${free.days} of 365 days filled`} perRow={4} /></div>
                 <span style={{ justifySelf: "start", marginTop: 6, background: "var(--uf-ink)", color: "var(--uf-bg)", borderRadius: 999, padding: "6px 12px", fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
                   {freeNextLabel(free, fmt, freedomLabel)}
                 </span>
