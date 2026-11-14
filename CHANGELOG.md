@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-11-13 — Free days dots as a small calendar (pending rollout)
+
+- The dots for your free days are now grouped into twelve small months, seven dots a row, so each row is a week and you can see how far into the year your money already reaches. Same number of days as before; only the arrangement changed. On Home and in your month story, website and phone.
+
+## 2026-11-12 — Your month as a story (pending rollout)
+
+- When a month ends, Today offers "Your October story": a few short pages about your month. What you kept, your biggest change against your usual month, what the kept money pays for once you save it ("11 more hours of every year") and the days of every year your money already pays for. The last page has "Share my 18 days", which shares your days only, never your money. Pages with nothing to say are left out, and a month without income and spending recorded has no story. Free for everyone, on the website and the phone.
 ## 2026-11-13 — Member accounts and offers directory
 
 - Money → Accounts & tools leads with current published offers and a searchable directory of real banks, savings and brokerage accounts, with company logos. Extra invite/reward explanation removed; compact link-owner disclosures remain. Plan setup and approved referral routing are preserved. No provider programmes are activated by this release.

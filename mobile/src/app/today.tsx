@@ -371,6 +371,10 @@ function cardFor(item: TodayItem, h: {
         body: <PaydaySplit plan={plan} />,
         choices: [{ label: 'Looks right', onPress: () => h.ack(item) }, { label: 'Change the plan', kind: 'quiet', onPress: () => router.push('/plan/contributions') }] }
     }
+    case 'story':
+      // The month story (D-151): opening it or skipping it answers the item; the story itself is its own screen.
+      return { eyebrow: 'Your month', title: `Your ${item.story!.monthName} story is ready`, sub: 'A few short pages about your month. It takes under a minute.',
+        choices: [{ label: 'See my story', onPress: () => { h.ack(item); router.push('/month-story') } }, { label: 'Skip it', kind: 'quiet', onPress: () => h.ack(item) }] }
     case 'goal':
       return { eyebrow: 'Goal reached', title: `${item.goal!.name}!`, amount: money(item.goal!.target_amount), sub: 'saved. Nicely done.',
         choices: [{ label: 'Nice!', onPress: () => h.ack(item) }] }

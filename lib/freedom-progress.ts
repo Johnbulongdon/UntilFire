@@ -61,6 +61,19 @@ export interface FreeDays {
   hoursPerMonth: number | null;
 }
 
+/**
+ * The year as twelve small months, for the free days dots: each month is its
+ * own block with seven dots a row, like a calendar, so a row reads as a week
+ * and the filled part reads as "January, then some of February". `start` is
+ * the month's first day counted from 0. A plain 365-day year: the dots are a
+ * share of a year, not dates on a calendar.
+ */
+export const FREE_DAY_MONTHS: { name: string; start: number; days: number }[] = (() => {
+  const lengths: [string, number][] = [["Jan", 31], ["Feb", 28], ["Mar", 31], ["Apr", 30], ["May", 31], ["Jun", 30], ["Jul", 31], ["Aug", 31], ["Sep", 30], ["Oct", 31], ["Nov", 30], ["Dec", 31]];
+  let start = 0;
+  return lengths.map(([name, days]) => { const m = { name, start, days }; start += days; return m; });
+})();
+
 /** Hours of a year that `amount` pays for, e.g. $300 of a $900k target is about 3 hours. */
 export function freeHours(amount: number, target: number): number {
   if (!(target > 0) || !Number.isFinite(amount)) return 0;
@@ -102,6 +115,20 @@ export function freeDaysLabel(f: FreeDays): string {
 export function aboutDate(date: Date, now: Date = new Date()): string {
   const near = date.getTime() - now.getTime() < 300 * 864e5;
   return `about ${date.toLocaleDateString("en-US", near ? { month: "short", day: "numeric" } : { month: "short", year: "numeric" })}`;
+}
+
+/**
+ * What an amount adds to free days, in words: "6 more hours", "2 more days"
+ * from two days up, "30 more minutes" under an hour, null under a minute.
+ * Used wherever kept or saved money is shown as time (payday plan, month story).
+ */
+export function freeTimeMore(hours: number): string | null {
+  const minutes = Math.floor(hours * 60);
+  if (!(minutes >= 1)) return null;
+  const say = (n: number, unit: string) => `${n} more ${unit}${n === 1 ? "" : "s"}`;
+  if (hours >= 48) return say(Math.floor(hours / 24), "day");
+  if (hours >= 1) return say(Math.floor(hours), "hour");
+  return say(minutes, "minute");
 }
 
 /** "You add 11 hours every month", "You add 2 days every month"; null under an hour, where it would only read as noise. */

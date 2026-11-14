@@ -13,6 +13,7 @@ import { Button, Card, Icon } from "@/components/ui";
 import type { IconName } from "@/components/ui";
 import type { NextMove } from "@/lib/next-move";
 import Flag, { flagUri } from "@/app/components/Flag";
+import FreeDaysDots from "./FreeDaysDots";
 
 /** A drawn flag, or the emoji as-is when it is a pin or a house rather than a country. */
 function RouteFlag({ emoji }: { emoji?: string }) {
@@ -104,9 +105,7 @@ export function FreedomCard({ dateLabel, yearsAway, age, onOpen, route, free, no
       </div>
       {dateLabel && free && (
         <>
-          <div className="uf-free-days" role="img" aria-label={`${free.days} of 365 days filled. That is ${free.pct} of your freedom number.`}>
-            {Array.from({ length: 365 }, (_, i) => <i key={i} data-on={i < free.days ? "" : undefined} data-next={i === free.days ? "" : undefined} />)}
-          </div>
+          <FreeDaysDots days={free.days} label={`${free.days} of 365 days filled. That is ${free.pct} of your freedom number.`} />
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span title={`${free.pct} of your freedom number is ${free.pct} of a year`} style={{ ...pill, background: "var(--uf-ink)", color: "var(--uf-yellow)" }}>{free.next}</span>
             {free.pace && <span style={{ ...pill, background: "var(--uf-card)", color: "var(--uf-ink)" }}>{free.pace}</span>}

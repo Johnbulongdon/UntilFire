@@ -105,6 +105,7 @@ function RootLayout() {
           <Stack.Screen name="household" options={{ presentation: 'modal' }} />
           <Stack.Screen name="home-layout" options={{ presentation: 'modal' }} />
           <Stack.Screen name="give-a-month" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="month-story" options={{ presentation: 'fullScreenModal' }} />
           <Stack.Screen name="review" options={{ presentation: 'modal' }} />
           <Stack.Screen name="today" options={{ presentation: 'fullScreenModal' }} />
           <Stack.Screen name="pro" options={{ presentation: 'modal' }} />

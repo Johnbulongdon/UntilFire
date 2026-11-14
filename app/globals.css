@@ -689,12 +689,16 @@ button,input,select,textarea{font-family:inherit}h1,h2{font-weight:800;letter-sp
 /* Role aliases are retained for feature compatibility, not as new palette names. */
 .uf-freedom-panel{--uf-ink:#151719;--uf-ink-2:#5C5130;--uf-ink-3:#655A39;--uf-teal:#151719;--uf-teal-deep:#151719;--uf-green:#151719;--uf-green-50:#FFFFFF75;--uf-card:#FFFFFF}
 .uf-freedom-panel .uf-t-small{color:#5C5130}
-/* Free days (D-149): one dot per day of a year on Home's freedom card; 73 x 5 on wide screens, 37 across on phones. */
-.uf-free-days{display:grid;grid-template-columns:repeat(73,minmax(0,1fr));gap:3px}
-.uf-free-days>i{aspect-ratio:1;border-radius:50%;background:color-mix(in srgb,var(--uf-ink) 14%,transparent)}
-.uf-free-days>i[data-on]{background:var(--uf-ink)}
-.uf-free-days>i[data-next]{background:var(--uf-card);box-shadow:0 0 0 2px var(--uf-ink)}
-@media (max-width:640px){.uf-free-days{grid-template-columns:repeat(37,minmax(0,1fr));gap:2px}.uf-free-days>i[data-next]{box-shadow:0 0 0 1.5px var(--uf-ink)}}
+/* Free days (D-149): one dot per day of a year, as twelve small months with seven dots a row (a row is a week).
+   Twelve months across on wide screens, six on phones and in the month story's pop-up (app/dashboard/FreeDaysDots.tsx). */
+.uf-free-days{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px 14px}
+.uf-free-days>span{display:grid;gap:5px;align-content:start;min-width:0}
+.uf-free-days>span>b{color:var(--uf-ink-2);line-height:1}
+.uf-free-days>span>span{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.uf-free-days i{aspect-ratio:1;border-radius:50%;background:color-mix(in srgb,var(--uf-ink) 14%,transparent)}
+.uf-free-days i[data-on]{background:var(--uf-ink)}
+.uf-free-days i[data-next]{background:var(--uf-card);box-shadow:0 0 0 1.5px var(--uf-ink)}
+@media (max-width:640px){.uf-free-days{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px 9px}.uf-free-days>span>span{gap:1.5px}}
 /* Onboarding results (D-144): full-screen pages, one colour each. Yellow is only the freedom date. */
 .rf-root[data-brand-step="2"]{--uf-ink:#151719;--uf-ink-2:#5C5130;--uf-ink-3:#655A39;--uf-teal:#151719;--uf-green:#151719;--uf-card:#FFFFFF;--uf-border:#D6C681;color:#151719;background:var(--uf-yellow)!important}
 .rf-root[data-brand-step="3"]{background:var(--uf-mint)!important}

@@ -59,5 +59,6 @@ export { defaultLayout, type DashboardLayout } from '@engine/dashboard-layout.ts
 export { buildMerchantMemory, suggestFromHistory } from '@engine/merchant-memory.ts'
 export { stampActive } from '@engine/last-active.ts'
 export { SETUP_BUTTON, SETUP_CTA, SETUP_FINISHED_KEY, SETUP_LABEL, SETUP_ORDER, SETUP_SNAPSHOT_KEY, SETUP_WHY, setupFinds, setupMoment, setupSteps, type SetupFind, type SetupMoment, type SetupSnapshot, type SetupStepId } from '@engine/setup-steps.ts'
-export { freedomProgress, progressPercent, freeDays, freeDaysLabel, freeNextLabel, freePaceLabel, type FreedomProgress, type FreeDays } from '@engine/freedom-progress.ts'
+export { FREE_DAY_MONTHS, freedomProgress, progressPercent, freeDays, freeDaysLabel, freeNextLabel, freePaceLabel, freeTimeMore, type FreedomProgress, type FreeDays } from '@engine/freedom-progress.ts'
 export { paydayPlan, payLanded, paydayReward, paydayDateLabel, type PaydayPlan, type PaydayPart } from '@engine/payday-plan.ts'
+export { monthStory, storyMonth, storyPages, storyKeptLine, storyFlowLine, storyChangeLine, freeDaysShareText, FREE_DAYS_SHARE_URL, type MonthStory, type StoryPage, type StoryRow } from '@engine/month-story.ts'

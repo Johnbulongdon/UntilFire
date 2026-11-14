@@ -14,7 +14,7 @@
  * The parts always add up to the cash. The hours line follows D-149: free time
  * is only shown for money kept or added, never as the cost of a purchase.
  */
-import { freeHours } from "./freedom-progress.ts";
+import { freeHours, freeTimeMore } from "./freedom-progress.ts";
 import type { RungKind } from "./contribution-waterfall.ts";
 
 export type PaydayPartKind = "bills" | "everyday" | "step" | "cushion";
@@ -117,12 +117,8 @@ export function paydayPlan(i: {
  * "Your money already pays for 18 days of every year".
  */
 export function paydayReward(hours: number): string | null {
-  const minutes = Math.floor(hours * 60);
-  if (!(minutes >= 1)) return null;
-  const say = (n: number, unit: string) => `This plan pays for ${n} more ${unit}${n === 1 ? "" : "s"} of every year.`;
-  if (hours >= 48) return say(Math.floor(hours / 24), "day");
-  if (hours >= 1) return say(Math.floor(hours), "hour");
-  return say(minutes, "minute");
+  const more = freeTimeMore(hours);
+  return more ? `This plan pays for ${more} of every year.` : null;
 }
 
 const DAY_MS = 86_400_000;
